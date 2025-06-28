@@ -3,12 +3,13 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ItemUtils = require(MainStorage.code.server.bag.ItemUtils) ---@type ItemUtils
-local ItemType = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemType
+local ItemType = require(MainStorage.code.common.TypeConfig.ItemType) ---@type ItemType
 local game = game
 local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 
-local Bag = ClassMgr.Class("Bag") ---@type Bag
+---@class Bag
+local Bag = ClassMgr.Class("Bag")
 
 ---@param player MPlayer 玩家实例
 function Bag:OnInit(player)
@@ -26,16 +27,32 @@ function Bag:OnInit(player)
     self:InitializeCurrencies()
 end
 
+---将物品类型编号转换为分类编号
+---@param itemCategoryNumber number 物品类型编号
+---@return number 分类编号
+function Bag:GetCategoryFromItemCategory(itemCategoryNumber)
+    local common_config = require(MainStorage.code.common.GameConfig.MConfig) ---@type common_config
+    
+    -- 验证传入的编号是否有效
+    if itemCategoryNumber and common_config.ItemTypeNames[itemCategoryNumber] then
+        return itemCategoryNumber
+    else
+        return 0
+    end
+end
+
 ---初始化货币类型
 function Bag:InitializeCurrencies()
     local allMoneyTypes = ItemType.GetAllMoneyTypes()
+    local common_config = require(MainStorage.code.common.GameConfig.MConfig) ---@type common_config
+    
     for index, moneyType in pairs(allMoneyTypes) do
         -- 检查背包中是否已有该货币
         if self:GetItemAmount(moneyType.name) == 0 then
             -- 如果没有，添加初始货币（数量为0）
             local currencyData = {
                 name = moneyType.name,
-                itemType = "currency",
+                itemCategory = common_config.ItemTypeEnum["货币"], -- 5
                 amount = 0,
                 uuid = gg.create_uuid('currency'),
                 enhanceLevel = 0
@@ -156,7 +173,7 @@ function Bag:AddItem(itemData)
     if itemData.amount and itemData.amount > 0 then
         local existingItems = self:GetItemByName(itemData.name)
         for _, existingItem in ipairs(existingItems) do
-            if existingItem.itemType == itemData.itemType and 
+            if existingItem.itemCategory == itemData.itemCategory and 
                existingItem.enhanceLevel == itemData.enhanceLevel then
                 existingItem.amount = existingItem.amount + itemData.amount
                 self:MarkDirty()
@@ -166,7 +183,7 @@ function Bag:AddItem(itemData)
     end
 
     -- 无法合并，添加到新位置
-    local category = itemData.itemType or "material"
+    local category = self:GetCategoryFromItemCategory(itemData.itemCategory)
     if not self.bag_items[category] then
         self.bag_items[category] = {}
     end

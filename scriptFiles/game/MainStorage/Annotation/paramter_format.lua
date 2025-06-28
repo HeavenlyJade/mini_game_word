@@ -71,7 +71,7 @@
 ---@field s number 背包格子
 
 ---@class ItemData
----@field itemType ItemCategory 物品类型
+---@field itemCategory number 物品类型编号 (1:武器, 2:装备, 3:消耗品, 4:材料, 5:货币)
 ---@field enhanceLevel number 强化等级
 ---@field amount number 数量
 ---@field uuid string 唯一标识

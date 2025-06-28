@@ -1,127 +1,642 @@
-local MainStorage  = game:GetService('MainStorage')
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
-local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
+local MainStorage = game:GetService('MainStorage')
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local ItemType = require(MainStorage.code.common.config_type.ItemType) ---@type ItemType
 
--- ItemType class
----@class ItemType:Class
----@field data table<string, any> 原始配置数据
----@field name string 物品名称
----@field description string 物品描述
----@field icon string 物品图标
----@field quality ItemRank 物品品质
----@field extraPower number 额外战力
----@field enhanceRate number 强化倍率
----@field enhanceMaterials table<string, number> 强化素材，key为素材ID，value为数量
----@field enhanceMaterialRate number 强化材料增加倍率
----@field maxEnhanceLevel number 最大强化等级
----@field attributes table<string, number> 属性，key为属性ID，value为属性值
----@field tags table<string, boolean> 标签，key为标签ID，value为是否拥有
----@field collectionReward string 图鉴完成奖励ID
----@field collectionRewardAmount number 图鉴完成奖励数量
----@field collectionAdvancedRewardAmount number 图鉴高级完成奖励数量
----@field equipmentSlot number 装备格子ID
----@field evolveTo string 可进阶为的物品ID
----@field evolveMaterials table<string, number> 进阶材料，key为材料ID，value为数量
----@field modifiers table<string, number> 获得词条，key为词条ID，value为词条值
----@field sellableTo string 可售出为的物品ID
----@field sellPrice number 售出价格
----@field New fun( data:table ):ItemType
-local ItemType = ClassMgr.Class("ItemType")
-
-function ItemType:OnInit(data)
-    self.name = data["名字"] or ""
-    self.description = data["描述"] or ""
-    self.detail = data["详细属性"] or ""
-    self.icon = data["图标"]
-    self.rank = ItemRankConfig.Get(data["品级"] or "普通")
-    self.extraPower = data["额外战力"] or 0
-    
-    -- 强化
-    self.enhanceRate = data["强化倍率"] or 0
-    self.enhanceMaterials = data["强化素材"] or {}
-    self.enhanceMaterialRate = data["强化材料增加倍率"] or 0
-    self.maxEnhanceLevel = data["最大强化等级"] or 0
-    
-    -- Attributes
-    self.attributes = data["属性"] or {}
-    
-    -- 使用
-    self.canAutoUse = data["可自动使用"] or true
-    self.useCommands = data["使用指令"]
-    self.useCooldown = data["使用冷却"] or -1
-    self.useConsume = data["使用消耗"] or 1
-    -- 词条ID
-    self.tags = data["标签"] or {}
-    
-    -- Collection rewards
-    self.collectionReward = data["图鉴完成奖励"]
-    self.collectionRewardAmount = data["图鉴完成奖励数量"] or 0
-    self.collectionAdvancedRewardAmount = data["图鉴高级完成奖励数量"] or 0
-    
-    -- Equipment slot
-    self.equipmentSlot = data["装备格子"] or -1
-    
-    -- Evolution properties
-    self.evolveTo = data["可进阶为"]
-    self.evolveMaterials = data["进阶材料"] or {}
-    
-    -- 词条
-    self.boundTags = data["获得词条"] or {}
-    -- 售出
-    self.sellableTo = data["可售出为"]
-    self.sellPrice = data["售出价格"] or 0
-    self.gainSound = data["获得音效"]
-    -- 货币
-    self.showInBag = data["在背包里显示"] or true
-    self.isMoney = data["是货币"]
-    self.moneyIndex = data["货币序号"] or -1
-    
-    -- 移除直接依赖Bag，改为注册到ItemTypeConfig
-    if self.isMoney then
-        ItemType.RegisterMoneyType(self)
-    end
-end
-
--- 静态货币类型管理
-ItemType.MoneyTypes = {} ---@type table<number, ItemType>
-
----注册货币类型
----@param itemType ItemType
-function ItemType.RegisterMoneyType(itemType)
-    ItemType.MoneyTypes[itemType.moneyIndex] = itemType
-end
-
----获取所有货币类型
----@return table<number, ItemType>
-function ItemType.GetAllMoneyTypes()
-    return ItemType.MoneyTypes
-end
-
----获取指定序号的货币类型
----@param index number
----@return ItemType|nil
-function ItemType.GetMoneyType(index)
-    return ItemType.MoneyTypes[index]
-end
-
-function ItemType:GetToStringParams()
-    return {
-        name = self.name
-    }
-end
-
-function ItemType:ToItem(count)
-    local Item = require(MainStorage.code.server.bag.Item) ---@type Item
-    local item = Item.New()
-    item:Load({
-        uuid = gg.create_uuid('item'),
-        itype = self,
-        amount = count,
-        el = 0,
-        quality = ""
+--- 物品类型配置文件
+---@class ItemTypeConfig
+---@field Get fun(itemTypeId: string):ItemType 获取物品类型
+---@field GetAll fun():ItemType[] 获取所有物品类型
+local ItemTypeConfig = {}
+local loaded = false
+local function LoadConfig()
+    ItemTypeConfig.config ={
+    ["星星果碎片"] = ItemType.New({
+        ["名字"] = "星星果碎片",
+        ["图标"] = "sandboxId://textures/fuka/星星果.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["窝瓜碎片"] = ItemType.New({
+        ["名字"] = "窝瓜碎片",
+        ["图标"] = "sandboxId://textures/fuka/窝瓜.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["魅惑菇碎片"] = ItemType.New({
+        ["名字"] = "魅惑菇碎片",
+        ["图标"] = "sandboxId://textures/fuka/迷惑菇.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["仙人掌碎片"] = ItemType.New({
+        ["名字"] = "仙人掌碎片",
+        ["图标"] = "sandboxId://textures/fuka/仙人掌.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["椰子炮碎片"] = ItemType.New({
+        ["名字"] = "椰子炮碎片",
+        ["图标"] = "sandboxId://textures/fuka/椰子炮.png",
+        ["品级"] = "稀有",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["火爆辣椒碎片"] = ItemType.New({
+        ["名字"] = "火爆辣椒碎片",
+        ["图标"] = "sandboxId://textures/fuka/火爆辣椒.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["菜问碎片"] = ItemType.New({
+        ["名字"] = "菜问碎片",
+        ["图标"] = "sandboxId://textures/fuka/菜问.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["辣椒投手碎片"] = ItemType.New({
+        ["名字"] = "辣椒投手碎片",
+        ["图标"] = "sandboxId://textures/fuka/辣椒投手.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["钢铁地刺碎片"] = ItemType.New({
+        ["名字"] = "钢铁地刺碎片",
+        ["图标"] = "sandboxId://textures/fuka/地刺王.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["地刺碎片"] = ItemType.New({
+        ["名字"] = "地刺碎片",
+        ["图标"] = "sandboxId://textures/fuka/地刺.png",
+        ["品级"] = "稀有",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["坚果碎片"] = ItemType.New({
+        ["名字"] = "坚果碎片",
+        ["描述"] = "    ",
+        ["图标"] = "sandboxId://textures/fuka/坚果.png",
+        ["品级"] = "稀有",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["樱桃炸弹碎片"] = ItemType.New({
+        ["名字"] = "樱桃炸弹碎片",
+        ["图标"] = "sandboxId://textures/fuka/樱桃炸弹.png",
+        ["品级"] = "稀有",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["豌豆射手碎片"] = ItemType.New({
+        ["名字"] = "豌豆射手碎片",
+        ["图标"] = "sandboxId://textures/fuka/豌豆射手.png",
+        ["品级"] = "稀有",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["地刺"] = ItemType.New({
+        ["名字"] = "地刺",
+        ["图标"] = "sandboxId://textures/plants/Tex_地刺_BaseColor.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-地刺","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["坚果"] = ItemType.New({
+        ["名字"] = "坚果",
+        ["图标"] = "sandboxId://textures/plants/Tex_NutWall_BaseColor.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-坚果","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["樱桃炸弹"] = ItemType.New({
+        ["名字"] = "樱桃炸弹",
+        ["图标"] = "sandboxId://textures/plants/Tex_CherryBomb_BaseColor.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-樱桃炸弹","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["豌豆射手"] = ItemType.New({
+        ["名字"] = "豌豆射手",
+        ["图标"] = "sandboxId://textures/plants/Tex_豌豆射手_BaseColor.png",
+        ["品级"] = "史诗",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-豌豆射手","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["仙人掌"] = ItemType.New({
+        ["名字"] = "仙人掌",
+        ["图标"] = "sandboxId://textures/plants/Tex_仙人掌_BaseColor.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-仙人掌","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["椰子炮"] = ItemType.New({
+        ["名字"] = "椰子炮",
+        ["图标"] = "sandboxId://textures/plants/椰子加农炮.png",
+        ["品级"] = "稀有",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-椰子炮","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["火爆辣椒"] = ItemType.New({
+        ["名字"] = "火爆辣椒",
+        ["图标"] = "sandboxId://textures/plants/Tex_火爆辣椒_BaseColor.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-火爆辣椒","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["菜问"] = ItemType.New({
+        ["名字"] = "菜问",
+        ["图标"] = "sandboxId://textures/plants/菜问.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-菜问","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["辣椒投手"] = ItemType.New({
+        ["名字"] = "辣椒投手",
+        ["图标"] = "sandboxId://textures/plants/Tex_火爆辣椒_BaseColor.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-辣椒投手","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["钢铁地刺"] = ItemType.New({
+        ["名字"] = "钢铁地刺",
+        ["图标"] = "sandboxId://textures/plants/地刺王.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-钢铁地刺","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["星星果"] = ItemType.New({
+        ["名字"] = "星星果",
+        ["图标"] = "sandboxId://textures/plants/Tex_杨桃_BaseColor.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-星星果","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["窝瓜"] = ItemType.New({
+        ["名字"] = "窝瓜",
+        ["图标"] = "sandboxId://textures/plants/Tex_迷惑菇_BaseColor.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-魅惑菇","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["魅惑菇"] = ItemType.New({
+        ["名字"] = "魅惑菇",
+        ["图标"] = "sandboxId://textures/plants/Tex_迷惑菇_BaseColor.png",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["获得时执行指令"] = {
+            [[skill {"技能名":"副-魅惑菇","操作":"装备"} ]]
+        },
+        ["取消获得物品"] = false
+    }),
+    ["模板"] = ItemType.New({
+        ["名字"] = "模板",
+        ["描述"] = "aaaaaaaaaaaaaaaaaaa",
+        ["额外战力"] = 800,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["属性"] = {
+            ["攻击"] = 50
+        },
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["物品"] = ItemType.New({
+        ["名字"] = "物品",
+        ["描述"] = "aaaaaaaaaaaaaaaaaaa",
+        ["品级"] = "传说",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0.1,
+        ["强化素材"] = {
+            ["物品"] = 20
+        },
+        ["强化材料增加倍率"] = 30,
+        ["最大强化等级"] = 10,
+        ["属性"] = {
+            ["攻击"] = 50
+        },
+        ["标签"] = {
+            "火焰"
+        },
+        ["图鉴完成奖励"] = "物品",
+        ["图鉴完成奖励数量"] = 30,
+        ["图鉴高级完成奖励数量"] = 80,
+        ["装备格子"] = 1,
+        ["可进阶为"] = "物品",
+        ["进阶材料"] = {
+            ["物品"] = 30
+        },
+        ["可售出为"] = "物品",
+        ["售出价格"] = 50,
+        ["在背包里显示"] = true,
+        ["是货币"] = true,
+        ["货币序号"] = 1,
+        ["获得词条"] = {
+            nil
+        },
+        ["取消获得物品"] = false
+    }),
+    ["副卡抽奖券"] = ItemType.New({
+        ["名字"] = "副卡抽奖券",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
+    }),
+    ["水晶"] = ItemType.New({
+        ["名字"] = "水晶",
+        ["图标"] = "sandboxId://textures/ui/主界面UI/货币单图/钻石.png",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = true,
+        ["货币序号"] = 4,
+        ["获得音效"] = "sandboxId://soundeffect/prize奖杯.ogg",
+        ["取消获得物品"] = false
+    }),
+    ["能量豆"] = ItemType.New({
+        ["名字"] = "能量豆",
+        ["图标"] = "sandboxId://textures/ui/主界面UI/货币单图/能量豆.png",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = true,
+        ["货币序号"] = 3,
+        ["获得音效"] = "sandboxId://soundeffect/chime_宝石金币掉落.ogg",
+        ["取消获得物品"] = false
+    }),
+    ["金币"] = ItemType.New({
+        ["名字"] = "金币",
+        ["图标"] = "sandboxId://textures/ui/主界面UI/货币单图/金币.png",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = true,
+        ["货币序号"] = 2,
+        ["获得音效"] = "sandboxId://soundeffect/moneyfalls.ogg",
+        ["取消获得物品"] = false
+    }),
+    ["阳光"] = ItemType.New({
+        ["名字"] = "阳光",
+        ["图标"] = "sandboxId://textures/ui/主界面UI/货币单图/太阳.png",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = true,
+        ["货币序号"] = 1,
+        ["取消获得物品"] = false
+    }),
+    ["限定抽奖券"] = ItemType.New({
+        ["名字"] = "限定抽奖券",
+        ["额外战力"] = 0,
+        ["强化倍率"] = 0,
+        ["强化材料增加倍率"] = 0,
+        ["最大强化等级"] = 0,
+        ["图鉴完成奖励数量"] = 0,
+        ["图鉴高级完成奖励数量"] = 0,
+        ["装备格子"] = 0,
+        ["售出价格"] = 0,
+        ["在背包里显示"] = true,
+        ["是货币"] = false,
+        ["取消获得物品"] = false
     })
-    return item
+}loaded = true
+    gg.log("LoadConfig", ItemTypeConfig.config)
+    loaded = true
 end
 
-return ItemType
+---@param itemType string
+---@return ItemType
+function ItemTypeConfig.Get(itemType)
+    if not loaded then
+        LoadConfig()
+    end
+    if not itemType then
+        return nil
+    end
+    return ItemTypeConfig.config[itemType]
+end
+
+---@return ItemType[]
+function ItemTypeConfig.GetAll()
+    if not loaded then
+        LoadConfig()
+    end
+    return ItemTypeConfig.config
+end
+
+return ItemTypeConfig

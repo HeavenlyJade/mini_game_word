@@ -15,27 +15,35 @@ local EquipmentSlot = {
     }
 }
 
+local ItemTypeEnum = {
+    ["武器"] = 1,
+    ["装备"] = 2,
+    ["消耗品"] = 3,
+    ["材料"] = 4,
+    ["货币"] = 5
+}
 
---所有配置( 其他所有的配置文件将汇总到这里， 游戏逻辑代码只需要require这个文件即可 )
----@class common_config
-local common_config = {
-    EquipmentSlot = EquipmentSlot,
+-- 反向映射：数字到名称
+local ItemTypeNames = {
+    [1] = "武器",
+    [2] = "装备", 
+    [3] = "消耗品",
+    [4] = "材料",
+    [5] = "货币"
 }
 
 
----------- utils 帮助函数 ----------------
---浅拷贝 不拷贝meta ( 与gg.clone 一致， 避免再次require文件 )
-function common_config.clone(ori_tab)
-    local new_tab = {}
-    for i, v in pairs(ori_tab) do
-        if  type(v) == "table" then
-            new_tab[i] = common_config.clone(v)
-        else
-            new_tab[i] = v
-        end
-    end
-    return new_tab
-end
+--所有配置( 其他所有的配置文件将汇总到这里， 游戏逻辑代码只需要require这个文件即可 )
+---@class common_config
+---@field EquipmentSlot table<string, table<number, string>> 装备槽位配置
+---@field ItemTypeEnum table<string, number> 物品类型枚举 (名称 -> 编号)
+---@field ItemTypeNames table<number, string> 物品类型名称 (编号 -> 名称)
+local common_config = {
+    EquipmentSlot = EquipmentSlot,
+    ItemTypeEnum = ItemTypeEnum,
+    ItemTypeNames = ItemTypeNames,
+}
+
 
 
 return common_config
