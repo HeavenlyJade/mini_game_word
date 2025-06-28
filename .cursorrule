@@ -1,0 +1,264 @@
+# PVZWord 项目规则
+
+本文档概述了 PVZWord 游戏项目的架构、约定和重要文件。
+
+## 项目概览
+
+- **项目类型**: 游戏
+- **语言**: Lua (使用 LuaJIT-2.1.ROLLING 版本)
+- **环境**: 项目遵循类似 Roblox 的结构，包含 `ServerScriptService` 和 `ServerStorage` 等目录。这是一个客户端-服务器架构。
+
+## 架构
+
+主要的游戏逻辑位于 `scriptFiles/game/` 目录中。
+
+- **`ServerScriptService/server_enter.lua`**: 这是服务器端逻辑的主要入口点。
+
+- **`MainStorage/Code/`**: 此目录包含核心源代码，组织如下：
+    - **`Client/`**: 包含所有客户端脚本。
+    - **`MServer/`**: 服务器端逻辑的所在地，包括实体定义（`MMonster`, `MPlayer`）、事件系统和调度器。
+    - **`Common/`**: 包含客户端和服务器之间共享的代码。这里是共享配置（`MConfig`）、常量（`Mconst`）和实用工具（`MGlobal`）的地方。
+
+- **`ServerStorage/`**: 此目录存放各种服务器端模块和数据管理器。
+    - **`MSystems/`**: 包含模块化的游戏系统。每个子目录代表一个独立的系统，例如 `Bag`（背包）或 `Mail`（邮件）。这种模块化设计是一个关键的架构特点。
+    - **管理器 (`*Mgr.lua`)**: 像 `MServerDataManager.lua` 和 `MCloudDataMgr.lua` 这样的文件处理数据持久化和管理。
+
+### 目录访问权限与用途
+
+- **`MainStorage`**: 存放 `ModuleScript` 脚本代码，这里的目录下存放的是**客户端和服务端都能访问的代码**。主要包含：
+    - 共享的游戏配置
+    - 通用工具函数
+    - 客户端和服务器都需要使用的类定义
+    - 跨端共享的常量和枚举
+
+- **`ServerStorage`**: 存放**只能服务端访问的代码和数据**，包括：
+    - 玩家的各种数据（背包、邮件、物品等）
+    - 服务端运行时的初始化数据
+    - 敏感的游戏逻辑和数据管理
+    - 数据库相关的操作
+    - 服务器独有的系统模块
+
+## 编码约定
+
+- **类系统**: 项目使用在 `scriptFiles/game/MainStorage/Code/Untils/ClassMgr.lua` 中定义的自定义类系统。
+    - 定义一个类: `local MyClass = ClassMgr.Class("MyClass", SuperClass)`
+    - 创建一个实例: `local myInstance = MyClass.New(...)`
+    - 构造函数方法是 `OnInit`。
+    - 使用 `instance:Is("ClassName")` 检查一个对象是否是某个类的实例。
+
+- **命名约定**:
+    - 包含类或主要系统的模块通常以 `M` 为前缀（例如 `MConfig`, `MMonster`）。
+    - 管理器模块通常以后缀 `Mgr` 结尾（例如 `BagMgr`, `ClassMgr`）。
+
+## 相关文档体系
+
+本项目使用分层的文档体系来组织API和类型信息：
+
+### 📚 API服务索引 (`.cursorrule-api`)
+包含所有可用的游戏服务和类的完整索引，按功能分类：
+- **服务类 (Services)**: WorldService、Players、UserInputService、CloudService等
+- **脚本类 (Scripts)**: LocalScript、ModuleScript、RemoteEvent等  
+- **界面类 (UI)**: UIButton、UITextLabel、UIScrollView等
+- **建造类 (Building)**: BlockService、Material、Environment等
+- **角色和AI**: Model、Actor、AIBase等
+- **输入系统**: UserInputService、ContextActionService等
+- **声音系统**: SoundService、Sound、SoundGroup等
+- **特效系统**: PostEffectService、Particle、EffectObject等
+- **动画系统**: Animator、Animation、Timeline等
+- **物理和关节**: PhysXService、Joint、Weld等
+- **玩法核心**: Camera、Player、Tool、Area等
+- **云数据**: CloudKVStore、Asset、AssetContent等
+
+### 🏗️ 基础类详解 (`.cursorrule-base`)
+详细描述核心基础类的完整API：
+- **SandboxNode**: 所有节点的基类，提供节点管理、事件系统、同步机制
+- **Transform**: 3D变换节点，处理位置、旋转、缩放等空间变换
+- **ScriptNode**: 脚本执行节点，支持文件和代码字符串两种方式
+- **Joint**: 物理连接节点，用于创建物理约束和连接
+
+### 📊 数据类型索引 (`.cursorrule-enums`)
+包含所有枚举和数据类型的完整列表：
+- **基础数据类型**: Bool、Number、String、Vector3、Quaternion等
+- **输入枚举**: KeyCode、UserInputType、MouseBehavior等
+- **动画枚举**: AnimationPlayMode、TweenStatus、EasingStyle等
+- **渲染枚举**: GraphicsQuality、BlendModeType、LightType等
+- **物理枚举**: PhysicsType、MotorType、CollisionType等
+- **UI枚举**: TextAlignment、AutoSizeType、LayoutType等
+
+## 服务使用
+
+项目中使用多种游戏服务，详细的服务接口文档请参考 `.cursorrule-api` 文件。
+
+常用的服务获取方式：
+```lua
+-- 统一管理服务引用
+local MS = {} -- MS 代表 "Mini Services"
+MS.RunService = game:GetService("RunService")
+MS.Players = game:GetService("Players")
+MS.WorldService = game:GetService("WorldService")
+MS.UserInputService = game:GetService("UserInputService")
+-- 更多服务请查看 .cursorrule-api 文档
+```
+
+### 服务使用示例
+```lua
+-- 参考 .cursorrule-api 中的 Players 服务
+local players = game:GetService("Players")
+local localPlayer = players.LocalPlayer
+
+-- 参考 .cursorrule-enums 中的 KeyCode 枚举
+local userInputService = game:GetService("UserInputService")
+userInputService.InputBegan:Connect(function(input)
+    if input.KeyCode == Enum.KeyCode.Space then
+        print("空格键被按下")
+    end
+end)
+```
+
+## 重要文件
+
+### 核心脚本文件
+- **`scriptFiles/game/ServerScriptService/server_enter.lua`**: 服务器主入口点。所有服务器端逻辑都从这里开始。
+- **`scriptFiles/game/ServerStorage/MServerMain.lua`**: 可能包含入口之后的主服务器循环和初始化逻辑。
+- **`scriptFiles/game/MainStorage/Code/Common/GameConfig/MConfig.lua`**: 游戏配置值的主要文件。
+- **`scriptFiles/game/MainStorage/Code/Untils/ClassMgr.lua`**: 定义了项目的面向对象编程基础。
+- **`scriptFiles/game/MainStorage/Code/Untils/MGlobal.lua`**: 包含全局可访问的实用函数。
+
+### 文档规则文件
+- **`.cursorrule`** (本文件): 项目核心规则、架构概览和编码约定
+- **`.cursorrule-api`**: 完整的API服务和类索引，按功能分类组织
+- **`.cursorrule-base`**: 基础类(SandboxNode、Transform、Joint等)的详细文档
+- **`.cursorrule-enums`**: 所有枚举类型和数据类型的完整列表
+
+### 文档使用指南
+在开发过程中，建议按以下顺序查阅文档：
+1. 先查看本文件了解项目整体架构
+2. 在 `.cursorrule-api` 中找到需要的服务和类
+3. 在 `.cursorrule-base` 中了解基础类的使用方法
+4. 在 `.cursorrule-enums` 中确认数据类型和枚举值
+
+## 本地脚本 (LocalScript)
+
+### 官方定义
+
+`LocalScript` 用于在连接到迷你世界 Studio 服务器的客户端上运行 Lua 代码。它们用于访问仅限客户端的对象，如玩家的 `Camera`。对于通过 `LocalScript` 运行的代码，`Players` 服务的 `LocalPlayer` 属性将返回客户端正在运行脚本的玩家。
+
+仅当 Lua 代码是以下某个对象的后代时，`LocalScript` 才会运行该代码：
+
+- 玩家的 `Backpack`（背包），如 `Tool`（工具）的子项
+- 玩家的 `character`（角色）模型
+- 玩家的 `Actor`（演员），联机情况下只有 `LocalPlayer` 对应的 `Actor` 对象的 `LocalScript` 才会运行
+- 玩家的 `PlayerGui`
+- 玩家的 `PlayerScripts`
+- `LocalFirst` 服务
+
+### 使用场景
+
+当需要对本地（即客户端）对象进行操作时，通常会用到 `LocalScript`。常见的应用场景包括：
+
+1.  改变摄像机的相关属性。
+2.  获取本地玩家对象: `game:GetService("Players").LocalPlayer`。
+3.  处理用户输入。
+4.  修改图形用户界面（GUI）。
+
+**注意**: 在 `LocalScript` 中所做的修改（例如，修改某个物体的颜色或大小）仅在该客户端上生效，其他玩家看到该物体仍是修改前的样子。如果希望对玩家角色的修改（如移动速度、跳跃力）同步到服务器，使所有玩家都能看到效果，则应在服务器脚本中处理。
+
+### 代码示例
+
+**1. 打印当前相机的位置**
+```lua
+print(game:GetService("WorkSpace").CurrentCamera.Position)
+```
+
+**2. 改变当前玩家的移动速度**
+```lua
+local player = game:GetService("Players").LocalPlayer
+local character = player.Character
+character.Movespeed = 30
+```
+
+**3. 获取用户输入（按下J键时打印"Hello"）**
+```lua
+-- 参考 .cursorrule-api 中的 ContextActionService 服务
+local contextActionService = game:GetService("ContextActionService")
+function PrintHello()
+  print("Hello")
+end
+-- 参考 .cursorrule-enums 中的 KeyCode 枚举
+contextActionService:BindAction("printHello", PrintHello, false, Enum.KeyCode.J)
+```
+
+## 服务器脚本 (ServerScript)
+
+### 官方定义
+
+`Script`（脚本）是一种 Lua 代码容器，其内容在服务器上运行。默认情况下，脚本包含 `print("Hello, world")`。如果 `Disabled` 属性为 `false`，并且 `Script` 对象是 `Workspace` 或 `ServerScriptService` 的后代，那么脚本中的 Lua 代码将在一个新线程中运行。
+
+脚本会持续运行，直到不再满足上述条件，或者被销毁、产生错误。脚本可以访问所有服务器端对象、属性和事件。
+
+### 核心区别与用途
+
+`Script` 和 `LocalScript` 在代码逻辑上可能相似，但执行环境完全不同。
+
+-   **全局影响**: 通过 `Script` 对游戏世界（如修改物体的颜色或大小）所做的任何修改，都会同步到服务器上所有连接的客户端（即所有玩家都能看到变化）。
+-   **服务器独有功能**: 只有 `Script` 才能执行一些敏感或全局性的操作，例如：
+    -   调用数据库相关的 API。
+    -   发送 HTTP 请求。
+    -   管理所有玩家的数据和状态。
+
+### 代码示例
+
+**1. 获取服务器上所有玩家，并修改他们的移动速度**
+```lua
+-- 参考 .cursorrule-api 中的 Players 服务
+local players = game:GetService("Players")
+local allPlayers = players:GetPlayers()
+for _, player in ipairs(allPlayers) do
+    local character = player.Character
+    if character then
+        character.Movespeed = 100
+        print("玩家名称为: " .. player.Name .. " 的移动速度修改为100")
+    end
+end
+```
+
+## 模块脚本 (ModuleScript)
+
+### 核心用途
+
+`ModuleScript` 是一种可被其他脚本（`Script` 或 `LocalScript`）引用的特殊脚本，主要用于**代码复用**和**集中管理配置**。它本身不会自动运行，而是等待其他脚本通过 `require()` 函数来加载并执行其代码，然后返回一个值（通常是一个表或函数）。
+
+这解决了重复编写相同逻辑的问题，并使得代码更易于维护。
+
+### 使用场景示例
+
+**1. 共享功能（如UI管理器）**
+
+-   **场景**: 游戏中有多个脚本（脚本A、脚本B）需要根据不同逻辑（游戏进程、玩家行为）去更新同一个公告牌UI。
+-   **解决方案**: 创建一个名为 `DisplayManager` 的 `ModuleScript`，它内部包含一个专门更新公告牌UI的函数。脚本A和脚本B只需 `require` 这个模块，并调用其提供的函数即可，无需各自编写UI更新代码。
+
+**2. 集中配置（如游戏设置）**
+
+-   **场景**: 多个脚本需要使用一些共享的配置参数（如玩家初始生命值、某个功能的开关等）。
+-   **解决方案**: 创建一个名为 `GameSetting` 的 `ModuleScript`，它返回一个包含所有配置项的表。任何需要这些配置的脚本都可以 `require` 这个模块来获取参数。这样，当需要修改配置时，只需修改这一个文件，所有引用它的脚本都会自动获得更新，便于统一管理。
+
+### 代码结构示例
+
+**GameSetting (ModuleScript)**
+```lua
+local GameSettings = {}
+
+GameSettings.PlayerHealth = 100
+GameSettings.EnableSpecialFeature = true
+
+return GameSettings
+```
+
+**其他脚本引用**
+```lua
+-- require() 函数的参数需要是 ModuleScript 的实际路径
+-- 参考 .cursorrule-base 中的 ScriptNode 了解模块脚本的详细用法
+local settings = require(game.ServerStorage.GameSetting)
+
+print("玩家的初始生命值是: " .. settings.PlayerHealth)
+``` 

@@ -2,3 +2,7 @@
 AssetsCache/
 UploadCache/
 editorAutoSave/
+# .cursorrule
+# .cursorrule-api
+# .cursorrule-base
+# .cursorrule-enums
