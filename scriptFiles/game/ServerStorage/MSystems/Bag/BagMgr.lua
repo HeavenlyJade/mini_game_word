@@ -5,9 +5,11 @@ local type     = type
 local require = require
 
 local MainStorage = game:GetService("MainStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local gg              = require(MainStorage.code.common.MGlobal)   ---@type gg
 local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
 local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local BagCloudDataMgr = require(ServerStorage.MSystems.Bag.clouddata.BagCloudDataMgr) ---@type BagCloudDataMgr
 
 -- 所有玩家的背包装备管理，服务器侧
 ---@class BagMgr
@@ -85,6 +87,37 @@ end
 ---@param bag Bag 背包数据
 function BagMgr.setPlayerBagData( uin_, bag )
     BagMgr.server_player_bag_data[ uin_ ] = bag
+end
+
+---从云端读取玩家背包数据
+---@param player MPlayer 玩家对象
+---@return number, Bag 返回值: 0表示成功, 1表示失败, 背包数据
+function BagMgr.LoadPlayerBagFromCloud(player)
+    local ret, bag = BagCloudDataMgr.ReadPlayerBag(player)
+    if ret == 0 then
+        BagMgr.setPlayerBagData(player.uin, bag)
+    end
+    return ret, bag
+end
+
+---保存玩家背包数据到云端
+---@param player MPlayer 玩家对象
+---@param force_ boolean 是否强制保存
+function BagMgr.SavePlayerBagToCloud(player, force_)
+    BagCloudDataMgr.SavePlayerBag(player, force_)
+end
+
+---批量保存所有玩家背包数据
+---@param players table 玩家列表
+function BagMgr.BatchSaveAllPlayerBags(players)
+    BagCloudDataMgr.BatchSavePlayerBags(players)
+end
+
+---清空玩家背包数据（慎用）
+---@param uin number 玩家UIN
+function BagMgr.ClearPlayerBag(uin)
+    BagCloudDataMgr.ClearPlayerBag(uin)
+    BagMgr.server_player_bag_data[uin] = nil
 end
 
 return BagMgr

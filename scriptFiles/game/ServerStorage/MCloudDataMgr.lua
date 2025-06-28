@@ -23,7 +23,6 @@ local  CONST_CLOUD_SAVE_TIME = 30    --每60秒存盘一次
 ---@class MCloudDataMgr
 local MCloudDataMgr = {
     last_time_player = 0,     --最后一次玩家存盘时间
-    last_time_bag    = 0,     --最后一次背包存盘时间
 }
 
 function SaveAll()
@@ -95,83 +94,7 @@ function MCloudDataMgr.SavePlayerData( uin_,  force_ )
 end
 
 
--- 读取玩家的背包数据
--- 新格式: ret2_ { items={ material=[{itemType="material", name="铁矿", amount=10, ...}], weapon=[{...}] } }
----@return number, Bag 返回值: 0表示成功, 1表示失败, 背包数据
-function MCloudDataMgr.ReadPlayerBag( player )
-    local Bag = require(ServerStorage.MSystems.Bag.Bag) ---@type Bag
-    local ret_, ret2_ = cloudService:GetTableOrEmpty( 'inv' .. player.uin )
-    print("读取玩家背包数据", 'inv' .. player.uin, ret_, ret2_)
-    
-    if ret_ then
-        gg.log("读取玩家背包数据", ret2_)
-        local bag = Bag.New(player)
-        
-        if ret2_ then
-            -- 检查数据格式并进行兼容性处理
-            local bagData = MCloudDataMgr.ConvertBagDataFormat(ret2_)
-            bag:Load(bagData)
-            return 0, bag
-        end
-        
-        return 0, bag
-    else
-        return 1, Bag.New(player)       --数据失败，踢玩家下线，不然数据洗白了
-    end
-end
 
--- 转换背包数据格式，兼容旧格式
----@param data table 原始背包数据
----@return table 转换后的背包数据
-function MCloudDataMgr.ConvertBagDataFormat(data)
-    if not data or not data.items then
-        return { items = {} }
-    end
-    
-    -- 检查是否已经是新格式 (ItemCategory -> ItemData[])
-    local isNewFormat = false
-    for category, itemList in pairs(data.items) do
-        if type(itemList) == "table" and itemList[1] and itemList[1].name then
-            isNewFormat = true
-            break
-        end
-    end
-    
-    if isNewFormat then
-        -- 已经是新格式，直接返回
-        gg.log("背包数据已经是新格式")
-        return data
-    end
-    
-    -- 转换旧格式到新格式
-    gg.log("转换背包数据格式从旧格式到新格式")
-    local newData = { items = {} }
-    
-    for category, slots in pairs(data.items) do
-        if type(slots) == "table" then
-            newData.items[category] = {}
-            for slot, itemData in pairs(slots) do
-                if itemData and type(itemData) == "table" then
-                    -- 确保物品数据包含必要字段
-                    local convertedItem = {
-                        itemType = itemData.itype or category,
-                        name = itemData.name or itemData.itype or "未知物品",
-                        amount = itemData.amount or 1,
-                        enhanceLevel = itemData.el or 0,
-                        uuid = itemData.uuid or "",
-                        quality = itemData.quality,
-                        level = itemData.level or 1,
-                        pos = itemData.pos or 0,
-                        itype = itemData.itype or category
-                    }
-                    table.insert(newData.items[category], convertedItem)
-                end
-            end
-        end
-    end
-    
-    return newData
-end
 
 
 -- 读取玩家的任务配置

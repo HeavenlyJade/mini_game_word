@@ -13,7 +13,7 @@ local serverDataMgr     = require(game:GetService("ServerStorage").server.MServe
 local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
 local Player       = require(MainStorage.code.server.entity_types.Player)          ---@type Player
 local Scene      = require(MainStorage.code.server.Scene)         ---@type Scene
-local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@type BagMgr
+local bagMgr        = require(game:GetService("ServerStorage").MSystems.Bag.BagMgr)          ---@type BagMgr
 local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
 local cloudMailData = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor
 local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
@@ -109,10 +109,9 @@ function MServerInitPlayer.player_enter_game(player)
 
     --加载数据 2 玩家历史装备数据
     ---@type number, Bag
-    local ret2_, bag_ins = cloudDataMgr.ReadPlayerBag(player_)
+    local ret2_, bag_ins = bagMgr.LoadPlayerBagFromCloud(player_)
     if ret2_ == 0 then
         gg.log('cloud_player_bag ok:', uin_)
-        bagMgr.setPlayerBagData(uin_, bag_ins)
     else
         gg.log('cloud_player_bag fail:', uin_)
         return     --加载背包数据失败
