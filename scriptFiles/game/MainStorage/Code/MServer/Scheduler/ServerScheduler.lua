@@ -1,4 +1,5 @@
-print("Hello world!")local MainStorage = game:GetService("MainStorage")
+print("Hello world!")
+local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
 
@@ -24,10 +25,10 @@ local ServerScheduler = {
     currentSlot = 1,   -- Current position in the wheel
     
     -- Timing statistics
-    lastTime = os.time(),
+    lastTime = tick(),  -- 使用tick()而不是os.time()
     updateCount = 0,
     updatesPerSecond = 0,
-    tick = 0
+    isRunning = false
 }
 
 -- Initialize the time wheel
@@ -50,7 +51,7 @@ function ServerScheduler.add(func, delay, repeatInterval, key)
     local taskId = ServerScheduler.nextTaskId
     ServerScheduler.nextTaskId = ServerScheduler.nextTaskId + 1
     
-    delay = delay * 30
+    -- 移除乘以30的错误逻辑，直接使用秒为单位
     if not repeatInterval then
         repeatInterval = 0
     end
@@ -63,7 +64,7 @@ function ServerScheduler.add(func, delay, repeatInterval, key)
     local task = {
         func = func,
         delay = delay,
-        repeatInterval = repeatInterval * 30,
+        repeatInterval = repeatInterval,  -- 移除乘以30
         remaining = delay,
         taskId = taskId,
         rounds = rounds,
@@ -90,8 +91,9 @@ function ServerScheduler.cancel(taskId)
             ServerScheduler.tasksByKey[task.key] = nil
         end
         ServerScheduler.tasks[taskId] = nil
+        -- 标记任务为已取消，在update时清理
+        task.cancelled = true
     end
-    -- The task will be removed from the wheel when its slot is processed
 end
 
 ---Update all scheduled tasks
@@ -101,7 +103,7 @@ function ServerScheduler.update()
     local tasksToReschedule = {}  -- 新增：收集需要重新调度的任务
     
     for _, task in ipairs(tasks) do
-        if ServerScheduler.tasks[task.taskId] then  -- Check if task wasn't cancelled
+        if ServerScheduler.tasks[task.taskId] and not task.cancelled then  -- Check if task wasn't cancelled
             if task.rounds <= 0 then
                 -- Execute the task
                 local success, err = pcall(task.func)
@@ -120,6 +122,9 @@ function ServerScheduler.update()
                 else
                     -- Remove one-time tasks
                     ServerScheduler.tasks[task.taskId] = nil
+                    if task.key then
+                        ServerScheduler.tasksByKey[task.key] = nil
+                    end
                 end
             else
                 -- Task needs more rounds, decrement and keep
@@ -127,6 +132,7 @@ function ServerScheduler.update()
                 table.insert(remainingTasks, task)
             end
         end
+        -- 已取消的任务会被自动丢弃，不会加入remainingTasks
     end
     
     -- 更新当前槽位的任务
@@ -139,5 +145,43 @@ function ServerScheduler.update()
     
     ServerScheduler.currentSlot = ServerScheduler.currentSlot % ServerScheduler.wheelSlots + 1
 end
+
+-- 启动调度器
+function ServerScheduler.start()
+    if ServerScheduler.isRunning then
+        return
+    end
+    
+    ServerScheduler.isRunning = true
+    
+    -- 使用game的Heartbeat事件来驱动调度器
+    local RunService = game:GetService("RunService")
+    local connection
+    
+    connection = RunService.Heartbeat:Connect(function(deltaTime)
+        local currentTime = tick()
+        -- 每秒更新一次调度器
+        if currentTime - ServerScheduler.lastTime >= 1 then
+            ServerScheduler.update()
+            ServerScheduler.lastTime = currentTime
+            ServerScheduler.updateCount = ServerScheduler.updateCount + 1
+        end
+    end)
+    
+    -- 将连接存储起来，以便可能需要停止时使用
+    ServerScheduler.heartbeatConnection = connection
+end
+
+-- 停止调度器
+function ServerScheduler.stop()
+    if ServerScheduler.heartbeatConnection then
+        ServerScheduler.heartbeatConnection:Disconnect()
+        ServerScheduler.heartbeatConnection = nil
+    end
+    ServerScheduler.isRunning = false
+end
+
+-- 自动启动调度器
+ServerScheduler.start()
 
 return ServerScheduler

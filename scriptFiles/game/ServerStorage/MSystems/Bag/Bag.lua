@@ -3,30 +3,46 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local common_const = require(MainStorage.code.common.MConst) ---@type common_const
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ItemUtils = require(MainStorage.code.server.bag.ItemUtils) ---@type ItemUtils
+local ItemType = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemType
 local game = game
 local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 
----@class Bag : Class
----@field player MPlayer 玩家实例
----@field uin number 玩家ID
----@field bag_index table<string, BagPosition[]> 物品名称索引 (物品名称 -> 位置数组)
----@field bag_items BagItems 背包物品 (分类 -> 物品数据数组)
----@field New fun( player: MPlayer):Bag
-local Bag = ClassMgr.Class("Bag")
-Bag.MoneyType = {} ---@type table<number, ItemType>
+local Bag = ClassMgr.Class("Bag") ---@type Bag
 
 ---@param player MPlayer 玩家实例
 function Bag:OnInit(player)
-    self.player = player ---@type MPlayer
+    self.player = player
     self.uin = player.uin
-    self.bag_index = {} ---@type table<string, BagPosition[]>
-    self.bag_items = {} ---@type BagItems
+    self.bag_index = {}
+    self.bag_items = {}
 
     self.loaded = false
     self.dirtySyncSlots = {}
     self.dirtySave = false
     self.dirtySyncAll = false
+    
+    -- 初始化所有货币类型为0（如果背包中没有的话）
+    self:InitializeCurrencies()
+end
+
+---初始化货币类型
+function Bag:InitializeCurrencies()
+    local allMoneyTypes = ItemType.GetAllMoneyTypes()
+    for index, moneyType in pairs(allMoneyTypes) do
+        -- 检查背包中是否已有该货币
+        if self:GetItemAmount(moneyType.name) == 0 then
+            -- 如果没有，添加初始货币（数量为0）
+            local currencyData = {
+                name = moneyType.name,
+                itemType = "currency",
+                amount = 0,
+                uuid = gg.create_uuid('currency'),
+                enhanceLevel = 0
+            }
+            self:AddItem(currencyData)
+        end
+    end
 end
 
 ---@param data table 背包数据
@@ -249,7 +265,8 @@ function Bag:SyncToClient()
     end
 
     local moneys = {}
-    for idx, itemType in ipairs(Bag.MoneyType) do
+    local allMoneyTypes = ItemType.GetAllMoneyTypes()
+    for idx, itemType in pairs(allMoneyTypes) do
         moneys[idx] = {
             it = itemType.name,
             a = self:GetItemAmount(itemType.name)

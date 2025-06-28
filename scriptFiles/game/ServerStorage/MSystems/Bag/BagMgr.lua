@@ -8,10 +8,23 @@ local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg              = require(MainStorage.code.common.MGlobal)   ---@type gg
 local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
-local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
-local BagCloudDataMgr = require(ServerStorage.MSystems.Bag.clouddata.BagCloudDataMgr) ---@type BagCloudDataMgr
+-- local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local BagCloudDataMgr = require(ServerStorage.MSystems.Bag.BagCloudDataMgr) ---@type BagCloudDataMgr
 
 -- 所有玩家的背包装备管理，服务器侧
+
+---@class Bag : Class
+---@field player MPlayer 玩家实例
+---@field uin number 玩家ID
+---@field bag_index table<string, BagPosition[]> 物品名称索引 (物品名称 -> 位置数组)
+---@field bag_items BagItems 背包物品 (分类 -> 物品数据数组)
+---@field loaded boolean 是否已加载
+---@field dirtySyncSlots table 需要同步的槽位列表
+---@field dirtySave boolean 是否需要保存
+---@field dirtySyncAll boolean 是否需要全量同步
+---@field New fun( player: MPlayer):Bag
+local Bag = ClassMgr.Class("Bag") ---@type Bag
+
 ---@class BagMgr
 local BagMgr = {
     server_player_bag_data = {}, ---@type table<number, Bag>
@@ -25,16 +38,23 @@ function SyncAll()
     BagMgr.need_sync_bag = {}
 end
 
--- 使用ServerScheduler替代Timer
-ServerScheduler.add(SyncAll, 0, 0.2) -- 立即开始，每秒执行一次
+-- 使用Timer替代ServerScheduler
+local timer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+timer.Name = 'BAG_SYNC_ALL'
+timer.Delay = 0.1
+timer.Loop = true      -- 是否循环
+timer.Interval = 2     -- 循环间隔多少秒 (0.2秒 = 2帧, 1秒=10帧)
+timer.Callback = SyncAll
+timer:Start()
 
----刷新玩家的背包数据（服务器 to 客户端）
----@param uin_ number 玩家ID
----@param param table 参数
-function BagMgr.s2c_PlayerBagItems( uin_, param )
-    local player_data_ = BagMgr.GetPlayerBag( uin_ )
-    BagMgr.returnBagInfoByVer( uin_, player_data_ )
-end
+-- ---刷新玩家的背包数据（服务器 to 客户端）
+-- ---@param uin_ number 玩家ID
+-- ---@param param table 参数
+-- function BagMgr.s2c_PlayerBagItems( uin_, param )
+--     local player_data_ = BagMgr.GetPlayerBag( uin_ )
+--     BagMgr.returnBagInfoByVer( uin_, player_data_ )
+-- end
 
 ---使用物品
 ---@param uin_ number 玩家ID

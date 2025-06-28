@@ -58,9 +58,6 @@
 ---@field playerMail PlayerMailData @ 玩家个人邮件数据
 ---@field globalMailStatus PlayerGlobalMailContainer @ 玩家全服邮件状态数据
 
-
-
-
 ---@alias ItemCategory
 ---| "material"     # 材料类物品
 ---| "skill"        # 技能类物品  
@@ -86,9 +83,3 @@
 ---@field bagPos BagPosition 背包位置
 
 ---@alias BagItems table<ItemCategory, ItemData[]>
-
----@class Bag : Class
----@field player Player 玩家实例
----@field uin number 玩家ID
----@field bag_index table<string, BagPosition[]> 物品名称索引 (物品名称 -> 位置数组)
----@field bag_items table<ItemCategory, ItemData[]> 背包物品 (分类 -> 物品数据数组)

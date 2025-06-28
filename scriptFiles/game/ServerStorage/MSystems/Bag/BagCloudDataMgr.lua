@@ -76,23 +76,65 @@ end
 ---@param data table 原始背包数据
 ---@return table 转换后的背包数据
 function BagCloudDataMgr.ConvertBagDataFormat(data)
-    if not data or not data.items then
+    if not data or type(data) ~= "table" then
+        gg.log("背包数据为空或格式错误，返回空背包")
+        return { items = {} }
+    end
+    
+    if not data.items or type(data.items) ~= "table" then
+        gg.log("背包items字段为空或格式错误，返回空背包")
         return { items = {} }
     end
     
     -- 检查是否已经是新格式 (ItemCategory -> ItemData[])
     local isNewFormat = false
+    local hasValidData = false
+    
     for category, itemList in pairs(data.items) do
-        if type(itemList) == "table" and itemList[1] and itemList[1].name then
-            isNewFormat = true
-            break
+        if type(itemList) == "table" then
+            hasValidData = true
+            -- 检查是否为数组格式（新格式）
+            if itemList[1] and type(itemList[1]) == "table" and itemList[1].name then
+                isNewFormat = true
+                break
+            end
         end
     end
     
+    if not hasValidData then
+        gg.log("背包数据中没有有效物品数据")
+        return { items = {} }
+    end
+    
     if isNewFormat then
-        -- 已经是新格式，直接返回
-        gg.log("背包数据已经是新格式")
-        return data
+        -- 已经是新格式，验证数据完整性
+        gg.log("背包数据已经是新格式，验证数据完整性")
+        local validatedData = { items = {} }
+        
+        for category, itemList in pairs(data.items) do
+            if type(itemList) == "table" then
+                validatedData.items[category] = {}
+                for i, itemData in ipairs(itemList) do
+                    if type(itemData) == "table" and itemData.name then
+                        -- 确保所有必要字段存在
+                        local validatedItem = {
+                            itemType = itemData.itemType or itemData.itype or category,
+                            name = itemData.name,
+                            amount = tonumber(itemData.amount) or 1,
+                            enhanceLevel = tonumber(itemData.enhanceLevel) or tonumber(itemData.el) or 0,
+                            uuid = itemData.uuid or "",
+                            quality = itemData.quality,
+                            level = tonumber(itemData.level) or 1,
+                            pos = tonumber(itemData.pos) or 0,
+                            itype = itemData.itype or category
+                        }
+                        table.insert(validatedData.items[category], validatedItem)
+                    end
+                end
+            end
+        end
+        
+        return validatedData
     end
     
     -- 转换旧格式到新格式
@@ -103,17 +145,17 @@ function BagCloudDataMgr.ConvertBagDataFormat(data)
         if type(slots) == "table" then
             newData.items[category] = {}
             for slot, itemData in pairs(slots) do
-                if itemData and type(itemData) == "table" then
+                if itemData and type(itemData) == "table" and itemData.name then
                     -- 确保物品数据包含必要字段
                     local convertedItem = {
                         itemType = itemData.itype or category,
-                        name = itemData.name or itemData.itype or "未知物品",
-                        amount = itemData.amount or 1,
-                        enhanceLevel = itemData.el or 0,
+                        name = itemData.name,
+                        amount = tonumber(itemData.amount) or 1,
+                        enhanceLevel = tonumber(itemData.el) or 0,
                         uuid = itemData.uuid or "",
                         quality = itemData.quality,
-                        level = itemData.level or 1,
-                        pos = itemData.pos or 0,
+                        level = tonumber(itemData.level) or 1,
+                        pos = tonumber(itemData.pos) or tonumber(slot) or 0,
                         itype = itemData.itype or category
                     }
                     table.insert(newData.items[category], convertedItem)
@@ -122,6 +164,7 @@ function BagCloudDataMgr.ConvertBagDataFormat(data)
         end
     end
     
+    gg.log("格式转换完成，转换了", #newData.items, "个物品类别")
     return newData
 end
 
