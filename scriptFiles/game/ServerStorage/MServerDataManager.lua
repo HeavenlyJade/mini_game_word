@@ -21,26 +21,13 @@ MServerDataManager.uuid_start = math.random(100000, 999999)
 
 -- 装备槽位配置
 MServerDataManager.equipSlot = { -- 各个装备槽位对应的装备类型
-    [2] = {
-        [1] = {[1] = true},
-        [2] = {[2] = true},
-        [3] = {[3] = true},
-        [4] = {[4] = true},
-        [5] = {[5] = true},
-        [6] = {[6] = true},
-        [7] = {[7] = true},
-        [8] = {[8] = true},
-        [9] = {[9] = true},
-        [10] = {[10] = true},
-        [11] = {[11] = true},
-        [12] = {[12] = true}
-    }
+
 }
 
 -----------------------------------------------
 -- 从 Service - Players找到一个玩家
 ---@param uin_ number 玩家ID
----@return Player|nil 找到的玩家对象
+---@return MPlayer|nil 找到的玩家对象
 function MServerDataManager.getPlayerInfoByUin(uin_)
     local allPlayers = Players:GetPlayers()
     for _, player in ipairs(allPlayers) do
@@ -65,7 +52,7 @@ end
 
 -- 获得player实例
 ---@param uin_ number 玩家ID
----@return Player|nil 玩家实例
+---@return MPlayer|nil 玩家实例
 function MServerDataManager.getPlayerByUin(uin_)
     if MServerDataManager.server_players_list[uin_] then
         return MServerDataManager.server_players_list[uin_]
@@ -134,7 +121,7 @@ end
 
 -- 添加玩家到列表
 ---@param uin number 玩家ID
----@param player Player 玩家实例
+---@param player MPlayer 玩家实例
 ---@param nickname string 玩家昵称
 function MServerDataManager.addPlayer(uin, player, nickname)
     MServerDataManager.server_players_list[uin] = player
@@ -163,7 +150,7 @@ function MServerDataManager.removeScene(sceneName)
 end
 
 -- 获取所有玩家
----@return table<number, Player>
+---@return table<number, MPlayer>
 function MServerDataManager.getAllPlayers()
     return MServerDataManager.server_players_list
 end

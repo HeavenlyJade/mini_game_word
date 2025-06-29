@@ -1,19 +1,19 @@
 local MainStorage = game:GetService('MainStorage')
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local common_const = require(MainStorage.code.common.MConst) ---@type common_const
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local ItemUtils = require(MainStorage.code.server.bag.ItemUtils) ---@type ItemUtils
-local ItemType = require(MainStorage.code.common.TypeConfig.ItemType) ---@type ItemType
-local game = game
-local BagMgr        = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
-local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
+local ServerStorage = game:GetService('ServerStorage')
+local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
+local common_const = require(MainStorage.Code.Common.GameConfig.MConst) ---@type common_const
+local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
+local ItemUtils = require(ServerStorage.MSystems.Bag.ItemUtils) ---@type ItemUtils
+local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType) ---@type ItemType
+
+local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
+local MServerDataManager = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
 
 ---@class Bag
 local Bag = ClassMgr.Class("Bag")
 
 ---@param player MPlayer 玩家实例
 function Bag:OnInit(player)
-    self.player = player
     self.uin = player.uin
     self.bag_index = {}
     self.bag_items = {}
@@ -27,11 +27,17 @@ function Bag:OnInit(player)
     self:InitializeCurrencies()
 end
 
+---获取玩家实例
+---@return MPlayer|nil 玩家实例
+function Bag:GetPlayer()
+    return MServerDataManager.getPlayerByUin(self.uin)
+end
+
 ---将物品类型编号转换为分类编号
 ---@param itemCategoryNumber number 物品类型编号
 ---@return number 分类编号
 function Bag:GetCategoryFromItemCategory(itemCategoryNumber)
-    local common_config = require(MainStorage.code.common.GameConfig.MConfig) ---@type common_config
+    local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
     
     -- 验证传入的编号是否有效
     if itemCategoryNumber and common_config.ItemTypeNames[itemCategoryNumber] then
@@ -44,7 +50,7 @@ end
 ---初始化货币类型
 function Bag:InitializeCurrencies()
     local allMoneyTypes = ItemType.GetAllMoneyTypes()
-    local common_config = require(MainStorage.code.common.GameConfig.MConfig) ---@type common_config
+    local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
     
     for index, moneyType in pairs(allMoneyTypes) do
         -- 检查背包中是否已有该货币
@@ -133,7 +139,7 @@ function Bag:Save()
     
     gg.log("保存背包数据:", data)
     local cloudService = game:GetService("CloudService") --- @type CloudService
-    cloudService:SetTableAsync('inv' .. self.player.uin, data, function ()
+    cloudService:SetTableAsync('inv' .. self.uin, data, function ()
         gg.log("背包数据保存完成")
     end)
 end
@@ -313,7 +319,7 @@ function Bag:SyncToClient()
         items = syncItems,
         moneys = moneys
     }
-    gg.network_channel:fireClient(self.player.uin, ret)
+    gg.network_channel:fireClient(self.uin, ret)
 end
 
 ---@param itemName string 物品名称
@@ -419,8 +425,13 @@ end
 ---@param position BagPosition 背包位置
 function Bag:UseItem(position)
     local itemData = self:GetItemByPosition(position)
+    local player = self:GetPlayer()
+    if not player then
+        return
+    end
+    
     if not itemData then
-        self.player:SendHoverText("该位置没有物品")
+        player:SendHoverText("该位置没有物品")
         return
     end
 
@@ -428,29 +439,34 @@ function Bag:UseItem(position)
         -- 执行消耗品命令
         local itemType = ItemUtils.GetItemType(itemData)
         if itemType and itemType.useCommands then
-            self.player:ExecuteCommand(itemType.useCommands, nil)
+            player:ExecuteCommand(itemType.useCommands, nil)
             -- 减少数量
             self:SetItemAmount(position, itemData.amount - 1)
         end
     elseif ItemUtils.IsEquipment(itemData) then
         -- 装备物品（简化版本，可以扩展）
-        self.player:SendHoverText("装备功能需要进一步实现")
+        player:SendHoverText("装备功能需要进一步实现")
     else
-        self.player:SendHoverText("该物品无法使用")
+        player:SendHoverText("该物品无法使用")
     end
 end
 
 ---@param position BagPosition 背包位置
 function Bag:DecomposeItem(position)
     local itemData = self:GetItemByPosition(position)
+    local player = self:GetPlayer()
+    if not player then
+        return
+    end
+    
     if not itemData then
-        self.player:SendHoverText('该位置没有物品')
+        player:SendHoverText('该位置没有物品')
         return
     end
     
     local itemType = ItemUtils.GetItemType(itemData)
     if not itemType then
-        self.player:SendHoverText('物品配置错误')
+        player:SendHoverText('物品配置错误')
         return
     end
     
@@ -458,7 +474,7 @@ function Bag:DecomposeItem(position)
     local materialType = itemType.sellableTo
     local matAmount = itemData.amount * (itemType.sellPrice or 1)
     if not materialType or matAmount <= 0 then
-        self.player:SendHoverText('%s 无法被分解', itemType.name)
+        player:SendHoverText('%s 无法被分解', itemType.name)
         return
     end
     
@@ -466,7 +482,7 @@ function Bag:DecomposeItem(position)
     local materialData = ItemUtils.CreateItemData(materialType.name, matAmount)
     self:AddItem(materialData)
     self:RemoveItem(position)
-    self.player:SendHoverText("分解成功，获得 %s x %s", materialType.name, matAmount)
+    player:SendHoverText("分解成功，获得 %s x %s", materialType.name, matAmount)
 end
 
 ---@param pos1 BagPosition 位置1
@@ -514,6 +530,11 @@ end
 
 ---@return number 打开的宝箱数量
 function Bag:UseAllBoxes()
+    local player = self:GetPlayer()
+    if not player then
+        return 0
+    end
+    
     local count = 0
     for itemName, positions in pairs(self.bag_index) do
         for _, position in ipairs(positions) do
@@ -522,7 +543,7 @@ function Bag:UseAllBoxes()
                 local itemType = ItemUtils.GetItemType(itemData)
                 if itemType and itemType.useCommands and itemType.canAutoUse then
                     for i = 1, itemData.amount do
-                        self.player:ExecuteCommand(itemType.useCommands, nil)
+                        player:ExecuteCommand(itemType.useCommands, nil)
                         count = count + 1
                     end
                     self:RemoveItem(position)
@@ -532,7 +553,7 @@ function Bag:UseAllBoxes()
     end
     
     if count == 0 then
-        self.player:SendHoverText('你的背包里没有可用物品')
+        player:SendHoverText('你的背包里没有可用物品')
     end
     return count
 end
@@ -577,15 +598,20 @@ function Bag:DecomposeAllLowQualityItems(rank)
         self:RemoveItem(position)
     end
     
+    local player = self:GetPlayer()
+    if not player then
+        return decomposedCount
+    end
+    
     if decomposedCount > 0 then
         -- 构造获得材料提示
         local tips = {}
         for materialType, totalAmount in pairs(materialMap) do
             table.insert(tips, string.format("%s x %d", materialType.name, totalAmount))
         end
-        self.player:SendHoverText(string.format("分解了%d件装备，获得材料：%s", decomposedCount, table.concat(tips, ", ")))
+        player:SendHoverText(string.format("分解了%d件装备，获得材料：%s", decomposedCount, table.concat(tips, ", ")))
     else
-        self.player:SendHoverText("没有发现可被分解的物品")
+        player:SendHoverText("没有发现可被分解的物品")
     end
     return decomposedCount
 end
@@ -596,14 +622,17 @@ function Bag:GiveItem(itemData)
     ---玩家从系统处获得物品走此函数
     local success = self:AddItem(itemData)
     if success then
-        if not ItemUtils.IsMoney(itemData) then
-            self.player:SendEvent("GainedItem", {
-                item = itemData
-            })
-        end
-        local itemType = ItemUtils.GetItemType(itemData)
-        if itemType and itemType.gainSound then
-            self.player:PlaySound(itemType.gainSound)
+        local player = self:GetPlayer()
+        if player then
+            if not ItemUtils.IsMoney(itemData) then
+                player:SendEvent("GainedItem", {
+                    item = itemData
+                })
+            end
+            local itemType = ItemUtils.GetItemType(itemData)
+            if itemType and itemType.gainSound then
+                player:PlaySound(itemType.gainSound)
+            end
         end
     end
     return success

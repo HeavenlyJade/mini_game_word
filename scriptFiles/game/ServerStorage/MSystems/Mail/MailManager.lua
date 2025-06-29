@@ -18,7 +18,7 @@ local CloudMailDataAccessor = require(MainStorage.code.server.Mail.cloudMailData
 local BagMgr = require(MainStorage.code.server.bag.BagMgr)  ---@type BagMgr
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
-local MailBase = require(MainStorage.code.server.Mail.MailBase) ---@type MailBase
+local Mail = require(ServerStorage.MSystems.Mail.Mail) ---@type Mail
 local GlobalMailManager = require(MainStorage.code.server.Mail.GlobalMailManager) ---@type GlobalMailManager
 local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
 
@@ -151,8 +151,8 @@ function MailManager:AddPlayerMail(uin, mailData)
     mailData.id = self:GenerateMailId("mail_p_")
     mailData.mail_type = self.MAIL_TYPE.PLAYER
 
-    -- 使用MailBase来创建和初始化邮件对象
-    local mailObject = MailBase.New(mailData)
+            -- 使用Mail来创建和初始化邮件对象
+        local mailObject = Mail.New(mailData)
     local storageData = mailObject:ToStorageData()
 
     -- 添加新邮件并保存
@@ -164,7 +164,7 @@ function MailManager:AddPlayerMail(uin, mailData)
     -- CloudMailDataAccessor:SavePlayerMail(uin, playerMailContainer)
 
     if player and player.uin then
-        local mailObject = MailBase.New(storageData)
+        local mailObject = Mail.New(storageData)
         local clientMailData = mailObject:ToClientData()
         clientMailData.is_global_mail = false -- 明确这不是全局邮件
         gg.network_channel:FireClient(player.uin, {
@@ -183,7 +183,7 @@ end
 function MailManager:AddGlobalMail(mailData)
     local mailId = GlobalMailManager:AddGlobalMail(mailData)
     if mailId then
-        local mailObject = MailBase.New(GlobalMailManager:GetGlobalMailById(mailId))
+        local mailObject = Mail.New(GlobalMailManager:GetGlobalMailById(mailId))
         if mailObject then
             local clientMailData = mailObject:ToClientData()
             clientMailData.is_global_mail = true -- 明确这是全局邮件
@@ -622,9 +622,9 @@ function MailManager:ClaimPersonalMail(player, mailId)
         return false, "邮件不存在", nil, self.ERROR_CODE.MAIL_NOT_FOUND
     end
 
-    local mailObject = MailBase.New(mailData)
+    local mailObject = Mail.New(mailData)
 
-    -- 使用MailBase中的方法统一检查
+    -- 使用Mail中的方法统一检查
     if not mailObject:CanClaimAttachment() then
         if mailObject:IsExpired() then
             return false, "邮件已过期", nil, self.ERROR_CODE.MAIL_EXPIRED
@@ -665,7 +665,7 @@ function MailManager:DeletePersonalMail(uin, mailId)
         return true, "邮件已删除" -- 如果邮件已经不存在，也算删除成功
     end
 
-    local mailObject = MailBase.New(mailData)
+    local mailObject = Mail.New(mailData)
 
     -- 有未领取的附件时不能删除
     if mailObject:CanClaimAttachment() then

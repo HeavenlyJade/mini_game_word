@@ -1,0 +1,219 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# PVZWord API 官方文档索引
+
+本文档是 PVZWord 项目中可用游戏服务接口的**外部链接索引**。所有链接指向官方的 [miniapi GitHub 仓库](mdc:https:/github.com/HeavenlyJade/api)，这是项目中 API 的"单一事实来源"。
+
+## 使用方法
+
+当需要查询某个服务的具体用法时，请直接点击下方的链接跳转到对应的官方文档页面。
+
+---
+
+## 服务接口索引 (Official API Index)
+
+### 基类 (Base Classes)
+- **Service**: 全局服务节点的基类。(继承自: `SandboxNode`, 注: 父节点必须是 `GameNode`)
+
+### 核心服务
+- [WorkSpace](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/WorkSpace.md) - 工作空间，包含游戏世界中的所有3D对象。
+
+- [RunService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/RunService.md) - 运行时服务，处理游戏循环和帧事件。
+
+- Players - 玩家服务，管理所有玩家对象 (核心类，无独立文档)。
+
+- TweenService - 补间动画服务 (核心类，无独立文档)。
+
+### 存储服务
+- [MainStorage](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/MainStorage.md) - 主存储，存放客户端和服务端共享的代码。
+
+- [ServerStorage](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Script/ServerStorage.md) - 服务器存储，存放仅服务端可访问的代码和数据。
+
+### 输入和交互服务
+- [MouseService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/MouseService.md) - 鼠标服务。
+  - **描述**: 负责处理所有与鼠标相关的操作。它是 Mouse 节点的接口，必须通过 `game:GetService("MouseService")` 来获取。
+  - **继承自**: `Service`
+
+- ContextActionService - 上下文操作服务 (核心类，无独立文档)。
+
+- UserInputService - 用户输入服务 (核心类，无独立文档)。
+
+### 游戏功能服务
+- [DeveloperStoreService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/DeveloperStoreService.md) - 迷你币商品服务。
+
+- [AnalyticsService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/AnalyticsService.md) - 数据埋点服务。
+  - **描述**: 用于报告自定义事件，之后可以在网页上查看可视化的分析结果（数据埋点）。
+  - **核心函数**: `ReportData()` - 用于上报具体的事件数据。
+  - **继承自**: `Service`
+
+- [CloudService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/CloudService.md) - 云服务，包含数据存储、传送等功能。
+
+- [FriendsService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/FriendsService.md) - 好友服务。
+
+- [FriendInviteService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Other/FriendInviteService.md) - 好友拉新服务。
+
+### 图片和材质服务
+- [MaterialService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/MaterialService.md) - 材质服务。
+
+- [ContentService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/ContentService.md) - 内容服务，用于资源预加载等。
+
+- [CollectionService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/CollectionService.md) - 集合服务，用于标记和分组实例。
+
+### 脚本和通信 (Scripting & Communication)
+- [RemoteEvent](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Script/RemoteEvent.md) - 远程事件，用于客户端和服务器之间的单向通信。
+- [RemoteFunction](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Script/RemoteFunction.md) - 远程函数，用于客户端和服务器之间的双向（请求-响应）通信。
+- [Timer](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Script/Timer.md) - 定时器，用于创建和管理延迟或周期性执行的事件。
+- [CustomNotify](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Script/CustomNotify.md) - 自定义通知，用于脚本间的通信。
+- [CustomFunction](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Script/CustomFunction.md) - 自定义函数。
+
+### 界面 (UI) 组件
+- [CoreUI](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/CoreUI.md) - 核心UI，用于与游戏引擎内置的核心界面交互。
+- [UIBase](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UIBase.md) - 所有UI组件的基类。
+- [UIButton](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UIButton.md) - 按钮组件。
+- [UIImage](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UIImage.md) - 图片组件。
+- [UITextLabel](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UITextLabel.md) - 文本标签组件。
+- [UITextInput](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UITextInput.md) - 文本输入框组件。
+- [UIList](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UIList.md) - 列表组件，用于展示滚动列表。
+- [UIBillboard](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UIBillboard.md) - 广告牌UI，可以在3D世界中显示2D界面。
+- [UIVideoImage](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UIVideoImage.md) - 视频图片组件。
+- [UIModelView](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UIModelView.md) - 3D模型视窗组件。
+- [UIMovieClip](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/UIMovieClip.md) - 电影剪辑（序列帧动画）组件。
+- [Decal](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Scene/Decal.md) - 贴花，用于在3D物体表面渲染图片。
+
+### 建造和环境 (Building & Environment)
+- [BlockService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/BlockService.md) - 方块服务，用于在世界中创建和修改方块。
+- [Block](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/Block.md) - 方块对象本身的接口。
+- [Terrain](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/Terrain.md) - 地形对象接口。
+- [Environment](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/Environment.md) - 环境设置，如雾效、天空等。
+- [Atmosphere](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/Atmosphere.md) - 大气效果设置。
+- [Light](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/Light.md) - 通用光源组件。
+- [SunLight](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/SunLight.md) - 太阳光组件。
+- [SkyLight](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/SkyLight.md) - 天空光组件。
+- [SkyDome](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/SkyDome.md) - 天空穹顶。
+- [BluePrint](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Build/BluePrint.md) - 蓝图，用于创建和管理预制体。
+
+### 角色和AI (Character & AI)
+- [Model](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Role/Model.md) - 模型，所有实体的基础，可以包含各种组件。
+- [Actor](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Role/Actor.md) - 角色，继承自模型，拥有生命值、移动等角色特性。
+- [AIBase](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Role/AIBase.md) - AI行为树的基类。
+- [AITaskEntry](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Role/AITaskEntry.md) - AI任务的入口点。
+- [AvatarPart](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Role/AvatarPart.md) - 角色部件，用于换装等。
+
+### 输入 (Input)
+- [UserInputService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Input/UserInputService.md) - 用于处理玩家输入的全局服务。
+- [ContextActionService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Input/ContextActionService.md) - 允许将输入操作绑定到特定的上下文。
+- [InputObject](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Input/InputObject.md) - 代表一个具体的输入事件，如按键或鼠标点击。
+- [ClickDetector](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Input/ClickDetector.md) - 用于检测模型上的鼠标点击事件。
+
+### 声音 (Sound)
+- [SoundService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Sound/SoundService.md) - 用于播放和管理所有游戏内声音的全局服务。
+- [Sound](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Sound/Sound.md) - 代表一个可以被播放的声音对象。
+- [SoundGroup](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Sound/SoundGroup.md) - 用于对声音进行分组管理，例如背景音乐、音效等。
+- [DefaultSound](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Sound/DefaultSound.md) - 游戏内置的默认音效。
+
+### 特效 (Effects)
+- [PostEffectService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Effect/PostEffectService.md) - 后处理特效服务，用于实现全屏特效。
+- [EffectObject](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Effect/EffectObject.md) - 特效对象的基类。
+- [Particle](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Effect/Particle.md) - 粒子发射器，用于创建火焰、烟雾等效果。
+- [Projectile](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Effect/Projectile.md) - 投射物，用于创建子弹、法术等飞行物体。
+- [Explosion](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Effect/Exposion.md) - 创建爆炸效果。
+- [DefaultEffect](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Effect/DefaultEffect.md) - 游戏内置的默认特效。
+- [ParticleSmoke](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Effect/ParticleSmoke.md) - 专门用于创建烟雾效果的粒子。
+
+### 动画 (Animation)
+
+#### 核心动画 (Core Animation)
+- [Animation](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/Animation.md) - 代表一个可以播放的动画剪辑。
+- [AnimationItem](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimationItem.md) - 动画项，通常在动画序列中使用。
+- [HumanAnimation](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/HumanAnimation.md) - 专用于人形模型的动画。
+- [LegacyAnimation](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/LegacyAnimation.md) - 旧版动画组件。
+- [LegacyAnimationItem](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/LegacyAnimationItem.md) - 旧版动画项。
+- [AttributeAnimation](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AttributeAnimation.md) - 属性动画，用于驱动对象属性的变化。
+
+#### 动画状态机 (Animator & State Machine)
+- [Animator](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/Animator.md) - 动画控制器，用于播放和管理动画状态机。
+- [AnimatorBase](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimatorBase.md) - Animator 的基类。
+- [AnimatorController](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimatorController.md) - 动画控制器资产，定义了动画状态和切换。
+- [AnimatorLayer](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimatorLayer.md) - 动画层，允许在不同层上混合播放动画。
+- [AnimatorLayerData](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimatorLayerData.md) - 动画层数据。
+- [AnimatorLayerItemNode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimatorLayerItemNode.md) - 动画层项目节点。
+- [AnimatorParamsItemNode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimatorParamsItemNode.md) - 动画参数项目节点。
+- [AnimatorStateData](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimatorStateData.md) - 动画状态数据。
+- [AnimatorStateMachineData](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/AnimatorStateMachineData.md) - 动画状态机数据。
+
+#### 骨骼与物理 (Skeleton & Physics)
+- [SkeletonAnimation](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/SkeletonAnimation.md) - 骨骼动画组件。
+- [BoneNode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/BoneNode.md) - 骨骼节点，代表模型骨架中的一根骨骼。
+- [Ragdoll](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/Ragdoll.md) - 布娃娃系统，用于实现基于物理的角色死亡效果。
+- [RagdollJoint](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/RagdollJoint.md) - 布娃娃关节。
+
+#### 补间与序列 (Tweening & Sequence)
+- [TweenService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/TweenService.md) - 用于创建属性平滑过渡（补间动画）的全局服务。
+- [UITween](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/UITween.md) - 专门用于UI元素的补间动画。
+- [Sequence](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/Sequence.md) - 动画序列，可以组合多个动画和延时。
+
+#### 其他 (Others)
+- [PostProcessing](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Animation/PostProcessing.md) - 后期处理，用于实现与动画相关的视觉效果。
+
+### 物理和关节 (Physics & Joints)
+- [PhysXService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Bind/PhysXService.md) - 物理服务，用于全局物理设置。
+- [Weld](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Bind/Weld.md) - 焊接约束，将两个物体牢固地连接在一起。
+- [HingeJoint](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Bind/HingeJoint.md) - 铰链关节，用于创建门、轮子等旋转效果。
+- [SpringJoint](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Bind/SpringJoint.md) - 弹簧关节，用于创建有弹性的连接。
+- [StickJoint](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Bind/StickJoint.md) - 杆状关节，保持两个物体间的固定距离。
+- [BindAttachment](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Bind/BindAttachment.md) - 绑定附件，用于定义关节的连接点。
+- [VisibleJoint](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Bind/VisibleJoint.md) - 可视化关节，用于在编辑器中显示关节。
+
+### 玩法 (GamePlay)
+- [WorldService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/WorldService.md) - 世界服务，提供场景查询（如射线检测）、传送等通用世界级功能。
+- [Player](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Player.md) - 玩家对象，代表一个连接到服务器的玩家。
+- [Players](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Players.md) - 玩家服务，用于管理所有玩家对象。
+- [StartPlayer](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/StartPlayer.md) - 玩家出生点设置。
+- [PlayerGui](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/PlayerGui.md) - 玩家GUI，每个玩家独立的UI根节点。
+- [Camera](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Camera.md) - 相机，控制玩家在游戏世界中的视口。
+- [Chat](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Chat.md) - 聊天服务，用于发送和接收聊天消息。
+- [Backpack](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Backpack.md) - 背包，存放玩家的工具。
+- [Tool](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Tool.md) - 工具，玩家可以装备和使用的物品。
+- [Area](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Area.md) - 区域，用于检测物体进入或离开特定空间。
+- [TriggerBox](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/TriggerBox.md) - 触发盒，一个用于触发事件的简易区域。
+- [Team](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Team.md) - 队伍对象。
+- [Teams](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/Teams.md) - 队伍服务，用于管理游戏中的所有队伍。
+- [SpawnService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/SpawnService.md) - 生成服务，用于控制对象的生成。
+- [TeleportService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/TeleportService.md) - 传送服务，用于在不同地点间传送玩家。
+- [TalkService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/TalkService.md) - 对话服务，用于创建NPC对话。
+- [GameSetting](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/GameSetting.md) - 游戏设置。
+- [VoiceChatService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/VoiceChatService.md) - 语音聊天服务。
+- [VoiceChatRemoteService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/VoiceChatRemoteService.md) - 远程语音聊天服务。
+- [VoiceChannel](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/GamePlay/VoiceChannel.md) - 语音频道。
+
+### 云数据 (Cloud Data)
+- [CloudKVStore](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Cloud/CloudKVStore.md) - 云端键值对存储服务，用于持久化存储玩家数据、排行榜等。
+- [Asset](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Cloud/Asset.md) - 云端资产对象。
+- [AssetContent](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Cloud/AssetContent.md) - 云端资产内容，用于加载和管理资产的具体内容。
+
+### 其他重要服务
+- [AdvertisementService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/AdvertisementService.md) - 广告服务。
+
+- [NetService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/NetService.md) - 网络服务，用于HTTP请求等。
+
+- [StarterGui](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/StarterGui.md) - 启动GUI服务。
+  - **描述**: 一个全局服务，作为存放GUI对象（如`ScreenGui`）的容器。当玩家加入游戏时，它的内容会被复制到每个玩家的`PlayerGui`中。它也提供与`CoreGui`（核心界面）交互的功能。
+  - **作为容器**: 玩家首次加入时，`StarterGui`的内容会被复制到该玩家的`PlayerGui`中。与`StarterPack`不同，GUI对象在角色死亡后**不会**被重新加载。
+  - **与CoreGui交互**: 可以使用`StarterGui:SetCore()`等函数来禁用或修改核心界面的元素，例如创建通知和系统消息。
+  - **注意**: 父节点必须是`GameNode`。
+  - **继承自**: `SandBoxNode`
+
+- [UtilService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/UtilService.md) - 接口使用。不用重复新增不同的service通用工具服务。
+
+- [GameNode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/GameNode.md) - 游戏节点服务。
+
+- [LoadedService](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/LoadedService.md) - 加载服务。
+
+- [StarterPack](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Service/StarterPack.md) - 启动包服务。
+  - **描述**: 一个服务级容器，当玩家生成时，其内容会被复制到每个玩家的背包中。它主要用于存放所有玩家初始都会获得的`Tool`（工具）或`LocalScript`。
+  - **工作机制**: 玩家角色每次生成时，`StarterPack`的内容都会被复制到该玩家的`Backpack`（背包）中。如果角色死亡，旧背包会被销毁，新背包会用`StarterPack`的内容重新填充。
+  - **注意**: 对`StarterPack`的修改应在服务器端进行，修改将在玩家下一次重生时生效。
+  - **继承自**: `SandBoxNode`

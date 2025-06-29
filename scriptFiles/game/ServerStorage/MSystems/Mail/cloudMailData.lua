@@ -12,9 +12,7 @@ local cloudService = game:GetService("CloudService")   ---@type CloudService
 ---@class CloudMailDataAccessor
 local CloudMailDataAccessor = {}
 
----------------------------
--- 个人邮件数据存取
----------------------------
+
 
 --- 加载玩家邮件
 ---@param uin number 玩家ID

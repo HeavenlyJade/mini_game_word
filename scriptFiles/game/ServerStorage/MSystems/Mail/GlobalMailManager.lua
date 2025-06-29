@@ -8,23 +8,24 @@ local os = os
 local math = math
 
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
+local ServerStorage = game:GetService("ServerStorage")
+local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local CloudMailDataAccessor = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor
 local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
-local MailBase = require(MainStorage.code.server.Mail.MailBase) ---@type MailBase
+local Mail = require(ServerStorage.MSystems.Mail.Mail) ---@type Mail
 
 ---@class GlobalMailManager
-local GlobalMailManager = {
-    -- 全服邮件缓存
-    global_mail_cache = nil, ---@type GlobalMailCache
-}
+local GlobalMailManager = ClassMgr.Class("GlobalMailManager")
 
 --- 初始化全局邮件管理器
-function GlobalMailManager:Init()
+function GlobalMailManager:OnInit()
+    -- 初始化全服邮件缓存
+    self.global_mail_cache = nil ---@type GlobalMailCache
+    
     -- 加载全服邮件到缓存
     self.global_mail_cache = CloudMailDataAccessor:LoadGlobalMail()
     gg.log("全局邮件管理器初始化完成")
-    return self
 end
 
 --- 生成邮件ID
@@ -44,8 +45,8 @@ function GlobalMailManager:AddGlobalMail(mailData)
     mailData.id = self:GenerateMailId("mail_g_")
     mailData.mail_type = MailEventConfig.MAIL_TYPE.SYSTEM
 
-    -- 使用MailBase来创建和初始化邮件对象
-    local mailObject = MailBase.New(mailData)
+    -- 使用Mail来创建和初始化邮件对象
+    local mailObject = Mail.New(mailData)
     local storageData = mailObject:ToStorageData()
 
     -- 添加新邮件到缓存并立即保存到云端
@@ -67,7 +68,7 @@ function GlobalMailManager:GetAllGlobalMails()
 
     local result = {}
     for mailId, mailData in pairs(self.global_mail_cache.mails) do
-        local mailObject = MailBase.New(mailData)
+        local mailObject = Mail.New(mailData)
 
         -- 跳过过期的全服邮件
         if not mailObject:IsExpired() then
@@ -125,7 +126,7 @@ function GlobalMailManager:GetGlobalMailById(mailId)
     end
 
     local mailData = self.global_mail_cache.mails[mailId]
-    local mailObject = MailBase.New(mailData)
+    local mailObject = Mail.New(mailData)
 
     -- 检查是否过期
     if mailObject:IsExpired() then
@@ -148,7 +149,7 @@ function GlobalMailManager:GetGlobalMailListForPlayer(uin, playerGlobalData)
 
     -- 遍历全服邮件
     for mailId, mailData in pairs(self.global_mail_cache.mails) do
-        local mailObject = MailBase.New(mailData)
+        local mailObject = Mail.New(mailData)
 
         -- 跳过过期的全服邮件
         if not mailObject:IsExpired() then
@@ -182,7 +183,7 @@ function GlobalMailManager:ClaimGlobalMailAttachment(uin, mailId, playerGlobalDa
     end
 
     local globalMailData = self.global_mail_cache.mails[mailId]
-    local mailObject = MailBase.New(globalMailData)
+    local mailObject = Mail.New(globalMailData)
 
     if not mailObject.has_attachment then
         return false, "该邮件没有附件", nil
@@ -231,7 +232,7 @@ function GlobalMailManager:DeleteGlobalMailForPlayer(uin, mailId, playerGlobalDa
         return true, "邮件已删除"
     end
 
-        local mailObject = MailBase.New(globalMailData)
+        local mailObject = Mail.New(globalMailData)
     -- 检查是否有未领取的附件
     local hasUnclaimedAttachment = mailObject.has_attachment and (not mailStatus or not mailStatus.is_claimed)
     if hasUnclaimedAttachment then

@@ -9,16 +9,18 @@ local Enum = Enum
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
-local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local serverDataMgr     = require(ServerStorage.server.MServerDataManager) ---@type MServerDataManager
-local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
-local Player       = require(MainStorage.code.server.entity_types.Player)          ---@type Player
-local Scene      = require(MainStorage.code.server.Scene)         ---@type Scene
-local bagMgr        = require(ServerStorage.MSystems.Bag.BagMgr)          ---@type BagMgr
-local cloudDataMgr  = require(ServerStorage.MCloudDataMgr)    ---@type MCloudDataMgr
-local cloudMailData = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor
+local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
+local ClassMgr          = require(MainStorage.Code.Untils.ClassMgr)    ---@type ClassMgr
+local common_const      = require(MainStorage.Code.Common.GameConfig.MConst)     ---@type common_const
+local Scene      = require(MainStorage.Code.MServer.Scene)         ---@type Scene
+local Player       = require(MainStorage.Code.MServer.EntityTypes.MPlayer)
+
 local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
 local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+
+local cloudDataMgr  = require(ServerStorage.MCloudDataMgr)    ---@type MCloudDataMgr
+local serverDataMgr     = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
+
 
 ---@class MServerInitPlayer
 local MServerInitPlayer = {}
@@ -73,17 +75,21 @@ function MServerInitPlayer.player_enter_game(player)
 
     local uin_ = player.UserId
     if serverDataMgr.server_players_list[uin_] then
-        gg.log('WAINING, Same uin enter game:', uin_)
+        gg.log('WARNING, Same uin enter game:', uin_)
 
-        --强制离开游戏
-        if serverDataMgr.server_players_list[uin_] then
-            serverDataMgr.server_players_list[uin_]:Save()
+        -- 清理旧的玩家实例（防止重复登录）
+        local oldPlayer = serverDataMgr.server_players_list[uin_]
+        if oldPlayer then
+            oldPlayer:Save()  -- 保存旧玩家数据
+            oldPlayer:leaveGame()  -- 执行离线清理
+            serverDataMgr.removePlayer(uin_, oldPlayer.name or "Unknown")  -- 从列表中移除
+            gg.log('Old player instance removed for uin:', uin_)
         end
     end
 
-    local actor_ = player.Character
-    actor_.CollideGroupID = 4
-    actor_.Movespeed = 800
+    local player_actor_ = player.Character
+    player_actor_.CollideGroupID = 4
+    player_actor_.Movespeed = 800
 
     --加载数据 1 玩家历史等级经验值
     local ret1_, cloud_player_data_ = cloudDataMgr.ReadPlayerData(uin_)
@@ -96,57 +102,43 @@ function MServerInitPlayer.player_enter_game(player)
         return   --加载数据网络层失败
     end
 
-    -- 玩家信息初始化
+    -- 玩家信息初始化（MPlayer会自动调用initPlayerData初始化背包和邮件）
+    ---@type MPlayer
     local player_ = Player.New({
         position = Vector3.New(600, 400, -3400),      --(617,292,-3419)
-        uin=uin_,
-        id=1,
-        nickname=player.Nickname,
-        npc_type=common_const.NPC_TYPE.PLAYER,
+        uin = uin_,
+        nickname = player.Nickname,
+        npc_type = common_const.NPC_TYPE.PLAYER,
         level = cloud_player_data_.level,
         exp = cloud_player_data_.exp,
+        variables = cloud_player_data_.vars or {}
     })
-    player_.variables = cloud_player_data_.vars or {}
-
-    --加载数据 2 玩家历史装备数据
-    ---@type number, Bag
-    local ret2_, bag_ins = bagMgr.LoadPlayerBagFromCloud(player_)
-    if ret2_ == 0 then
-        gg.log('cloud_player_bag ok:', uin_)
-        -- bagMgr.LoadPlayerBagFromCloud 已经自动设置了背包数据
-    else
-        gg.log('cloud_player_bag fail:', uin_)
-        return     --加载背包数据失败
-    end
-
+    
+    -- 读取任务数据
     cloudDataMgr.ReadGameTaskData(player_)
-    local mail_player_data_ = cloudMailData:LoadPlayerMailBundle(uin_)
-    gg.log("cloud_player_bag_",bag_ins)
-    player_.mail = mail_player_data_
-    player_.bag = bag_ins
-    serverDataMgr.addPlayer(uin_, player_, player.Nickname)
 
     -- 同步玩家的全服邮件数据
     MailManager:SyncGlobalMailsForPlayer(uin_)
 
-    actor_.Size = Vector3.New(120, 160, 120)      --碰撞盒子的大小
-    actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
+    player_actor_.Size = Vector3.New(120, 160, 120)      --碰撞盒子的大小
+    player_actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
 
-    player_:setGameActor(actor_)     --player
-    actor_.CollideGroupID = 4
-    player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
+    player_:setGameActor(player_actor_)     --player
+    player_actor_.CollideGroupID = 4
+    -- player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
 
-    player_:initSkillData()                 --- 加载玩家技能
-    player_:RefreshStats()               --重生 --刷新战斗属性
-    player_:SetHealth(player_.maxHealth)
-    player_:UpdateHud()
+    -- player_:initSkillData()                 --- 加载玩家技能
+    -- player_:RefreshStats()               --重生 --刷新战斗属性
+    -- player_:SetHealth(player_.maxHealth)
+    -- player_:UpdateHud()
     if Scene.spawnScene then
         if not player_:IsNear(Scene.spawnScene.node.Position, 500) then
-            actor_.Position = Scene.spawnScene.node.Position
+            player_actor_.Position = Scene.spawnScene.node.Position
         end
     end
-    player_.inited = true
+    -- player_.inited = true
     ServerEventManager.Publish("PlayerInited", {player = player_})
+    serverDataMgr.addPlayer(uin_, player_, player.Nickname)
 
     -- 主动推送邮件列表到客户端
     MailManager:SendMailListToClient(uin_)

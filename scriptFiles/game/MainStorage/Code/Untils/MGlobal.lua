@@ -356,7 +356,7 @@ local gg = {
     noise = require(script.Parent.math.PerlinNoise),
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
-
+    uuid_start = nil,
     CommandManager = nil, ---@type CommandManager
     network_channel = nil, ---@type NetworkChannel
     cloudMailData = nil, ---@type CloudMailDataAccessor
@@ -367,12 +367,8 @@ local gg = {
     client_aoe_cylinder = nil, -- aoe技能碰撞控件
 
     lockClientCharactor = false, -- 是否锁定玩家
-
-    client_bag_ver = 0, -- 背包的时间戳版本号
-
-    client_bag_size = 36, -- 背包大小
     ---@type table<number, table>
-    client_bag_index = {}, -- 服务器同步给玩家的背包放置数据
+    client_bag_index = {}, -- 服务器同步给客户端玩家的背包放置数据
     ---@type table<string, table>
     client_bag_items = {}, -- 服务器同步给玩家的背包物品详情
     ---@type table

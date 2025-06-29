@@ -1,7 +1,7 @@
 local MainStorage  = game:GetService('MainStorage')
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
-local ItemQualityConfig = require(MainStorage.code.common.config.ItemQualityConfig) ---@type ItemQualityConfig
+local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
+local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
+local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) ---@type ItemQualityConfig
 
 
 ---@class SerializedItem

@@ -2,63 +2,82 @@ local MainStorage   = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local cloudDataMgr = require(ServerStorage.MCloudDataMgr) ---@type MCloudDataMgr
-
-
-local gg            = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
-local ClassMgr  = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
-local common_const  = require(MainStorage.Code.Common.GameConfig.MConst) ---@type common_const
-local Entity      = require(MainStorage.Code.MServer.EntityTypes.Entity) ---@type Entity
-local ServerEventManager      = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-
-local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
-
-
-
-local MainStorage   = game:GetService("MainStorage")
-local ServerStorage = game:GetService("ServerStorage")
-
-local cloudDataMgr = require(ServerStorage.MCloudDataMgr) ---@type MCloudDataMgr
-local gg            = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
-local ClassMgr      = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
+local gg            = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr      = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local common_const  = require(MainStorage.Code.Common.GameConfig.MConst) ---@type common_const
 local Entity        = require(MainStorage.Code.MServer.EntityTypes.Entity) ---@type Entity
+local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 
 ---@class MPlayer : Entity    --玩家类  (单个玩家) (管理玩家状态)
----@field dict_btn_skill table
-local _MPlayer = ClassMgr.Class('Player', Entity)
+---@field bag Bag 背包管理器实例
+---@field dict_btn_skill table 技能按钮映射
+---@field auto_attack number 自动攻击技能ID
+---@field auto_attack_tick number 攻击间隔
+---@field auto_wait_tick number 等待tick
+---@field player_net_stat number 玩家网络状态
+---@field loginTime number 登录时间
+local _MPlayer = ClassMgr.Class('MPlayer', Entity)
 
 function _MPlayer:OnInit(info_)
     Entity.OnInit(self, info_)    --父类初始化
     
+    -- 玩家特有属性
+    self.bag = nil ---@type Bag 背包管理器实例
     self.uin = info_.uin
-    self.name = info_.nickname
+    self.name = info_.nickname or info_.name or ""
     self.isPlayer = true
+    self.variables = info_.variables or {} -- 玩家变量数据
 
-    self.auto_attack      = 0          --自动攻击技能id
-    self.auto_attack_tick = 10         --攻击间隔
-    self.auto_wait_tick   = 0
-    self.player_net_stat = common_const.PLAYER_NET_STAT.INITING         --玩家网络状态
+    -- 技能相关
+    self.dict_btn_skill = nil -- 技能按钮映射
+    self.auto_attack = 0 -- 自动攻击技能id
+    self.auto_attack_tick = 10 -- 攻击间隔
+    self.auto_wait_tick = 0 -- 等待tick
+    
+    -- 网络状态
+    self.player_net_stat = common_const.PLAYER_NET_STAT.INITING -- 玩家网络状态
+    self.loginTime = os.time() -- 登录时间
+    
+    -- 初始化玩家数据
+    self:initPlayerData()
+end
 
-    self.loginTime = os.time()
+-- 初始化玩家数据
+function _MPlayer:initPlayerData()
+    -- 初始化背包（通过BagMgr管理）
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
+    -- 优先尝试加载现有背包，如果不存在则会创建新的
+    BagMgr.OnPlayerJoin(self)
+
+    -- 初始化邮件
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    MailMgr.OnPlayerJoin(self)
+    
+    -- 初始化技能数据
+    self:initSkillData()
+    
+    -- 其他初始化可以在这里扩展
 end
 
 --直接获得游戏中的actor的位置
 function _MPlayer:getPosition()
-    return self.actor.Position
+    return self.actor and self.actor.Position or Vector3.New(0, 0, 0)
 end
 
---改变状态
+--改变网络状态
 function _MPlayer:setPlayerNetStat(player_net_stat_)
     gg.log('setPlayerNetStat:', self.uin, player_net_stat_)
     self.player_net_stat = player_net_stat_
 end
+
+-- 技能系统相关 --------------------------------------------------------
 
 --初始化技能列表（default）
 function _MPlayer:initSkillData()
     --先读取云数据
     self:syncSkillData()
 end
-
 
 --通知客户端玩家的技能框和技能id
 function _MPlayer:syncSkillData()
@@ -71,32 +90,203 @@ function _MPlayer:syncSkillData()
     end
 end
 
+-- 兼容性方法：同步给客户端当前目标的资料
+---@param target_ Entity
+---@param with_name_ boolean
+function _MPlayer:syncTargetInfo(target_, with_name_)
+    local info_ = {
+        cmd = 'cmd_sync_target_info',
+        show = 1, -- 0=不显示， 1=显示
+        hp = target_.health,
+        hp_max = target_.maxHealth
+    }
 
+    if with_name_ then
+        info_.name = target_.name or ""
+    end
+
+    gg.network_channel:fireClient(self.uin, info_)
+end
+
+-- 显示伤害飘字，闪避，升级等特效
+function _MPlayer:showDamage(number_, eff_, victim)
+    if not victim then return end
+    
+    local victimPosition = victim:GetCenterPosition()
+    local position = victimPosition + (self:GetCenterPosition() - victimPosition):Normalize() * 2 * victim:GetSize().x
+    
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "ShowDamage",
+        amount = number_,
+        isCrit = eff_.cr == 1,
+        position = {
+            x = position.x,
+            y = position.y + victim:GetSize().y,
+            z = position.z
+        },
+        percent = math.min(1, number_ / 100) -- 简化伤害百分比计算
+    })
+end
+
+-- 生命周期管理 --------------------------------------------------------
 
 --玩家离开游戏 (立即存盘)
 function _MPlayer:leaveGame()
+    -- 保存各种数据
     cloudDataMgr.SavePlayerData(self.uin, true)
     cloudDataMgr.SaveGameTaskData(self)
     cloudDataMgr.SaveSkillConfig(self)
-    -- cloudDataMgr.savePlayerData(self.uin, true)
+    
+    -- 通知背包管理器玩家离线（BagMgr会处理背包数据保存和清理）
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
+    BagMgr.OnPlayerLeave(self.uin)
+
+    -- 通知邮件管理器玩家离线
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    MailMgr.OnPlayerLeave(self.uin)
 end
 
---tick刷新
+-- 重写死亡处理
+function _MPlayer:Die()
+    if self.isDead then return end
+    
+    -- 玩家死亡特殊处理
+    self.isDead = true
+    
+    -- 停止自动攻击
+    self.auto_attack = 0
+    self.auto_wait_tick = 0
+    
+    -- 清除施法状态
+    self.stat_flags = {}
+    
+    -- 停止导航
+    if self.actor then
+        self.actor:StopNavigate()
+    end
+    
+    local deathTime = 0
+    if self.modelPlayer then
+        deathTime = self.modelPlayer:OnDead()
+    end
+    
+    -- 发布玩家死亡事件
+    local evt = {
+        entity = self,
+        player = self,
+        deathTime = deathTime
+    }
+    ServerEventManager.Publish("PlayerDeadEvent", evt)
+    ServerEventManager.Publish("EntityDeadEvent", evt)
+    
+    -- 玩家死亡后不自动销毁，等待复活
+end
+
+-- tick刷新
 function _MPlayer:updatePlayer()
+    -- 调用父类update
     self:update()
+    
+    -- 自动攻击逻辑
     if self.auto_attack > 0 then
         self.auto_wait_tick = self.auto_wait_tick - 1
-        if self.auto_wait_tick > 0 then
-            --go on
-        else
-            if self.stat_flags and self.stat_flags.skill_uuid then
-                --正在施法中
-            else
-                -- skillMgr.tryAutoAttack(self, self.auto_attack)     --自动攻击
-                self.auto_wait_tick = self.auto_attack_tick          --每N帧攻击一次
+        if self.auto_wait_tick <= 0 then
+            if not (self.stat_flags and self.stat_flags.skill_uuid) then
+                -- 不在施法中，可以进行自动攻击
+                -- 这里应该调用SkillMgr的自动攻击方法
+                -- skillMgr.tryAutoAttack(self, self.auto_attack)
+                self.auto_wait_tick = self.auto_attack_tick -- 重置攻击间隔
             end
         end
     end
+end
+
+-- 背包相关兼容性方法 --------------------------------------------------------
+
+-- 获取背包实例（兼容性方法）
+function _MPlayer:GetBag()
+    return self.bag
+end
+
+-- 检查背包中是否有指定物品
+function _MPlayer:HasItem(itemId, count)
+    if not self.bag then return false end
+    return self.bag:HasItem(itemId, count or 1)
+end
+
+-- 添加物品到背包
+function _MPlayer:AddItem(itemId, count, reason)
+    if not self.bag then return false end
+    return self.bag:AddItem(itemId, count or 1, reason or "未知原因")
+end
+
+-- 从背包移除物品
+function _MPlayer:RemoveItem(itemId, count, reason)
+    if not self.bag then return false end
+    return self.bag:RemoveItem(itemId, count or 1, reason or "未知原因")
+end
+
+-- 技能相关兼容性方法 --------------------------------------------------------
+
+-- 获取技能按钮映射
+function _MPlayer:GetSkillButtons()
+    return self.dict_btn_skill or {}
+end
+
+-- 设置技能按钮映射
+function _MPlayer:SetSkillButtons(skillButtons)
+    self.dict_btn_skill = skillButtons
+    self:syncSkillData()
+end
+
+-- 学习技能（兼容性方法，实际逻辑应该在SkillMgr中）
+function _MPlayer:LearnSkill(skillId)
+    -- 这里应该调用SkillMgr的学习技能方法
+    -- local SkillMgr = require(ServerStorage.MSystems.Skill.SkillMgr)
+    -- return SkillMgr.LearnSkill(self.uin, skillId)
+    return true
+end
+
+-- 使用技能（兼容性方法，实际逻辑应该在SkillMgr中）
+function _MPlayer:UseSkill(skillId, target)
+    -- 这里应该调用SkillMgr的使用技能方法
+    -- local SkillMgr = require(ServerStorage.MSystems.Skill.SkillMgr)
+    -- return SkillMgr.UseSkill(self.uin, skillId, target)
+    return true
+end
+
+-- 其他兼容性方法 --------------------------------------------------------
+
+-- 获得经验值
+function _MPlayer:getMonExp()
+    return 10 * self.level -- 1级10经验  10级100经验
+end
+
+-- 检查死亡状态
+function _MPlayer:checkDead()
+    -- 进入战斗状态
+    self.combatTime = 10
+    
+    -- 如果血量为0，触发死亡
+    if self.health <= 0 and not self.isDead then
+        self:Die()
+    end
+end
+
+-- 重置战斗数据
+function _MPlayer:resetBattleData(resethpmp_)
+    -- 调用父类方法
+    Entity.resetBattleData(self, resethpmp_)
+    
+    -- 玩家特有的重置逻辑
+    if resethpmp_ then
+        self:SetHealth(self.maxHealth)
+        self.mana = self.maxMana
+    end
+    
+    -- 清除战斗状态
+    self.combatTime = 0
+    self.auto_wait_tick = 0
 end
 
 return _MPlayer

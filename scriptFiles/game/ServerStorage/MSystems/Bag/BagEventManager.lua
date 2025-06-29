@@ -2,11 +2,12 @@
 --- 负责处理所有背包相关的客户端请求和服务器响应
 
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
-local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
-local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
+local ServerStorage = game:GetService("ServerStorage")
+local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
+local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
+local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+local ItemRankConfig = require(MainStorage.Code.Common.Config.ItemRankConfig) ---@type ItemRankConfig
 
 ---@class BagEventManager
 local BagEventManager = {}

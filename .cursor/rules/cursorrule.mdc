@@ -1,3 +1,8 @@
+---
+description: PVZEwprd项目规则
+globs: 
+alwaysApply: false
+---
 # PVZWord 项目规则
 
 本文档概述了 PVZWord 游戏项目的架构、约定和重要文件。
@@ -414,4 +419,5 @@ NewSystemData.CloudKeys = {
 }
 
 return NewSystemData
+
 ``` 

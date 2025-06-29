@@ -15,20 +15,21 @@ local os   = os
 
 
 local MainStorage = game:GetService("MainStorage")
-local gg                = require(MainStorage.code.common.MGlobal)    ---@type gg
-local serverDataMgr     = require(game:GetService("ServerStorage").server.MServerDataManager) ---@type MServerDataManager
+local ServerStorage = game:GetService("ServerStorage")
+local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
+local serverDataMgr     = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
 gg.isServer = true
-local common_const      = require(MainStorage.code.common.MConst)     ---@type common_const
-local Player       = require(MainStorage.code.server.entity_types.Player)          ---@type Player
-local Scene      = require(MainStorage.code.server.Scene)         ---@type Scene
-local bagMgr        = require(MainStorage.code.server.bag.BagMgr)          ---@type BagMgr
-local cloudDataMgr  = require(MainStorage.code.server.MCloudDataMgr)    ---@type MCloudDataMgr
-local cloudMailData = require(MainStorage.code.server.Mail.cloudMailData) ---@type CloudMailDataAccessor
-local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
-local MServerInitPlayer = require(MainStorage.code.server.MServerInitPlayer) ---@type MServerInitPlayer
+local common_const      = require(MainStorage.Code.Common.GameConfig.MConst)     ---@type common_const
+local Player       = require(MainStorage.Code.MServer.EntityTypes.MPlayer)          ---@type MPlayer
+local Scene      = require(MainStorage.Code.Scene.Scene)         ---@type Scene
+local bagMgr        = require(ServerStorage.MSystems.Bag.BagMgr)          ---@type BagMgr
+local cloudDataMgr  = require(ServerStorage.MCloudDataMgr)    ---@type MCloudDataMgr
+local cloudMailData = require(ServerStorage.MSystems.Mail.cloudMailData) ---@type CloudMailDataAccessor
+local MailManager = require(ServerStorage.MSystems.Mail.MailManager) ---@type MailManager
+local MServerInitPlayer = require(ServerStorage.MServerInitPlayer) ---@type MServerInitPlayer
 
-local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 -- 总入口
 ---@class MainServer
 local MainServer = {}
@@ -74,34 +75,26 @@ function MainServer.start_server()
     MainServer.bind_update_tick()         --开始tick
     MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     MServerInitPlayer.setInitFinished(true)  -- 设置初始化完成
-    for _, child in pairs(MainStorage.code.common.config.Children) do
+    for _, child in pairs(MainStorage.Code.Common.Config.Children) do
         require(child)
     end
-    local plugins = MainStorage.code.plugins
-    if plugins then
-        for _, child in pairs(plugins.Children) do
-            if child and child.PluginMain then
-                local plugin = require(child.PluginMain)
-                if plugin.StartServer then
-                    plugin.StartServer()
-                end
-            end
-        end
-    end
+
 end
 
 
 function MainServer.initModule()
     gg.log("初始化模块")
     -- local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
-    local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
-    local BagEventManager = require(MainStorage.code.server.bag.BagEventManager) ---@type BagEventManager
+    -- local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
+    local BagEventManager = require(ServerStorage.MSystems.Bag.BagEventManager) ---@type BagEventManager
+    local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
     -- gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
     -- gg.cloudMailData = cloudMailData:Init()
-    SkillEventManager.Init()
-    MailManager:Init()
+    -- SkillEventManager.Init()
     gg.log("背包事件管理")
     BagEventManager:Init()
+    gg.log("邮件事件管理")
+    MailEventManager:Init()
     gg.log("事件初始化完成")
 
 

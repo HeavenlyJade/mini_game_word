@@ -1,8 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
 # PVZWord 基础类文档
 
 本文档专门记录 PVZWord 项目中的**基础类（Base Classes）**。这些是所有其他类的基础，理解它们对于正确使用整个API体系至关重要。
 
-所有链接指向官方的 [miniapi GitHub 仓库](https://github.com/HeavenlyJade/api)。
+所有链接指向官方的 [miniapi GitHub 仓库](mdc:https:/github.com/HeavenlyJade/api)。
 
 ---
 
@@ -22,7 +27,7 @@ SandboxNode (沙盒节点基类)
 
 **继承自**：Transform
 
-**链接**：[Joint.md](https://github.com/HeavenlyJade/api/blob/main/Classes/Base/Joint.md)
+**链接**：[Joint.md](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Base/Joint.md)
 
 ### 描述
 连接两个物理模型的节点。用于创建物理约束，如铰链、弹簧等连接。
@@ -45,7 +50,7 @@ SandboxNode (沙盒节点基类)
 
 **继承自**：无（基类）
 
-**链接**：[SandboxNode.md](https://github.com/HeavenlyJade/api/blob/main/Classes/Base/SandboxNode.md)
+**链接**：[SandboxNode.md](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Base/SandboxNode.md)
 
 ### 描述
 沙盒节点，场景对象，沙盒结构场景树基础节点。这是所有场景对象的基类，提供了基本的节点管理功能。
@@ -141,7 +146,7 @@ end)
 
 **继承自**：SandboxNode
 
-**链接**：[ScriptNode.md](https://github.com/HeavenlyJade/api/blob/main/Classes/Base/ScriptNode.md)
+**链接**：[ScriptNode.md](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Base/ScriptNode.md)
 
 ### 描述
 脚本节点，用于执行Lua代码。可以通过文件路径或直接代码字符串来运行脚本。
@@ -186,7 +191,7 @@ newScript.code = "print('hello script')"
 
 **继承自**：SandboxNode
 
-**链接**：[Transform.md](https://github.com/HeavenlyJade/api/blob/main/Classes/Base/Transform.md)
+**链接**：[Transform.md](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Base/Transform.md)
 
 ### 描述
 位移、旋转等操作的基类节点。提供了完整的3D变换功能，包括位置、旋转、缩放等。
@@ -301,7 +306,7 @@ end)
 
 ## 相关文档链接
 
-- [SandboxNode 方法详情](https://github.com/HeavenlyJade/api/tree/main/Classes/Base/SandboxNode_F)
-- [Transform 方法详情](https://github.com/HeavenlyJade/api/tree/main/Classes/Base/Transform_F)
-- [数据类型文档](./.cursorrule-enums) - 查看Vector3、Quaternion等类型详情
-- [API索引文档](./.cursorrule-api) - 查看更多相关类和服务 
+- [SandboxNode 方法详情](mdc:https:/github.com/HeavenlyJade/api/tree/main/Classes/Base/SandboxNode_F)
+- [Transform 方法详情](mdc:https:/github.com/HeavenlyJade/api/tree/main/Classes/Base/Transform_F)
+- [数据类型文档](mdc:.cursorrule-enums) - 查看Vector3、Quaternion等类型详情
+- [API索引文档](mdc:.cursorrule-api) - 查看更多相关类和服务 
