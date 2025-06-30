@@ -8,11 +8,10 @@
 print("服务端初始化")
 
 local MainStorage = game:GetService("MainStorage")
-local ServerStorage = game:GetService("ServerStorage")
 local Code = MainStorage:WaitForChild('Code')
 local Untils = Code:WaitForChild('Untils')
 Untils:WaitForChild('ClassMgr')
 
-local MainServer = require(ServerStorage.MServerMain) ---@type MainServer
+local MainServer = require(MainStorage.Code.MServer.Manager.MServerMain) ---@type MainServer
 MainServer.start_server()
 print("服务器加载完成")

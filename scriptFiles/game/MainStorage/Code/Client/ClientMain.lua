@@ -55,7 +55,7 @@ end
 
 
 function ClientMain.createNetworkChannel()
-    gg.network_channel = MS.NetworkChannel ---@type NetworkChannel
+    gg.network_channel = game:GetService("NetworkChannel") ---@type NetworkChannel
     gg.network_channel.OnClientNotify:Connect(ClientMain.OnClientNotify)
     gg.network_channel:FireServer({ cmd = 'cmd_heartbeat', msg = 'new_client_join' })
 

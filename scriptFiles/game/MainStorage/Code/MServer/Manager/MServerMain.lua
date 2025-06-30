@@ -15,19 +15,12 @@ local os   = os
 
 
 local MainStorage = game:GetService("MainStorage")
-local ServerStorage = game:GetService("ServerStorage")
 local MS = require(MainStorage.Code.Untils.MS) ---@type MS
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
-local serverDataMgr     = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
+local serverDataMgr     = require(MainStorage.Code.MServer.Manager.MServerDataManager) ---@type MServerDataManager
 
 local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
-local Player       = require(MainStorage.Code.MServer.EntityTypes.MPlayer)          ---@type MPlayer
 local Scene      = require(MainStorage.Code.Scene.Scene)         ---@type Scene
-local bagMgr        = require(ServerStorage.MSystems.Bag.BagMgr)          ---@type BagMgr
-local cloudDataMgr  = require(ServerStorage.MCloudDataMgr)    ---@type MCloudDataMgr
-local cloudMailData = require(ServerStorage.MSystems.Mail.cloudMailData) ---@type CloudMailDataAccessor
-local MailManager = require(ServerStorage.MSystems.Mail.MailManager) ---@type MailManager
-local MServerInitPlayer = require(ServerStorage.MServerInitPlayer) ---@type MServerInitPlayer
 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler

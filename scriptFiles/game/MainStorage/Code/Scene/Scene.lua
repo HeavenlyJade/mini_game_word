@@ -1,22 +1,23 @@
-print("Hello world!")local MainStorage = game:GetService("MainStorage")
+local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local common_const = require(MainStorage.Code.Common.GameConfig.Mconst) ---@type common_const
-local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig·
-local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
-local TriggerZoneConfig = require(MainStorage.code.common.config.TriggerZoneConfig) ---@type TriggerZoneConfig
-local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
-local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
-
-local Monster = require(MainStorage.code.server.entity_types.Monster) ---@type Monster
-local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
-local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot
-local TriggerZone = require(MainStorage.code.server.entity_types.TriggerZone) ---@type TriggerZone
+local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
+local Entity = require(MainStorage.Code.MServer.EntityTypes.Entity) ---@type Entity
+local Monster = require(MainStorage.Code.MServer.EntityTypes.MMonster) ---@type Monster
+local Npc = require(MainStorage.Code.MServer.EntityTypes.MNpc) ---@type Npc
 local Environment = game:GetService("WorkSpace")["Environment"] ---@type Environment
-local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+
+-- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) ---@type NpcConfig·
+-- local AfkSpotConfig = require(MainStorage.Code.Common.Config.AfkSpotConfig) ---@type AfkSpotConfig
+-- local TriggerZoneConfig = require(MainStorage.Code.Common.Config.TriggerZoneConfig) ---@type TriggerZoneConfig
+
+-- local AfkSpot = require(MainStorage.Code.MServer.EntityTypes.AfkSpot) ---@type AfkSpot
+-- local TriggerZone = require(MainStorage.Code.MServer.EntityTypes.TriggerZone) ---@type TriggerZone
 
 
-local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
+local BagMgr = require(game:GetService("ServerStorage").MSystems.Bag.BagMgr) ---@type BagMgr
 
 ---@class Scene:Class
 ---@field sceneId number 场景ID

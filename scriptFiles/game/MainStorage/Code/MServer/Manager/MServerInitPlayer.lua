@@ -13,13 +13,13 @@ local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type g
 local ClassMgr          = require(MainStorage.Code.Untils.ClassMgr)    ---@type ClassMgr
 local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
 local Scene      = require(MainStorage.Code.MServer.Scene)         ---@type Scene
-local Player       = require(MainStorage.Code.MServer.EntityTypes.MPlayer)
+local Player       = require(MainStorage.Code.MServer.Manager.EntityTypes.MPlayer)          ---@type MPlayer
 
-local MailManager = require(MainStorage.code.server.Mail.MailManager) ---@type MailManager
-local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
+local MailManager = require(MainStorage.Code.MServer.MSystems.Mail.MailManager) ---@type MailManager
+local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 
-local cloudDataMgr  = require(ServerStorage.MCloudDataMgr)    ---@type MCloudDataMgr
-local serverDataMgr     = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
+local cloudDataMgr  = require(MainStorage.Code.MServer.Manager.MCloudDataMgr)    ---@type MCloudDataMgr
+local serverDataMgr     = require(MainStorage.Code.MServer.Manager.MServerDataManager) ---@type MServerDataManager
 
 
 ---@class MServerInitPlayer

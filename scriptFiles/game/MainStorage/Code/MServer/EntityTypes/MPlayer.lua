@@ -5,7 +5,7 @@ local gg            = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local cloudDataMgr = require(ServerStorage.MCloudDataMgr) ---@type MCloudDataMgr
 local ClassMgr      = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local common_const  = require(MainStorage.Code.Common.GameConfig.Mconst) ---@type common_const
-local Entity        = require(ServerStorage.EntityTypes.Entity) ---@type Entity
+local Entity = require(MainStorage.Code.MServer.EntityTypes.Entity) ---@type Entity
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 
