@@ -1,7 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
-local common_const = require(MainStorage.Code.Common.GameConfig.MConst) ---@type common_const
-local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+-- local common_const = require(MainStorage.Code.Common.GameConfig.MConst) ---@type common_const
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 

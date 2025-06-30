@@ -1,7 +1,7 @@
 print("Hello world!")
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal)            ---@type gg
 
 ---@class Task
 ---@field func function The function to execute
@@ -25,7 +25,7 @@ local ServerScheduler = {
     currentSlot = 1,   -- Current position in the wheel
     
     -- Timing statistics
-    lastTime = tick(),  -- 使用tick()而不是os.time()
+    lastTime = gg.GetTimeStamp(),  -- 使用gg.GetTimeStamp()获取时间戳
     updateCount = 0,
     updatesPerSecond = 0,
     isRunning = false
@@ -146,42 +146,19 @@ function ServerScheduler.update()
     ServerScheduler.currentSlot = ServerScheduler.currentSlot % ServerScheduler.wheelSlots + 1
 end
 
--- 启动调度器
-function ServerScheduler.start()
-    if ServerScheduler.isRunning then
-        return
-    end
-    
-    ServerScheduler.isRunning = true
-    
-    -- 使用game的Heartbeat事件来驱动调度器
-    local RunService = game:GetService("RunService")
-    local connection
-    
-    connection = RunService.Heartbeat:Connect(function(deltaTime)
-        local currentTime = tick()
-        -- 每秒更新一次调度器
-        if currentTime - ServerScheduler.lastTime >= 1 then
-            ServerScheduler.update()
-            ServerScheduler.lastTime = currentTime
-            ServerScheduler.updateCount = ServerScheduler.updateCount + 1
-        end
-    end)
-    
-    -- 将连接存储起来，以便可能需要停止时使用
-    ServerScheduler.heartbeatConnection = connection
-end
+-- ServerScheduler 现在由外部驱动（MServerMain.update），不需要自己的定时机制
+-- tick 属性用于追踪当前服务器tick，由外部设置
+ServerScheduler.tick = 0
 
--- 停止调度器
-function ServerScheduler.stop()
-    if ServerScheduler.heartbeatConnection then
-        ServerScheduler.heartbeatConnection:Disconnect()
-        ServerScheduler.heartbeatConnection = nil
+-- 更新调度器的时间追踪（每秒调用一次）
+function ServerScheduler.updateTiming()
+    local currentTime = gg.GetTimeStamp()
+    if currentTime - ServerScheduler.lastTime >= 1 then
+        ServerScheduler.lastTime = currentTime
+        ServerScheduler.updateCount = ServerScheduler.updateCount + 1
+        return true -- 表示需要更新调度器
     end
-    ServerScheduler.isRunning = false
+    return false
 end
-
--- 自动启动调度器
-ServerScheduler.start()
 
 return ServerScheduler

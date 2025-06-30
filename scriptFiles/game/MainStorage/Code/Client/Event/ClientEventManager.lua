@@ -1,6 +1,6 @@
 local MainStorage = game:GetService("MainStorage")
 
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class ClientEventManager
 local ClientEventManager = {
@@ -9,7 +9,7 @@ local ClientEventManager = {
     _callbackCounter = 0 -- 用于生成唯一ID
 }
 ---@class CEvent
----@field __class Class 事件类型
+---@field __class string 事件类型
 
 ---@class S2CEvent : CEvent
 

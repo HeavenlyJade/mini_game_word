@@ -15,14 +15,12 @@ local Vector3 = Vector3
 local ColorQuad = ColorQuad
 
 local MainStorage = game:GetService("MainStorage")
-
-local gg            = require(MainStorage.code.common.MGlobal)           ---@type gg
--- local UiCommon      = require(MainStorage.code.client.ui.UiCommon)       ---@type UiCommon
--- local wheelControl  = require( MainStorage.code.client.MWheelControl )   ---@type MMobileWheelControl
-
 local WorldService  = game:GetService( 'WorldService' )
 local inputservice = game:GetService("UserInputService")
 local RunService   = game:GetService("RunService")
+
+local gg              = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+
 
 
 

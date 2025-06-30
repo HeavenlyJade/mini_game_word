@@ -1,8 +1,8 @@
 local MainStorage = game:GetService("MainStorage")
-local Vec2 = require(MainStorage.code.common.math.Vec2)
-local Vec3 = require(MainStorage.code.common.math.Vec3)
-local Vec4 = require(MainStorage.code.common.math.Vec4)
-local Quat = require(MainStorage.code.common.math.Quat)
+local Vec2 = require(MainStorage.Code.Untils.Math.Vec2) ---@type Vec2
+local Vec3 = require(MainStorage.Code.Untils.Math.Vec3) ---@type Vec3
+local Vec4 = require(MainStorage.Code.Untils.Math.Vec4) 
+local Quat = require(MainStorage.Code.Untils.Math.Quat) 
 
 local inputservice = game:GetService("UserInputService")
 local Players = game:GetService('Players')
@@ -57,7 +57,7 @@ function Math.Random(min, max)
 end
 --随机数加偏移
 function Math.RandomDeviation(value, dev)
-    return value + self:Random(-dev, dev)
+    return value + Math.Random(-dev, dev)
 end
 --在一个圈内随机
 function Math.RandomInsideUnitCircle()
@@ -353,7 +353,7 @@ local gg = {
     Vec3 = Vec3, ---@type Vec3
     Vec4 = Vec4, ---@type Vec4
     Quat = Quat, ---@type Quat
-    noise = require(script.Parent.math.PerlinNoise),
+    noise = require(MainStorage.Code.Untils.Math.PerlinNoise),
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
     uuid_start = nil,

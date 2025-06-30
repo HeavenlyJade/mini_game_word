@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 
 ---@class WeightedRandomSelector
 ---@field New fun( items:table, weightPredicate:fun(item:any):number ):WeightedRandomSelector

@@ -13,9 +13,8 @@ local MainStorage   = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")      
 local cloudService      = game:GetService("CloudService")     --- @type CloudService
 -- MServerDataManager
-local cloudDataMgr = require(ServerStorage.MCloudDataMgr) ---@type MCloudDataMgr
 local MServerDataManager = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
-local gg            = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
+local gg            = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 
 local  CONST_CLOUD_SAVE_TIME = 30    --每60秒存盘一次

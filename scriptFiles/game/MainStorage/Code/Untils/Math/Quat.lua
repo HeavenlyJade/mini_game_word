@@ -1,7 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
-local Vec3 = require(MainStorage.code.common.math.Vec3)
-local Mat3 = require(MainStorage.code.common.math.Matrix3x3)
-local MathDefines = require(MainStorage.code.common.math.MathDefines)
+local Vec3 = require(MainStorage.Code.Untils.Math.Vec3)
+local Mat3 = require(MainStorage.Code.Untils.Math.Matrix3x3)
+local MathDefines = require(MainStorage.Code.Untils.Math.MathDefines)
 local FaceCameraMode = MathDefines.FaceCameraMode
 local Quat = {}
 

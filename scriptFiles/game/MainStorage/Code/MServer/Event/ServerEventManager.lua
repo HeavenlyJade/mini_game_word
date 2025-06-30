@@ -1,9 +1,9 @@
 local MainStorage     = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
-local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local gg = require(MainStorage.Code.Untils.MGlobal)            ---@type gg
+local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 
 ---@class SEvent
----@field __class Class 事件类型
+---@field __class string 事件类型
 
 ---@class C2SEvent : SEvent
 ---@field player Player

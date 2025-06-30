@@ -1,5 +1,5 @@
 local MainStorage = game:GetService("MainStorage")
-local MathDefines = require(MainStorage.code.common.math.MathDefines)
+local MathDefines = require(MainStorage.Code.Untils.Math.MathDefines)
 
 ---@class Vec3
 local Vec3 = {}
@@ -39,7 +39,7 @@ function Vec3.new(x, y, z)
 end
 
 function Vec3:FindClosestPlayer(range)
-    local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+    local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
     local closestPlayer = nil
     local minDistSq = range * range
     

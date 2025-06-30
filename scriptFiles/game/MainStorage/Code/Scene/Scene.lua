@@ -1,7 +1,7 @@
 print("Hello world!")local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local common_const = require(MainStorage.code.common.MConst) ---@type common_const
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local common_const = require(MainStorage.Code.Common.GameConfig.Mconst) ---@type common_const
 local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig·
 local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
 local TriggerZoneConfig = require(MainStorage.code.common.config.TriggerZoneConfig) ---@type TriggerZoneConfig

@@ -1,5 +1,4 @@
 local MainStorage = game:GetService("MainStorage")
-local MathDefines = require(MainStorage.code.common.math.MathDefines)
 local Vec4 = {}
 
 --实例化

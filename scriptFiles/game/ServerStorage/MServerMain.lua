@@ -16,10 +16,11 @@ local os   = os
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
+local MS = require(MainStorage.Code.Untils.MS) ---@type MS
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 local serverDataMgr     = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
-gg.isServer = true
-local common_const      = require(MainStorage.Code.Common.GameConfig.MConst)     ---@type common_const
+
+local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
 local Player       = require(MainStorage.Code.MServer.EntityTypes.MPlayer)          ---@type MPlayer
 local Scene      = require(MainStorage.Code.Scene.Scene)         ---@type Scene
 local bagMgr        = require(ServerStorage.MSystems.Bag.BagMgr)          ---@type BagMgr
@@ -31,6 +32,8 @@ local MServerInitPlayer = require(ServerStorage.MServerInitPlayer) ---@type MSer
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 -- 总入口
+
+gg.isServer = true
 ---@class MainServer
 local MainServer = {}
 
@@ -114,8 +117,28 @@ end
 --建立网络通道
 function MainServer.createNetworkChannel()
     --begin listen
-    gg.network_channel = MainStorage:WaitForChild("NetworkChannel")
-    gg.network_channel.OnServerNotify:Connect(MainServer.OnServerNotify)
+    gg.log("服务端开始创建网络通道...")
+    gg.network_channel = MS.NetworkChannel
+    
+    if not gg.network_channel then
+        gg.log("错误：MS.NetworkChannel 是 nil，尝试直接获取服务...")
+        gg.network_channel = game:GetService("NetworkChannel")
+        
+        if not gg.network_channel then
+            gg.log("错误：无法获取 NetworkChannel 服务，可能该服务不存在")
+            return
+        end
+    end
+    
+    gg.log("服务端 NetworkChannel 获取成功，连接事件...")
+    if gg.network_channel.OnServerNotify then
+        gg.network_channel.OnServerNotify:Connect(MainServer.OnServerNotify)
+        gg.log("OnServerNotify 事件连接成功")
+    else
+        gg.log("警告：NetworkChannel 没有 OnServerNotify 事件")
+    end
+    
+    gg.log('服务端网络通道建立结束')
 
 end
 
@@ -128,7 +151,7 @@ function MainServer.OnServerNotify(uin_, args)
     args.player = player_
     if args.__cb then
         args.Return = function(returnData)
-            game:GetService("NetworkChannel"):fireClient({
+            gg.network_channel:fireClient(uin_, {
                 cmd = args.__cb .. "_Return",
                 data = returnData
             })
@@ -162,8 +185,12 @@ function MainServer.update()
     for _, scene_ in pairs(serverDataMgr.getAllScenes()) do
         scene_:update()
     end
-    ServerScheduler.tick = serverDataMgr.tick  -- 对于服务器端
-    ServerScheduler.update()  -- 对于服务器端
+    
+    -- 更新调度器（按秒为单位，而不是每tick）
+    ServerScheduler.tick = serverDataMgr.tick
+    if ServerScheduler.updateTiming() then
+        ServerScheduler.update()
+    end
 end
 
 return MainServer;

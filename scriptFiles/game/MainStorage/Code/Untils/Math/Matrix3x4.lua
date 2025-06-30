@@ -1,8 +1,8 @@
 
 local MainStorage = game:GetService("MainStorage")
-local Vec3 = require(MainStorage.code.common.math.Vec3)
-local Quat = require(MainStorage.code.common.math.Quat)
-local Mat3 = require(MainStorage.code.common.math.Matrix3x3)
+local Vec3 = require(MainStorage.Code.Untils.Math.Vec3)
+local Quat = require(MainStorage.Code.Untils.Math.Quat)
+local Mat3 = require(MainStorage.Code.Untils.Math.Matrix3x3)
 
 local Mat3x4 = {}
 

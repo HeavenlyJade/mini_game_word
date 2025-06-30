@@ -1,4 +1,4 @@
-print("Hello world!")local Perlin = {}
+local Perlin = {}
 
 Perlin.NoiseData_2D = nil
 Perlin.NoiseData_3D = nil

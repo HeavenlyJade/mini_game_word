@@ -11,7 +11,7 @@ local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 local ClassMgr          = require(MainStorage.Code.Untils.ClassMgr)    ---@type ClassMgr
-local common_const      = require(MainStorage.Code.Common.GameConfig.MConst)     ---@type common_const
+local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
 local Scene      = require(MainStorage.Code.MServer.Scene)         ---@type Scene
 local Player       = require(MainStorage.Code.MServer.EntityTypes.MPlayer)
 

@@ -1,8 +1,8 @@
 local MainStorage  = game:GetService('MainStorage')
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ItemRankConfig = require(MainStorage.code.common.config.ItemRankConfig) ---@type ItemRankConfig
-local common_config = require(MainStorage.code.common.GameConfig.MConfig) ---@type common_config
-local gg              = require(MainStorage.code.common.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+-- local ItemRankConfig = require(MainStorage.Code.Common.Config.ItemRankConfig) ---@type ItemRankConfig
+local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
+local gg              = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 -- ItemType class
 ---@class ItemType:Class
@@ -42,8 +42,8 @@ function ItemType:OnInit(data)
     local typeString = data["物品类型"] or ""
     self.itemCategory = common_config.ItemTypeEnum[typeString] or self:_DetectItemType(data)
     self.itemCategoryName = common_config.ItemTypeNames[self.itemCategory] or "未知"
-    
-    self.rank = ItemRankConfig.Get(data["品级"] or "普通")
+    self.rank = nil
+    -- self.rank = ItemRankConfig.Get(data["品级"] or "普通")
     self.extraPower = data["额外战力"] or 0
     
     -- 强化
@@ -324,7 +324,7 @@ function ItemType:GetToStringParams()
 end
 
 function ItemType:ToItem(count)
-    local Item = require(MainStorage.code.server.bag.Item) ---@type Item
+    local Item = require(game:GetService("ServerStorage").MSystems.Bag.Item) ---@type Item
     local item = Item.New()
     item:Load({
         uuid = gg.create_uuid('item'),
