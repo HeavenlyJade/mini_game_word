@@ -1,8 +1,8 @@
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local MailEventConfig = require(MainStorage.Code.Event.EventMail) ---@type MailEventConfig
 
 ---@class MailBase :Class 邮件基类，定义邮件的通用属性和方法
 ---@field id string 邮件唯一ID

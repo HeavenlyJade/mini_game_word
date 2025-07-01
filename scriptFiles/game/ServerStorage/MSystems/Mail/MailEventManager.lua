@@ -90,7 +90,7 @@ function MailEventManager.HandleGetMailList(event)
     end
     
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    local success, mailList = MailMgr.GetPlayerMailList(player.uin)
+    local success, mailList = MailMgr:GetPlayerMailList(player.uin)
     
     if success then
         gg.network_channel:fireClient(player.uin, {
@@ -118,7 +118,7 @@ function MailEventManager.HandleReadMail(event)
     end
     
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    local success, code, message = MailMgr.ReadMail(player.uin, mailId)
+    local success, code, message = MailMgr:ReadMail(player.uin, mailId)
     
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventManager.EVENTS.READ_MAIL,
@@ -139,7 +139,7 @@ function MailEventManager.HandleClaimMail(event)
     end
     
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    local success, code, message, rewards = MailMgr.ClaimMailAttachment(player.uin, mailId)
+    local success, code, message, rewards = MailMgr:ClaimMailAttachment(player.uin, mailId)
     
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventManager.EVENTS.MAIL_CLAIMED,
@@ -161,7 +161,7 @@ function MailEventManager.HandleDeleteMail(event)
     end
     
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    local success, code, message = MailMgr.DeleteMail(player.uin, mailId)
+    local success, code, message = MailMgr:DeleteMail(player.uin, mailId)
     
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventManager.EVENTS.MAIL_DELETED,
@@ -182,7 +182,7 @@ function MailEventManager.HandleBatchClaim(event)
     end
     
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    local success, code, message, rewards = MailMgr.BatchClaimMails(player.uin, mailIds)
+    local success, code, message, rewards = MailMgr:BatchClaimMails(player.uin, mailIds)
     
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventManager.EVENTS.MAIL_CLAIMED,
@@ -202,7 +202,7 @@ function MailEventManager.HandleDeleteReadMails(event)
     end
     
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    local success, code, message, deletedCount = MailMgr.DeleteReadMails(player.uin)
+    local success, code, message, deletedCount = MailMgr:DeleteReadMails(player.uin)
     
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventManager.EVENTS.MAIL_DELETED,

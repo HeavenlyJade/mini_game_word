@@ -7,7 +7,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-local ItemRankConfig = require(MainStorage.Code.Common.Config.ItemRankConfig) ---@type ItemRankConfig
+-- local ItemRankConfig = require(MainStorage.Code.Common.Config.ItemRankConfig) ---@type ItemRankConfig
 
 ---@class BagEventManager
 local BagEventManager = {}

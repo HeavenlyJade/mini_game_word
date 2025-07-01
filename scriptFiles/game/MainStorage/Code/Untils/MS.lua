@@ -24,7 +24,7 @@ MS.MouseService = game:GetService("MouseService") -- 鼠标服务
 MS.CloudServerConfigService = game:GetService("CloudServerConfigService")
 MS.SceneMgr = game:GetService("SceneMgr") -- 副本服务
 MS.CustomConfigService = game:GetService("CustomConfigService")
-MS.NetworkChannel = game:GetService("NetworkChannel")
+-- MS.NetworkChannel = game:GetService("NetworkChannel")
 -- 尝试获取 NetworkChannel 服务
 
 print("游戏服务初始化完成")
@@ -51,12 +51,7 @@ MS.PerlinNoise = require(MS.MainStorage.Code.Untils.Math.PerlinNoise)
 print("数学工具类加载完成")
 
 -- 通用配置和常量
-MS.MConst = require(MS.MainStorage.Code.Common.GameConfig.Mconst)
-MS.MConfig = require(MS.MainStorage.Code.Common.GameConfig.MConfig)
-MS.ItemType = require(MS.MainStorage.Code.Common.TypeConfig.ItemType)
-MS.ItemTypeConfig = require(MS.MainStorage.Code.Common.Config.ItemTypeConfig)
-MS.WeightedRandomSelector = require(MS.MainStorage.Code.Common.WeightedRandomSelector)
-
+-- 
 print("配置系统加载完成")
 
 -- 事件系统

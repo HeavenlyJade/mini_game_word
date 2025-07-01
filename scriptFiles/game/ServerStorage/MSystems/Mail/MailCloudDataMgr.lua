@@ -6,8 +6,8 @@ local game = game
 local os = os
 
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal)
 local cloudService = game:GetService("CloudService")   ---@type CloudService
+local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
 ---@class CloudMailDataAccessor
 local CloudMailDataAccessor = {}

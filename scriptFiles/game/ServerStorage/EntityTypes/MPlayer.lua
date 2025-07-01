@@ -1,13 +1,14 @@
 local MainStorage   = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg            = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-
-local cloudDataMgr = require(ServerStorage.MCloudDataMgr) ---@type MCloudDataMgr
 local ClassMgr      = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local common_const  = require(MainStorage.Code.Common.GameConfig.Mconst) ---@type common_const
-local Entity        = require(ServerStorage.EntityTypes.Entity) ---@type Entity
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
+
+local cloudDataMgr    =     require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type MCloudDataMgr
+local Entity             = require(ServerStorage.EntityTypes.Entity) ---@type Entity
+
+
 
 ---@class MPlayer : Entity    --玩家类  (单个玩家) (管理玩家状态)
 ---@field bag Bag 背包管理器实例
@@ -47,12 +48,14 @@ end
 function _MPlayer:initPlayerData()
     -- 初始化背包（通过BagMgr管理）
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
+        -- 初始化邮件
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     -- 优先尝试加载现有背包，如果不存在则会创建新的
     BagMgr.OnPlayerJoin(self)
 
-    -- 初始化邮件
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    MailMgr.OnPlayerJoin(self)
+    MailMgr:OnPlayerJoin(self)
     
     -- 初始化技能数据
     self:initSkillData()
@@ -143,7 +146,7 @@ function _MPlayer:leaveGame()
 
     -- 通知邮件管理器玩家离线
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    MailMgr.OnPlayerLeave(self.uin)
+    MailMgr:OnPlayerLeave(self.uin)
 end
 
 -- 重写死亡处理

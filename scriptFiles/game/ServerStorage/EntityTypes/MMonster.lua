@@ -8,14 +8,15 @@ local math = math
 local pairs = pairs
 
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local common_const = require(MainStorage.code.common.MConst) ---@type common_const
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local BehaviorTree = require(MainStorage.code.server.entity_types.BehaviorTree) ---@type BehaviorTree
+local ServerStorage = game:GetService("ServerStorage")
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr      = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 
-local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
-local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local Entity = require(ServerStorage.EntityTypes.Entity) ---@type Entity
+local BehaviorTree = require(ServerStorage.EntityTypes.BehaviorTree) ---@type MobBehavior
+
+
 -- local skillMgr  = require(MainStorage.code.server.skill.MSkillMgr)  ---@type SkillMgr
 
 ---@class Monster:Entity    --怪物类 (单个怪物) (管理怪物状态)

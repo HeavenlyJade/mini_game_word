@@ -1,3 +1,6 @@
+local MainStorage  = game:GetService('MainStorage')
+
+local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
 
 if  _G.ClassMgr then
@@ -70,7 +73,6 @@ function ClassMgr.Class( name, ...)
 	cls.__index = cls
 	cls.className = name
 	cls.ToString = function (instance)
-		local gg              = require(game:GetService("MainStorage").code.common.MGlobal) ---@type gg
 		local paramsStr = {}
 		if instance.GetToStringParams then
 			local params = instance:GetToStringParams()

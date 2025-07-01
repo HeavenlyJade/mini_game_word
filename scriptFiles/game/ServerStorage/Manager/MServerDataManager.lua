@@ -12,7 +12,8 @@ local MServerDataManager = {}
 -- 服务端数据存储
 MServerDataManager.server_players_list = {} ---@type table<number, MPlayer>
 MServerDataManager.server_players_name_list = {} ---@type table<string, MPlayer>
-MServerDataManager.server_scene_list = {} ---@type table<string, MPlayer>
+MServerDataManager.server_scene_list = {} ---@type table<string, Scene>
+MServerDataManager.MailMgr = nil ---@type MailMgr/nil
 
 -- 游戏状态相关
 MServerDataManager.game_stat = 0 -- 0=正常 1=完结

@@ -21,8 +21,8 @@ function ClientMain.start_client()
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
 
 
-    require(MainStorage.Code.Client.graphic.DamagePool)
-    require(MainStorage.Code.Client.graphic.WorldTextAnim)
+    require(MainStorage.Code.Client.Graphic.DamagePool)
+    require(MainStorage.Code.Client.Graphic.WorldTextAnim)
     ClientEventManager.Subscribe("FetchAnimDuration", function (evt)
         local animator = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast animator Animator
         if animator then
@@ -55,8 +55,10 @@ end
 
 
 function ClientMain.createNetworkChannel()
-    gg.network_channel = game:GetService("NetworkChannel") ---@type NetworkChannel
+    gg.network_channel = MainStorage:WaitForChild("NetworkChannel") ---@type NetworkChannel
+    gg.log("gg.network_channel",gg.network_channel,gg.network_channel.OnClientNotify)
     gg.network_channel.OnClientNotify:Connect(ClientMain.OnClientNotify)
+
     gg.network_channel:FireServer({ cmd = 'cmd_heartbeat', msg = 'new_client_join' })
 
     gg.log('网络通道建立结束')

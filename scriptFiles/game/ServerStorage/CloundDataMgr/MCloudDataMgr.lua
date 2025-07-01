@@ -13,7 +13,7 @@ local MainStorage   = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")      
 local cloudService      = game:GetService("CloudService")     --- @type CloudService
 -- MServerDataManager
-local MServerDataManager = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
+local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local gg            = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 

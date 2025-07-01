@@ -1,6 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local gg              = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-
+local gg  = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType) ---@type ItemType
 
 --- 物品类型配置文件

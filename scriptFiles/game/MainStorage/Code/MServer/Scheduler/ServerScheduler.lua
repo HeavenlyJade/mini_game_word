@@ -1,4 +1,4 @@
-print("Hello world!")
+
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal)            ---@type gg

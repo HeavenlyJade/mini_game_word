@@ -1,10 +1,15 @@
 local MainStorage        = game:GetService("MainStorage")
-local gg                 = require(MainStorage.code.common.MGlobal) ---@type gg
-local ClassMgr           = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local Modifiers          = require(MainStorage.code.common.config_type.modifier.Modifiers) ---@type Modifiers
-local Entity             = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
-local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
-local ServerScheduler    = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local ServerStorage = game:GetService("ServerStorage")
+
+local gg                 = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr           = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+-- local Modifiers          = require(MainStorage.Code.Common.Config.Modifiers) ---@type Modifiers
+local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local ServerScheduler    = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
+
+local Entity             = require(ServerStorage.EntityTypes.Entity) ---@type Entity
+local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
+
 
 ---@class Npc:Entity    --NPC类 (单个Npc) (管理NPC状态)
 ---@field New fun(npcData: NpcData, actor: SandboxNode) Npc
@@ -12,10 +17,10 @@ local ServerScheduler    = require(MainStorage.code.server.ServerScheduler) ---@
 local _M                 = ClassMgr.Class('Npc', Entity) --父类Entity
 
 ---处理玩家进入触发器
----@param player Player 玩家
+---@param player MPlayer 玩家
 function _M:OnPlayerTouched(player)
     self:SetTarget(player)
-    player:AddNearbyNpc(self)
+    -- player:AddNearbyNpc(self)
     -- 将玩家添加到附近玩家列表
     self.nearbyPlayers[player.uuid] = player
 end
@@ -26,7 +31,8 @@ function _M:OnInit(npcData, actor)
     self.spawnPos          = actor.LocalPosition
     self:setGameActor(actor)
     self.name              = npcData["名字"]
-    self.interactCondition = Modifiers.New(npcData["互动条件"])
+    -- self.interactCondition = Modifiers.New(npcData["互动条件"])
+    self.interactCondition = npcData["互动条件"] -- 暂时直接使用原始数据，需要根据实际情况调整
     self.interactCommands  = npcData["互动指令"]
     self.interactIcon      = npcData["互动图标"]
     self.extraSize      = gg.Vec3.new(npcData["额外互动距离"]) or gg.Vec3.new(0,0)
@@ -102,7 +108,7 @@ _M.GenerateUUID = function(self)
 end
 
 ---设置NPC的目标
----@param target Player|nil
+---@param target MPlayer|nil
 function _M:SetTarget(target)
     self.target = target
 end
@@ -162,10 +168,11 @@ function _M:HandleInteraction(player)
     gg.log("HandleInteraction", self.name, self.uuid, player.name, player.uuid)
     -- 检查交互条件
     if self.interactCondition then
-        local param = self.interactCondition:Check(player, self)
-        if param.cancelled then
-            return
-        end
+        -- TODO: 根据实际需要实现条件检查逻辑
+        -- local param = self.interactCondition:Check(player, self)
+        -- if param.cancelled then
+        --     return
+        -- end
     end
     -- 执行交互指令
     if self.interactCommands then

@@ -12,7 +12,7 @@ local SandboxNode  = SandboxNode ---@type SandboxNode
 local MainStorage   = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")      
 local cloudService = game:GetService("CloudService") ---@type CloudService
-local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 local CONST_CLOUD_SAVE_TIME = 30 -- 每30秒存盘一次
 

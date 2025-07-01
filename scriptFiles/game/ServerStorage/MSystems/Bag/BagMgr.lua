@@ -6,9 +6,6 @@ local require = require
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
-local gg              = require(MainStorage.Code.Common.Untils.MGlobal)   ---@type gg
-local ItemRankConfig = require(MainStorage.Code.Common.Config.ItemRankConfig) ---@type ItemRankConfig
--- local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 local BagCloudDataMgr = require(ServerStorage.MSystems.Bag.BagCloudDataMgr) ---@type BagCloudDataMgr
 
 -- 所有玩家的背包装备管理，服务器侧
@@ -75,13 +72,13 @@ function BagMgr.handleUseAllBox( uin_, param )
     player_data_:UseAllBoxes()
 end
 
----分解所有低质量装备
----@param uin_ number 玩家ID
----@param args1_ table 参数
-function BagMgr.HandleDpAllLowEq( uin_, args1_ )
-    local player_data_ = BagMgr.GetPlayerBag( uin_ )
-    player_data_:DecomposeAllLowQualityItems(ItemRankConfig.Get(args1_.rank))
-end
+-- ---分解所有低质量装备
+-- ---@param uin_ number 玩家ID
+-- ---@param args1_ table 参数
+-- function BagMgr.HandleDpAllLowEq( uin_, args1_ )
+--     local player_data_ = BagMgr.GetPlayerBag( uin_ )
+--     player_data_:DecomposeAllLowQualityItems(ItemRankConfig.Get(args1_.rank))
+-- end
 
 ---获得指定uin玩家的背包数据
 ---@param uin_ number 玩家ID

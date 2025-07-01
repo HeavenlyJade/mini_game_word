@@ -12,14 +12,13 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 local ClassMgr          = require(MainStorage.Code.Untils.ClassMgr)    ---@type ClassMgr
 local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
-local Scene      = require(MainStorage.Code.MServer.Scene)         ---@type Scene
-local Player       = require(MainStorage.Code.MServer.Manager.EntityTypes.MPlayer)          ---@type MPlayer
-
-local MailManager = require(MainStorage.Code.MServer.MSystems.Mail.MailManager) ---@type MailManager
+local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
-local cloudDataMgr  = require(MainStorage.Code.MServer.Manager.MCloudDataMgr)    ---@type MCloudDataMgr
-local serverDataMgr     = require(MainStorage.Code.MServer.Manager.MServerDataManager) ---@type MServerDataManager
+local Player       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
+
+local cloudDataMgr  = require(ServerStorage.CloundDataMgr.MCloudDataMgr)    ---@type MCloudDataMgr
 
 
 ---@class MServerInitPlayer
@@ -82,6 +81,11 @@ function MServerInitPlayer.player_enter_game(player)
         if oldPlayer then
             oldPlayer:Save()  -- 保存旧玩家数据
             oldPlayer:leaveGame()  -- 执行离线清理
+            
+            -- 清理旧玩家的邮件缓存
+            local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+            MailMgr:OnPlayerLeave(uin_)
+            
             serverDataMgr.removePlayer(uin_, oldPlayer.name or "Unknown")  -- 从列表中移除
             gg.log('Old player instance removed for uin:', uin_)
         end
@@ -117,8 +121,9 @@ function MServerInitPlayer.player_enter_game(player)
     -- 读取任务数据
     cloudDataMgr.ReadGameTaskData(player_)
 
-    -- 同步玩家的全服邮件数据
-    MailManager:SyncGlobalMailsForPlayer(uin_)
+    -- 加载玩家邮件数据到MailMgr统一管理（包括个人邮件和全服邮件状态）
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    MailMgr:OnPlayerJoin(player_)
 
     player_actor_.Size = Vector3.New(120, 160, 120)      --碰撞盒子的大小
     player_actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
@@ -140,8 +145,7 @@ function MServerInitPlayer.player_enter_game(player)
     ServerEventManager.Publish("PlayerInited", {player = player_})
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
 
-    -- 主动推送邮件列表到客户端
-    MailManager:SendMailListToClient(uin_)
+    gg.log("玩家", uin_, "登录完成，邮件数据已加载到MailMgr")
 end
 
 -- 玩家离开游戏
@@ -153,6 +157,11 @@ function MServerInitPlayer.player_leave_game(player)
         serverDataMgr.server_players_list[uin_]:OnLeaveGame()
         serverDataMgr.server_players_list[uin_]:Save()
     end
+    
+    -- 清理玩家邮件数据缓存并保存到云端
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    MailMgr:OnPlayerLeave(uin_)
+    
     serverDataMgr.removePlayer(uin_, player.Name)
 end
 

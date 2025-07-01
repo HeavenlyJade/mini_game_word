@@ -1,7 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
 local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) ---@type ItemQualityConfig
-local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class ItemUtils 物品工具类
 local ItemUtils = {}

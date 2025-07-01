@@ -1,13 +1,12 @@
 local MainStorage = game:GetService('MainStorage')
 local ServerStorage = game:GetService('ServerStorage')
-local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
-local common_const = require(MainStorage.Code.Common.GameConfig.MConst) ---@type common_const
-local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
-local ItemUtils = require(ServerStorage.MSystems.Bag.ItemUtils) ---@type ItemUtils
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType) ---@type ItemType
-
 local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
-local MServerDataManager = require(ServerStorage.MServerDataManager) ---@type MServerDataManager
+local ItemUtils = require(ServerStorage.MSystems.Bag.ItemUtils) ---@type ItemUtils
+local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 ---@class Bag
 local Bag = ClassMgr.Class("Bag")
@@ -49,21 +48,44 @@ end
 
 ---初始化货币类型
 function Bag:InitializeCurrencies()
-    local allMoneyTypes = ItemType.GetAllMoneyTypes()
+    local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
     local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
     
-    for index, moneyType in pairs(allMoneyTypes) do
+    -- 获取所有物品类型
+    local allItemTypes = ItemTypeConfig.GetAll()
+    
+    -- 筛选出货币类型的物品
+    local currencyTypes = {}
+    for itemName, itemType in pairs(allItemTypes) do
+        if itemType.isMoney and itemType.moneyIndex > 0 then
+            table.insert(currencyTypes, {
+                name = itemType.name,
+                index = itemType.moneyIndex,
+                itemType = itemType
+            })
+        end
+    end
+    
+    -- 按货币序号排序
+    table.sort(currencyTypes, function(a, b)
+        return a.index < b.index
+    end)
+    
+    -- 初始化每种货币
+    for _, currencyInfo in ipairs(currencyTypes) do
         -- 检查背包中是否已有该货币
-        if self:GetItemAmount(moneyType.name) == 0 then
+        if self:GetItemAmount(currencyInfo.name) == 0 then
             -- 如果没有，添加初始货币（数量为0）
             local currencyData = {
-                name = moneyType.name,
-                itemCategory = common_config.ItemTypeEnum["货币"], -- 5
+                name = currencyInfo.name,
+                itemCategory = common_config.ItemTypeEnum["货币"], -- 货币类型编号
                 amount = 0,
-                uuid = gg.create_uuid('currency'),
-                enhanceLevel = 0
+                enhanceLevel = 0,
+                itemType = currencyInfo.name,
+                itype = currencyInfo.name
             }
             self:AddItem(currencyData)
+            gg.log("初始化货币:", currencyInfo.name, "序号:", currencyInfo.index)
         end
     end
 end
@@ -288,11 +310,30 @@ function Bag:SyncToClient()
     end
 
     local moneys = {}
-    local allMoneyTypes = ItemType.GetAllMoneyTypes()
-    for idx, itemType in pairs(allMoneyTypes) do
+    local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
+    local allItemTypes = ItemTypeConfig.GetAll()
+    
+    -- 获取所有货币类型并按序号排序
+    local currencyTypes = {}
+    for itemName, itemType in pairs(allItemTypes) do
+        if itemType.isMoney and itemType.moneyIndex > 0 then
+            table.insert(currencyTypes, {
+                name = itemType.name,
+                index = itemType.moneyIndex,
+                itemType = itemType
+            })
+        end
+    end
+    
+    table.sort(currencyTypes, function(a, b)
+        return a.index < b.index
+    end)
+    
+    -- 构建货币数据
+    for idx, currencyInfo in ipairs(currencyTypes) do
         moneys[idx] = {
-            it = itemType.name,
-            a = self:GetItemAmount(itemType.name)
+            it = currencyInfo.name,
+            a = self:GetItemAmount(currencyInfo.name)
         }
     end
     
