@@ -33,7 +33,7 @@ alwaysApply: false
         - 其他玩家相关数据模块...
         
         **每个系统的标准结构**：
-        - `*Manager.lua` - 功能管理器，负责业务逻辑处理
+        - `*Mgr.lua` - 功能管理器，负责业务逻辑处理
         - `*EventManager.lua` - 事件管理器，存放玩家需要交互的所有事件
         - `MCloudDataMgr.lua` - 文件处理数据持久化和管理。
 
@@ -71,7 +71,7 @@ alwaysApply: false
     - **MSystems 模块规范**：
         - 每个玩家数据系统都有独立的目录（如 `Bag/`, `Mail/`, `Skill/`）
         - **标准文件结构**：
-            - `*Manager.lua` - 功能管理器，处理核心业务逻辑
+            - `*Mgr.lua` - 功能管理器，处理核心业务逻辑
             - `*EventManager.lua` - 事件管理器，管理玩家交互事件
             - `CloudDataMgr.lua/` - 存放运输机的目录
             - 其他业务相关的类文件（如 `Item.lua`, `Mail.lua` 等）
@@ -158,7 +158,7 @@ end)
 ### 玩家数据系统文件 (MSystems/)
 
 #### 背包系统 (`MSystems/Bag/`)
-- **`BagManager.lua`** - 背包功能管理器
+- **`BagMgr.lua`** - 背包功能管理器
     - 物品添加、删除、移动逻辑
     - 装备穿戴、卸下处理
     - 背包容量管理
@@ -174,7 +174,7 @@ end)
 - **`ItemUtils.lua`** - 物品工具函数
 
 #### 邮件系统 (`MSystems/Mail/`)
-- **`MailManager.lua`** - 邮件功能管理器
+- **`MailMgr.lua`** - 邮件功能管理器
     - 邮件发送、接收逻辑
     - 附件处理
     - 邮件状态管理
@@ -186,8 +186,7 @@ end)
     - 邮件数据格式
     - 附件数据结构
     - 邮件状态定义
-- **`MailBase.lua`** - 邮件基础类
-- **`MailPlayer.lua`** - 玩家邮件类
+
 
 #### 未来扩展系统示例
 - **`MSystems/Skill/`** - 技能系统
