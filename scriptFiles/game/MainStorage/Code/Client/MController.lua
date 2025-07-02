@@ -15,12 +15,13 @@ local Vector3 = Vector3
 local ColorQuad = ColorQuad
 
 local MainStorage = game:GetService("MainStorage")
+
 local WorldService  = game:GetService( 'WorldService' )
 local inputservice = game:GetService("UserInputService")
 local RunService   = game:GetService("RunService")
-
 local gg              = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-
+-- local UiCommon      = require(MainStorage.code.client.ui.UiCommon)       ---@type UiCommon
+-- local wheelControl  = require( MainStorage.code.client.MWheelControl )   ---@type MMobileWheelControl
 
 
 
@@ -46,6 +47,7 @@ function Controller.init()
 
     Controller.initKeyboard()
     gg.get_camera_window_size()
+    gg.log("Controller初始化完成")
 
 
 end
@@ -101,14 +103,14 @@ end
 
 
 local const_allow_keyboard = {
-    --[ Enum.KeyCode.W.Value ] = {},
-    --[ Enum.KeyCode.S.Value ] = {},
-    --[ Enum.KeyCode.A.Value ] = {},
-    --[ Enum.KeyCode.D.Value ] = {},
+    [ Enum.KeyCode.W.Value ] = {},
+    [ Enum.KeyCode.S.Value ] = {},
+    [ Enum.KeyCode.A.Value ] = {},
+    [ Enum.KeyCode.D.Value ] = {},
 
     --[ Enum.KeyCode.Q.Value ] = {},
     --[ Enum.KeyCode.E.Value ] = {},
-    --[ Enum.KeyCode.Space.Value ] = {},
+    [ Enum.KeyCode.Space.Value ] = {},
 
     [ Enum.KeyCode.T.Value ] = {},           --haima test debug  /anim  /skin
     [ Enum.KeyCode.Z.Value ] = {},           --test pick
@@ -138,7 +140,6 @@ function Controller.handleKeyboard( keyCode, flag )
 
             end
         end
-        --gg.network_channel:FireServer( { cmd='cmd_key', v=keyCode, flag=flag } )  --通知给服务器
     end
 end
 
@@ -148,6 +149,7 @@ end
 
 --鼠标输入
 function Controller.handleMouse( inputObj, flag )
+    -- gg.log( 'handleMouse', inputObj, flag,Controller.m_enableMove )
 
     if  Controller.m_enableMove ~= true then
         return
@@ -240,53 +242,9 @@ function Controller.tryPickObject( x, y )
     if  pick_node_ then
         --改动框的显示，明确是否被选中
         if  pick_node_.ClassType == 'Actor' then
-            gg.log( 'tryPickObject:', pick_node_, pick_node_.Name )
             gg.network_channel:FireServer( { cmd='cmd_pick_actor', v=pick_node_.Name } )   --1=选中其他actor
         end
     end
-
-end
-
-
-
-
---选择AOE技能
-function Controller.handleAoePos( args_ )
-
-    gg.log( 'handleAoePos', args_ )
-
-
-    if  not gg.client_aoe_cylinder then
-        --{ cmd='cmd_aoe_pos', range=skill_config.range, size=skill_config.size, uuid=sk1234 } )
-
-        local aoe_box_   = gg.cloneFromTemplate('aoe_position')
-        aoe_box_.Parent  = gg.getClientWorkSpace()
-        aoe_box_.Name    = args_.uuid
-        aoe_box_.Visible = true
-
-        aoe_box_.EnablePhysics = false
-        aoe_box_.CanCollide    = false
-        aoe_box_.CanTouch      = false
-        aoe_box_.CastShadow    = false
-        aoe_box_.ReceiveShadow = false
-
-        --aoe_box_.Top.BaseMaterial   = Enum.MaterialTemplate.LambertBlend
-       --aoe_box_.Top.RimColor         = ColorQuad.New( 255, 255, 255, 128 )
-
-        gg.client_aoe_cylinder = aoe_box_
-
-       -- gg.lockCamera( true )
-    end
-
-    --gg.client_aoe_cylinder.Parent = gg.getClientWorkSpace()
-
-
-    local size_ = args_.size * 0.01
-    gg.client_aoe_cylinder.LocalScale = Vector3.New( size_, 0.01, size_ )
-
-    local pos_ = gg.getClientLocalPlayer().Position
-    gg.client_aoe_cylinder.LocalPosition = Vector3.New( pos_.x, pos_.y+1, pos_.z )
-    gg.client_aoe_range = args_.range
 
 end
 
@@ -304,79 +262,6 @@ function Controller.EnableOverlap(enable)
     else
         WorldService:SetSceneId(0)
     end
-end
-
-
-
---尝试选择技能触地位置
-function Controller.tryAoeRayGround( x, y )
-
-    local winSize = gg.getClientWorkSpace().CurrentCamera.WindowSize
-    --gg.log( 'tryAoeRayGround:', x, y, winSize.x, winSize.y )
-
-    local ray_   = gg.getClientWorkSpace().Camera:ViewportPointToRay( x, winSize.y-y, 12800 )
-    WorldService = game:GetService( 'WorldService' )
-
-    --Controller.EnableOverlap(true)
-
-    -- gg.log( 'ViewportPointToRay3:', ray_.Origin, ray_.Direction, gg.getClientWorkSpace().Camera.Position )
-
-    --local ret_table = WorldService:RaycastAll( ray_.Origin, ray_.Direction, 12800, true, {2} )
-    local ret_table = WorldService:RaycastClosest( ray_.Origin, ray_.Direction, 12800, true, {2} )
-    --ret_table = 1={normal={-0.000000, 1.000000, -0.000971} distance=2428.7092285156 position={650.002686, -0.343750, 2228.231445} obj=[node(754493)(Model):base]}
-        --2={normal={0.000000, 1.000000, 0.000000} distance=1996.7115478516 position={620.065369, 100.000000, 1809.116821} obj=[node(793564)(GeoSolid):Cube]}
-
-    if  ret_table then
-        -- gg.log ( 'RaycastClosest=', gg.getClientWorkSpace().Camera, ret_table, ret_table.position )
-
-        -- 多点碰撞 RaycastAll
-        --local pos1_
-        --local nearst_dis_ = 12800
-        --for i=1, #ret_table do
-            --if  ret_table[i].distance < nearst_dis_ then
-                --nearst_dis_ = ret_table[i].distance
-                --pos1_ = ret_table[i].position
-            --end
-        --end
-
-        -- 单点碰撞 RaycastClosest
-        local pos1_ = ret_table.position
-
-        if  pos1_ then
-            local pos2_ = gg.getClientLocalPlayer().Position
-
-            --距离是否太远
-            if  gg.out_distance( pos1_, pos2_, gg.client_aoe_range ) then
-                --距离太远
-                --gg.client_aoe_cylinder.Color    = ColorQuad.New( 255, 0, 0, 128 )
-                --计算点
-                local dir_ = pos1_ - pos2_
-                Vector3.Normalize( dir_ )
-                local range_ = gg.client_aoe_range
-                local pos3_ = Vector3.New( pos2_.x+dir_.x*range_, pos2_.y+dir_.y*range_+2, pos2_.z+dir_.z*range_ )
-                gg.client_aoe_cylinder.Position = pos3_
-
-            else
-                --gg.client_aoe_cylinder.Color    = ColorQuad.New( 255, 255, 255, 128 )
-                gg.client_aoe_cylinder.Position = Vector3.New( pos1_.x, pos1_.y+1, pos1_.z )
-            end
-        end
-
-    end
-
-end
-
-
-
---aoe技能选择地点ok
-function Controller.AoeRayRelease()
-    local pos_ = gg.client_aoe_cylinder.Position
-    gg.network_channel:FireServer( { cmd='cmd_aoe_select_pos', uuid=gg.client_aoe_cylinder.Name, x=pos_.x, y=pos_.y, z=pos_.z } )
-
-    gg.client_aoe_cylinder:Destroy()
-    gg.client_aoe_cylinder = nil
-
-    -- gg.lockCamera( false )
 end
 
 

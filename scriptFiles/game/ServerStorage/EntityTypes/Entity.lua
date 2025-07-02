@@ -20,13 +20,41 @@ local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerSchedul
 local _M = ClassMgr.Class("Entity") -- 父类 (子类： Player, Monster )
 _M.node2Entity = {}
 
+-- 属性触发类型映射
+local TRIGGER_STAT_TYPES = {
+    ["生命"] = function(entity, value)
+        if entity.SetMaxHealth then
+            entity:SetMaxHealth(value)
+        end
+    end,
+    ["速度"] = function(entity, value)
+        if entity.actor then
+            entity.actor.Movespeed = value
+        end
+    end,
+    ["攻击"] = function(entity, value)
+        -- 攻击力变化时的逻辑
+        if entity._attackCache ~= nil then
+            entity._attackCache = value
+        end
+    end,
+    ["防御"] = function(entity, value)
+        -- 防御力变化时的逻辑
+    end,
+    ["魔法"] = function(entity, value)
+        -- 魔法力变化时的逻辑
+        if entity.SetMaxMana then
+            entity:SetMaxMana(value)
+        end
+    end
+}
+
 -- 初始化实体
 function _M:OnInit(info_)
     -- 基本属性
     self.spawnPos = info_.position
     self.name = info_.name or ""
     self.isDestroyed = false
-    self:GenerateUUID()
     self.isEntity = true
     self.isPlayer = false
     self.uin = info_.uin
@@ -35,6 +63,10 @@ function _M:OnInit(info_)
     -- 等级和经验
     self.exp = 0
     self.level = 1
+    
+    -- 属性系统
+    self.stats = {} ---@type table<string, table<string, number>> 属性存储 [source][statName] = value
+    self._attackCache = 0 -- 攻击力缓存
     
     -- Actor相关
     self.actor = nil -- game_actor
@@ -61,14 +93,11 @@ function _M:OnInit(info_)
     -- 状态标志
     self.stat_flags = {} -- 状态标志（施法等）
     
-    -- 模型播放器
-    self.modelPlayer = nil  ---@type ModelPlayer
+    -- -- 模型播放器
+    -- self.modelPlayer = nil  ---@type ModelPlayer
 end
 
----@protected
-_M.GenerateUUID = function(self)
-    return ""
-end
+
 
 -- 事件订阅
 function _M:SubscribeEvent(eventType, listener, priority)
@@ -161,13 +190,8 @@ function _M:setGameActor(actor_)
         actor_.PhysXRoleType = Enum.PhysicsRoleType.BOX
         actor_.IgnoreStreamSync = false
     end
-    
-    -- 设置初始血量
-    if self.actor then
-        self.actor.MaxHealth = self.maxHealth
-        self.actor.Health = self.health
-    end
 end
+
 
 -- 开始处理死亡逻辑
 function _M:Die()
@@ -471,6 +495,112 @@ function _M:update()
     if self.combatTime > 0 then
         self.combatTime = self.combatTime - 1
     end
+end
+
+-- 属性管理系统 --------------------------------------------------------
+
+--- 添加属性
+---@param statName string 属性名
+---@param amount number 属性值
+---@param source string|nil 来源，默认为"BASE"
+---@param refresh boolean|nil 是否刷新，默认为true
+function _M:AddStat(statName, amount, source, refresh)
+    if not amount then
+        return
+    end
+    source = source or "BASE"
+    refresh = refresh == nil and true or refresh
+
+    if not self.stats[source] then
+        self.stats[source] = {}
+    end
+
+    if not self.stats[source][statName] then
+        self.stats[source][statName] = 0
+    end
+
+    self.stats[source][statName] = self.stats[source][statName] + amount
+
+    if self.actor and refresh and TRIGGER_STAT_TYPES[statName] then
+        TRIGGER_STAT_TYPES[statName](self, self:GetStat(statName))
+    end
+end
+
+--- 设置属性
+---@param statName string 属性名
+---@param amount number 属性值
+---@param source string|nil 来源，默认为"BASE"
+---@param refresh boolean|nil 是否刷新，默认为true
+function _M:SetStat(statName, amount, source, refresh)
+    source = source or "BASE"
+    refresh = refresh == nil and true or refresh
+
+    if not self.stats[source] then
+        self.stats[source] = {}
+    end
+
+    self.stats[source][statName] = amount
+
+    if self.actor and refresh and TRIGGER_STAT_TYPES[statName] then
+        TRIGGER_STAT_TYPES[statName](self, self:GetStat(statName))
+    end
+end
+
+--- 获取属性值
+---@param statName string 属性名
+---@param sources string[]|nil 来源列表，nil表示所有来源
+---@return number 属性值
+function _M:GetStat(statName, sources)
+    local amount = 0
+
+    -- 遍历所有来源的属性
+    for source, statMap in pairs(self.stats) do
+        if not sources or self:TableContains(sources, source) then
+            if statMap[statName] then
+                amount = amount + statMap[statName]
+            end
+        end
+    end
+
+    return amount
+end
+
+--- 重置属性
+---@param source string 来源ID
+function _M:ResetStats(source)
+    if self.stats[source] then
+        self.stats[source] = nil
+    end
+end
+
+--- 刷新属性（触发实体属性更新）
+function _M:RefreshStats()
+    if not self.actor then return end
+
+    -- 重置装备属性
+    self:ResetStats("EQUIP")
+
+    -- 遍历所有需要触发的属性类型并刷新
+    for statName, triggerFunc in pairs(TRIGGER_STAT_TYPES) do
+        local value = self:GetStat(statName)
+        triggerFunc(self, value)
+    end
+    
+    -- 更新攻击缓存
+    self._attackCache = self:GetStat("攻击")
+end
+
+--- 检查表中是否包含值
+---@param tbl table 表
+---@param value any 值
+---@return boolean
+function _M:TableContains(tbl, value)
+    for _, v in ipairs(tbl) do
+        if v == value then
+            return true
+        end
+    end
+    return false
 end
 
 return _M

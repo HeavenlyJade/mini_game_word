@@ -27,7 +27,6 @@ MS.CustomConfigService = game:GetService("CustomConfigService")
 -- MS.NetworkChannel = game:GetService("NetworkChannel")
 -- 尝试获取 NetworkChannel 服务
 
-print("游戏服务初始化完成")
 
 -- 核心工具类
 MS.ClassMgr = require(MS.MainStorage.Code.Untils.ClassMgr)
@@ -35,7 +34,6 @@ MS.MGlobal = require(MS.MainStorage.Code.Untils.MGlobal)
 MS.Json = require(MS.MainStorage.Code.Untils.json)
 MS.TimeUtils = require(MS.MainStorage.Code.Untils.TimeUntils)
 
-print("核心工具类加载完成")
 
 -- 数学工具类
 MS.MathDefines = require(MS.MainStorage.Code.Untils.Math.MathDefines)
@@ -48,18 +46,17 @@ MS.Matrix4x4 = require(MS.MainStorage.Code.Untils.Math.Matrix4x4)
 MS.Quat = require(MS.MainStorage.Code.Untils.Math.Quat)
 MS.PerlinNoise = require(MS.MainStorage.Code.Untils.Math.PerlinNoise)
 
-print("数学工具类加载完成")
+
 
 -- 通用配置和常量
 -- 
-print("配置系统加载完成")
+
 
 -- 事件系统
 MS.EventBag = require(MS.MainStorage.Code.Event.event_bag)
 MS.EventSkill = require(MS.MainStorage.Code.Event.event_sklii)
 MS.EventMail = require(MS.MainStorage.Code.Event.EventMail)
 
-print("事件系统加载完成")
 
 
 

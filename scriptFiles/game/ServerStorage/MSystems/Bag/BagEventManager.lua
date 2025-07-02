@@ -19,9 +19,7 @@ BagEventManager.NOTIFY = BagEventConfig.NOTIFY
 
 --- 初始化背包事件管理器
 function BagEventManager:Init()
-    gg.log("初始化背包事件管理器...")
     self:RegisterEventHandlers()
-    gg.log("背包事件管理器初始化完成")
 end
 
 --- 注册所有事件处理器

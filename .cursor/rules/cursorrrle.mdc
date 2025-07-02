@@ -1,5 +1,10 @@
 ---
-description: PVZEwprd项目规则
+description: 
+globs: 
+alwaysApply: false
+---
+---
+description: 
 globs: 
 alwaysApply: false
 ---
@@ -33,10 +38,10 @@ alwaysApply: false
         - 其他玩家相关数据模块...
         
         **每个系统的标准结构**：
-        - `*Manager.lua` - 功能管理器，负责业务逻辑处理
+        - `*Mgr.lua` - 功能管理器，负责业务逻辑处理
         - `*EventManager.lua` - 事件管理器，存放玩家需要交互的所有事件
-        - `clouddata/` - 云数据目录，存放对应的数据结构定义
-    - **管理器 (`*Mgr.lua`)**: 像 `MServerDataManager.lua` 和 `MCloudDataMgr.lua` 这样的文件处理数据持久化和管理。
+        - `*CloudDataMgr.lua` - 云数据管理器，处理数据持久化和管理
+
 
 ### 目录访问权限与用途
 
@@ -57,6 +62,34 @@ alwaysApply: false
     - **敏感游戏逻辑**：防作弊验证、数据校验、权限管理
     - **数据持久化**：数据库操作、云存储、数据同步
 
+### 🚨 重要的访问控制规则
+
+**严格的目录访问权限限制**：
+
+```
+访问规则:
+┌─────────────────┐    ❌ 禁止访问    ┌─────────────────┐
+│   MainStorage   │ ←─────────────── │  ServerStorage  │
+│   (共享代码)    │                  │  (服务端代码)   │
+└─────────────────┘    ✅ 允许访问    └─────────────────┘
+```
+
+- **MainStorage** **不能访问** `ServerStorage` 中的任何代码
+  - 这会导致客户端运行时错误
+  - 违反客户端-服务端安全边界
+  - 可能导致敏感信息泄露给客户端
+
+- **ServerStorage** **可以访问** `MainStorage` 中的代码
+  - 服务端可以使用共享的配置和工具
+  - 可以引用共享的类型定义和常量
+  - 可以使用共享的事件定义进行客户端通信
+
+**设计原则**：
+1. **单向依赖**：只允许 ServerStorage → MainStorage 的依赖关系
+2. **事件驱动通信**：客户端与服务端通过事件系统通信，而非直接代码引用
+3. **配置数据分离**：MainStorage 只包含配置数据和接口定义，不包含业务逻辑
+4. **安全边界清晰**：所有敏感计算和验证都在 ServerStorage 中完成
+
 ## 编码约定
 
 - **类系统**: 项目使用在 `scriptFiles/game/MainStorage/Code/Untils/ClassMgr.lua` 中定义的自定义类系统。
@@ -71,15 +104,14 @@ alwaysApply: false
     - **MSystems 模块规范**：
         - 每个玩家数据系统都有独立的目录（如 `Bag/`, `Mail/`, `Skill/`）
         - **标准文件结构**：
-            - `*Manager.lua` - 功能管理器，处理核心业务逻辑
+            - `*Mgr.lua` - 功能管理器，处理核心业务逻辑
             - `*EventManager.lua` - 事件管理器，管理玩家交互事件
-            - `clouddata/` - 云数据目录，定义数据结构和持久化格式
+            - `CloudDataMgr.lua/` - 存放运输机的目录
             - 其他业务相关的类文件（如 `Item.lua`, `Mail.lua` 等）
         - **职责分离原则**：
-            - Manager：业务逻辑处理、数据操作、系统间通信
-            - EventManager：事件监听、事件分发、玩家交互响应
-            - clouddata：数据结构定义、序列化、云存储格式
-        - 统一通过 `MSystems.lua` 文件进行系统注册和初始化
+            - *Mgr：业务逻辑处理、数据操作、系统间通信
+            - *EventManager：事件监听、事件分发、玩家交互响应
+            - *CloudDataMgr：数据结构定义、序列化、云存储格式
 
 ## 相关文档体系
 
@@ -159,7 +191,7 @@ end)
 ### 玩家数据系统文件 (MSystems/)
 
 #### 背包系统 (`MSystems/Bag/`)
-- **`BagManager.lua`** - 背包功能管理器
+- **`BagMgr.lua`** - 背包功能管理器
     - 物品添加、删除、移动逻辑
     - 装备穿戴、卸下处理
     - 背包容量管理
@@ -167,7 +199,7 @@ end)
     - 玩家物品使用事件
     - 装备更换事件
     - 背包整理事件
-- **`BagCloudDataMgr/`** - 背包云数据结构
+- **`BagCloudDataMgr.lua`** - 背包云数据结构
     - 背包数据格式定义
     - 物品属性结构
     - 装备状态数据
@@ -175,7 +207,7 @@ end)
 - **`ItemUtils.lua`** - 物品工具函数
 
 #### 邮件系统 (`MSystems/Mail/`)
-- **`MailManager.lua`** - 邮件功能管理器
+- **`MailMgr.lua`** - 邮件功能管理器
     - 邮件发送、接收逻辑
     - 附件处理
     - 邮件状态管理
@@ -187,8 +219,7 @@ end)
     - 邮件数据格式
     - 附件数据结构
     - 邮件状态定义
-- **`MailBase.lua`** - 邮件基础类
-- **`MailPlayer.lua`** - 玩家邮件类
+
 
 #### 未来扩展系统示例
 - **`MSystems/Skill/`** - 技能系统
@@ -350,9 +381,7 @@ print("玩家的初始生命值是: " .. settings.PlayerHealth)
 MSystems/NewSystem/
 ├── NewSystemManager.lua          -- 功能管理器
 ├── NewSystemEventManager.lua     -- 事件管理器
-├── clouddata/                    -- 云数据目录
-│   ├── NewSystemData.lua         -- 数据结构定义
-│   └── NewSystemCloudFormat.lua  -- 云存储格式
+│   NewSystemCloudDataMgr.lua     -- 云存储
 ├── NewSystemBase.lua             -- 基础类（可选）
 └── NewSystemUtils.lua            -- 工具函数（可选）
 ```
@@ -398,9 +427,7 @@ end
 return NewSystemEventManager
 ```
 
-**4. CloudData 结构示例**
-```lua
--- clouddata/NewSystemData.lua - 数据结构定义
+-- NewSystemDataMgr.lua - 数据结构定义
 local NewSystemData = {}
 
 -- 玩家数据结构

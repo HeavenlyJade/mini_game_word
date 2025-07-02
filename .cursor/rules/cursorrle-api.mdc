@@ -1,0 +1,220 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# PVZWord API 官方文档索引
+
+本文档是 PVZWord 项目中可用游戏服务接口的**外部链接索引**。所有链接指向官方的 @miniapi GitHub 仓库，这是项目中 API 的"单一事实来源"。
+
+## 使用方法
+
+当需要查询某个服务的具体用法时，请直接点击下方的链接跳转到对应的官方文档页面。
+
+---
+
+## 服务接口索引 (Official API Index)
+
+### 基类 (Base Classes)
+- **Service**: 全局服务节点的基类。(继承自: `SandboxNode`, 注: 父节点必须是 `GameNode`)
+
+### 核心服务
+- @WorkSpace - 工作空间，包含游戏世界中的所有3D对象。
+
+- @RunService - 运行时服务，处理游戏循环和帧事件。
+
+- Players - 玩家服务，管理所有玩家对象 (核心类，无独立文档)。
+
+- TweenService - 补间动画服务 (核心类，无独立文档)。
+
+### 存储服务
+- @MainStorage - 主存储，存放客户端和服务端共享的代码。
+
+- @ServerStorage - 服务器存储，存放仅服务端可访问的代码和数据。
+
+### 输入和交互服务
+- @MouseService - 鼠标服务。
+  - **描述**: 负责处理所有与鼠标相关的操作。它是 Mouse 节点的接口，必须通过 `game:GetService("MouseService")` 来获取。
+  - **继承自**: `Service`
+
+- ContextActionService - 上下文操作服务 (核心类，无独立文档)。
+
+- UserInputService - 用户输入服务 (核心类，无独立文档)。
+
+### 游戏功能服务
+- @DeveloperStoreService - 迷你币商品服务。
+
+- @AnalyticsService - 数据埋点服务。
+  - **描述**: 用于报告自定义事件，之后可以在网页上查看可视化的分析结果（数据埋点）。
+  - **核心函数**: `ReportData()` - 用于上报具体的事件数据。
+  - **继承自**: `Service`
+
+- @CloudService - 云服务，包含数据存储、传送等功能。
+
+- @FriendsService - 好友服务。
+
+- @FriendInviteService - 好友拉新服务。
+
+### 图片和材质服务
+- @MaterialService - 材质服务。
+
+- @ContentService - 内容服务，用于资源预加载等。
+
+- @CollectionService - 集合服务，用于标记和分组实例。
+
+### 脚本和通信 (Scripting & Communication)
+- @RemoteEvent - 远程事件，用于客户端和服务器之间的单向通信。
+- @RemoteFunction - 远程函数，用于客户端和服务器之间的双向（请求-响应）通信。
+- @Timer - 定时器，用于创建和管理延迟或周期性执行的事件。
+- @CustomNotify - 自定义通知，用于脚本间的通信。
+- @CustomFunction - 自定义函数。
+
+### 界面 (UI) 组件
+- @CoreUI - 核心UI，用于与游戏引擎内置的核心界面交互。
+- @UIBase - 所有UI组件的基类。
+- @UIButton - 按钮组件。
+- @UIImage - 图片组件。
+- @UITextLabel - 文本标签组件。
+- @UITextInput - 文本输入框组件。
+- @UIList - 列表组件，用于展示滚动列表。
+- @UIBillboard - 广告牌UI，可以在3D世界中显示2D界面。
+- @UIVideoImage - 视频图片组件。
+- @UIModelView - 3D模型视窗组件。
+- @UIMovieClip - 电影剪辑（序列帧动画）组件。
+- @Decal - 贴花，用于在3D物体表面渲染图片。
+
+### 建造和环境 (Building & Environment)
+- @BlockService - 方块服务，用于在世界中创建和修改方块。
+- @Block - 方块对象本身的接口。
+- @Terrain - 地形对象接口。
+- @Environment - 环境设置，如雾效、天空等。
+- @Atmosphere - 大气效果设置。
+- @Light - 通用光源组件。
+- @SunLight - 太阳光组件。
+- @SkyLight - 天空光组件。
+- @SkyDome - 天空穹顶。
+- @BluePrint - 蓝图，用于创建和管理预制体。
+
+### 角色和AI (Character & AI)
+- @Model - 模型，所有实体的基础，可以包含各种组件。
+- @Actor - 角色，继承自模型，拥有生命值、移动等角色特性。
+- @AIBase - AI行为树的基类。
+- @AITaskEntry - AI任务的入口点。
+- @AvatarPart - 角色部件，用于换装等。
+
+### 输入 (Input)
+- @UserInputService - 用于处理玩家输入的全局服务。
+- @ContextActionService - 允许将输入操作绑定到特定的上下文。
+- @InputObject - 代表一个具体的输入事件，如按键或鼠标点击。
+- @ClickDetector - 用于检测模型上的鼠标点击事件。
+
+### 声音 (Sound)
+- @SoundService - 用于播放和管理所有游戏内声音的全局服务。
+- @Sound - 代表一个可以被播放的声音对象。
+- @SoundGroup - 用于对声音进行分组管理，例如背景音乐、音效等。
+- @DefaultSound - 游戏内置的默认音效。
+
+### 特效 (Effects)
+- @PostEffectService - 后处理特效服务，用于实现全屏特效。
+- @EffectObject - 特效对象的基类。
+- @Particle - 粒子发射器，用于创建火焰、烟雾等效果。
+- @Projectile - 投射物，用于创建子弹、法术等飞行物体。
+- @Explosion - 创建爆炸效果。
+- @DefaultEffect - 游戏内置的默认特效。
+- @ParticleSmoke - 专门用于创建烟雾效果的粒子。
+
+### 动画 (Animation)
+
+#### 核心动画 (Core Animation)
+- @Animation - 代表一个可以播放的动画剪辑。
+- @AnimationItem - 动画项，通常在动画序列中使用。
+- @HumanAnimation - 专用于人形模型的动画。
+- @LegacyAnimation - 旧版动画组件。
+- @LegacyAnimationItem - 旧版动画项。
+- @AttributeAnimation - 属性动画，用于驱动对象属性的变化。
+
+#### 动画状态机 (Animator & State Machine)
+- @Animator - 动画控制器，用于播放和管理动画状态机。
+- @AnimatorBase - Animator 的基类。
+- @AnimatorController - 动画控制器资产，定义了动画状态和切换。
+- @AnimatorLayer - 动画层，允许在不同层上混合播放动画。
+- @AnimatorLayerData - 动画层数据。
+- @AnimatorLayerItemNode - 动画层项目节点。
+- @AnimatorParamsItemNode - 动画参数项目节点。
+- @AnimatorStateData - 动画状态数据。
+- @AnimatorStateMachineData - 动画状态机数据。
+
+#### 骨骼与物理 (Skeleton & Physics)
+- @SkeletonAnimation - 骨骼动画组件。
+- @BoneNode - 骨骼节点，代表模型骨架中的一根骨骼。
+- @Ragdoll - 布娃娃系统，用于实现基于物理的角色死亡效果。
+- @RagdollJoint - 布娃娃关节。
+
+#### 补间与序列 (Tweening & Sequence)
+- @TweenService - 用于创建属性平滑过渡（补间动画）的全局服务。
+- @UITween - 专门用于UI元素的补间动画。
+- @Sequence - 动画序列，可以组合多个动画和延时。
+
+#### 其他 (Others)
+- @PostProcessing - 后期处理，用于实现与动画相关的视觉效果。
+
+### 物理和关节 (Physics & Joints)
+- @PhysXService - 物理服务，用于全局物理设置。
+- @Weld - 焊接约束，将两个物体牢固地连接在一起。
+- @HingeJoint - 铰链关节，用于创建门、轮子等旋转效果。
+- @SpringJoint - 弹簧关节，用于创建有弹性的连接。
+- @StickJoint - 杆状关节，保持两个物体间的固定距离。
+- @BindAttachment - 绑定附件，用于定义关节的连接点。
+- @VisibleJoint - 可视化关节，用于在编辑器中显示关节。
+
+### 玩法 (GamePlay)
+- @WorldService - 世界服务，提供场景查询（如射线检测）、传送等通用世界级功能。
+- @Player - 玩家对象，代表一个连接到服务器的玩家。
+- @Players - 玩家服务，用于管理所有玩家对象。
+- @StartPlayer - 玩家出生点设置。
+- @PlayerGui - 玩家GUI，每个玩家独立的UI根节点。
+- @Camera - 相机，控制玩家在游戏世界中的视口。
+- @Chat - 聊天服务，用于发送和接收聊天消息。
+- @Backpack - 背包，存放玩家的工具。
+- @Tool - 工具，玩家可以装备和使用的物品。
+- @Area - 区域，用于检测物体进入或离开特定空间。
+- @TriggerBox - 触发盒，一个用于触发事件的简易区域。
+- @Team - 队伍对象。
+- @Teams - 队伍服务，用于管理游戏中的所有队伍。
+- @SpawnService - 生成服务，用于控制对象的生成。
+- @TeleportService - 传送服务，用于在不同地点间传送玩家。
+- @TalkService - 对话服务，用于创建NPC对话。
+- @GameSetting - 游戏设置。
+- @VoiceChatService - 语音聊天服务。
+- @VoiceChatRemoteService - 远程语音聊天服务。
+- @VoiceChannel - 语音频道。
+
+### 云数据 (Cloud Data)
+- @CloudKVStore - 云端键值对存储服务，用于持久化存储玩家数据、排行榜等。
+- @Asset - 云端资产对象。
+- @AssetContent - 云端资产内容，用于加载和管理资产的具体内容。
+
+### 其他重要服务
+- @AdvertisementService - 广告服务。
+
+- @NetService - 网络服务，用于HTTP请求等。
+
+- @StarterGui - 启动GUI服务。
+  - **描述**: 一个全局服务，作为存放GUI对象（如`ScreenGui`）的容器。当玩家加入游戏时，它的内容会被复制到每个玩家的`PlayerGui`中。它也提供与`CoreGui`（核心界面）交互的功能。
+  - **作为容器**: 玩家首次加入时，`StarterGui`的内容会被复制到该玩家的`PlayerGui`中。与`StarterPack`不同，GUI对象在角色死亡后**不会**被重新加载。
+  - **与CoreGui交互**: 可以使用`StarterGui:SetCore()`等函数来禁用或修改核心界面的元素，例如创建通知和系统消息。
+  - **注意**: 父节点必须是`GameNode`。
+  - **继承自**: `SandBoxNode`
+
+- @UtilService - 接口使用。不用重复新增不同的service通用工具服务。
+
+- @GameNode - 游戏节点服务。
+
+- @LoadedService - 加载服务。
+
+- @StarterPack - 启动包服务。
+  - **描述**: 一个服务级容器，当玩家生成时，其内容会被复制到每个玩家的背包中。它主要用于存放所有玩家初始都会获得的`Tool`（工具）或`LocalScript`。
+  - **工作机制**: 玩家角色每次生成时，`StarterPack`的内容都会被复制到该玩家的`Backpack`（背包）中。如果角色死亡，旧背包会被销毁，新背包会用`StarterPack`的内容重新填充。
+  - **注意**: 对`StarterPack`的修改应在服务器端进行，修改将在玩家下一次重生时生效。
+  - **继承自**: `SandBoxNode`
+

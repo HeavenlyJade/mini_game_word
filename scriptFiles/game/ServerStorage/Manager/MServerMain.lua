@@ -63,7 +63,6 @@ function MainServer.start_server()
     math.randomseed(os.time() + gg.GetTimeStamp())
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
     MServerInitPlayer.register_player_in_out()   --玩家进出游戏
-
     MainServer.initModule()
     for _, node in  pairs(game.WorkSpace.Ground.Children) do
         local scene = Scene.New( node )
@@ -77,6 +76,7 @@ function MainServer.start_server()
     for _, child in pairs(MainStorage.Code.Common.Config.Children) do
         require(child)
     end
+    gg.log("结束服务器")
 
 end
 
@@ -91,11 +91,8 @@ function MainServer.initModule()
     -- gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
     -- gg.cloudMailData = cloudMailData:Init()
     -- SkillEventManager.Init()
-    gg.log("背包事件管理")
     BagEventManager:Init()
-    gg.log("邮件服务初始化")
     MailMgr:Init()
-    gg.log("邮件事件管理")
     MailEventManager:Init()
     gg.log("事件初始化完成")
 

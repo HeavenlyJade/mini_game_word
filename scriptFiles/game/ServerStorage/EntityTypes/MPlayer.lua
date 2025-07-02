@@ -37,7 +37,7 @@ function _MPlayer:OnInit(info_)
     self.auto_wait_tick = 0 -- 等待tick
     
     -- 网络状态
-    self.player_net_stat = common_const.PLAYER_NET_STAT.INITING -- 玩家网络状态
+    self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
     self.loginTime = os.time() -- 登录时间
     
     -- 初始化玩家数据
@@ -57,8 +57,6 @@ function _MPlayer:initPlayerData()
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     MailMgr:OnPlayerJoin(self)
     
-    -- 初始化技能数据
-    self:initSkillData()
     
     -- 其他初始化可以在这里扩展
 end
@@ -74,13 +72,7 @@ function _MPlayer:setPlayerNetStat(player_net_stat_)
     self.player_net_stat = player_net_stat_
 end
 
--- 技能系统相关 --------------------------------------------------------
-
---初始化技能列表（default）
-function _MPlayer:initSkillData()
-    --先读取云数据
-    self:syncSkillData()
-end
+-- 技能系统相关 ------------------------------------------------------
 
 --通知客户端玩家的技能框和技能id
 function _MPlayer:syncSkillData()

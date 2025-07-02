@@ -361,7 +361,7 @@ local gg = {
     network_channel = nil, ---@type NetworkChannel
     cloudMailData = nil, ---@type CloudMailDataAccessor
     -- 客户端使用(p1)
-    client_scene_name = 'g0', -- 当前客户端的场景
+    client_scene_name = 'init_map', -- 当前客户端的场景
     client_target_node = nil, -- 当前目标
     client_selected = nil, -- 选中控件
     client_aoe_cylinder = nil, -- aoe技能碰撞控件
@@ -489,9 +489,38 @@ end
 -- end
 
 -- 客户端获得怪物容器
----@return SandboxNode 怪物容器
+---@return SandboxNode|nil 怪物容器
 function gg.clentGetContainerMonster()
-    return game.WorkSpace["Ground"][gg.client_scene_name].container_monster
+    if not gg.client_scene_name then
+        gg.log("警告：client_scene_name 未初始化，使用默认场景名 'terrain'")
+        gg.client_scene_name = 'init_map'
+    end
+    
+    local ground = game.WorkSpace["Ground"]
+    if not ground then
+        gg.log("错误：未找到 WorkSpace.Ground")
+        return nil
+    end
+    
+    local scene = ground[gg.client_scene_name]
+    if not scene then
+        gg.log("错误：未找到场景", gg.client_scene_name)
+        return nil
+    end
+    
+    local terrain = scene.terrain
+    if not terrain then
+        gg.log("错误：场景中未找到 terrain", gg.client_scene_name)
+        return nil
+    end
+    
+    local container = terrain.Monster
+    if not container then
+        gg.log("错误：terrain中未找到 Monster", gg.client_scene_name)
+        return nil
+    end
+    
+    return container
 end
 
 

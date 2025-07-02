@@ -1,4 +1,4 @@
-print("Hello world!")--
+--
 -- json.lua
 --
 -- Copyright (c) 2020 rxi

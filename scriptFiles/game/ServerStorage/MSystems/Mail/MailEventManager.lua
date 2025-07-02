@@ -38,12 +38,9 @@ MailEventManager.ERROR_CODES = {
 
 -- 初始化事件管理器
 function MailEventManager.Init()
-    gg.log("邮件事件管理器初始化开始")
     
     -- 注册网络事件处理器
-    MailEventManager.RegisterNetworkHandlers()
-    
-    gg.log("邮件事件管理器初始化完成")
+    MailEventManager.RegisterNetworkHandlers()    
 end
 
 -- 注册网络事件处理器

@@ -1,4 +1,4 @@
-print("Hello world!")local MainStorage = game:GetService('MainStorage')
+local MainStorage = game:GetService('MainStorage')
 local Players = game:GetService('Players')
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr

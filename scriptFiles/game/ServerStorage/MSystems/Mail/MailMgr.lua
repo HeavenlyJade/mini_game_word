@@ -47,11 +47,8 @@ local MailMgr = {
 function MailMgr:Init()
     -- 初始化全局邮件管理器
     GlobalMailManager:OnInit()
-    
     -- 挂载到全局gg对象，方便其他系统访问
     MServerDataManager.MailMgr = self
-    
-    gg.log("邮件服务初始化完成")
     return self
 end
 

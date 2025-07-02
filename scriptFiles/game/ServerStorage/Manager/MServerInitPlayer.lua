@@ -15,8 +15,9 @@ local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)    
 local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
 
-local Player       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
+local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 
 local cloudDataMgr  = require(ServerStorage.CloundDataMgr.MCloudDataMgr)    ---@type MCloudDataMgr
 
@@ -31,10 +32,11 @@ local waitingPlayers = {} -- 存储等待初始化的玩家
 -- 设置初始化完成状态
 function MServerInitPlayer.setInitFinished(finished)
     initFinished = finished
-    
+    gg.log('====waitingPlayers', waitingPlayers)
     -- 如果初始化完成，处理等待的玩家
     if finished then
         for _, player in ipairs(waitingPlayers) do
+            gg.log('====player_enter_game', player)
             MServerInitPlayer.player_enter_game(player)
         end
         waitingPlayers = {} -- 清空等待列表
@@ -47,6 +49,8 @@ function MServerInitPlayer.register_player_in_out()
 
     players.PlayerAdded:Connect(function(player)
         gg.log('====PlayerAdded', player.UserId)
+        -- MServerInitPlayer.player_enter_game(player)
+
         if initFinished then
             MServerInitPlayer.player_enter_game(player)
         else
@@ -70,6 +74,7 @@ end
 
 -- 玩家进入游戏，数据加载
 function MServerInitPlayer.player_enter_game(player)
+    gg.log("player_enter_game====", player.UserId, player.Name, player.Nickname)
     player.DefaultDie = false   --取消默认死亡
 
     local uin_ = player.UserId
@@ -79,13 +84,11 @@ function MServerInitPlayer.player_enter_game(player)
         -- 清理旧的玩家实例（防止重复登录）
         local oldPlayer = serverDataMgr.server_players_list[uin_]
         if oldPlayer then
-            oldPlayer:Save()  -- 保存旧玩家数据
+            -- oldPlayer:Save()  -- 保存旧玩家数据
             oldPlayer:leaveGame()  -- 执行离线清理
-            
             -- 清理旧玩家的邮件缓存
             local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
             MailMgr:OnPlayerLeave(uin_)
-            
             serverDataMgr.removePlayer(uin_, oldPlayer.name or "Unknown")  -- 从列表中移除
             gg.log('Old player instance removed for uin:', uin_)
         end
@@ -108,7 +111,7 @@ function MServerInitPlayer.player_enter_game(player)
 
     -- 玩家信息初始化（MPlayer会自动调用initPlayerData初始化背包和邮件）
     ---@type MPlayer
-    local player_ = Player.New({
+    local player_ = MPlayer.New({ 
         position = Vector3.New(600, 400, -3400),      --(617,292,-3419)
         uin = uin_,
         nickname = player.Nickname,
@@ -118,24 +121,25 @@ function MServerInitPlayer.player_enter_game(player)
         variables = cloud_player_data_.vars or {}
     })
     
-    -- 读取任务数据
-    cloudDataMgr.ReadGameTaskData(player_)
+    -- -- 读取任务数据
+    -- cloudDataMgr.ReadGameTaskData(player_)
 
     -- 加载玩家邮件数据到MailMgr统一管理（包括个人邮件和全服邮件状态）
-    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    MailMgr:OnPlayerJoin(player_)
+
 
     player_actor_.Size = Vector3.New(120, 160, 120)      --碰撞盒子的大小
     player_actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
 
     player_:setGameActor(player_actor_)     --player
     player_actor_.CollideGroupID = 4
+    
+    -- 设置玩家基础属性（在RefreshStats之前）
+    -- player_:SetStat("速度", 800, "BASE", false)  -- 设置基础移动速度
+    
     -- player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
 
     -- player_:initSkillData()                 --- 加载玩家技能
     -- player_:RefreshStats()               --重生 --刷新战斗属性
-    -- player_:SetHealth(player_.maxHealth)
-    -- player_:UpdateHud()
     if Scene.spawnScene then
         if not player_:IsNear(Scene.spawnScene.node.Position, 500) then
             player_actor_.Position = Scene.spawnScene.node.Position
@@ -144,8 +148,11 @@ function MServerInitPlayer.player_enter_game(player)
     -- player_.inited = true
     ServerEventManager.Publish("PlayerInited", {player = player_})
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
-
+    print("玩家速度属性:", player_:GetStat("速度"))
+    print("当前玩家移动速度:", player_actor_.Movespeed)
     gg.log("玩家", uin_, "登录完成，邮件数据已加载到MailMgr")
+    MailMgr:OnPlayerJoin(player_)
+    
 end
 
 -- 玩家离开游戏

@@ -3,6 +3,11 @@ description:
 globs: 
 alwaysApply: false
 ---
+---
+description: 
+globs: 
+alwaysApply: false
+---
 # PVZWord 项目规则
 
 本文档概述了 PVZWord 游戏项目的架构、约定和重要文件。
@@ -194,7 +199,7 @@ end)
     - 玩家物品使用事件
     - 装备更换事件
     - 背包整理事件
-- **`BagCloudDataMgr.lua`** - 背包云数据管理器
+- **`BagCloudDataMgr.lua`** - 背包云数据结构
     - 背包数据格式定义
     - 物品属性结构
     - 装备状态数据
@@ -210,34 +215,21 @@ end)
     - 玩家查看邮件事件
     - 领取附件事件
     - 删除邮件事件
-- **`MailCloudDataMgr.lua`** - 邮件云数据管理器
+- **`cloudMailData.lua`** - 邮件云数据结构
     - 邮件数据格式
     - 附件数据结构
     - 邮件状态定义
 
 
-#### 技能系统 (`MSystems/Skill/`)
-- **`SkillMgr.lua`** - 技能功能管理器
-    - 技能学习、升级、释放逻辑
-    - 技能点分配管理
-    - 技能冷却管理
-- **`SkillEventManager.lua`** - 技能事件管理器
-    - 技能释放事件
-    - 技能学习事件
-    - 技能升级事件
-- **`SkillCloudDataMgr.lua`** - 技能云数据管理器
-    - 技能数据结构定义
-    - 玩家技能进度数据
-    - 技能配置数据
-- **`PlayerSkill.lua`** - 玩家技能类
-- **`SkillBook.lua`** - 技能书类
-- **`SkillUtils.lua`** - 技能工具函数
-
 #### 未来扩展系统示例
+- **`MSystems/Skill/`** - 技能系统
+    - `SkillManager.lua` - 技能功能管理
+    - `SkillEventManager.lua` - 技能交互事件
+    - `Skillclouddata.lua` - 技能数据结构
 - **`MSystems/Quest/`** - 任务系统
-    - `QuestMgr.lua` - 任务功能管理器
+    - `QuestManager.lua` - 任务功能管理
     - `QuestEventManager.lua` - 任务交互事件
-    - `QuestCloudDataMgr.lua` - 任务云数据管理器
+    - `Questclouddata.lua` - 任务数据结构
 
 ### 文档规则文件
 - **`.cursorrule`** (本文件): 项目核心规则、架构概览和编码约定
@@ -387,29 +379,29 @@ print("玩家的初始生命值是: " .. settings.PlayerHealth)
 **1. 创建系统目录结构**
 ```
 MSystems/NewSystem/
-├── NewSystemMgr.lua              -- 功能管理器
+├── NewSystemManager.lua          -- 功能管理器
 ├── NewSystemEventManager.lua     -- 事件管理器
-├── NewSystemCloudDataMgr.lua     -- 云数据管理器
+│   NewSystemCloudDataMgr.lua     -- 云存储
 ├── NewSystemBase.lua             -- 基础类（可选）
 └── NewSystemUtils.lua            -- 工具函数（可选）
 ```
 
 **2. Manager 实现示例**
 ```lua
--- NewSystemMgr.lua - 功能管理器
-local NewSystemMgr = ClassMgr.Class("NewSystemMgr")
+-- NewSystemManager.lua - 功能管理器
+local NewSystemManager = ClassMgr.Class("NewSystemManager")
 
-function NewSystemMgr:OnInit()
+function NewSystemManager:OnInit()
     -- 初始化业务逻辑
 end
 
-function NewSystemMgr:ProcessPlayerAction(player, action, data)
+function NewSystemManager:ProcessPlayerAction(player, action, data)
     -- 处理玩家操作
     -- 调用云数据保存
     -- 触发相关事件
 end
 
-return NewSystemMgr
+return NewSystemManager
 ```
 
 **3. EventManager 实现示例**
@@ -435,13 +427,11 @@ end
 return NewSystemEventManager
 ```
 
-**4. CloudDataMgr 实现示例**
-```lua
--- NewSystemCloudDataMgr.lua - 云数据管理器
-local NewSystemCloudDataMgr = {}
+-- NewSystemDataMgr.lua - 数据结构定义
+local NewSystemData = {}
 
 -- 玩家数据结构
-NewSystemCloudDataMgr.PlayerDataFormat = {
+NewSystemData.PlayerDataFormat = {
     playerId = 0,
     systemLevel = 1,
     systemExp = 0,
@@ -450,10 +440,10 @@ NewSystemCloudDataMgr.PlayerDataFormat = {
 }
 
 -- 云存储键值格式
-NewSystemCloudDataMgr.CloudKeys = {
+NewSystemData.CloudKeys = {
     PLAYER_DATA = "newsystem_player_%d",  -- 玩家数据键
     GLOBAL_CONFIG = "newsystem_config"    -- 全局配置键
 }
 
-return NewSystemCloudDataMgr
+return NewSystemData
 ``` 
