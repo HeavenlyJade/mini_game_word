@@ -106,10 +106,8 @@ end
 function BagMgr.OnPlayerLeave(uin)
     local bag = BagMgr.server_player_bag_data[uin]
     if bag then
-        -- 保存背包数据
-        if bag.dirtySave then
-            bag:Save()
-        end
+        -- 玩家离线时强制保存数据
+        BagCloudDataMgr.SavePlayerBag(uin, bag, true)
         -- 清理内存
         BagMgr.server_player_bag_data[uin] = nil
         BagMgr.need_sync_bag[bag] = nil
@@ -122,14 +120,12 @@ end
 function BagMgr.OnPlayerJoin(player)
     local ret, bag = BagMgr.LoadPlayerBagFromCloud(player)
     if ret == 0 and bag then
-        player.bag = bag
         return true
     else
         -- 创建新背包
         local Bag = require(ServerStorage.MSystems.Bag.Bag)
         local newBag = Bag.New(player)
         BagMgr.setPlayerBagData(player.uin, newBag)
-        player.bag = newBag
         return true
     end
 end
@@ -156,13 +152,23 @@ end
 ---@param player MPlayer 玩家对象
 ---@param force_ boolean 是否强制保存
 function BagMgr.SavePlayerBagToCloud(player, force_)
-    BagCloudDataMgr.SavePlayerBag(player, force_)
+    local bag = BagMgr.GetPlayerBag(player.uin)
+    if bag then
+        BagCloudDataMgr.SavePlayerBag(player.uin, bag, force_)
+    end
 end
 
 ---批量保存所有玩家背包数据
 ---@param players table 玩家列表
 function BagMgr.BatchSaveAllPlayerBags(players)
-    BagCloudDataMgr.BatchSavePlayerBags(players)
+    for _, player in pairs(players) do
+        if player then
+            local bag = BagMgr.GetPlayerBag(player.uin)
+            if bag then
+                BagCloudDataMgr.SavePlayerBag(player.uin, bag, true) -- 强制保存
+            end
+        end
+    end
 end
 
 ---清空玩家背包数据（慎用）

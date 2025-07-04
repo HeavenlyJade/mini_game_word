@@ -7,8 +7,18 @@ local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEve
 local ItemUtils = require(ServerStorage.MSystems.Bag.ItemUtils) ---@type ItemUtils
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
 
 ---@class Bag
+---@field uin number 玩家UIN
+---@field bag_items table<number, ItemData[]> 存放所有物品, 按物品类型的数字分类索引
+---@field bag_index table<string, BagPosition[]> 按物品名称索引, 方便快速查找
+---@field loaded boolean 是否已从云端加载
+---@field dirtySyncSlots BagPosition[] 需要同步到客户端的槽位
+---@field dirtySave boolean 数据是否需要保存到云端
+---@field dirtySyncAll boolean 是否需要全量同步到客户端
+---@field New fun(player: MPlayer): Bag
 local Bag = ClassMgr.Class("Bag")
 
 ---@param player MPlayer 玩家实例
@@ -48,11 +58,9 @@ end
 
 ---初始化货币类型
 function Bag:InitializeCurrencies()
-    local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
-    local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
     
     -- 获取所有物品类型
-    local allItemTypes = ItemTypeConfig.GetAll()
+    local allItemTypes = ConfigLoader.GetAllItems()
     
     -- 筛选出货币类型的物品
     local currencyTypes = {}
@@ -110,6 +118,9 @@ function Bag:Load(data)
             
             for i, itemData in ipairs(itemList) do
                 if itemData and type(itemData) == "table" then
+                    -- [修正] 为物品数据添加 itemCategory 字段，确保内存中数据结构一致
+                    itemData.itemCategory = category
+
                     -- 确保物品数据包含bagPos字段
                     itemData.bagPos = {c = category, s = i}
                     
@@ -154,16 +165,13 @@ function Bag:Save()
             end
         end
     end
-    
+
     local data = {
         items = cleanItems
     }
-    
-    gg.log("保存背包数据:", data)
-    local cloudService = game:GetService("CloudService") --- @type CloudService
-    cloudService:SetTableAsync('inv' .. self.uin, data, function ()
-        gg.log("背包数据保存完成")
-    end)
+
+    gg.log("准备背包数据用于保存:", data)
+    return data
 end
 
 ---@param position BagPosition 背包位置
@@ -310,8 +318,7 @@ function Bag:SyncToClient()
     end
 
     local moneys = {}
-    local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
-    local allItemTypes = ItemTypeConfig.GetAll()
+    local allItemTypes = ConfigLoader.GetAllItems()
     
     -- 获取所有货币类型并按序号排序
     local currencyTypes = {}
@@ -409,8 +416,7 @@ function Bag:HasEnoughSpace(attachments)
     -- 检查每种物品是否可以添加
     for itemName, totalNeeded in pairs(itemNeeds) do
         -- 获取物品配置
-        local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
-        local itemType = ItemTypeConfig.Get(itemName)
+        local itemType = ConfigLoader.GetItem(itemName)
         
         if not itemType then
             gg.log("警告：未找到物品配置", itemName)

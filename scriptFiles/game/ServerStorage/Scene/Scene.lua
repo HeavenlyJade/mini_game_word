@@ -224,7 +224,7 @@ function _M:OnInit(node)
             end
         end)
     end
-    ServerDataManager.server_scene_list[ self.name ] = self
+    ServerDataManager.addScene(self.name, self)
 
     self:initNpcs() -- Initialize NPCs after scene creation
     -- self:initAfkSpots() -- 暂时注释掉挂机点初始化
@@ -238,6 +238,7 @@ function _M:OnInit(node)
     if self.isSpawnScene then
         _M.spawnScene = self
     end
+    gg.server_scenes_list[self.name] = self
 end
 
 ---更新所有NPC
@@ -407,7 +408,7 @@ function _M:player_enter(uin_)
     if self.players[uin_] then
         -- 已经存在
     else
-        local player_ = gg.server_players_list[uin_]
+        local player_ = ServerDataManager.getPlayerByUin(uin_)
         if player_ then
             self.players[uin_] = player_
         end

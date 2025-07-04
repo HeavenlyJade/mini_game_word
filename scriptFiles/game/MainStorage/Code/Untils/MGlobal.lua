@@ -359,6 +359,7 @@ local gg = {
     uuid_start = nil,
     CommandManager = nil, ---@type CommandManager
     GlobalMailManager = nil, ---@type GlobalMailManager
+    server_scenes_list = {}, ---@type table<string, Scene>
     network_channel = nil, ---@type NetworkChannel
     cloudMailData = nil, ---@type CloudMailDataAccessor
     -- 客户端使用(p1)
@@ -1480,8 +1481,6 @@ if gg.isServer then
                 return serverDataMgr.server_players_list
             elseif k == "server_players_name_list" then
                 return serverDataMgr.server_players_name_list
-            elseif k == "server_scene_list" then
-                return serverDataMgr.server_scene_list
             elseif k == "tick" then
                 return serverDataMgr.tick
             elseif k == "game_stat" then

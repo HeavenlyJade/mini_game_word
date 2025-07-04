@@ -1,6 +1,9 @@
-local MainStorage  = game:GetService('MainStorage')
-local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
-local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
+local MainStorage = game:GetService('MainStorage')
+local ServerStorage = game:GetService('ServerStorage')
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ItemConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemConfig
+local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType) ---@type ItemType
 local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) ---@type ItemQualityConfig
 
 
@@ -11,6 +14,22 @@ local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConf
 ---@field amount number
 ---@field uuid string
 
+---@class BagPosition
+---@field c number 物品分类的数字索引 (Category)
+---@field s number 物品在分类数组中的槽位索引 (Slot)
+
+---@class ItemData
+---@field name string 物品名称
+---@field itemCategory number 物品分类的数字索引
+---@field amount number 数量
+---@field enhanceLevel number|nil 强化等级
+---@field itemType string|nil 物品类型名称
+---@field itype string|nil (同 itemType)
+---@field bagPos BagPosition|nil 在背包中的位置
+---@field uuid string|nil 唯一ID
+---@field quality any|nil 品质
+---@field level number|nil 等级
+---@field starLevel number|nil 星级
 
 ---@class Item:Class
 ---@field itemType ItemType 物品类型
@@ -32,7 +51,7 @@ function Item:GetToStringParams()
     }
 end
 
-function Item:OnInit()
+function Item:OnInit(data)
     self.itemType = nil
     self.amount = 0
     self.uuid = ""

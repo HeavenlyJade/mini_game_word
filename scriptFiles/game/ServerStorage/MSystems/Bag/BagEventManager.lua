@@ -47,7 +47,7 @@ end
 
 --- 验证玩家
 ---@param evt table 事件参数
----@return Player|nil 玩家对象
+---@return MPlayer|nil 玩家对象
 function BagEventManager:ValidatePlayer(evt)
     local env_player = evt.player
     local uin = env_player.uin
@@ -69,11 +69,7 @@ end
 ---@param uin number 玩家ID
 ---@return Bag|nil 背包对象
 function BagEventManager:GetPlayerBag(uin)
-    local player = gg.getPlayerByUin(uin)
-    if player then
-        return player.bag
-    end
-    return nil
+    return BagMgr.GetPlayerBag(uin)
 end
 
 --- 处理获取背包物品请求
@@ -82,7 +78,7 @@ function BagEventManager:HandleGetBagItems(evt)
     gg.log("同步背包数据",evt)
     local player = self:ValidatePlayer(evt)
     if not player then return end
-    local bag = player.bag
+    local bag = self:GetPlayerBag(player.uin)
     -- gg.log("玩家的背包对数据同步",evt.uin,bag ,bag.bag_items)
     if bag ~=nil then
         bag:SyncToClient() 
@@ -144,12 +140,12 @@ function BagEventManager:HandleDecomposeAllLowEq(evt)
     if not player then return end
 
     local bag = self:GetPlayerBag(player.uin)
-    if bag and evt.rank then
-        local rank = ItemRankConfig.Get(evt.rank)
-        if rank then
-            bag:DecomposeAllLowQualityItems(rank)
-        end
-    end
+    -- if bag and evt.rank then
+    --     local rank = ItemRankConfig.Get(evt.rank)
+    --     if rank then
+    --         bag:DecomposeAllLowQualityItems(rank)
+    --     end
+    -- end
 end
 
 return BagEventManager 

@@ -6,11 +6,12 @@ local MS              = require(MainStorage.Code.Untils.MS) ---@type MS
 local gg              = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClassMgr    = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
--- local ClientInit = require(MainStorage.Code.Client.Event.ClinentInit) ---@type ClientInit
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local Controller = require(MainStorage.Code.Client.MController) ---@type Controller
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
 function ClientMain.start_client()
+    ConfigLoader.Init() 
     gg.isServer = false
     ClientMain.tick = 0
     gg.uuid_start = gg.rand_int_between(100000, 999999);

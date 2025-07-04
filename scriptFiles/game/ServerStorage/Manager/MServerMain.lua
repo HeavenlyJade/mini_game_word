@@ -27,6 +27,8 @@ local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventMan
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local MServerInitPlayer = require(ServerStorage.Manager.MServerInitPlayer) ---@type MServerInitPlayer
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+
 -- 总入口
 
 gg.isServer = true
@@ -60,6 +62,7 @@ end
 
 function MainServer.start_server()
     gg.log("开始服务器")
+    ConfigLoader.Init()
     math.randomseed(os.time() + gg.GetTimeStamp())
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
     MServerInitPlayer.register_player_in_out()   --玩家进出游戏
@@ -83,21 +86,25 @@ end
 
 function MainServer.initModule()
     gg.log("初始化模块")
-    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
-    -- local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
-    local BagEventManager = require(ServerStorage.MSystems.Bag.BagEventManager) ---@type BagEventManager
-    local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
-    local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
-    gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
+    -- 初始化核心管理器
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    serverDataMgr.BagMgr = BagMgr
+    serverDataMgr.MailMgr = MailMgr
+
+    -- 初始化事件管理器和命令管理器
+    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
+    local BagEventManager = require(ServerStorage.MSystems.Bag.BagEventManager)
+    local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager)
+    local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager)
+
+    gg.CommandManager = CommandManager
     gg.GlobalMailManager = GlobalMailManager:OnInit()
 
-    -- gg.cloudMailData = cloudMailData:Init()
-    -- SkillEventManager.Init()
     BagEventManager:Init()
     MailEventManager:Init()
-    gg.log("事件初始化完成")
-
-
+    
+    gg.log("模块初始化完成")
 end
 
 -- --设置碰撞组

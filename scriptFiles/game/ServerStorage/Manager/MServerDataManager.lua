@@ -5,25 +5,30 @@ local game = game
 local pairs = pairs
 local ipairs = ipairs
 local Players = game:GetService('Players')
-
+local MainStorage = game:GetService("MainStorage")
+--- 服务端数据存储
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class MServerDataManager
-local MServerDataManager = {}
+local MServerDataManager = {
+    server_players_list = {}, ---@type table<number, MPlayer>
+    server_players_name_list = {},
 
--- 服务端数据存储
-MServerDataManager.server_players_list = {} ---@type table<number, MPlayer>
-MServerDataManager.server_players_name_list = {} ---@type table<string, MPlayer>
-MServerDataManager.server_scene_list = {} ---@type table<string, Scene>
-MServerDataManager.MailMgr = nil ---@type MailMgr/nil
+    MailMgr = nil, ---@type MailMgr | nil
+    BagMgr = nil, ---@type BagMgr | nil
+
+    uuid_start = 0,
+    tick = 0
+}
 
 -- 游戏状态相关
 MServerDataManager.game_stat = 0 -- 0=正常 1=完结
-MServerDataManager.tick = 0 -- server_main的tick
-MServerDataManager.uuid_start = math.random(100000, 999999)
 
 -- 装备槽位配置
 MServerDataManager.equipSlot = { -- 各个装备槽位对应的装备类型
 
 }
+
+
 
 -----------------------------------------------
 -- 从 Service - Players找到一个玩家
@@ -41,7 +46,7 @@ end
 ---@param name_ string
 function MServerDataManager.getLivingByName(name_)
     if string.sub(name_, 1, 2) == 'u_' then
-        for scene_name, scene in pairs(MServerDataManager.server_scene_list) do
+        for scene_name, scene in pairs(gg.server_scenes_list) do
             if scene.uuid2Entity[name_] then
                 return scene.uuid2Entity[name_]
             end
@@ -65,7 +70,7 @@ end
 ---@param uuid_ string 怪物UUID
 ---@return Monster|nil 找到的怪物实例
 function MServerDataManager.findMonsterByUuid(uuid_)
-    for scene_name, scene in pairs(MServerDataManager.server_scene_list) do
+    for scene_name, scene in pairs(gg.server_scenes_list) do
         if next(scene.players) then
             -- 场景内有玩家
             if scene.monsters[uuid_] then
@@ -113,7 +118,7 @@ function MServerDataManager.GetSceneNode(path)
     if not sceneName then return nil end
 
     -- Get the scene using the first part
-    local scene = MServerDataManager.server_scene_list[sceneName]
+    local scene = gg.server_scenes_list[sceneName]
     if not scene then return nil end
 
     -- Pass the remaining path to scene:Get()
@@ -141,13 +146,13 @@ end
 ---@param sceneName string 场景名称
 ---@param scene Scene 场景实例
 function MServerDataManager.addScene(sceneName, scene)
-    MServerDataManager.server_scene_list[sceneName] = scene
+    gg.server_scenes_list[sceneName] = scene
 end
 
 -- 移除场景
 ---@param sceneName string 场景名称
 function MServerDataManager.removeScene(sceneName)
-    MServerDataManager.server_scene_list[sceneName] = nil
+    gg.server_scenes_list[sceneName] = nil
 end
 
 -- 获取所有玩家
@@ -159,7 +164,7 @@ end
 -- 获取所有场景
 ---@return table<string, Scene>
 function MServerDataManager.getAllScenes()
-    return MServerDataManager.server_scene_list
+    return gg.server_scenes_list
 end
 
 return MServerDataManager 

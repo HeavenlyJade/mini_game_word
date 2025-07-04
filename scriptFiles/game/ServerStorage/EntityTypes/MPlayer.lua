@@ -24,7 +24,6 @@ function _MPlayer:OnInit(info_)
     Entity.OnInit(self, info_)    --父类初始化
     
     -- 玩家特有属性
-    self.bag = nil ---@type Bag 背包管理器实例
     self.uin = info_.uin
     self.name = info_.nickname or info_.name or ""
     self.isPlayer = true
@@ -40,26 +39,9 @@ function _MPlayer:OnInit(info_)
     self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
     self.loginTime = os.time() -- 登录时间
     
-    -- 初始化玩家数据
-    self:initPlayerData()
+
 end
 
--- 初始化玩家数据
-function _MPlayer:initPlayerData()
-    -- 初始化背包（通过BagMgr管理）
-    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
-        -- 初始化邮件
-    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    -- 优先尝试加载现有背包，如果不存在则会创建新的
-    BagMgr.OnPlayerJoin(self)
-
-
-    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    MailMgr:OnPlayerJoin(self)
-    
-    
-    -- 其他初始化可以在这里扩展
-end
 
 --直接获得游戏中的actor的位置
 function _MPlayer:getPosition()
@@ -129,16 +111,9 @@ end
 function _MPlayer:leaveGame()
     -- 保存各种数据
     cloudDataMgr.SavePlayerData(self.uin, true)
-    cloudDataMgr.SaveGameTaskData(self)
-    cloudDataMgr.SaveSkillConfig(self)
+    -- cloudDataMgr.SaveGameTaskData(self)
+    -- cloudDataMgr.SaveSkillConfig(self)
     
-    -- 通知背包管理器玩家离线（BagMgr会处理背包数据保存和清理）
-    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
-    BagMgr.OnPlayerLeave(self.uin)
-
-    -- 通知邮件管理器玩家离线
-    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    MailMgr:OnPlayerLeave(self.uin)
 end
 
 -- 重写死亡处理
@@ -173,8 +148,6 @@ function _MPlayer:Die()
     }
     ServerEventManager.Publish("PlayerDeadEvent", evt)
     ServerEventManager.Publish("EntityDeadEvent", evt)
-    
-    -- 玩家死亡后不自动销毁，等待复活
 end
 
 -- tick刷新

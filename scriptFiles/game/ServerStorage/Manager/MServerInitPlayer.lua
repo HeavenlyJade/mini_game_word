@@ -16,6 +16,7 @@ local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
+local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 
@@ -121,8 +122,8 @@ function MServerInitPlayer.player_enter_game(player)
         variables = cloud_player_data_.vars or {}
     })
     
-    -- -- 读取任务数据
-    -- cloudDataMgr.ReadGameTaskData(player_)
+    -- 读取任务数据
+    cloudDataMgr.ReadGameTaskData(player_)
 
     -- 加载玩家邮件数据到MailMgr统一管理（包括个人邮件和全服邮件状态）
 
@@ -132,9 +133,6 @@ function MServerInitPlayer.player_enter_game(player)
 
     player_:setGameActor(player_actor_)     --player
     player_actor_.CollideGroupID = 4
-    
-    -- 设置玩家基础属性（在RefreshStats之前）
-    -- player_:SetStat("速度", 800, "BASE", false)  -- 设置基础移动速度
     
     -- player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
 
@@ -150,8 +148,10 @@ function MServerInitPlayer.player_enter_game(player)
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
     print("玩家速度属性:", player_:GetStat("速度"))
     print("当前玩家移动速度:", player_actor_.Movespeed)
+    MailMgr.OnPlayerJoin(player_)
+    BagMgr.OnPlayerJoin(player_)
     gg.log("玩家", uin_, "登录完成，邮件数据已加载到MailMgr")
-    MailMgr:OnPlayerJoin(player_)
+
     
 end
 
@@ -160,16 +160,16 @@ function MServerInitPlayer.player_leave_game(player)
     gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
     local uin_ = player.UserId
 
-    if serverDataMgr.server_players_list[uin_] then
-        serverDataMgr.server_players_list[uin_]:OnLeaveGame()
-        serverDataMgr.server_players_list[uin_]:Save()
+    local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer
+    if mplayer then
+        -- 通知各个系统玩家已离开
+        MailMgr.OnPlayerLeave(uin_)
+        BagMgr.OnPlayerLeave(uin_)
+        -- 其他管理器（如技能、任务等）的离线处理也可以在这里添加
+
+        mplayer:leaveGame() -- 保存玩家基础数据
+        serverDataMgr.removePlayer(uin_, player.Name)
     end
-    
-    -- 清理玩家邮件数据缓存并保存到云端
-    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
-    MailMgr:OnPlayerLeave(uin_)
-    
-    serverDataMgr.removePlayer(uin_, player.Name)
 end
 
 -- 获取等待中的玩家列表（用于调试）

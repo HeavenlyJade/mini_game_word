@@ -10,11 +10,23 @@ local pairs        = pairs
 local SandboxNode  = SandboxNode ---@type SandboxNode
 
 local MainStorage   = game:GetService("MainStorage")
-local ServerStorage = game:GetService("ServerStorage")      
+local ServerStorage = game:GetService("ServerStorage")
 local cloudService = game:GetService("CloudService") ---@type CloudService
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 local CONST_CLOUD_SAVE_TIME = 30 -- 每30秒存盘一次
+
+---@class BagCloudItemData
+---@field name string 物品名称
+---@field amount number 数量
+---@field enhanceLevel number 强化等级
+---@field level number 等级
+---@field pos number 位置
+---@field itypeIndex number 物品类型索引
+---@field starLevel number 星级等级
+
+---@class BagCloudData
+---@field items table<number, BagCloudItemData[]> 按类别分的物品列表 (key是物品类型索引)
 
 ---@class BagCloudDataMgr
 local BagCloudDataMgr = {
@@ -22,35 +34,37 @@ local BagCloudDataMgr = {
 }
 
 -- 读取玩家的背包数据
--- 新格式: ret2_ { items={ material=[{itemType="material", name="铁矿", amount=10, ...}], weapon=[{...}] } }
+-- 标准格式: { items = { [1] = [{name="铁矿", ...}], [4] = [{...}] } }
 ---@param player MPlayer 玩家对象
 ---@return number, Bag 返回值: 0表示成功, 1表示失败, 背包数据
 function BagCloudDataMgr.ReadPlayerBag(player)
     local Bag = require(ServerStorage.MSystems.Bag.Bag) ---@type Bag
+    ---@type BagCloudData
     local ret_, ret2_ = cloudService:GetTableOrEmpty('inv' .. player.uin)
     print("读取玩家背包数据", 'inv' .. player.uin, ret_, ret2_)
-    
+
     if ret_ then
-        gg.log("读取玩家背包数据", ret2_)
         local bag = Bag.New(player)
-        
-        if ret2_ then
-            -- 检查数据格式并进行兼容性处理
-            local bagData = BagCloudDataMgr.ConvertBagDataFormat(ret2_)
-            bag:Load(bagData)
-            return 0, bag
+
+        if ret2_ and ret2_.items then
+            -- 开发阶段，不进行兼容转换，直接加载
+            bag:Load(ret2_)
+            gg.log("从云端加载背包数据成功", ret2_)
+        else
+            gg.log("云端无背包数据，已创建空背包", player.uin)
         end
-        
         return 0, bag
     else
-        return 1, Bag.New(player) -- 数据失败，踢玩家下线，不然数据洗白了
+        gg.log("读取云端背包失败，为玩家创建新背包", player.uin)
+        return 1, Bag.New(player) -- 读取失败，返回新背包
     end
 end
 
 -- 保存玩家背包数据
----@param player MPlayer 玩家对象
+---@param uin number
+---@param bag Bag
 ---@param force_ boolean 是否强制保存，不检查时间间隔
-function BagCloudDataMgr.SavePlayerBag(player, force_)
+function BagCloudDataMgr.SavePlayerBag(uin, bag, force_)
     if force_ == false then
         local now_ = os.time()
         if now_ - BagCloudDataMgr.last_time_bag < CONST_CLOUD_SAVE_TIME then
@@ -60,112 +74,19 @@ function BagCloudDataMgr.SavePlayerBag(player, force_)
         end
     end
 
-    if player and player.bag then
-        local bagData = player.bag:Save()
-        cloudService:SetTableAsync('inv' .. player.uin, bagData, function(ret_)
-            if ret_ then
-                gg.log("背包数据保存成功", player.uin)
-            else
-                gg.log("背包数据保存失败", player.uin)
-            end
-        end)
-    end
-end
-
--- 转换背包数据格式，兼容旧格式
----@param data table 原始背包数据
----@return table 转换后的背包数据
-function BagCloudDataMgr.ConvertBagDataFormat(data)
-    if not data or type(data) ~= "table" then
-        gg.log("背包数据为空或格式错误，返回空背包")
-        return { items = {} }
-    end
-    
-    if not data.items or type(data.items) ~= "table" then
-        gg.log("背包items字段为空或格式错误，返回空背包")
-        return { items = {} }
-    end
-    
-    -- 检查是否已经是新格式 (ItemCategory -> ItemData[])
-    local isNewFormat = false
-    local hasValidData = false
-    
-    for category, itemList in pairs(data.items) do
-        if type(itemList) == "table" then
-            hasValidData = true
-            -- 检查是否为数组格式（新格式）
-            if itemList[1] and type(itemList[1]) == "table" and itemList[1].name then
-                isNewFormat = true
-                break
-            end
-        end
-    end
-    
-    if not hasValidData then
-        gg.log("背包数据中没有有效物品数据")
-        return { items = {} }
-    end
-    
-    if isNewFormat then
-        -- 已经是新格式，验证数据完整性
-        gg.log("背包数据已经是新格式，验证数据完整性")
-        local validatedData = { items = {} }
-        
-        for category, itemList in pairs(data.items) do
-            if type(itemList) == "table" then
-                validatedData.items[category] = {}
-                for i, itemData in ipairs(itemList) do
-                    if type(itemData) == "table" and itemData.name then
-                        -- 确保所有必要字段存在
-                        local validatedItem = {
-                            itemType = itemData.itemType or itemData.itype or category,
-                            name = itemData.name,
-                            amount = tonumber(itemData.amount) or 1,
-                            enhanceLevel = tonumber(itemData.enhanceLevel) or tonumber(itemData.el) or 0,
-                            uuid = itemData.uuid or "",
-                            quality = itemData.quality,
-                            level = tonumber(itemData.level) or 1,
-                            pos = tonumber(itemData.pos) or 0,
-                            itype = itemData.itype or category
-                        }
-                        table.insert(validatedData.items[category], validatedItem)
-                    end
+    if uin and bag then
+        -- Bag:Save() 现在只返回标准格式的数据
+        local bagData = bag:Save()
+        if bagData then
+            cloudService:SetTableAsync('inv' .. uin, bagData, function(ret_)
+                if ret_ then
+                    gg.log("背包数据保存成功", uin)
+                else
+                    gg.log("背包数据保存失败", uin)
                 end
-            end
-        end
-        
-        return validatedData
-    end
-    
-    -- 转换旧格式到新格式
-    gg.log("转换背包数据格式从旧格式到新格式")
-    local newData = { items = {} }
-    
-    for category, slots in pairs(data.items) do
-        if type(slots) == "table" then
-            newData.items[category] = {}
-            for slot, itemData in pairs(slots) do
-                if itemData and type(itemData) == "table" and itemData.name then
-                    -- 确保物品数据包含必要字段
-                    local convertedItem = {
-                        itemType = itemData.itype or category,
-                        name = itemData.name,
-                        amount = tonumber(itemData.amount) or 1,
-                        enhanceLevel = tonumber(itemData.el) or 0,
-                        uuid = itemData.uuid or "",
-                        quality = itemData.quality,
-                        level = tonumber(itemData.level) or 1,
-                        pos = tonumber(itemData.pos) or tonumber(slot) or 0,
-                        itype = itemData.itype or category
-                    }
-                    table.insert(newData.items[category], convertedItem)
-                end
-            end
+            end)
         end
     end
-    
-    gg.log("格式转换完成，转换了", #newData.items, "个物品类别")
-    return newData
 end
 
 -- 获取背包云存储键名
@@ -185,16 +106,6 @@ function BagCloudDataMgr.ClearPlayerBag(uin)
             gg.log("背包数据清空失败", uin)
         end
     end)
-end
-
--- 批量保存多个玩家的背包数据
----@param players table 玩家列表
-function BagCloudDataMgr.BatchSavePlayerBags(players)
-    for _, player in pairs(players) do
-        if player and player.bag then
-            BagCloudDataMgr.SavePlayerBag(player, true) -- 强制保存
-        end
-    end
 end
 
 return BagCloudDataMgr 
