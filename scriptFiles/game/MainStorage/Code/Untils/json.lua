@@ -22,6 +22,9 @@
 -- SOFTWARE.
 --
 
+---@class json
+---@field encode fun(val: any):string
+---@field decode fun(str: string):any
 local json = { _version = "0.1.2" }
 
 -------------------------------------------------------------------------------

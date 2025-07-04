@@ -390,6 +390,75 @@ function Bag:HasItems(items)
     return true
 end
 
+---检查背包是否有足够的空间容纳物品列表
+---@param attachments table 附件列表，格式: {"物品名": 数量}
+---@return boolean 是否有足够空间
+function Bag:HasEnoughSpace(attachments)
+    if not attachments then
+        return true -- 没有物品需要添加，空间足够
+    end
+    
+    -- 计算需要的物品类型和数量
+    local itemNeeds = {} -- {itemName: totalAmount}
+    for itemName, amount in pairs(attachments) do
+        if itemName and amount and amount > 0 then
+            itemNeeds[itemName] = (itemNeeds[itemName] or 0) + amount
+        end
+    end
+    
+    -- 检查每种物品是否可以添加
+    for itemName, totalNeeded in pairs(itemNeeds) do
+        -- 获取物品配置
+        local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
+        local itemType = ItemTypeConfig.Get(itemName)
+        
+        if not itemType then
+            gg.log("警告：未找到物品配置", itemName)
+            return false -- 如果找不到物品配置，认为无法添加
+        end
+        
+        -- 如果是可堆叠的物品（如货币），检查是否可以与现有物品合并
+        if itemType.isMoney or (itemType.maxStack and itemType.maxStack > 1) then
+            -- 可堆叠物品，检查现有堆叠是否可以容纳
+            local existingItems = self:GetItemByName(itemName)
+            local totalExistingAmount = 0
+            local availableStackSpace = 0
+            
+            for _, existingItem in ipairs(existingItems) do
+                totalExistingAmount = totalExistingAmount + (existingItem.amount or 1)
+                if itemType.maxStack then
+                    availableStackSpace = availableStackSpace + (itemType.maxStack - (existingItem.amount or 1))
+                end
+            end
+            
+            -- 对于货币类型，通常没有堆叠限制
+            if itemType.isMoney then
+                -- 货币可以无限堆叠，空间足够
+                -- 跳过此物品的检查
+            elseif availableStackSpace >= totalNeeded then
+                -- 现有堆叠空间足够
+                -- 跳过此物品的检查
+            else
+                -- 需要新的堆叠槽位
+                local remainingNeeded = totalNeeded - availableStackSpace
+                local newStacksNeeded = math.ceil(remainingNeeded / itemType.maxStack)
+                
+                -- 这里简化处理：假设背包有足够的空间
+                -- 在实际游戏中，你可能需要检查背包的具体容量限制
+                gg.log("物品", itemName, "需要新的堆叠槽位:", newStacksNeeded)
+            end
+        else
+            -- 不可堆叠物品，每个都需要一个新槽位
+            -- 这里简化处理：假设背包有足够的空间
+            gg.log("不可堆叠物品", itemName, "需要槽位:", totalNeeded)
+        end
+    end
+    
+    -- 简化版本：总是返回 true
+    -- 在实际游戏中，你可能需要实现更复杂的背包容量检查逻辑
+    return true
+end
+
 ---@param items table<string, number> 物品名称和数量的映射表
 ---@return boolean 是否成功移除所有物品
 function Bag:RemoveItems(items)

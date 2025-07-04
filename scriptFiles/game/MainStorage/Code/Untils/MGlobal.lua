@@ -358,6 +358,7 @@ local gg = {
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
     uuid_start = nil,
     CommandManager = nil, ---@type CommandManager
+    GlobalMailManager = nil, ---@type GlobalMailManager
     network_channel = nil, ---@type NetworkChannel
     cloudMailData = nil, ---@type CloudMailDataAccessor
     -- 客户端使用(p1)

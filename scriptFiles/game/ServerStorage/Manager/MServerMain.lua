@@ -83,16 +83,17 @@ end
 
 function MainServer.initModule()
     gg.log("初始化模块")
-    -- local CommandManager = require(MainStorage.code.server.CommandSystem.MCommandManager) ---@type CommandManager
+    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
     -- local SkillEventManager = require(MainStorage.code.server.spells.SkillEventManager) ---@type SkillEventManager
     local BagEventManager = require(ServerStorage.MSystems.Bag.BagEventManager) ---@type BagEventManager
+    local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
     local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
-    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
-    -- gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
+    gg.CommandManager = CommandManager    -- 挂载到全局gg对象上以便全局访问
+    gg.GlobalMailManager = GlobalMailManager:OnInit()
+
     -- gg.cloudMailData = cloudMailData:Init()
     -- SkillEventManager.Init()
     BagEventManager:Init()
-    MailMgr:Init()
     MailEventManager:Init()
     gg.log("事件初始化完成")
 

@@ -1,0 +1,190 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# PVZWord 枚举和数据类型文档索引
+
+本文档专门记录 PVZWord 项目中所有可用的**枚举（Enums）**和**数据类型（DataTypes）**。这些是编程中的基础类型定义，对于正确使用API至关重要。
+
+所有链接指向官方的 [miniapi GitHub 仓库](mdc:https:/github.com/HeavenlyJade/api)。
+
+---
+
+## 数据类型 (DataTypes)
+
+### 基础数据类型
+- [Bool](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Bool.md) - 布尔值（true/false）
+- [Number](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Number.md) - 数字类型
+- [String](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/String.md) - 字符串类型
+- [Table](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Table.md) - 表格/数组类型
+- [Nil](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Nil.md) - 空值类型
+- [Void](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Void.md) - 无返回值类型
+
+### Lua 特定类型
+- [LuaFunction](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/LuaFunction.md) - Lua 函数类型
+- [LuaTable](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/LuaTable.md) - Lua 表格类型
+
+### 向量和矩阵
+- [Vector2](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Vector2.md) - 二维向量
+- [Vector3](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Vector3.md) - 三维向量
+- [Vector4](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Vector4.md) - 四维向量
+- [Quaternion](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Quaternion.md) - 四元数（用于旋转）
+- [Matrix3f](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Matrix3f.md) - 3x3 矩阵
+- [Matrix4f](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Matrix4f.md) - 4x4 矩阵
+
+### 颜色和视觉
+- [ColorValue](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/ColorValue.md) - 颜色值
+- [ColorQuad](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/ColorQuad.md) - 四元颜色
+- [Rect](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Rect.md) - 矩形区域
+
+### 几何和空间
+- [Ray](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Ray.md) - 射线
+- [WCoord](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/WCoord.md) - 世界坐标
+- [RangeInfo](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/RangeInfo.md) - 范围信息
+
+### 动画和补间
+- [TweenInfo](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/TweenInfo.md) - 补间动画信息
+
+### 事件和信号
+- [SBXSignal](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/SBXSignal.md) - 信号类型
+- [SBXConnection](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/SBXConnection.md) - 连接类型
+- [Notify](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/Notify.md) - 通知类型
+
+### 其他类型
+- [MNJsonVal](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/MNJsonVal.md) - JSON 值类型
+- [ModelAssetType](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/ModelAssetType.md) - 模型资产类型
+- [ReflexTuple](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/ReflexTuple.md) - 反射元组
+- [ReflexVariant](mdc:https:/github.com/HeavenlyJade/api/blob/main/DataType/ReflexVariant.md) - 反射变量
+
+---
+
+## 枚举类型 (Enums)
+
+### 输入和交互
+- [KeyCode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/KeyCode.md) - 键盘按键代码
+- [UserInputKeyCode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/UserInputKeyCode.md) - 用户输入按键代码
+- [UserInputType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/UserInputType.md) - 用户输入类型
+- [UserInputState](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/UserInputState.md) - 用户输入状态
+- [ModifierKey](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ModifierKey.md) - 修饰键
+- [MouseBehavior](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/MouseBehavior.md) - 鼠标行为
+- [InputMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/InputMode.md) - 输入模式
+- [InteractMethod](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/InteractMethod.md) - 交互方法
+
+### 动画系统
+- [AnimationPlayMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/AnimationPlayMode.md) - 动画播放模式
+- [AnimationWrapMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/AnimationWrapMode.md) - 动画循环模式
+- [LegacyAnimationLoop](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/LegacyAnimationLoop.md) - 旧版动画循环
+- [AnimatorCullingMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/AnimatorCullingMode.md) - 动画器剔除模式
+- [AnimatorParameterType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/AnimatorParameterType.md) - 动画器参数类型
+- [TweenStatus](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/TweenStatus.md) - 补间动画状态
+- [EasingDirection](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/EasingDirection.md) - 缓动方向
+- [EasingStyle](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/EasingStyle.md) - 缓动样式
+
+### 渲染和图形
+- [GraphicsPlatform](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/GraphicsPlatform.md) - 图形平台
+- [GraphicsQuality](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/GraphicsQuality.md) - 图形质量
+- [RenderPriority](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/RenderPriority.md) - 渲染优先级
+- [BlendModeType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/BlendModeType.md) - 混合模式类型
+- [CullMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/CullMode.md) - 剔除模式
+- [DepthFunc](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/DepthFunc.md) - 深度函数
+- [DepthWrite](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/DepthWrite.md) - 深度写入
+- [PreZMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/PreZMode.md) - PreZ 模式
+- [CullLayer](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/CullLayer.md) - 剔除层
+
+### 光照和阴影
+- [LightType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/LightType.md) - 光源类型
+- [SkyLightType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/SkyLightType.md) - 天空光类型
+- [UIMODLEVIEW_SkyLightType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/UIMODLEVIEW_SkyLightType.md) - UI模型视图天空光类型
+- [ShadowDesc](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ShadowDesc.md) - 阴影描述
+- [ShadowQuality](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ShadowQuality.md) - 阴影质量
+- [ShadowCascadeCount](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ShadowCascadeCount.md) - 阴影级联数量
+
+### 材质和纹理
+- [MaterialTemplate](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/MaterialTemplate.md) - 材质模板
+- [BaseMaterial](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/BaseMaterial.md) - 基础材质
+- [TextureMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/TextureMode.md) - 纹理模式
+- [TextureBlend](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/TextureBlend.md) - 纹理混合
+
+### 粒子系统
+- [ParticleRenderMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleRenderMode.md) - 粒子渲染模式
+- [ParticleRenderSpace](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleRenderSpace.md) - 粒子渲染空间
+- [ParticleSystemSimulationSpace](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleSystemSimulationSpace.md) - 粒子系统模拟空间
+- [ParticleSystemCurveMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleSystemCurveMode.md) - 粒子系统曲线模式
+- [ParticleSystemGradientMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleSystemGradientMode.md) - 粒子系统渐变模式
+- [ParticleSystemScalingMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleSystemScalingMode.md) - 粒子系统缩放模式
+- [ParticleSystemCullingMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleSystemCullingMode.md) - 粒子系统剔除模式
+- [ParticleQualityDropdown](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleQualityDropdown.md) - 粒子质量下拉选项
+- [ParticleSortMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ParticleSortMode.md) - 粒子排序模式
+
+### UI 和界面
+- [AutoSizeType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/AutoSizeType.md) - 自动尺寸类型
+- [TextHAlignment](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/TextHAlignment.md) - 文本水平对齐
+- [TextVAlignment](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/TextVAlignment.md) - 文本垂直对齐
+- [HorizontalAlignmentType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/HorizontalAlignmentType.md) - 水平对齐类型
+- [VerticalAlignment](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/VerticalAlignment.md) - 垂直对齐
+- [FillMethod](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/FillMethod.md) - 填充方法
+- [FillOrigin](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/FillOrigin.md) - 填充原点
+- [FillDirectionType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/FillDirectionType.md) - 填充方向类型
+- [OverflowType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/OverflowType.md) - 溢出类型
+- [ListLayoutType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ListLayoutType.md) - 列表布局类型
+
+### 物理系统
+- [PhysicsType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/PhysicsType.md) - 物理类型
+- [PhysicsRoleType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/PhysicsRoleType.md) - 物理角色类型
+- [PhysicsFrames](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/PhysicsFrames.md) - 物理帧数
+- [PHYSX2D_TYPE](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/PHYSX2D_TYPE.md) - 2D物理类型
+- [MotorType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/MotorType.md) - 马达类型
+- [RagdollBoneJoint](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/RagdollBoneJoint.md) - 布娃娃骨骼关节
+
+### 游戏设置
+- [GamePlayMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/GamePlayMode.md) - 游戏玩法模式
+- [GameStartMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/GameStartMode.md) - 游戏开始模式
+- [GAMESTAGE](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/GAMESTAGE.md) - 游戏阶段
+- [DeviceType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/DeviceType.md) - 设备类型
+- [DeviceRendererType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/DeviceRendererType.md) - 设备渲染器类型
+
+### 音频
+- [Sound](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/Sound.md) - 声音枚举
+- [RollOffMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/RollOffMode.md) - 衰减模式
+- [ListenerType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ListenerType.md) - 监听器类型
+- [GameBackGroundMusic](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/GameBackGroundMusic.md) - 游戏背景音乐
+
+### 环境和天气
+- [Weather](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/Weather.md) - 天气
+- [SkyBoxType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/SkyBoxType.md) - 天空盒类型
+- [SkyPlanet](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/SkyPlanet.md) - 天空行星
+- [FogType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/FogType.md) - 雾类型
+- [MODELVIEW_FogType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/MODELVIEW_FogType.md) - 模型视图雾类型
+
+### 工具和操作
+- [ToolActiveMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ToolActiveMode.md) - 工具激活模式
+- [Action](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/Action.md) - 动作
+- [ContextActionType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ContextActionType.md) - 上下文动作类型
+- [ContextActionResult](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ContextActionResult.md) - 上下文动作结果
+- [ContextActionPriority](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ContextActionPriority.md) - 上下文动作优先级
+
+### 定时器和状态
+- [TimerRunState](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/TimerRunState.md) - 定时器运行状态
+- [BehaviorState](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/BehaviorState.md) - 行为状态
+- [StateMachineMessage](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/StateMachineMessage.md) - 状态机消息
+
+### 其他枚举
+- [AttributeType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/AttributeType.md) - 属性类型
+- [AssetResType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/AssetResType.md) - 资产资源类型
+- [AssetFetchStatus](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/AssetFetchStatus.md) - 资产获取状态
+- [ResourceLoadMode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/ResourceLoadMode.md) - 资源加载模式
+- [Mode](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/Mode.md) - 模式
+- [Model](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/Model.md) - 模型枚举
+- [PartType](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/PartType.md) - 部件类型
+- [Surface](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/Surface.md) - 表面
+- [StandardSkeleton](mdc:https:/github.com/HeavenlyJade/api/blob/main/Enums/StandardSkeleton.md) - 标准骨骼
+
+---
+
+## 使用说明
+
+1. **数据类型**：定义了变量和参数可以使用的基本类型
+2. **枚举类型**：定义了预设的常量值，通常用于配置和选项
+
+在编码时，请参考这些类型定义来确保参数传递的正确性。 

@@ -3,11 +3,6 @@ description:
 globs: 
 alwaysApply: false
 ---
----
-description: 
-globs: 
-alwaysApply: false
----
 # PVZWord 项目规则
 
 本文档概述了 PVZWord 游戏项目的架构、约定和重要文件。
@@ -38,7 +33,7 @@ alwaysApply: false
         - 其他玩家相关数据模块...
         
         **每个系统的标准结构**：
-        - `*Mgr.lua` - 功能管理器，负责业务逻辑处理
+        - `*Mgr.lua` - 功能管理器，是一个静态类，负责存放对应玩家的云端数据并处理业务逻辑。
         - `*EventManager.lua` - 事件管理器，存放玩家需要交互的所有事件
         - `*CloudDataMgr.lua` - 云数据管理器，处理数据持久化和管理
 
@@ -424,27 +419,5 @@ function NewSystemEventManager:OnPlayerInteract(player, eventData)
     -- 调用对应的Manager方法
 end
 
-return NewSystemEventManager
-```
-
--- NewSystemDataMgr.lua - 数据结构定义
-local NewSystemData = {}
-
--- 玩家数据结构
-NewSystemData.PlayerDataFormat = {
-    playerId = 0,
-    systemLevel = 1,
-    systemExp = 0,
-    systemItems = {},
-    lastUpdateTime = 0
-}
-
--- 云存储键值格式
-NewSystemData.CloudKeys = {
-    PLAYER_DATA = "newsystem_player_%d",  -- 玩家数据键
-    GLOBAL_CONFIG = "newsystem_config"    -- 全局配置键
-}
-
-return NewSystemData
 
 ``` 

@@ -1,0 +1,312 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# PVZWord 基础类文档
+
+本文档专门记录 PVZWord 项目中的**基础类（Base Classes）**。这些是所有其他类的基础，理解它们对于正确使用整个API体系至关重要。
+
+所有链接指向官方的 [miniapi GitHub 仓库](mdc:https:/github.com/HeavenlyJade/api)。
+
+---
+
+## 继承关系图
+
+```
+SandboxNode (沙盒节点基类)
+├── ScriptNode (脚本节点)
+├── Transform (变换节点)
+│   └── Joint (关节节点)
+└── 其他所有节点类...
+```
+
+---
+
+## Joint (关节节点)
+
+**继承自**：Transform
+
+**链接**：[Joint.md](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Base/Joint.md)
+
+### 描述
+连接两个物理模型的节点。用于创建物理约束，如铰链、弹簧等连接。
+
+### 属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `Attachment0` | SandboxNode | 连接第一个物理模型 |
+| `Attachment1` | SandboxNode | 连接第二个物理模型 |
+
+### 使用场景
+- 创建门的铰链连接
+- 制作弹簧或减震器
+- 连接可动的机械部件
+- 实现复杂的物理约束
+
+---
+
+## SandboxNode (沙盒节点)
+
+**继承自**：无（基类）
+
+**链接**：[SandboxNode.md](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Base/SandboxNode.md)
+
+### 描述
+沙盒节点，场景对象，沙盒结构场景树基础节点。这是所有场景对象的基类，提供了基本的节点管理功能。
+
+### 核心属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `ClassType` | string | 节点的ClassType名称（只读） |
+| `Name` | string | 节点名称 |
+| `Tag` | int | 节点标签 |
+| `Parent` | SandboxNode | 父节点 |
+| `parent` | SandboxNode | 父节点（仅脚本可调用） |
+| `Children` | SandboxNode | 全部子节点（仅脚本可调用） |
+| `Enabled` | bool | 节点是否启用。禁用后节点内逻辑、事件、通知等不生效 |
+
+### 同步和网络属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `SyncMode` | NodeSyncMode | 同步模式（仅主机能够设置） |
+| `LocalSyncFlag` | NodeSyncLocalFlag | 本地同步标识（本地属性，不需要同步） |
+| `OwnerUin` | int | 所属uin（仅主机能够设置） |
+
+### 资源管理属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `ResourceLoadMode` | ResourceLoadMode | 资源加载模式：Manual(主动加载) / Dynamic(动态加载) |
+| `IgnoreSafeMode` | bool | 忽略安全模式 |
+| `FlagDebug` | int | 调试标志 |
+
+### 属性容器
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `Attributes` | AttributeContainer | 获取属性容器（仅脚本可调用） |
+
+### 核心方法
+
+#### 节点管理
+- `Destroy()` - 销毁节点
+- `ClearAllChildren()` - 清除所有子节点
+- `SetParent()` - 设置父节点
+- `Clone()` - 节点克隆，克隆反射属性、自定义属性以及包含的子对象
+- `FindFirstChild()` - 通过节点名找到节点对象
+- `GetNodeid()` - 获取节点ID
+- `IsA()` - 判断节点的ClassType是不是属于指定的ClassType
+
+#### 属性管理
+- `AddAttribute()` - 添加一条反射属性
+- `DeleteAttribute()` - 通过attr名删除一条反射属性
+- `GetAttribute()` - 获取attr的反射属性
+- `SetAttribute()` - 设置反射的属性值
+
+#### 同步管理
+- `SetReflexSyncMode()` - 设置反射同步模式（仅主机能够设置）
+- `SetReflexLocalSyncFlag()` - 设置反射本地同步标记
+- `GetReflexSyncMode()` - 获取反射同步模式
+- `GetReflexLocalSyncFlag()` - 获取反射本地同步标记
+
+#### 资源管理
+- `ManualLoad()` - 主动加载
+- `ManualLoadAsync()` - 异步主动加载
+- `ManualUnLoad()` - 主动卸载
+
+### 事件系统
+| 事件名 | 参数 | 描述 |
+|--------|------|------|
+| `AncestryChanged` | SandboxNode ancestry | 祖先节点变化时触发 |
+| `ParentChanged` | SandboxNode parent | 父节点变化时触发 |
+| `AttributeChanged` | string attr | 属性发生变化时触发 |
+| `ChildAdded` | SandboxNode child | 新增子节点时触发 |
+| `ChildRemoved` | SandboxNode child | 移除子节点时触发 |
+| `CustomAttrChanged` | string attr | 自定义属性发生变化时触发 |
+
+### 代码示例
+```lua
+-- 获取自定义属性示例
+-- SandboxNode node 有一个自定义属性 bool类型 名字是test_k
+local v = node:GetAttribute("test_k")
+
+-- 创建新节点
+local newNode = SandboxNode.New('SandboxNode')
+newNode.Name = "MyNode"
+newNode:SetParent(workspace)
+
+-- 监听事件
+newNode.ChildAdded:Connect(function(child)
+    print("新增子节点：" .. child.Name)
+end)
+```
+
+---
+
+## ScriptNode (脚本节点)
+
+**继承自**：SandboxNode
+
+**链接**：[ScriptNode.md](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Base/ScriptNode.md)
+
+### 描述
+脚本节点，用于执行Lua代码。可以通过文件路径或直接代码字符串来运行脚本。
+
+### 属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `luafile` | string | 加载模式是LoadMode::LUAFILE时会执行设置的luafile的string内容 |
+| `code` | string | 加载模式是LoadMode::LUACODE时会执行设置code的字符串内容 |
+
+### 使用方式
+
+#### 方式一：通过文件执行
+```lua
+-- 创建脚本节点实例
+local newScript = SandboxNode.New('ScriptNode')
+-- 设置名字
+newScript.Name = "my_script"
+-- 设置脚本节点对应的文件
+newScript.luafile = "res/jsonFiles/demo/SandboxNodeDemo.lua"
+```
+
+#### 方式二：通过代码字符串执行
+```lua
+-- 创建脚本节点实例
+local newScript = SandboxNode.New('ScriptNode')
+-- 设置名字
+newScript.Name = "my_script"
+-- 设置脚本节点对应的代码字符串
+newScript.code = "print('hello script')"
+```
+
+### 使用场景
+- 动态执行Lua代码
+- 模块化脚本管理
+- 运行时代码注入
+- 脚本热更新
+
+---
+
+## Transform (变换节点)
+
+**继承自**：SandboxNode
+
+**链接**：[Transform.md](mdc:https:/github.com/HeavenlyJade/api/blob/main/Classes/Base/Transform.md)
+
+### 描述
+位移、旋转等操作的基类节点。提供了完整的3D变换功能，包括位置、旋转、缩放等。
+
+### 位置属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `Position` | Vector3 | 全局坐标 |
+| `LocalPosition` | Vector3 | 局部坐标 |
+
+### 旋转属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `Euler` | Vector3 | 全局欧拉角 |
+| `Rotation` | Quaternion | 全局旋转（四元数） |
+| `LocalEuler` | Vector3 | 局部欧拉角 |
+| `LocalRotation` | Quaternion | 局部旋转（四元数） |
+
+### 缩放属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `LocalScale` | Vector3 | 局部大小 |
+
+### 显示和渲染属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `Visible` | bool | 是否显示 |
+| `CubeBorderEnable` | bool | 立方体边框是否启用 |
+| `CubeBorderColor` | ColorQuad | 立方体边框颜色 |
+| `Layer` | LayerIndexDesc | 灯光层级 |
+| `LayerCoverChild` | bool | 是否覆盖子节点灯光层级 |
+
+### 其他属性
+| 属性名 | 类型 | 描述 |
+|--------|------|------|
+| `ForwardDir` | Vector3 | 前方向 |
+| `Locked` | bool | 是否锁定场景操作选中 |
+
+### 核心方法
+
+#### 渲染信息获取
+- `GetRenderPosition()` - 获取渲染世界位置
+- `GetRenderRotation()` - 获取渲染世界旋转
+- `GetRenderEuler()` - 获取渲染世界欧拉角
+
+#### 局部变换设置
+- `SetLocalPosition(float x, float y, float z)` - 设置本地位置
+- `SetLocalScale(float x, float y, float z)` - 设置本地缩放
+- `SetLocalEuler(float x, float y, float z)` - 设置本地欧拉角
+
+#### 全局变换设置
+- `SetWorldPosition(float x, float y, float z)` - 设置全局位置
+- `SetWorldScale(float x, float y, float z)` - 设置全局缩放
+- `SetWorldEuler(float x, float y, float z)` - 设置全局欧拉角
+
+#### 朝向控制
+- `LookAt(Vector3 position, bool keepUpright)` - 看向指定位置
+- `LookAtObject(SceneTransObject* target, bool keepUpright)` - 看向指定对象
+
+### 代码示例
+```lua
+-- 创建Transform节点
+local trans = SandboxNode.New('Transform')
+local workSpace = game.WorkSpace
+trans:SetParent(workSpace)
+
+-- 设置全局位置
+trans.Position = Vector3.New(100, 100, 100)
+
+-- 设置局部大小
+trans.LocalScale = Vector3.New(20, 1, 1)
+
+-- 使用方法设置位置
+trans:SetWorldPosition(50, 50, 50)
+
+-- 设置旋转
+trans.Euler = Vector3.New(0, 45, 0)  -- 绕Y轴旋转45度
+
+-- 让对象看向某个位置
+local targetPos = Vector3.New(200, 100, 200)
+trans:LookAt(targetPos, true)  -- true表示保持向上方向
+
+-- 监听位置变化
+trans.AttributeChanged:Connect(function(attrName)
+    if attrName == "Position" then
+        print("位置已改变到：" .. tostring(trans.Position))
+    end
+end)
+```
+
+### 坐标系说明
+
+#### 全局坐标 vs 局部坐标
+- **全局坐标**：相对于世界原点的绝对位置
+- **局部坐标**：相对于父节点的相对位置
+
+#### 欧拉角 vs 四元数
+- **欧拉角**：使用X、Y、Z三个角度表示旋转，直观但可能有万向节锁问题
+- **四元数**：使用四个分量表示旋转，数学上更稳定，适合插值计算
+
+---
+
+## 使用建议
+
+1. **继承关系**：理解继承关系有助于知道哪些属性和方法可用
+2. **事件驱动**：善用SandboxNode的事件系统来响应节点变化
+3. **资源管理**：合理设置ResourceLoadMode来优化性能
+4. **同步机制**：在多人游戏中正确设置SyncMode和OwnerUin
+5. **变换操作**：优先使用局部坐标进行相对变换，使用全局坐标进行绝对定位
+
+---
+
+## 相关文档链接
+
+- [SandboxNode 方法详情](mdc:https:/github.com/HeavenlyJade/api/tree/main/Classes/Base/SandboxNode_F)
+- [Transform 方法详情](mdc:https:/github.com/HeavenlyJade/api/tree/main/Classes/Base/Transform_F)
+- [数据类型文档](mdc:.cursorrule-enums) - 查看Vector3、Quaternion等类型详情
+- [API索引文档](mdc:.cursorrule-api) - 查看更多相关类和服务 
