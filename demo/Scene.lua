@@ -1,33 +1,27 @@
 local MainStorage = game:GetService("MainStorage")
-local ServerStorage = game:GetService("ServerStorage")
-local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
-local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) ---@type NpcConfig
-local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-
-local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
-local Entity = require(ServerStorage.EntityTypes.Entity) ---@type Entity
-local Monster = require(ServerStorage.EntityTypes.MMonster) ---@type Monster
-local Npc = require(ServerStorage.EntityTypes.MNpc) ---@type Npc
-local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
-local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local common_const = require(MainStorage.code.common.MConst) ---@type common_const
+local NpcConfig = require(MainStorage.code.common.config.NpcConfig) ---@type NpcConfig
+local AfkSpotConfig = require(MainStorage.code.common.config.AfkSpotConfig) ---@type AfkSpotConfig
+local TriggerZoneConfig = require(MainStorage.code.common.config.TriggerZoneConfig) ---@type TriggerZoneConfig
+local ServerScheduler = require(MainStorage.code.server.ServerScheduler) ---@type ServerScheduler
+local Entity = require(MainStorage.code.server.entity_types.Entity) ---@type Entity
+local Monster = require(MainStorage.code.server.entity_types.Monster) ---@type Monster
+local Npc = require(MainStorage.code.server.entity_types.Npc) ---@type Npc
+local AfkSpot = require(MainStorage.code.server.entity_types.AfkSpot) ---@type AfkSpot
+local TriggerZone = require(MainStorage.code.server.entity_types.TriggerZone) ---@type TriggerZone
 local Environment = game:GetService("WorkSpace")["Environment"] ---@type Environment
-
--- 注释掉暂时不用的配置文件，避免加载错误
--- local AfkSpotConfig = require(MainStorage.Code.Common.Config.AfkSpotConfig) ---@type AfkSpotConfig
--- local TriggerZoneConfig = require(MainStorage.Code.Common.Config.TriggerZoneConfig) ---@type TriggerZoneConfig
-
--- local AfkSpot = require(MainStorage.Code.MServer.EntityTypes.AfkSpot) ---@type AfkSpot
--- local TriggerZone = require(MainStorage.Code.MServer.EntityTypes.TriggerZone) ---@type TriggerZone
+local ServerEventManager = require(MainStorage.code.server.event.ServerEventManager) ---@type ServerEventManager
 
 
-local BagMgr = require(game:GetService("ServerStorage").MSystems.Bag.BagMgr) ---@type BagMgr
+local BagMgr = require(MainStorage.code.server.bag.BagMgr) ---@type BagMgr
 
 ---@class Scene:Class
 ---@field sceneId number 场景ID
 ---@field info table 场景信息
 ---@field name string 场景名称
----@field players table<number, MPlayer> 玩家列表
+---@field players table<number, Player> 玩家列表
 ---@field monsters table<string, Monster> 怪物列表
 ---@field npcs table<string, Npc> NPC列表
 ---@field monster_spawns table<string, {count: number, config: table}> 刷怪点管理
@@ -155,44 +149,43 @@ end
 
 ---初始化场景中的挂机点
 function _M:initAfkSpots()
-    -- 暂时注释掉挂机点初始化，避免依赖缺失导致的错误
-    -- local all_afk_spots = AfkSpotConfig.GetAll()
-    -- gg.log("初始化挂机点", all_afk_spots)
-    -- for afk_name, afk_data in pairs(all_afk_spots) do
-    --     if afk_data["场景"] == self.name then
-    --         local sceneNode = self.node["挂机点"]
-    --         if sceneNode then
-    --             for _, node_name in ipairs(afk_data["节点名"]) do
-    --                 if sceneNode[node_name] then
-    --                     local actor = sceneNode[node_name]
-    --                     local afk_spot = AfkSpot.New(afk_data, actor)
-    --                     afk_spot.scene = self
-    --                     self.uuid2Entity[actor] = afk_spot
-    --                     self.npcs[afk_spot.uuid] = afk_spot
-    --                     afk_spot:ChangeScene(self)
-    --                 end
-    --             end
-    --         end
-    --     end
-    -- end
-    -- local all_afk_spots = TriggerZoneConfig.GetAll()
-    -- for afk_name, afk_data in pairs(all_afk_spots) do
-    --     if afk_data["场景"] == self.name then
-    --         local sceneNode = self.node["挂机点"]
-    --         if sceneNode then
-    --             for _, node_name in ipairs(afk_data["节点名"]) do
-    --                 if sceneNode[node_name] then
-    --                     local actor = sceneNode[node_name]
-    --                     local afk_spot = TriggerZone.New(afk_data, actor)
-    --                     afk_spot.scene = self
-    --                     self.uuid2Entity[actor] = afk_spot
-    --                     self.npcs[afk_spot.uuid] = afk_spot
-    --                     afk_spot:ChangeScene(self)
-    --                 end
-    --             end
-    --         end
-    --     end
-    -- end
+    local all_afk_spots = AfkSpotConfig.GetAll()
+    gg.log("初始化挂机点", all_afk_spots)
+    for afk_name, afk_data in pairs(all_afk_spots) do
+        if afk_data["场景"] == self.name then
+            local sceneNode = self.node["挂机点"]
+            if sceneNode then
+                for _, node_name in ipairs(afk_data["节点名"]) do
+                    if sceneNode[node_name] then
+                        local actor = sceneNode[node_name]
+                        local afk_spot = AfkSpot.New(afk_data, actor)
+                        afk_spot.scene = self
+                        self.uuid2Entity[actor] = afk_spot
+                        self.npcs[afk_spot.uuid] = afk_spot
+                        afk_spot:ChangeScene(self)
+                    end
+                end
+            end
+        end
+    end
+    local all_afk_spots = TriggerZoneConfig.GetAll()
+    for afk_name, afk_data in pairs(all_afk_spots) do
+        if afk_data["场景"] == self.name then
+            local sceneNode = self.node["挂机点"]
+            if sceneNode then
+                for _, node_name in ipairs(afk_data["节点名"]) do
+                    if sceneNode[node_name] then
+                        local actor = sceneNode[node_name]
+                        local afk_spot = TriggerZone.New(afk_data, actor)
+                        afk_spot.scene = self
+                        self.uuid2Entity[actor] = afk_spot
+                        self.npcs[afk_spot.uuid] = afk_spot
+                        afk_spot:ChangeScene(self)
+                    end
+                end
+            end
+        end
+    end
 end
 
 ---创建新的场景实例
@@ -218,16 +211,32 @@ function _M:OnInit(node)
         self.sceneZone.Touched:Connect(function (node)
             if node then
                 local entity = Entity.node2Entity[node] ---@type Entity
-                if entity then
+                if entity and entity.isPlayer then
+                    ---@cast entity Player
+                    -- 如果玩家正在关卡传送中，跳过场景切换
+                    if entity._levelTeleporting then
+                        return
+                    end
+
+                    -- 检查是否在活跃关卡中
+                    local Level = require(MainStorage.code.server.Scene.Level)
+                    local currentLevel = Level.GetCurrentLevel(entity)
+                    if currentLevel and currentLevel.isActive then
+                        return
+                    end
+
+                    entity:ChangeScene(self)
+                elseif entity then
+                    -- 非玩家实体直接切换
                     entity:ChangeScene(self)
                 end
             end
         end)
     end
-    ServerDataManager.addScene(self.name, self)
+    gg.server_scene_list[ self.name ] = self
 
     self:initNpcs() -- Initialize NPCs after scene creation
-    -- self:initAfkSpots() -- 暂时注释掉挂机点初始化
+    self:initAfkSpots() -- Initialize AfkSpots after scene creation
 
     -- 创建NPC更新定时任务
     self.npcUpdateTaskId = ServerScheduler.add(function()
@@ -238,7 +247,6 @@ function _M:OnInit(node)
     if self.isSpawnScene then
         _M.spawnScene = self
     end
-    gg.server_scenes_list[self.name] = self
 end
 
 ---更新所有NPC
@@ -408,7 +416,7 @@ function _M:player_enter(uin_)
     if self.players[uin_] then
         -- 已经存在
     else
-        local player_ = ServerDataManager.getPlayerByUin(uin_)
+        local player_ = gg.server_players_list[uin_]
         if player_ then
             self.players[uin_] = player_
         end

@@ -21,13 +21,14 @@ local MS = require(MainStorage.Code.Untils.MS) ---@type MS
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
 local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
-local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene
+-- local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene -- 不再需要
 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local MServerInitPlayer = require(ServerStorage.Manager.MServerInitPlayer) ---@type MServerInitPlayer
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+local SceneNodeManager = require(ServerStorage.SceneInteraction.SceneNodeManager) ---@type SceneNodeManager
 
 -- 总入口
 
@@ -67,10 +68,10 @@ function MainServer.start_server()
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
     MServerInitPlayer.register_player_in_out()   --玩家进出游戏
     MainServer.initModule()
-    for _, node in  pairs(game.WorkSpace.Ground.Children) do
-        local scene = Scene.New( node )
-        serverDataMgr.addScene(node.Name, scene)
-    end
+    -- for _, node in  pairs(game.WorkSpace.Ground.Children) do -- 旧的场景初始化逻辑，已被SceneNodeManager取代
+    --     local scene = Scene.New( node )
+    --     serverDataMgr.addScene(node.Name, scene)
+    -- end
     MainServer.createNetworkChannel()     --建立网络通道
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
@@ -104,6 +105,9 @@ function MainServer.initModule()
     BagEventManager:Init()
     MailEventManager:Init()
     
+    -- 初始化场景交互系统
+    SceneNodeManager:Init()
+
     gg.log("模块初始化完成")
 end
 
@@ -165,10 +169,10 @@ end
 function MainServer.update()
     serverDataMgr.tick = serverDataMgr.tick + 1
 
-    --更新场景
-    for _, scene_ in pairs(serverDataMgr.getAllScenes()) do
-        scene_:update()
-    end
+    -- 更新场景的逻辑已移至 SceneControllerHandler:OnUpdate()
+    -- for _, scene_ in pairs(serverDataMgr.getAllScenes()) do
+    --     scene_:update()
+    -- end
     
     -- 更新调度器（按秒为单位，而不是每tick）
     ServerScheduler.tick = serverDataMgr.tick

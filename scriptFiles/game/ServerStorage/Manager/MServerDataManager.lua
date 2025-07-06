@@ -12,6 +12,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local MServerDataManager = {
     server_players_list = {}, ---@type table<number, MPlayer>
     server_players_name_list = {},
+    scene_node_handlers = {}, ---@type table<string, SceneNodeHandlerBase>
 
     MailMgr = nil, ---@type MailMgr | nil
     BagMgr = nil, ---@type BagMgr | nil
@@ -153,6 +154,25 @@ end
 ---@param sceneName string 场景名称
 function MServerDataManager.removeScene(sceneName)
     gg.server_scenes_list[sceneName] = nil
+end
+
+-- 添加场景节点处理器
+---@param handler SceneNodeHandlerBase
+function MServerDataManager.addSceneNodeHandler(handler)
+    MServerDataManager.scene_node_handlers[handler.uuid] = handler
+end
+
+-- 移除场景节点处理器
+---@param uuid string
+function MServerDataManager.removeSceneNodeHandler(uuid)
+    MServerDataManager.scene_node_handlers[uuid] = nil
+end
+
+-- 获取场景节点处理器
+---@param uuid string
+---@return SceneNodeHandlerBase
+function MServerDataManager.getSceneNodeHandler(uuid)
+    return MServerDataManager.scene_node_handlers[uuid]
 end
 
 -- 获取所有玩家
