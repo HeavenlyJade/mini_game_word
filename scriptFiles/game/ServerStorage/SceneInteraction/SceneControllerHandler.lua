@@ -1,4 +1,4 @@
--- /scriptFiles/game/ServerStorage/SceneInteraction/handlers/SceneControllerHandler.lua
+-- /scriptFiles/game/ServerStorage/SceneInteraction/SceneControllerHandler.lua
 -- 该处理器继承了 SceneNodeHandlerBase，并实现了旧 Scene.lua 的核心功能，
 -- 用于管理一个独立区域（场景）内的玩家、NPC、怪物，并驱动它们的更新。
 
@@ -20,9 +20,9 @@ local SceneControllerHandler = ClassMgr.Class("SceneControllerHandler", SceneNod
 -- 重写基类方法
 --------------------------------------------------------------------------------
 
-function SceneControllerHandler:OnInit(config, node)
+function SceneControllerHandler:OnInit(node, config)
     -- 1. 调用基类OnInit，它会初始化通用属性和事件绑定
-    SceneNodeHandlerBase.OnInit(self, config, node)
+    SceneNodeHandlerBase.OnInit(self, node, config)
 
     -- 2. 设置独立的更新频率，激活OnUpdate的调用
     self.updateInterval = 0.1 -- 每0.1秒更新一次
@@ -116,7 +116,7 @@ function SceneControllerHandler:initNpcs()
 
                 gg.log("SceneControllerHandler: NPC创建成功：", npc_name, "UUID：", npc.uuid, "属于场景", self.name)
             else
-                gg.logError(string.format("SceneControllerHandler: 在场景 '%s' 中找不到NPC '%s' 的节点 '%s'", self.name, npc_name, npc_data["节点名"]))
+                gg.log(string.format("ERROR: SceneControllerHandler: 在场景 '%s' 中找不到NPC '%s' 的节点 '%s'", self.name, npc_name, npc_data["节点名"]))
             end
         end
     end

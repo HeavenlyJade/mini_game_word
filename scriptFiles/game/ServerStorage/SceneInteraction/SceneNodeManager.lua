@@ -14,7 +14,7 @@ local SceneNodeManager = {}
 -- 映射场景类型到处理器的路径
 local HANDLER_TYPE_MAP = {
     ["跳台"] = require(ServerStorage.SceneInteraction.handlers.JumpPlatformHandler),
-    ["场景控制器"] = require(ServerStorage.SceneInteraction.handlers.SceneControllerHandler),
+    ["场景控制器"] = require(ServerStorage.SceneInteraction.SceneControllerHandler),
     -- ["陷阱"] = require(ServerStorage.SceneInteraction.handlers.TrapHandler), -- 示例
     -- ["治疗区域"] = require(ServerStorage.SceneInteraction.handlers.HealZoneHandler), -- 示例
 }
@@ -34,31 +34,26 @@ function SceneNodeManager:Init()
 
         if not nodePath or not nodeType then
             gg.logWarning(string.format("SceneNodeManager: 配置 '%s' 缺少 '场景节点路径' 或 '场景类型'", configName))
-            goto continue
+        else
+            -- 1. 获取物理节点
+            local node = ServerDataManager.GetSceneNode(nodePath)
+            if not node then
+                gg.log(string.format("ERROR: SceneNodeManager: 无法在场景中找到路径为 '%s' 的节点 (来自配置 '%s')", nodePath, configName))
+            else
+                -- 2. 获取对应的处理器类
+                local HandlerClass = HANDLER_TYPE_MAP[nodeType]
+                if not HandlerClass then
+                    gg.logWarning(string.format("SceneNodeManager: 找不到类型为 '%s' 的处理器 (来自配置 '%s')", nodeType, configName))
+                else
+                    -- 3. 实例化处理器
+                    gg.log(string.format("SceneNodeManager: 正在为 '%s' 创建 '%s' 类型的处理器...", configName, nodeType))
+                    local handler = HandlerClass.New(node, configData)
+                    if not handler then
+                        gg.log(string.format("ERROR: SceneNodeManager: 实例化处理器 '%s' 失败。", configName))
+                    end
+                end
+            end
         end
-
-        -- 1. 获取物理节点
-        local node = ServerDataManager.GetSceneNode(nodePath)
-        if not node then
-            gg.logError(string.format("SceneNodeManager: 无法在场景中找到路径为 '%s' 的节点 (来自配置 '%s')", nodePath, configName))
-            goto continue
-        end
-
-        -- 2. 获取对应的处理器类
-        local HandlerClass = HANDLER_TYPE_MAP[nodeType]
-        if not HandlerClass then
-            gg.logWarning(string.format("SceneNodeManager: 找不到类型为 '%s' 的处理器 (来自配置 '%s')", nodeType, configName))
-            goto continue
-        end
-
-        -- 3. 实例化处理器
-        gg.log(string.format("SceneNodeManager: 正在为 '%s' 创建 '%s' 类型的处理器...", configName, nodeType))
-        local handler = HandlerClass.New(configData, node)
-        if not handler then
-             gg.logError(string.format("SceneNodeManager: 实例化处理器 '%s' 失败。", configName))
-        end
-
-        ::continue::
     end
 
     gg.log("SceneNodeManager: 场景交互节点初始化完成。")

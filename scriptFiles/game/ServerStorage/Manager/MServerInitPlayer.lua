@@ -12,7 +12,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 local ClassMgr          = require(MainStorage.Code.Untils.ClassMgr)    ---@type ClassMgr
 local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
-local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene
+-- local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene -- [REMOVED]
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
@@ -138,11 +138,11 @@ function MServerInitPlayer.player_enter_game(player)
 
     -- player_:initSkillData()                 --- 加载玩家技能
     -- player_:RefreshStats()               --重生 --刷新战斗属性
-    if Scene.spawnScene then
-        if not player_:IsNear(Scene.spawnScene.node.Position, 500) then
-            player_actor_.Position = Scene.spawnScene.node.Position
-        end
-    end
+    -- if gg.spawnSceneHandler and gg.spawnSceneHandler.node then
+    --     if not player_:IsNear(gg.spawnSceneHandler.node.Position, 500) then
+    --         player_actor_.Position = gg.spawnSceneHandler.node.Position
+    --     end
+    -- end
     -- player_.inited = true
     ServerEventManager.Publish("PlayerInited", {player = player_})
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)

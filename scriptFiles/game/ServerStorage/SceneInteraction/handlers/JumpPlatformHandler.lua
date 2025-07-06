@@ -1,4 +1,4 @@
-print("Hello world!")
+
 
 local ServerStorage = game:GetService("ServerStorage")
 local MainStorage = game:GetService("MainStorage")
@@ -33,7 +33,7 @@ function JumpPlatformHandler:OnEntityEnter(entity)
             -- 执行跳跃
             entity.actor:Jump(true)
         else
-            gg.logError(string.format("JumpPlatformHandler: 玩家 '%s' 的 actor 无效或没有 SetJumpInfo 方法。", entity:GetName()))
+            gg.log(string.format("JumpPlatformHandler: 玩家 '%s' 的 actor 无效或没有 SetJumpInfo 方法。", entity:GetName()))
         end
     end
 end

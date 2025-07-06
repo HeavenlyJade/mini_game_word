@@ -1,4 +1,4 @@
-print("Hello world!")
+
 
 -- /scriptFiles/game/ServerStorage/SceneInteraction/SceneNodeHandlerBase.lua
 -- 场景节点处理器的基类，提供了通用的事件处理和属性
@@ -102,7 +102,7 @@ end
 ---绑定物理节点的进入和离开事件，并处理物理抖动问题
 function SceneNodeHandlerBase:_connectTouchEvents()
     if not self.node or not self.node.Touched or not self.node.TouchEnded then
-        gg.logError(string.format("场景节点处理器 '%s' 的物理节点无效或没有触碰事件。", self.name))
+        gg.log(string.format("场景节点处理器 '%s' 的物理节点无效或没有触碰事件。", self.name))
         return
     end
 

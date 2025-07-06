@@ -1,9 +1,11 @@
 local MainStorage = game:GetService("MainStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 -- local common_const = require(MainStorage.Code.Common.GameConfig.MConst) ---@type common_const
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
+local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 ---@class Entity :Class  轻量级实体容器，管理actor实例和基本属性
 ---@field info any
@@ -19,6 +21,13 @@ local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerSchedul
 ---@field New fun( info_:table ):Entity
 local _M = ClassMgr.Class("Entity") -- 父类 (子类： Player, Monster )
 _M.node2Entity = {}
+
+--- 生成唯一ID
+function _M:GenerateUUID()
+    serverDataMgr.uuid_start = serverDataMgr.uuid_start + 1
+    -- 结合时间和uin确保唯一性
+    return "entity_" .. serverDataMgr.uuid_start .. "_" .. (self.uin or "none")
+end
 
 -- 属性触发类型映射
 local TRIGGER_STAT_TYPES = {
@@ -51,18 +60,17 @@ local TRIGGER_STAT_TYPES = {
 
 -- 初始化实体
 function _M:OnInit(info_)
-    -- 基本属性
+    self.uuid = self:GenerateUUID()
+    self.uin = info_.uin
+    self.scene = nil ---@type SceneControllerHandler
+    self.level = info_.level or 1
+    self.exp = info_.exp or 0
+    self.type = info_.npc_type
     self.spawnPos = info_.position
     self.name = info_.name or ""
     self.isDestroyed = false
     self.isEntity = true
     self.isPlayer = false
-    self.uin = info_.uin
-    self.scene = nil ---@type Scene
-    
-    -- 等级和经验
-    self.exp = 0
-    self.level = 1
     
     -- 属性系统
     self.stats = {} ---@type table<string, table<string, number>> 属性存储 [source][statName] = value
@@ -331,27 +339,12 @@ function _M:ChangeScene(new_scene)
     -- 离开旧场景
     if self.scene then
         self.scene.uuid2Entity[self.uuid] = nil
-        
-        if self.isPlayer then---@cast self Player
-            self.scene:player_leave(self)
-        end
-        
-        if not self.isPlayer then
-            self.scene.monsters[self.uuid] = nil
-        end
     end
 
     -- 进入新场景
     self.scene = new_scene
-    self.scene.uuid2Entity[self.uuid] = self
-    
-    if self.isPlayer then
-        ---@cast self Player
-        new_scene.players[self.uin] = self
-    end
-    if self:Is("Monster") then
-        ---@cast self Monster
-        new_scene.monsters[self.uuid] = self
+    if self.scene then
+        self.scene.uuid2Entity[self.uuid] = self
     end
 end
 
