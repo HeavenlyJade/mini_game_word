@@ -171,7 +171,7 @@ function SceneNodeHandlerBase:_connectTouchEvents()
     self.node.Touched:Connect(function(touchedNode)
         gg.log(string.format("DEBUG: %s.Touched - 检测到物理触碰，来源: %s", self.name, touchedNode and touchedNode.Name or "一个未命名的对象"))
         if not touchedNode then return end
-
+        
         local entity = Entity.node2Entity[touchedNode]
         if not entity then
             gg.log(string.format("DEBUG: %s.Touched - 触碰来源 '%s' 不是一个已注册的实体，忽略。", self.name, touchedNode.Name or "一个未命名的对象"))
@@ -183,7 +183,7 @@ function SceneNodeHandlerBase:_connectTouchEvents()
             gg.log(string.format("DEBUG: %s.Touched - 实体 '%s' 正在待离开列表，取消离开并重新进入。", self.name, (entity.GetName and entity:GetName()) or entity.uuid))
             self.pendingLeaveEntities[entity.uuid] = nil
             if self.entitiesInZone[entity.uuid] then
-                return
+            return
             end
         end
 
