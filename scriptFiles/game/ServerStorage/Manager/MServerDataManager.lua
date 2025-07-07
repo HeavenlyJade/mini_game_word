@@ -106,7 +106,7 @@ end
 ---@return string 生成的UUID
 function MServerDataManager.create_uuid(pre_)
     MServerDataManager.uuid_start = MServerDataManager.uuid_start + 1
-    local gg = require(game:GetService("MainStorage").code.common.MGlobal)
+    local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
     return pre_ .. MServerDataManager.uuid_start .. '_' .. (gg.GetTimeStamp() * 1000 + math.random(1, 1000)) % 1000 .. '_' ..
                math.random(10000, 99999)
 end
@@ -124,6 +124,25 @@ function MServerDataManager.GetSceneNode(path)
 
     -- Pass the remaining path to scene:Get()
     return scene:Get(remainingPath)
+end
+
+--- 根据完整路径从WorkSpace查找节点
+---@param path string 节点路径，例如 "Ground/init_map/Scene/jump_plat"
+---@return SandboxNode|nil
+function MServerDataManager.GetNodeByFullPath(path)
+    if not path or path == "" then return nil end
+
+    local root = game:GetService("WorkSpace")
+    local currentNode = root
+    for part in string.gmatch(path, "[^/]+") do
+        if currentNode then
+            currentNode = currentNode[part]
+            gg.log("currentNode",currentNode)
+        else
+            return nil
+        end
+    end
+    return currentNode
 end
 
 -- 添加玩家到列表

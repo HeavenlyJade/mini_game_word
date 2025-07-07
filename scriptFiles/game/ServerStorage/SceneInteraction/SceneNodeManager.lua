@@ -5,7 +5,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local MainStorage = game:GetService("MainStorage")
 
 local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig)
-local ServerDataManager = require(ServerStorage.Manager.MServerDataManager)
+local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local gg = require(MainStorage.Code.Untils.MGlobal)
 
 ---@class SceneNodeManager
@@ -14,7 +14,6 @@ local SceneNodeManager = {}
 -- 映射场景类型到处理器的路径
 local HANDLER_TYPE_MAP = {
     ["跳台"] = require(ServerStorage.SceneInteraction.handlers.JumpPlatformHandler),
-    ["场景控制器"] = require(ServerStorage.SceneInteraction.SceneControllerHandler),
     -- ["陷阱"] = require(ServerStorage.SceneInteraction.handlers.TrapHandler), -- 示例
     -- ["治疗区域"] = require(ServerStorage.SceneInteraction.handlers.HealZoneHandler), -- 示例
 }
@@ -35,8 +34,9 @@ function SceneNodeManager:Init()
         if not nodePath or not nodeType then
             gg.logWarning(string.format("SceneNodeManager: 配置 '%s' 缺少 '场景节点路径' 或 '场景类型'", configName))
         else
-            -- 1. 获取物理节点
-            local node = ServerDataManager.GetSceneNode(nodePath)
+            -- 1. 获取物理节点 (使用新的公共方法)
+            local node = ServerDataManager.GetNodeByFullPath(nodePath)
+
             if not node then
                 gg.log(string.format("ERROR: SceneNodeManager: 无法在场景中找到路径为 '%s' 的节点 (来自配置 '%s')", nodePath, configName))
             else
