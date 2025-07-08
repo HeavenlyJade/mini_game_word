@@ -178,20 +178,24 @@ end
 -- 添加场景节点处理器
 ---@param handler SceneNodeHandlerBase
 function MServerDataManager.addSceneNodeHandler(handler)
-    MServerDataManager.scene_node_handlers[handler.uuid] = handler
+    if not handler.handlerId then
+        gg.log(string.format("警告: 尝试注册一个没有'handlerId'的场景节点处理器: %s", handler.name))
+        return
+    end
+    MServerDataManager.scene_node_handlers[handler.handlerId] = handler
 end
 
 -- 移除场景节点处理器
----@param uuid string
-function MServerDataManager.removeSceneNodeHandler(uuid)
-    MServerDataManager.scene_node_handlers[uuid] = nil
+---@param handlerId string
+function MServerDataManager.removeSceneNodeHandler(handlerId)
+    MServerDataManager.scene_node_handlers[handlerId] = nil
 end
 
 -- 获取场景节点处理器
----@param uuid string
+---@param handlerId string
 ---@return SceneNodeHandlerBase
-function MServerDataManager.getSceneNodeHandler(uuid)
-    return MServerDataManager.scene_node_handlers[uuid]
+function MServerDataManager.getSceneNodeHandler(handlerId)
+    return MServerDataManager.scene_node_handlers[handlerId]
 end
 
 -- 获取所有玩家

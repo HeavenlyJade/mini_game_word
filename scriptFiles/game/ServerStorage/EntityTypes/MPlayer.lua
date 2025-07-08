@@ -185,59 +185,23 @@ function _MPlayer:updatePlayer()
     end
 end
 
--- 背包相关兼容性方法 --------------------------------------------------------
-
--- 获取背包实例（兼容性方法）
-function _MPlayer:GetBag()
-    return self.bag
+function _MPlayer:SendEvent(eventName, data, callback)
+    if not data then
+        data = {}
+    end
+    if not eventName then
+        print("发送事件时未传入事件: ".. debug.traceback())
+    end
+    data.cmd = eventName
+    ServerEventManager.SendToClient(self.uin, eventName, data, callback)
+end
+function _MPlayer:SendHoverText( text, ... )
+    if ... then
+        text = string.format(text, ...)
+    end
+    self:SendEvent("SendHoverText", { txt=text })
 end
 
--- 检查背包中是否有指定物品
-function _MPlayer:HasItem(itemId, count)
-    if not self.bag then return false end
-    return self.bag:HasItem(itemId, count or 1)
-end
-
--- 添加物品到背包
-function _MPlayer:AddItem(itemId, count, reason)
-    if not self.bag then return false end
-    return self.bag:AddItem(itemId, count or 1, reason or "未知原因")
-end
-
--- 从背包移除物品
-function _MPlayer:RemoveItem(itemId, count, reason)
-    if not self.bag then return false end
-    return self.bag:RemoveItem(itemId, count or 1, reason or "未知原因")
-end
-
--- 技能相关兼容性方法 --------------------------------------------------------
-
--- 获取技能按钮映射
-function _MPlayer:GetSkillButtons()
-    return self.dict_btn_skill or {}
-end
-
--- 设置技能按钮映射
-function _MPlayer:SetSkillButtons(skillButtons)
-    self.dict_btn_skill = skillButtons
-    self:syncSkillData()
-end
-
--- 学习技能（兼容性方法，实际逻辑应该在SkillMgr中）
-function _MPlayer:LearnSkill(skillId)
-    -- 这里应该调用SkillMgr的学习技能方法
-    -- local SkillMgr = require(ServerStorage.MSystems.Skill.SkillMgr)
-    -- return SkillMgr.LearnSkill(self.uin, skillId)
-    return true
-end
-
--- 使用技能（兼容性方法，实际逻辑应该在SkillMgr中）
-function _MPlayer:UseSkill(skillId, target)
-    -- 这里应该调用SkillMgr的使用技能方法
-    -- local SkillMgr = require(ServerStorage.MSystems.Skill.SkillMgr)
-    -- return SkillMgr.UseSkill(self.uin, skillId, target)
-    return true
-end
 
 -- 其他兼容性方法 --------------------------------------------------------
 

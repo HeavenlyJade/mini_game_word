@@ -68,7 +68,7 @@ function MailMgr.LoadPlayerMailFromCloud(uin)
             mails = {},
             last_update = os.time()
         }
-        gg.log("创建玩家个人邮件默认数据", uin)
+        -- gg.log("创建玩家个人邮件默认数据", uin)
     end
     
     -- 加载全服邮件状态数据
@@ -77,14 +77,14 @@ function MailMgr.LoadPlayerMailFromCloud(uin)
     
     if success2 and globalStatusData and globalStatusData.statuses then
         bundle.globalMailStatus = globalStatusData
-        gg.log("加载玩家全服邮件状态成功", uin)
+        -- gg.log("加载玩家全服邮件状态成功", uin)
     else
         bundle.globalMailStatus = {
             uin = uin,
             statuses = {},
             last_update = os.time()
         }
-        gg.log("创建玩家全服邮件状态默认数据", uin)
+        -- gg.log("创建玩家全服邮件状态默认数据", uin)
     end
     
     return bundle

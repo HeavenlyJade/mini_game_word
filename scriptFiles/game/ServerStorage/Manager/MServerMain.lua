@@ -24,7 +24,6 @@ local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)    
 -- local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene -- 不再需要
 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local MServerInitPlayer = require(ServerStorage.Manager.MServerInitPlayer) ---@type MServerInitPlayer
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
@@ -49,7 +48,11 @@ function MainServer.handleMidnightRefresh()
     })
     local secondsUntilMidnight = nextMidnight - os.time()
     
-    ServerScheduler.add(function()
+    local timer = SandboxNode.New("Timer", game.WorkSpace)
+    timer.Name = "MidnightRefreshTimer"
+    timer.Delay = secondsUntilMidnight
+    timer.Loop = false
+    timer.Callback = function()
         -- 对所有在线玩家执行刷新
         for _, player in pairs(serverDataMgr.getAllPlayers()) do
             if player and player.inited then
@@ -58,7 +61,8 @@ function MainServer.handleMidnightRefresh()
         end
         -- 重新设置下一个午夜的定时任务
         MainServer.handleMidnightRefresh()
-    end, secondsUntilMidnight, 0, "midnight_refresh")
+    end
+    timer:Start()
 end
 
 function MainServer.start_server()
@@ -174,11 +178,11 @@ function MainServer.update()
     --     scene_:update()
     -- end
     
-    -- 更新调度器（按秒为单位，而不是每tick）
-    ServerScheduler.tick = serverDataMgr.tick
-    if ServerScheduler.updateTiming() then
-        ServerScheduler.update()
-    end
+    -- 更新调度器（按秒为单位，而不是每tick）(已废弃)
+    -- ServerScheduler.tick = serverDataMgr.tick
+    -- if ServerScheduler.updateTiming() then
+    --     ServerScheduler.update()
+    -- end
 end
 
 return MainServer;

@@ -17,6 +17,7 @@ local Npc = require(ServerStorage.EntityTypes.MNpc) ---@type Npc
 ---@field config table # 节点配置
 ---@field node SandboxNode # 场景中的物理节点
 ---@field name string # 处理器实例名
+---@field handlerId string # 处理器唯一ID (来自SceneNodeConfig中的'唯一ID')
 ---@field uuid string # 唯一ID
 ---@field players table<number, MPlayer> # 在此区域内的玩家列表 (由子类管理)
 ---@field monsters table<string, Monster> # 在此区域内的怪物列表 (由子类管理)
@@ -108,6 +109,23 @@ function SceneNodeHandlerBase:OnDestroy()
     end
 end
 
+--- 强制让一个实体离开本区域，用于外部逻辑同步状态
+---@param entity Entity
+function SceneNodeHandlerBase:ForceEntityLeave(entity)
+    if not entity then return end
+
+    local entityId = entity.uuid
+    local wasInZone = self.entitiesInZone[entityId]
+    local wasPendingLeave = self.pendingLeaveEntities[entityId]
+
+    if wasInZone or wasPendingLeave then
+        gg.log(string.format("DEBUG: %s:ForceEntityLeave - 外部逻辑强制实体 '%s' 离开。", self.name, (entity.GetName and entity:GetName()) or entityId))
+        self.pendingLeaveEntities[entityId] = nil
+        self.entitiesInZone[entityId] = nil
+        self:OnEntityLeave(entity)
+    end
+end
+
 
 --------------------------------------------------------------------------------
 -- 基类核心逻辑
@@ -122,6 +140,7 @@ function SceneNodeHandlerBase:OnInit(node, config)
     self.config = config
     self.node = node  ---@type TriggerBox
     self.name = config["名字"] or node.Name
+    self.handlerId = config["唯一ID"] -- 从配置中获取ID
 
     self.soundAssetId = config["音效资源"] or ""
     self.enterCommand = config["进入指令"] or ""
@@ -141,7 +160,6 @@ function SceneNodeHandlerBase:OnInit(node, config)
     self.entitiesInZone = {}
     self.pendingLeaveEntities = {}
 
-    self.uuid = ServerDataManager.create_uuid('u_SceneNodeHandler')
     ServerDataManager.addSceneNodeHandler(self)
 
     if config["定时指令列表"] and #config["定时指令列表"] > 0 then

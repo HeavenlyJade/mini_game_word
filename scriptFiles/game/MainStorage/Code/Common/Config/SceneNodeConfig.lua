@@ -11,8 +11,10 @@ local SceneNodeConfig = {Data = {}}
 SceneNodeConfig.Data = {
     ['jump1'] = {
       ['名字'] = 'jump1',
-      ['场景节点路径'] = 'Ground/init_map/Scene/jump_plat',
-      ['场景类型'] = '跳台',
+      ['唯一ID'] = 'c149db8d-f2ac-4ae1-90ff-46f435b492df',
+      ['场景节点路径'] = 'Ground/init_map/terrain/Scene/jump_plat',
+      ['场景类型'] = '飞行比赛',
+      ['关联关卡'] = '飞车关卡初级',
       ['音效资源'] = '',
       ['进入指令'] = '',
       ['离开指令'] = '',
