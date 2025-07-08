@@ -79,6 +79,9 @@ end
 
 --- 结束比赛
 function RaceGameMode:End()
+    -- 懒加载 GameModeManager 和 ServerDataManager 以避免循环依赖
+    local GameModeManager = require(ServerStorage.GameModes.GameModeManager)  ---@type GameModeManager
+    local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     if self.state ~= RaceState.RACING then return end
     
     self.state = RaceState.FINISHED
@@ -100,9 +103,7 @@ function RaceGameMode:End()
     self:AddDelay(cleanupDelay, function()
         gg.log(string.format("正在清理比赛实例: %s", self.instanceId))
         
-        -- 懒加载 GameModeManager 和 ServerDataManager 以避免循环依赖
-        local GameModeManager = require(ServerStorage.GameModes.GameModeManager)
-        local ServerDataManager = require(ServerStorage.Manager.MServerDataManager)
+
 
         -- 获取触发这个比赛的场景处理器
         local handler = ServerDataManager.getSceneNodeHandler(self.handlerId)

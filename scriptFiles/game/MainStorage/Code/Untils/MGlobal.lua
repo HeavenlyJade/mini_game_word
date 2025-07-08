@@ -648,39 +648,6 @@ function gg.get_client_uin()
     return game.Players.LocalPlayer.UserId;
 end
 
-local const_diff_str = {"普通", "冒险", "挑战", "精英"}
--- 获得难度描述
----@param i number 难度等级
----@return string 难度描述
-function gg.getDiffString(i)
-    return const_diff_str[i];
-end
-
--- 获取当前玩家使用的2d控件使用的ui_root，不存在则建立  (只有client会使用)
----@return SandboxNode UI根节点
-function gg.create_ui_root()
-
-    -- local player_ = gg.getPlayerInfoByUin( gg.get_client_uin() )
-    local player_ = game.Players.LocalPlayer
-
-    if player_ and player_.PlayerGui then
-        if player_.PlayerGui.ui_root then
-            return player_.PlayerGui.ui_root
-        else
-            local ui_root = SandboxNode.New('UIRoot')
-            ui_root.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-            ui_root.Name = 'ui_root'
-            ui_root.Parent = player_.PlayerGui
-            return ui_root;
-        end
-    end
-end
-
--- 获得root_spell界面的ui_root
----@return SandboxNode 法术UI根节点
-function gg.get_ui_root_spell()
-    return Players.LocalPlayer.PlayerGui.ui_root_spell
-end
 
 -- 获取ui_root
 ---@return SandboxNode UI根节点
@@ -688,21 +655,6 @@ function gg.get_ui_root()
     return Players.LocalPlayer.PlayerGui.ui_root
 end
 
--- 标准按钮样式格式化函数
----@param button_ UIButton 要格式化的按钮
-function gg.formatButton(button_)
-    -- 设置按钮填充颜色为完全透明（R:0 G:0 B:0 A:0 透明黑）
-    button_.FillColor = ColorQuad.New(0, 0, 0, 0)
-
-    -- 设定按钮按下时颜色改变效果（区别于缩放效果）        -¬-
-    button_.DownEffect = Enum.DownEffect.ColorEffect
-
-    -- 水平右对齐：以父容器右边缘为定位基准               -¬- [^6][^2]
-    button_.LayoutHRelation = Enum.LayoutHRelation.Right
-
-    -- 垂直底对齐：以父容器底部为定位基准                -¬- [^2]
-    button_.LayoutVRelation = Enum.LayoutVRelation.Bottom
-end
 
 -- input 100 return  0 to 100
 ---@param int32 number 上限值
@@ -750,23 +702,6 @@ function gg.contains(list, target)
         end
     end
     return false
-end
-
--- 获得随机质量
----@return number 质量等级(1-5)
-function gg.rand_qulity()
-    local int_ = gg.rand_int_between(1, 100)
-    if int_ <= 5 then
-        return 5 -- 5%
-    elseif int_ <= 15 then
-        return 4 -- 10%
-    elseif int_ <= 45 then
-        return 3 -- 30%
-    elseif int_ <= 85 then
-        return 2 -- 30%
-    else
-        return 1 -- 25%
-    end
 end
 
 function gg.removeElement(list, value)
@@ -1273,32 +1208,6 @@ function gg.ifClientBagFull()
         end
     end
     return true
-end
-
--- 获得质量字符串
-local const_quality_name = {
-    [1] = '普通',
-    [2] = '精良',
-    [3] = '神器',
-    [4] = '史诗',
-    [5] = '传说',
-    [6] = '神話'
-}
-
-function gg.getQualityStr(quality_)
-    return const_quality_name[quality_] or '未知'
-end
-
--- 获得质量颜色
-local const_quality_color = {
-    [1] = ColorQuad.New(255, 255, 255, 255), -- 白色
-    [2] = ColorQuad.New(0, 0, 255, 255), -- 蓝色
-    [3] = ColorQuad.New(255, 255, 0, 255), -- 黄金
-    [4] = ColorQuad.New(255, 0, 255, 255), -- 粉色
-    [5] = ColorQuad.New(255, 0, 0, 255) -- 红色
-}
-function gg.getQualityColor(quality_)
-    return const_quality_color[quality_] or ColorQuad.New(0, 0, 0, 255)
 end
 
 function gg.eval(expr)

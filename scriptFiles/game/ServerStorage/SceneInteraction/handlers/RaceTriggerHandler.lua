@@ -1,13 +1,14 @@
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
-local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)  ---@type ClassMgr
 local SceneNodeHandlerBase = require(ServerStorage.SceneInteraction.SceneNodeHandlerBase) ---@type SceneNodeHandlerBase
 local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
 local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class RaceTriggerHandler : SceneNodeHandlerBase
+---@field super SceneNodeHandlerBase
 local RaceTriggerHandler = ClassMgr.Class("RaceTriggerHandler", SceneNodeHandlerBase)
 
 --- 当实体确认进入时调用
