@@ -10,6 +10,8 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field participants MPlayer[]
 ---@field rules table
 ---@field handlerId string 触发此模式的场景处理器的ID
+---@field checkTimer any 定时器句柄，用于检测比赛结束条件
+---@field raceHasTrulyStarted boolean 标记比赛是否已真正开始（即，有玩家被检测到离地）
 local RaceGameMode = ClassMgr.Class("RaceGameMode", GameModeBase)
 
 -- 比赛状态
@@ -26,13 +28,22 @@ local FLY_SPEED_FACTOR = 1.5 -- 飞行速度是默认速度的1.5倍
 function RaceGameMode:OnInit(instanceId, modeName, rules)
     self.state = RaceState.WAITING
     self.participants = {} -- 存放所有参赛玩家的table, 使用数组形式
-    self.playerStates = {} -- 存储玩家原始状态， key: uin, value: { originalGravity, flyTimer, originalSpeed }
     self.rules = rules or {}
+    self.checkTimer = nil -- 初始化定时器句柄
+    self.raceHasTrulyStarted = false -- 【新增】用于标记比赛是否已正式开始（有玩家离地）
 end
 
 --- 当有玩家进入此游戏模式时调用
 ---@param player MPlayer
 function RaceGameMode:OnPlayerEnter(player)
+    -- 【核心修正】检查玩家是否已在比赛中，防止因触发器抖动等问题导致重复加入
+    for _, p in ipairs(self.participants) do
+        if p.uin == player.uin then
+            gg.log(string.format("玩家 %s 已在比赛中，忽略重复的加入请求。", player.name))
+            return -- 如果已存在，则直接返回，不执行任何操作
+        end
+    end
+
     -- 注意：这里不再调用父类的 OnPlayerEnter, 因为父类将其作为字典处理
     -- 而比赛模式需要一个有序的列表来决定排名
     table.insert(self.participants, player)
@@ -50,9 +61,6 @@ end
 function RaceGameMode:OnPlayerLeave(player)
     if not player then return end
 
-    -- 停止飞行并恢复状态
-    self:StopFly(player)
-
     for i, p in ipairs(self.participants) do
         if p.uin == player.uin then
             table.remove(self.participants, i)
@@ -62,99 +70,107 @@ function RaceGameMode:OnPlayerLeave(player)
     end
 end
 
---- 为指定玩家开启飞行模式
+--- 将玩家发射出去
 ---@param player MPlayer
-function RaceGameMode:StartFly(player)
+function RaceGameMode:LaunchPlayer(player)
     local actor = player.actor ---@type Actor
     if not actor then
-        gg.log(string.format("ERROR: 无法为玩家 %s 开启飞行模式，因为找不到其 Actor", player.name))
+        gg.log(string.format("ERROR: 无法为玩家 %s 发射，因为找不到其 Actor", player.name))
         return
     end
 
-    -- 保存原始状态
-    local originalGravity = actor.Gravity
-    local originalSpeed = actor.Movespeed
-    self.playerStates[player.uin] = {
-        originalGravity = originalGravity,
-        originalSpeed = originalSpeed,
-        flyTimer = nil
-    }
-    
-    -- 设置无重力并提升速度
-    actor.Gravity = 0
-    actor.Movespeed = originalSpeed * FLY_SPEED_FACTOR
-    gg.log(string.format("玩家 %s 的重力已设为0，速度提升至 %s，开启飞行模式。", player.name, tostring(actor.Movespeed)))
-    
-    -- 启动持续推进的定时器
-    local timer = self:AddInterval(FLY_UPDATE_INTERVAL, function()
-        if player.isDestroyed or not player.actor then
-            -- 如果玩家或actor已失效，清除定时器
-            self:StopFly(player)
-            return
+    gg.log(string.format("LaunchPlayer: 正在向客户端 %s 发送跳跃指令...", player.name))
+    player:SendEvent("S2C_Player_Jump")
+    gg.log(string.format("玩家 %s 的跳跃指令已发送！", player.name))
+end
+
+--- 新增：检测比赛结束条件
+function RaceGameMode:CheckRaceEndCondition()
+    if self.state ~= RaceState.RACING then
+        -- 如果比赛状态异常，则停止计时器
+        if self.checkTimer then
+            self:RemoveTimer(self.checkTimer)
+            self.checkTimer = nil
         end
-        -- 给予一个持续的、基于摄像机朝向的向前推力
-        player.actor:Move(Vector3.new(0, 0, 1), true)
-    end)
-    
-    self.playerStates[player.uin].flyTimer = timer
-end
-
---- 为指定玩家关闭飞行模式
----@param player MPlayer
-function RaceGameMode:StopFly(player)
-    if not player or not self.playerStates[player.uin] then return end
-
-    local state = self.playerStates[player.uin]
-    local actor = player.actor
-
-    -- 恢复重力和速度
-    if actor then
-        actor.Gravity = state.originalGravity
-        actor.Movespeed = state.originalSpeed
-        actor:StopMove() -- 显式停止移动
-        gg.log(string.format("玩家 %s 的重力已恢复为 %s，速度恢复为 %s。", player.name, tostring(state.originalGravity), tostring(state.originalSpeed)))
+        return
     end
 
-    -- 停止飞行定时器
-    if state.flyTimer then
-        self:RemoveTimer(state.flyTimer)
-        gg.log(string.format("已停止玩家 %s 的飞行定时器。", player.name))
+    if #self.participants == 0 then
+        gg.log("所有玩家都已离开，比赛提前结束。")
+        self:End()
+        return
     end
-    
-    -- 清理状态记录
-    self.playerStates[player.uin] = nil
+
+    local allLanded = true
+    for _, player in ipairs(self.participants) do
+        if player.actor and player.actor.IsOnGround == false then
+            -- 只要还有一个玩家在空中，比赛就继续
+            allLanded = false
+            -- 【核心修正】一旦检测到有玩家离地，就将比赛标记为"已真正开始"
+            self.raceHasTrulyStarted = true
+            break -- 只要有一个人在空中，就无需再检查其他人
+        end
+    end
+
+    -- 【核心修正】结束条件变为：比赛必须真正开始过，并且现在所有人都已落地。
+    if self.raceHasTrulyStarted and allLanded then
+        gg.log("所有玩家均已落地，比赛结束！")
+        self:End() -- 调用结束函数
+    end
 end
+
 
 --- 开始比赛
 function RaceGameMode:Start()
     if self.state ~= RaceState.WAITING then return end
 
     local prepareTime = self.rules["准备时间"] or 10
-    local raceTime = self.rules["比赛时长"] or 60
-
+    local raceTime = self.rules["比赛时长"] or 60 -- 【恢复】读取比赛时长配置
+    
     gg.log(string.format("比赛将在 %d 秒后开始...", prepareTime))
     
     -- 准备阶段
     self:AddDelay(prepareTime, function()
         -- 倒计时结束后
-        self.state = RaceState.RACING
-        gg.log("比赛开始！")
+        if self.state == RaceState.WAITING then -- 增加状态检查，防止重复执行
+            self.state = RaceState.RACING
+            gg.log("比赛开始！")
 
-        -- 为所有参赛者开启飞行模式
-        for _, player in ipairs(self.participants) do
-            self:StartFly(player)
+            -- 将所有参赛者发射出去
+            for _, player in ipairs(self.participants) do
+                self:LaunchPlayer(player)
+            end
+
+            -- 【核心改造】启动双重结束条件
+            
+            -- 条件1: 循环检测所有玩家是否落地
+            gg.log("比赛已开始，正在监测玩家落地状态...")
+            if self.checkTimer then self:RemoveTimer(self.checkTimer) end
+            self.checkTimer = self:AddInterval(0.2, function()
+                self:CheckRaceEndCondition()
+            end)
+
+            -- 条件2: 比赛到达最大时长后强制结束（超时保护）
+            gg.log(string.format("比赛最长持续 %d 秒。", raceTime))
+            self:AddDelay(raceTime, function()
+                if self.state == RaceState.RACING then
+                    gg.log("比赛达到最大时长，强制结束！")
+                    self:End()
+                end
+            end)
         end
-
-        -- 模拟比赛持续
-        gg.log(string.format("比赛将持续 %d 秒。", raceTime))
-        self:AddDelay(raceTime, function()
-            self:End()
-        end)
     end)
 end
 
 --- 结束比赛
 function RaceGameMode:End()
+    -- 【核心改造】在函数开始时，立刻停止循环检测的定时器
+    if self.checkTimer then
+        self:RemoveTimer(self.checkTimer)
+        self.checkTimer = nil
+        gg.log("已停止比赛结束条件检测。")
+    end
+
     -- 懒加载 GameModeManager 和 ServerDataManager 以避免循环依赖
     local GameModeManager = require(ServerStorage.GameModes.GameModeManager)  ---@type GameModeManager
     local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager

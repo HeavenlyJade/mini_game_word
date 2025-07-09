@@ -1,4 +1,3 @@
-
 local MainStorage     = game:GetService("MainStorage")
 local game            = game
 local Enum            = Enum  ---@type Enum
@@ -36,6 +35,63 @@ function ClientMain.start_client()
             evt.Return(evt.states)
         end
     end)
+    ClientEventManager.Subscribe("Race_LaunchPlayer", function(data)
+        gg.log("接收到 Race_LaunchPlayer 事件，准备执行发射！")
+        local localPlayer = game:GetService("Players").LocalPlayer
+        if localPlayer and localPlayer.Character then
+            local actor = localPlayer.Character
+            
+            -- 在客户端执行跳跃和移动指令
+            actor:Jump(true)
+            actor:Move(Vector3.new(0, 0, 1), true)
+            
+            -- 动作执行后，客户端也需要一个机制来停止持续的Move指令
+            -- 这里的恢复逻辑主要在服务器端，但客户端可以停止移动以防止意外行为
+            local timer = actor:GetComponent("Timer") or actor:AddComponent("Timer")
+            timer:AddDelay(0.5, function()
+                if actor and not actor.isDestroyed then
+                    actor:StopMove()
+                end
+            end)
+        else
+            gg.log("Race_LaunchPlayer: 找不到本地玩家或其角色。")
+        end
+    end)
+
+    ClientEventManager.Subscribe("S2C_Player_Jump", function(data)
+        gg.log("接收到 S2C_Player_Jump 事件，准备执行跳跃！")
+        local localPlayer = game:GetService("Players").LocalPlayer
+        if localPlayer and localPlayer.Character then
+            local actor = localPlayer.Character ---@type Actor
+
+            -- 保存原始跳跃参数
+            local originalBaseSpeed = actor.JumpBaseSpeed
+            local originalContinueSpeed = actor.JumpContinueSpeed
+            gg.log(string.format("保存原始跳跃参数: BaseSpeed=%s, ContinueSpeed=%s", tostring(originalBaseSpeed), tostring(originalContinueSpeed)))
+
+            -- 设置新的跳跃参数以实现发射效果
+            actor:SetJumpInfo(4000, 4000)
+            gg.log("已设置新的跳跃参数: BaseSpeed=4000, ContinueSpeed=4000")
+
+            actor:Jump(true)
+            gg.log("已执行 actor:Jump(true)")
+
+            -- 使用新的全局延迟函数来停止跳跃和恢复参数
+            gg.AddDelay(1, function()
+                if actor and not actor.isDestroyed then
+                    actor:Jump(false)
+                    gg.log("已执行 actor:Jump(false) 来停止跳跃")
+                    
+                    -- 恢复原始跳跃参数
+                    actor:SetJumpInfo(originalBaseSpeed, originalContinueSpeed)
+                    gg.log("已恢复原始跳跃参数。")
+                end
+            end)
+        else
+            gg.log("S2C_Player_Jump: 找不到本地玩家或其角色。")
+        end
+    end)
+    
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
     end

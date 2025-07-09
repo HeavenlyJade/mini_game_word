@@ -8,14 +8,15 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
 local gg = require(MainStorage.Code.Untils.MGlobal)
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 local Entity = require(ServerStorage.EntityTypes.Entity) ---@type Entity
-local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+--【核心修正】不再在顶部require，以避免循环依赖
+-- local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig)  ---@type NpcConfig
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local Npc = require(ServerStorage.EntityTypes.MNpc) ---@type Npc
 
 ---@class SceneNodeHandlerBase
 ---@field config table # 节点配置
----@field node SandboxNode # 场景中的物理节点
+---@field node TriggerBox # 场景中的包围盒节点
 ---@field name string # 处理器实例名
 ---@field handlerId string # 处理器唯一ID (来自SceneNodeConfig中的'唯一ID')
 ---@field uuid string # 唯一ID
@@ -24,7 +25,6 @@ local Npc = require(ServerStorage.EntityTypes.MNpc) ---@type Npc
 ---@field npcs table<string, Npc> # 在此区域内的NPC列表 (由子类管理)
 ---@field uuid2Entity table<string, Entity> # 实体UUID到实体的映射 (由子类管理)
 ---@field entitiesInZone table<string, Entity> # 当前真正在区域内的实体
----@field pendingLeaveEntities table<string, Entity> # 待确认离开的实体
 ---@field tick number # tick计数
 local SceneNodeHandlerBase = ClassMgr.Class("SceneNodeHandlerBase")
 
@@ -86,7 +86,8 @@ function SceneNodeHandlerBase:initNpcs()
     local all_npcs = NpcConfig.GetAll()
     for npc_name, npc_data in pairs(all_npcs) do
         if npc_data["场景"] == self.name then
-            local npcNodeContainer = self.node["NPC"]
+            -- 【核心修正】应该在场景的【视觉节点】下查找NPC，而不是在逻辑节点(Area)下
+            local npcNodeContainer = self.visualNode["NPC"]
             if npcNodeContainer and npcNodeContainer[npc_data["节点名"]] then
                 local actor = npcNodeContainer[npc_data["节点名"]]
                 local npc = Npc.New(npc_data, actor)
@@ -108,11 +109,7 @@ function SceneNodeHandlerBase:OnDestroy()
         self.updateTask = nil
     end
 
-    -- 如果我们在运行时创建了一个逻辑节点，需要在这里销毁它
-    if self.createdNode and self.createdNode.IsValid then
-        self.createdNode:Destroy()
-        self.createdNode = nil
-    end
+    -- 移除对 self.createdNode 的检查，因为我们不再创建节点
 end
 
 --- 强制让一个实体离开本区域，用于外部逻辑同步状态
@@ -121,12 +118,8 @@ function SceneNodeHandlerBase:ForceEntityLeave(entity)
     if not entity then return end
 
     local entityId = entity.uuid
-    local wasInZone = self.entitiesInZone[entityId]
-    local wasPendingLeave = self.pendingLeaveEntities[entityId]
-
-    if wasInZone or wasPendingLeave then
+    if self.entitiesInZone[entityId] then
         gg.log(string.format("DEBUG: %s:ForceEntityLeave - 外部逻辑强制实体 '%s' 离开。", self.name, (entity.GetName and entity:GetName()) or entityId))
-        self.pendingLeaveEntities[entityId] = nil
         self.entitiesInZone[entityId] = nil
         self:OnEntityLeave(entity)
     end
@@ -137,69 +130,35 @@ end
 -- 基类核心逻辑
 --------------------------------------------------------------------------------
 
---- 确保节点是可触发的.
---- 如果 self.node 不是 TriggerBox, 此方法会创建一个 TriggerBox 并覆盖 self.node.
----@param debugId any 传入的调试ID，用于日志追溯
-function SceneNodeHandlerBase:_ensureLogicalTriggerExists(debugId)
-    local node = self.node
-    -- 核心逻辑改变：不再检查是否为"Model", 只要不是"TriggerBox"，就为其创建逻辑触发器
-    if node and not node:IsA("TriggerBox") then
-        gg.log(string.format("DEBUG: [DebugID: %s] %s - 节点类型为 %s, 非TriggerBox, 自动创建逻辑触发器。", tostring(debugId), self.name, tostring(node.ClassName)))
-        
-        -- 核心：触发器作为模型的【子】节点，以便在编辑器中关联显示
-        local triggerBox = SandboxNode.New('TriggerBox', node)
-        triggerBox.Name = self.name .. "_Trigger"
-
-        -- 子节点的位置/旋转应为0，以与父节点重合
-        triggerBox:SetLocalPosition(0, 0, 0)
-        triggerBox:SetLocalEuler(0, 0, 0)
-        
-        -- 1. 计算出我们期望的【最终世界尺寸】
-        local modelSize = node.Size or Vector3.new(100, 100, 100) -- 使用节点的实际尺寸，如果不存在则使用默认值
-        local scaledSize = Vector3.new(modelSize.x * node.LocalScale.x, modelSize.y * node.LocalScale.y, modelSize.z * node.LocalScale.z)
-
-        local sizeOffsetVec = Vector3.new(10, 10, 10) -- 默认偏移值
-        if self.config["包围盒偏移"] then
-            local offsetTbl = self.config["包围盒偏移"]
-            if type(offsetTbl) == "table" and #offsetTbl == 3 then
-                sizeOffsetVec = Vector3.new(offsetTbl[1], offsetTbl[2], offsetTbl[3])
-            else
-                gg.log(string.format("警告: %s 的 '包围盒偏移' 配置格式不正确，应为 {x, y, z} 格式的表。将使用默认值。", self.name))
-            end
-        end
-        local finalDesiredSize = gg.vec.Add3(scaledSize, sizeOffsetVec.x, sizeOffsetVec.y, sizeOffsetVec.z)
-
-        -- 2. 为了抵消父节点的缩放继承，我们需要反向缩放TriggerBox自身的尺寸
-        local parentScale = node.LocalScale
-        local inverseScaledSize = Vector3.new(
-            parentScale.x == 0 and 0 or finalDesiredSize.x / parentScale.x,
-            parentScale.y == 0 and 0 or finalDesiredSize.y / parentScale.y,
-            parentScale.z == 0 and 0 or finalDesiredSize.z / parentScale.z
-        )
-        triggerBox.Size = inverseScaledSize
-        
-        triggerBox.KinematicAble = false
-        triggerBox.GravityAble = false
-        
-        -- 核心：后续逻辑将使用我们新创建的TriggerBox
-        self.node = triggerBox
-    end
-end
-
 ---初始化
 ---@param config table # 来自SceneNodeConfig的配置
 ---@param node SandboxNode # 场景中对应的节点
 ---@param debugId number|nil # 用于调试的唯一ID
 function SceneNodeHandlerBase:OnInit(node, config, debugId)
-
     gg.log("创建节点",node, config, debugId)
     self.config = config
     self.name = config["名字"] or node.Name
-    self.handlerId = config["唯一ID"] -- 从配置中获取ID
-    self.visualNode = node -- 保存对原始（可见）节点的引用
-    self.node = node
-    -- 确保节点拥有一个可交互的逻辑触发器
-    self:_ensureLogicalTriggerExists(debugId)
+    self.handlerId = config["唯一ID"]
+    self.visualNode = node
+    self.node = nil ---@type TriggerBox
+
+    -- 【核心修正】不再动态创建节点，而是查找预置的子节点
+    local triggerConfig = self.config["区域节点配置"]
+    if triggerConfig and triggerConfig["名字"] then
+        local triggerName = triggerConfig["名字"]
+        local triggerNode = self.visualNode:FindFirstChild(triggerName, true) -- 递归查找子节点
+
+        if triggerNode then
+            gg.log(string.format("DEBUG: %s - 成功在 '%s' 下找到了预设的触发器节点 '%s'。", self.name, self.visualNode.Name, triggerName))
+            self.node = triggerNode
+            self:_connectTriggerEvents() -- 为找到的节点绑定事件
+        else
+            gg.log(string.format("错误: %s - 未能在 '%s' 下找到名为 '%s' 的预设触发器子节点。", self.name, self.visualNode.Name, triggerName))
+            return
+        end
+    else
+        gg.log(string.format("警告: %s - 未在配置中找到'区域节点配置'或其'名字'，将不处理任何触发器。", self.name))
+    end
 
     self.soundAssetId = config["音效资源"] or ""
     self.enterCommand = config["进入指令"] or ""
@@ -215,11 +174,10 @@ function SceneNodeHandlerBase:OnInit(node, config, debugId)
     self.npcs = {}
     self.uuid2Entity = {}
     self.tick = 0
-
     self.entitiesInZone = {}
-    self.pendingLeaveEntities = {}
-
-    ServerDataManager.addSceneNodeHandler(self)
+    --【核心修正】不再在顶部require，以避免循环依赖
+    -- local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    -- ServerDataManager.addSceneNodeHandler(self)
 
     if config["定时指令列表"] and #config["定时指令列表"] > 0 then
         for _, cmd in ipairs(config["定时指令列表"]) do
@@ -237,58 +195,72 @@ function SceneNodeHandlerBase:OnInit(node, config, debugId)
         end, 0, self.updateInterval)
     end
 
-    self:_connectTouchEvents()
-
+    -- 初始化NPC
     self:initNpcs()
 end
 
----绑定物理节点的进入和离开事件，并处理物理抖动问题
-function SceneNodeHandlerBase:_connectTouchEvents()
+---绑定 TriggerBox 节点的物理触碰事件
+function SceneNodeHandlerBase:_connectTriggerEvents()
+    if not self.node or self.node.ClassType ~= 'TriggerBox' then
+        gg.log(string.format("错误: %s 的节点无效或不是 TriggerBox 类型，无法绑定事件。", self.name))
+        return
+    end
 
-    self.node.Touched:Connect(function(touchedNode)
-        gg.log(string.format("DEBUG: %s.Touched - 检测到物理触碰，来源: %s", self.name, touchedNode and touchedNode.Name or "一个未命名的对象"))
-        if not touchedNode then return end
+    self.node.Touched:Connect(function(actor)
+        -- 事件的参数是一个通用的物理 actor，我们需要从中找到对应的游戏实体
+        if not actor then return end
         
-        local entity = Entity.node2Entity[touchedNode]
-        if not entity then
-            gg.log(string.format("DEBUG: %s.Touched - 触碰来源 '%s' 不是一个已注册的实体，忽略。", self.name, touchedNode.Name or "一个未命名的对象"))
-            return
-        end
-        gg.log(string.format("DEBUG: %s.Touched - 识别到实体: %s (UUID: %s)", self.name, (entity.GetName and entity:GetName()) or entity.uuid or "未知实体", entity.uuid))
-
-        if self.pendingLeaveEntities[entity.uuid] then
-            gg.log(string.format("DEBUG: %s.Touched - 实体 '%s' 正在待离开列表，取消离开并重新进入。", self.name, (entity.GetName and entity:GetName()) or entity.uuid))
-            self.pendingLeaveEntities[entity.uuid] = nil
-            if self.entitiesInZone[entity.uuid] then
-            return
+        local entity = nil
+        if actor.UserId then
+            -- 如果 actor 有 UserId 属性，说明它是一个玩家的 Actor
+            gg.log(string.format("DEBUG: %s.Touched - 检测到玩家Actor触碰，ID: %s, 名字: %s", self.name, actor.UserId, actor.Name))
+            local ServerDataManager = require(ServerStorage.Manager.MServerDataManager)
+            entity = ServerDataManager.getPlayerByUin(actor.UserId)
+            if not entity then
+                gg.log(string.format("警告: %s.Touched - 找到了玩家Actor，但在DataManager中找不到对应的MPlayer实体 (UIN: %s)", self.name, actor.UserId))
+                return
             end
+        else
+            -- 否则，它可能是怪物、NPC或其他可交互物体的 Actor
+            -- TODO: 在此实现通过 actor 查找非玩家实体的逻辑 (例如 MMonster, MNpc)
+            -- 实现方式可能包括：
+            -- 1. 遍历 ServerDataManager 中的怪物/NPC列表，通过 entity.actor == actor 匹配
+            -- 2. 在创建怪物/NPC时，给其 actor 对象添加一个自定义属性(如 "EntityUUID")，在此处获取该属性来反向查找
+            gg.log(string.format("DEBUG: %s.Touched - 检测到非玩家Actor触碰: %s。实体查找逻辑待实现。", self.name, actor.Name))
+            return -- 暂时不对非玩家实体做任何处理
         end
 
-        if not self.entitiesInZone[entity.uuid] then
-            self.entitiesInZone[entity.uuid] = entity
-            gg.log(string.format("DEBUG: %s.Touched - 确认实体 '%s' 进入，调用 OnEntityEnter。", self.name, (entity.GetName and entity:GetName()) or entity.uuid))
+        -- 后续是通用逻辑，无论找到的是玩家还是怪物
+        local entityId = entity.uuid
+        if not self.entitiesInZone[entityId] then
+            gg.log(string.format("DEBUG: %s.Touched - 确认实体 '%s' 进入，调用 OnEntityEnter。", self.name, entity.name or entityId))
+            self.entitiesInZone[entityId] = entity
             self:OnEntityEnter(entity)
         end
     end)
 
-    self.node.TouchEnded:Connect(function(touchedNode)
-        if not touchedNode then return end
-        local entity = Entity.node2Entity[touchedNode]
-        if not entity then return end
+    self.node.TouchEnded:Connect(function(actor)
+        if not actor then return end
 
-        if self.pendingLeaveEntities[entity.uuid] then
+        local entity = nil
+        if actor.UserId then
+            gg.log(string.format("DEBUG: %s.TouchEnded - 玩家Actor接触结束，ID: %s, 名字: %s", self.name, actor.UserId, actor.Name))
+            local ServerDataManager = require(ServerStorage.Manager.MServerDataManager)
+            entity = ServerDataManager.getPlayerByUin(actor.UserId)
+            if not entity then
+                return
+            end
+        else
+            gg.log(string.format("DEBUG: %s.TouchEnded - 非玩家Actor接触结束: %s。实体查找逻辑待实现。", self.name, actor.Name))
             return
         end
-        
-        self.pendingLeaveEntities[entity.uuid] = entity
-        
-        ServerScheduler.add(function()
-            if self.pendingLeaveEntities[entity.uuid] then
-                self.pendingLeaveEntities[entity.uuid] = nil
-                self.entitiesInZone[entity.uuid] = nil
-                self:OnEntityLeave(entity)
-            end
-        end, 0.1)
+
+        local entityId = entity.uuid
+        if self.entitiesInZone[entityId] then
+            gg.log(string.format("DEBUG: %s.TouchEnded - 确认实体 '%s' 离开，调用 OnEntityLeave。", self.name, entity.name or entityId))
+            self.entitiesInZone[entityId] = nil
+            self:OnEntityLeave(entity)
+        end
     end)
 end
 

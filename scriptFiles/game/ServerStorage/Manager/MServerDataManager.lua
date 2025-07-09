@@ -137,7 +137,7 @@ function MServerDataManager.GetNodeByFullPath(path)
     for part in string.gmatch(path, "[^/]+") do
         if currentNode then
             currentNode = currentNode[part]
-            gg.log("currentNode",currentNode)
+          
         else
             return nil
         end
