@@ -107,6 +107,12 @@ function SceneNodeHandlerBase:OnDestroy()
         ServerScheduler.cancel(self.updateTask)
         self.updateTask = nil
     end
+
+    -- 如果我们在运行时创建了一个逻辑节点，需要在这里销毁它
+    if self.createdNode and self.createdNode.IsValid then
+        self.createdNode:Destroy()
+        self.createdNode = nil
+    end
 end
 
 --- 强制让一个实体离开本区域，用于外部逻辑同步状态
@@ -131,16 +137,69 @@ end
 -- 基类核心逻辑
 --------------------------------------------------------------------------------
 
+--- 确保节点是可触发的.
+--- 如果 self.node 不是 TriggerBox, 此方法会创建一个 TriggerBox 并覆盖 self.node.
+---@param debugId any 传入的调试ID，用于日志追溯
+function SceneNodeHandlerBase:_ensureLogicalTriggerExists(debugId)
+    local node = self.node
+    -- 核心逻辑改变：不再检查是否为"Model", 只要不是"TriggerBox"，就为其创建逻辑触发器
+    if node and not node:IsA("TriggerBox") then
+        gg.log(string.format("DEBUG: [DebugID: %s] %s - 节点类型为 %s, 非TriggerBox, 自动创建逻辑触发器。", tostring(debugId), self.name, tostring(node.ClassName)))
+        
+        -- 核心：触发器作为模型的【子】节点，以便在编辑器中关联显示
+        local triggerBox = SandboxNode.New('TriggerBox', node)
+        triggerBox.Name = self.name .. "_Trigger"
+
+        -- 子节点的位置/旋转应为0，以与父节点重合
+        triggerBox:SetLocalPosition(0, 0, 0)
+        triggerBox:SetLocalEuler(0, 0, 0)
+        
+        -- 1. 计算出我们期望的【最终世界尺寸】
+        local modelSize = node.Size or Vector3.new(100, 100, 100) -- 使用节点的实际尺寸，如果不存在则使用默认值
+        local scaledSize = Vector3.new(modelSize.x * node.LocalScale.x, modelSize.y * node.LocalScale.y, modelSize.z * node.LocalScale.z)
+
+        local sizeOffsetVec = Vector3.new(10, 10, 10) -- 默认偏移值
+        if self.config["包围盒偏移"] then
+            local offsetTbl = self.config["包围盒偏移"]
+            if type(offsetTbl) == "table" and #offsetTbl == 3 then
+                sizeOffsetVec = Vector3.new(offsetTbl[1], offsetTbl[2], offsetTbl[3])
+            else
+                gg.log(string.format("警告: %s 的 '包围盒偏移' 配置格式不正确，应为 {x, y, z} 格式的表。将使用默认值。", self.name))
+            end
+        end
+        local finalDesiredSize = gg.vec.Add3(scaledSize, sizeOffsetVec.x, sizeOffsetVec.y, sizeOffsetVec.z)
+
+        -- 2. 为了抵消父节点的缩放继承，我们需要反向缩放TriggerBox自身的尺寸
+        local parentScale = node.LocalScale
+        local inverseScaledSize = Vector3.new(
+            parentScale.x == 0 and 0 or finalDesiredSize.x / parentScale.x,
+            parentScale.y == 0 and 0 or finalDesiredSize.y / parentScale.y,
+            parentScale.z == 0 and 0 or finalDesiredSize.z / parentScale.z
+        )
+        triggerBox.Size = inverseScaledSize
+        
+        triggerBox.KinematicAble = false
+        triggerBox.GravityAble = false
+        
+        -- 核心：后续逻辑将使用我们新创建的TriggerBox
+        self.node = triggerBox
+    end
+end
+
 ---初始化
 ---@param config table # 来自SceneNodeConfig的配置
 ---@param node SandboxNode # 场景中对应的节点
-function SceneNodeHandlerBase:OnInit(node, config)
-    ---@cast node TriggerBox
+---@param debugId number|nil # 用于调试的唯一ID
+function SceneNodeHandlerBase:OnInit(node, config, debugId)
 
+    gg.log("创建节点",node, config, debugId)
     self.config = config
-    self.node = node  ---@type TriggerBox
     self.name = config["名字"] or node.Name
     self.handlerId = config["唯一ID"] -- 从配置中获取ID
+    self.visualNode = node -- 保存对原始（可见）节点的引用
+    self.node = node
+    -- 确保节点拥有一个可交互的逻辑触发器
+    self:_ensureLogicalTriggerExists(debugId)
 
     self.soundAssetId = config["音效资源"] or ""
     self.enterCommand = config["进入指令"] or ""

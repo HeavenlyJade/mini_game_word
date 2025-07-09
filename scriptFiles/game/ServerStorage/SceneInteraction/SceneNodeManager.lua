@@ -13,8 +13,8 @@ local SceneNodeManager = {}
 
 -- 映射场景类型到处理器的路径
 local HANDLER_TYPE_MAP = {
-    ["跳台"] = require(ServerStorage.SceneInteraction.handlers.JumpPlatformHandler),
-    ["飞行比赛"] = require(ServerStorage.SceneInteraction.handlers.RaceTriggerHandler),
+    ["跳台"] = require(ServerStorage.SceneInteraction.handlers.JumpPlatformHandler), ---@type JumpPlatformHandler
+    ["飞行比赛"] = require(ServerStorage.SceneInteraction.handlers.RaceTriggerHandler), ---@type RaceTriggerHandler
     -- ["陷阱"] = require(ServerStorage.SceneInteraction.handlers.TrapHandler), -- 示例
     -- ["治疗区域"] = require(ServerStorage.SceneInteraction.handlers.HealZoneHandler), -- 示例
 }
@@ -47,8 +47,9 @@ function SceneNodeManager:Init()
                     gg.log(string.format("SceneNodeManager: [警告] 找不到类型为 '%s' 的处理器 (来自配置 '%s')", nodeType, configName))
                 else
                     -- 3. 实例化处理器
-                    gg.log(string.format("SceneNodeManager: 正在为 '%s' 创建 '%s' 类型的处理器...", configName, nodeType))
-                    local handler = HandlerClass.New(node, configData)
+                    local debugId = math.random(1000, 9999) -- 创建一个随机的调试ID
+                    gg.log(string.format("SceneNodeManager: [DebugID: %d] 正在为 '%s' 创建 '%s' 类型的处理器...", debugId, configName, nodeType))
+                    local handler = HandlerClass.New(node, configData, debugId)
                     if not handler then
                         gg.log(string.format("SceneNodeManager: [错误] 实例化处理器 '%s' 失败。", configName))
                     end

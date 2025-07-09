@@ -98,22 +98,25 @@ function ClassMgr.Class( name, ...)
 		return false
 	end
 
-	local create = nil
+	-- 修复后的递归创建函数
+	local create
 	create = function(instance, c, ...)
-		if c.super and create then
-            create(instance, c.super, ...)
-        end
-		instance.className = name
-        if c.OnInit then
-            c.OnInit(instance, ...)
-        end
+		if c.super then
+			create(instance, c.super, ...)
+		end
+		-- 关键修复：只有当子类的OnInit和父类的OnInit不是同一个函数时，才调用子类的。
+		-- 这可以防止在子类没有定义自己的OnInit时，重复调用父类的OnInit。
+		if c.OnInit and (not c.super or c.OnInit ~= c.super.OnInit) then
+			c.OnInit(instance, ...)
+		end
 	end
 
 	function cls.New(...)
-        local instance = setmetatable({}, cls)
-        create(instance, cls, ...)
-        return instance
-    end
+		local instance = setmetatable({}, cls)
+		-- 调用修复后的递归创建函数
+		create(instance, cls, ...)
+		return instance
+	end
 
     ClassMgr.RegisterClass(name, cls)
 
