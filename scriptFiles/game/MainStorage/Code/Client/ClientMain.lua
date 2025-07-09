@@ -36,6 +36,28 @@ function ClientMain.start_client()
             evt.Return(evt.states)
         end
     end)
+    ClientEventManager.Subscribe("Race_LaunchPlayer", function(data)
+        gg.log("接收到 Race_LaunchPlayer 事件，准备执行发射！")
+        local localPlayer = game:GetService("Players").LocalPlayer
+        if localPlayer and localPlayer.Character then
+            local actor = localPlayer.Character
+            
+            -- 在客户端执行跳跃和移动指令
+            actor:Jump(true)
+            actor:Move(Vector3.new(0, 0, 1), true)
+            
+            -- 动作执行后，客户端也需要一个机制来停止持续的Move指令
+            -- 这里的恢复逻辑主要在服务器端，但客户端可以停止移动以防止意外行为
+            local timer = actor:GetComponent("Timer") or actor:AddComponent("Timer")
+            timer:AddDelay(0.5, function()
+                if actor and not actor.isDestroyed then
+                    actor:StopMove()
+                end
+            end)
+        else
+            gg.log("Race_LaunchPlayer: 找不到本地玩家或其角色。")
+        end
+    end)
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
     end

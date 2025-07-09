@@ -106,4 +106,4 @@ end)
 -- 命令Actor移动
 local targetPosition = Vector3.new(600, 700, 500)
 newActor:MoveTo(targetPosition)
-``` 
+```
