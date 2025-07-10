@@ -91,6 +91,10 @@ end
 
 function MainServer.initModule()
     gg.log("初始化模块")
+    -- 【新增】初始化全局任务调度器
+    local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
+    ScheduledTask.Init()
+    
     -- 初始化核心管理器
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)

@@ -5,6 +5,7 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)  ---@type ClassMgr
 local GameModeBase = require(ServerStorage.GameModes.GameModeBase) ---@type GameModeBase
 local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 ---@class RaceGameMode: GameModeBase
 ---@field participants MPlayer[]
@@ -21,9 +22,7 @@ local RaceState = {
     FINISHED = "FINISHED",   -- 比赛已结束
 }
 
--- 飞行参数
-local FLY_UPDATE_INTERVAL = 0.1 -- 每0.1秒更新一次飞行状态
-local FLY_SPEED_FACTOR = 1.5 -- 飞行速度是默认速度的1.5倍
+
 
 function RaceGameMode:OnInit(instanceId, modeName, rules)
     self.state = RaceState.WAITING
@@ -73,46 +72,30 @@ end
 --- 将玩家发射出去
 ---@param player MPlayer
 function RaceGameMode:LaunchPlayer(player)
-    local actor = player.actor ---@type Actor
-    if not actor then
-        gg.log(string.format("ERROR: 无法为玩家 %s 发射，因为找不到其 Actor", player.name))
+    if not player or not player.actor then
+        gg.log(string.format("ERROR: 无法为玩家 %s 发射，因为找不到其 MPlayer 实例或 Actor", tostring(player)))
         return
     end
 
-    gg.log(string.format("LaunchPlayer: 开始为玩家 %s 执行发射...", player.name))
+    gg.log(string.format("LaunchPlayer: 准备向客户端 %s 发送发射指令...", player.name))
 
-    -- 【最终方案：指令组合】
-    -- 结合能成功触发的 Jump() 指令，和引擎最认可的、相对于相机的 Move() 指令
+    -- 【规范化】从配置中读取事件名称和参数，避免硬编码
+    local eventName = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER
+    local launchParams = EventPlayerConfig.GetActionParams(eventName)
+
+    -- 【核心修正】将事件名(cmd)和参数合并到一个新的 table 中发送，以匹配网络框架的期望
+    local eventData = gg.clone(launchParams) or {} -- 克隆参数表，如果为nil则创建一个新表
+    eventData.cmd = eventName
     
-    -- 1. 保存原始速度属性
-    local originalJumpSpeed = actor.JumpBaseSpeed
-    local originalMoveSpeed = actor.Movespeed
-    gg.log(string.format("LaunchPlayer: 玩家 %s 的原始 JumpSpeed: %s, MoveSpeed: %s", player.name, tostring(originalJumpSpeed), tostring(originalMoveSpeed)))
-
-
-    -- 2. 设置一个超高的跳跃速度和前冲速度
-    actor.JumpBaseSpeed = 4000 -- 可以调整这个值来改变发射高度
-    actor.Movespeed = 1000      -- 可以调整这个值来改变发射远度
-    gg.log(string.format("LaunchPlayer: 为玩家 %s 设置临时 JumpSpeed: %s, MoveSpeed: %s", player.name, tostring(actor.JumpBaseSpeed), tostring(actor.Movespeed)))
-
-    -- 3. 执行发射动作
-    actor:Jump(true) -- 执行一次超高跳跃，这个指令是有效的
-    gg.log(string.format("LaunchPlayer: 已为玩家 %s 调用 Jump(true)", player.name))
-    -- actor:Move(Vector3.new(0, 0, 1), false) 
-    gg.log(string.format("LaunchPlayer: 已为玩家 %s 调用 Move(..., false)", player.name))
-
-    -- 4. 短暂延迟后恢复一切
-    self:AddDelay(10, function()
-        if actor then
-            gg.log(string.format("LaunchPlayer (延迟恢复): 正在为 %s 恢复属性...", player.name))
-            actor:StopMove() -- 停止前冲
-            actor.JumpBaseSpeed = originalJumpSpeed
-            actor.Movespeed = originalMoveSpeed
-            gg.log(string.format("LaunchPlayer (延迟恢复): 玩家 %s 的属性已恢复。", player.name))
-        end
-    end)
+    -- 【核心改造】通过网络通道向指定客户端发送事件
+    if gg.network_channel then
+        gg.network_channel:fireClient(player.uin, eventData)
+        gg.log(string.format("LaunchPlayer: 已向玩家 %s (uin: %s) 发送事件，数据: %s", player.name, player.uin, gg.table2str(eventData)))
+    else
+        gg.log("ERROR: gg.network_channel 未初始化，无法发送客户端事件！")
+    end
     
-    gg.log(string.format("玩家 %s 已被发射！", player.name))
+    gg.log(string.format("玩家 %s 的发射指令已发送！", player.name))
 end
 
 --- 新增：检测比赛结束条件

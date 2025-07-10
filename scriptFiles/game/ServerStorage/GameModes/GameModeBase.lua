@@ -3,12 +3,13 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
 local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
+local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 
 ---@class GameModeBase : Class
 ---@field participants table<string, MPlayer>
----@field timersNode SandboxNode
 ---@field instanceId string
 ---@field modeName string
+---@field activeTimers table<Timer, boolean>
 local GameModeBase = ClassMgr.Class("GameModeBase")
 
 --- 初始化游戏模式实例
@@ -21,45 +22,50 @@ function GameModeBase.OnInit(self, instanceId, modeName, rules)
     self.modeName = modeName
     self.rules = rules or {}
     self.participants = {} -- key: uin, value: MPlayer
-    self.activeTimers = {} -- 存放所有活跃的定时器节点
-
-    -- 为这个游戏模式实例创建一个专属的父节点，用于挂载所有定时器
-    self.timersNode = SandboxNode.New("SandboxNode", game.WorkSpace)
-    self.timersNode.Name = string.format("Timers_GameMode_%s", instanceId)
-    self.timersNode.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+    self.activeTimers = {} -- 存放所有由本实例创建的、活跃的定时器句柄
 end
 
 --- 添加一个延迟执行的任务
+--- (使用全局调度器，并自动追踪句柄以便在实例销毁时清理)
 ---@param delay number 延迟的秒数
 ---@param callback function 回调函数
 ---@return Timer
 function GameModeBase:AddDelay(delay, callback)
-    local timer = SandboxNode.New("Timer", self.timersNode)
-    timer.Delay = delay
-    timer.Loop = false
-    timer.Callback = callback
-    timer:Start()
+    local timer
+    local wrappedCallback = function()
+        -- 在回调执行后，从 activeTimers 表中移除自己，防止内存泄漏
+        if timer and self.activeTimers[timer] then
+            self.activeTimers[timer] = nil
+        end
+        callback()
+    end
+    
+    timer = ScheduledTask.AddDelay(delay, wrappedCallback)
+    if timer then
+        self.activeTimers[timer] = true
+    end
     return timer
 end
 
 --- 添加一个循环执行的任务
+--- (使用全局调度器，并自动追踪句柄以便在实例销毁时清理)
 ---@param interval number 循环间隔的秒数
 ---@param callback function 回调函数
 ---@return Timer
 function GameModeBase:AddInterval(interval, callback)
-    local timer = SandboxNode.New("Timer", self.timersNode)
-    timer.Delay = interval
-    timer.Loop = true
-    timer.Callback = callback
-    timer:Start()
+    local timer = ScheduledTask.AddInterval(interval, callback)
+    if timer then
+        self.activeTimers[timer] = true
+    end
     return timer
 end
 
---- 移除一个定时器
+--- 移除一个由本实例创建的定时器
 ---@param timer Timer
 function GameModeBase:RemoveTimer(timer)
-    if timer and timer.IsValid and timer:GetParent() == self.timersNode then
-        timer:Destroy()
+    if timer and self.activeTimers[timer] then
+        ScheduledTask.Remove(timer)
+        self.activeTimers[timer] = nil -- 从追踪表中移除
     end
 end
 
@@ -75,12 +81,15 @@ function GameModeBase:OnPlayerLeave(player)
     self.participants[player.uin] = nil
 end
 
---- 销毁此游戏模式实例，清理所有资源
+--- 销毁此游戏模式实例，清理所有相关资源
 function GameModeBase:Destroy()
-    if self.timersNode and self.timersNode.IsValid then
-        self.timersNode:Destroy()
+    -- 遍历并销毁所有由该游戏模式实例创建的、仍在活动的定时器
+    for timer, _ in pairs(self.activeTimers) do
+        ScheduledTask.Remove(timer)
     end
-    self.timersNode = nil
+    
+    -- 清空追踪表和参与者列表
+    self.activeTimers = {}
     self.participants = {}
 end
 

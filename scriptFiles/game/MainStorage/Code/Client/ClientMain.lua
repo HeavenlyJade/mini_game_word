@@ -10,14 +10,32 @@ local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type Conf
 local Controller = require(MainStorage.Code.Client.MController) ---@type Controller
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
+
+--- 新增：专门用于初始化所有“动作处理器”模块的函数
+function ClientMain.InitActionHandlers()
+    -- 初始化玩家操作处理器
+    local PlayerActionHandler = require(MainStorage.Code.Client.PlayerAction.PlayerActionHandler)
+    PlayerActionHandler:OnInit()
+
+    -- 以后若有其他动作处理器，可在此处继续添加
+    -- local OtherActionHandler = require(...)
+    -- OtherActionHandler:OnInit()
+end
+
 function ClientMain.start_client()
-    ConfigLoader.Init() 
+    ConfigLoader.Init()
+    -- 【新增】初始化客户端的全局任务调度器
+    local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
+    ScheduledTask.Init()
+
     gg.isServer = false
     ClientMain.tick = 0
     gg.uuid_start = gg.rand_int_between(100000, 999999);
     ClientMain.createNetworkChannel()
     ClientMain.handleCoreUISettings()
     Controller.init()
+    ClientMain.InitActionHandlers() -- 初始化所有动作处理器
+
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
 
@@ -36,28 +54,7 @@ function ClientMain.start_client()
             evt.Return(evt.states)
         end
     end)
-    ClientEventManager.Subscribe("Race_LaunchPlayer", function(data)
-        gg.log("接收到 Race_LaunchPlayer 事件，准备执行发射！")
-        local localPlayer = game:GetService("Players").LocalPlayer
-        if localPlayer and localPlayer.Character then
-            local actor = localPlayer.Character
-            
-            -- 在客户端执行跳跃和移动指令
-            actor:Jump(true)
-            actor:Move(Vector3.new(0, 0, 1), true)
-            
-            -- 动作执行后，客户端也需要一个机制来停止持续的Move指令
-            -- 这里的恢复逻辑主要在服务器端，但客户端可以停止移动以防止意外行为
-            local timer = actor:GetComponent("Timer") or actor:AddComponent("Timer")
-            timer:AddDelay(0.5, function()
-                if actor and not actor.isDestroyed then
-                    actor:StopMove()
-                end
-            end)
-        else
-            gg.log("Race_LaunchPlayer: 找不到本地玩家或其角色。")
-        end
-    end)
+
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
     end

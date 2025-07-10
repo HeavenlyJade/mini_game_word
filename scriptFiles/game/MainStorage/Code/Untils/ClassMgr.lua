@@ -2,13 +2,17 @@ local MainStorage  = game:GetService('MainStorage')
 
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
-
+---@class ClassMgr        对class父子继承类的封装
+---@field Class fun<T: Class>(name: string, ...: Class): T
+---@field Clone fun(object: table): table
+---@field GetRegisterClass fun(classname: string): any
+---@field Is fun(inst: table, className: string): boolean
+---@field RegisterClass fun(classname: string, cls: any): void
 if  _G.ClassMgr then
 	--print( 'use cache ClassMgr' )
 	return _G.ClassMgr
 end
 
----@class ClassMgr        对class父子继承类的封装
 local ClassMgr = {}
 _G.ClassMgr = ClassMgr
 
