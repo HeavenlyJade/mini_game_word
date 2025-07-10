@@ -12,6 +12,7 @@ local PlayerActionHandler = ClassMgr.Class("PlayerActionHandler")
 function PlayerActionHandler:OnInit()
     gg.log("PlayerActionHandler 初始化...")
     self:SubscribeServerEvents()
+    self.stateMonitorTimer = nil -- 用于存放状态监控定时器的句柄
 end
 
 --- 订阅所有来自服务端的事件
@@ -32,7 +33,62 @@ end
 function PlayerActionHandler:OnLaunchPlayer(data)
     gg.log("接收到 S2C_LaunchPlayer 事件, 数据: ", gg.table2str(data))
 
-    ---@type Character
+    -- 如果上一个监控还在，先移除它
+    if self.stateMonitorTimer then
+        ScheduledTask.Remove(self.stateMonitorTimer)
+        self.stateMonitorTimer = nil
+    end
+
+    local previousState = nil -- 用于记录上一个状态
+
+    -- 启动一个新的状态监控，并保存其句柄
+    self.stateMonitorTimer = ScheduledTask.AddInterval(0.2, function()
+        ---@type Actor
+        local actor = gg.getClientLocalPlayer()
+        if not actor then
+            -- 如果actor无效，也应停止定时器以防万一
+            if self.stateMonitorTimer then
+                ScheduledTask.Remove(self.stateMonitorTimer)
+                self.stateMonitorTimer = nil
+            end
+            return
+        end
+
+        local currentState = actor:GetCurMoveState()
+
+        -- 首次检测时，初始化 previousState
+        if previousState == nil then
+            previousState = currentState
+            return
+        end
+        
+        -- 核心逻辑：检测状态从 Fly 变为 Stand
+        if previousState == Enum.BehaviorState.Fly and currentState == Enum.BehaviorState.Stand then
+            gg.log("状态变化: [飞行] -> [站立]。检测到玩家落地！")
+
+            -- 向服务端发送落地事件
+            if gg.network_channel then
+                -- 我们需要先定义这个事件
+                local eventName = "cmd_player_landed" 
+                gg.network_channel:fireServer({ cmd = eventName })
+                gg.log("已向服务端发送 " .. eventName .. " 事件。")
+            else
+                gg.log("ERROR: gg.network_channel 不可用，无法发送落地通知！")
+            end
+
+            -- 任务完成，停止并移除定时器
+            if self.stateMonitorTimer then
+                ScheduledTask.Remove(self.stateMonitorTimer)
+                self.stateMonitorTimer = nil
+                gg.log("状态监控任务已完成并移除。")
+            end
+        else
+            -- 更新上一个状态，为下一次检测做准备
+            previousState = currentState
+        end
+    end)
+
+    ---@type Actor
     local actor = gg.getClientLocalPlayer()
     if not actor then
         gg.log("OnLaunchPlayer: 无法获取客户端本地玩家的 Actor！")
@@ -61,7 +117,8 @@ function PlayerActionHandler:OnLaunchPlayer(data)
 
     -- 3. 执行发射动作 (在客户端执行，保证有效)
     actor:Jump(true)
-    gg.log("OnLaunchPlayer: 已调用 Jump(true)")
+    actor:Move(Vector3.new(0, 0, 1), true)
+    gg.log("OnLaunchPlayer: 已调用 Jump(true) 和 Move()")
     
     -- 【核心修正】使用全局的 ScheduledTask 来执行延迟调用，而不是 actor 自身的 timer
     ScheduledTask.AddDelay(jumpDuration, function()
@@ -79,6 +136,15 @@ function PlayerActionHandler:OnLaunchPlayer(data)
             actor.JumpBaseSpeed = originalJumpSpeed
             actor.Movespeed = originalMoveSpeed
             gg.log("OnLaunchPlayer (延迟恢复): 玩家属性已恢复。")
+
+            -- 恢复完成后，停止并移除状态监控
+            -- 【注意】这里的自动停止逻辑可以作为备用保险，
+            -- 但主要停止逻辑已移至落地检测成功之时。
+            if self.stateMonitorTimer then
+                gg.log("恢复延迟到达，作为保险，停止玩家状态监控。")
+                ScheduledTask.Remove(self.stateMonitorTimer)
+                self.stateMonitorTimer = nil
+            end
         end
     end)
 end

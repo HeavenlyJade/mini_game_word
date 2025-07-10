@@ -6,13 +6,13 @@ local GameModeBase = require(ServerStorage.GameModes.GameModeBase) ---@type Game
 local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+-- 【已移除】不再需要直接引用 ServerEventManager
 
 ---@class RaceGameMode: GameModeBase
 ---@field participants MPlayer[]
 ---@field rules table
 ---@field handlerId string 触发此模式的场景处理器的ID
----@field checkTimer any 定时器句柄，用于检测比赛结束条件
----@field raceHasTrulyStarted boolean 标记比赛是否已真正开始（即，有玩家被检测到离地）
+---@field finishedPlayers table<number, boolean> 新增：用于记录已完成比赛的玩家 (uin -> true)
 local RaceGameMode = ClassMgr.Class("RaceGameMode", GameModeBase)
 
 -- 比赛状态
@@ -28,8 +28,7 @@ function RaceGameMode:OnInit(instanceId, modeName, rules)
     self.state = RaceState.WAITING
     self.participants = {} -- 存放所有参赛玩家的table, 使用数组形式
     self.rules = rules or {}
-    self.checkTimer = nil -- 初始化定时器句柄
-    self.raceHasTrulyStarted = false -- 【新增】用于标记比赛是否已正式开始（有玩家离地）
+    self.finishedPlayers = {} -- 【新增】初始化已完成玩家的记录表
 end
 
 --- 当有玩家进入此游戏模式时调用
@@ -98,40 +97,29 @@ function RaceGameMode:LaunchPlayer(player)
     gg.log(string.format("玩家 %s 的发射指令已发送！", player.name))
 end
 
---- 新增：检测比赛结束条件
-function RaceGameMode:CheckRaceEndCondition()
-    if self.state ~= RaceState.RACING then
-        -- 如果比赛状态异常，则停止计时器
-        if self.checkTimer then
-            self:RemoveTimer(self.checkTimer)
-            self.checkTimer = nil
-        end
-        return
+--- 【核心改造】处理玩家落地，由 RaceGameEventManager 调用
+---@param player MPlayer 已经确认落地并且属于本场比赛的玩家
+function RaceGameMode:OnPlayerLanded(player)
+    -- 检查该玩家是否已经报告过落地
+    if self.finishedPlayers[player.uin] then
+        gg.log(string.format("玩家 %s 已经报告过落地，忽略重复的 OnPlayerLanded 调用。", player.name))
+        return -- 防止重复处理
     end
 
-    if #self.participants == 0 then
-        gg.log("所有玩家都已离开，比赛提前结束。")
+    -- 记录该玩家已完成
+    self.finishedPlayers[player.uin] = true
+    gg.log(string.format("比赛实例 %s: 玩家 %s 已完成。当前进度: %d/%d", self.instanceId, player.name, #self.finishedPlayers, #self.participants))
+    player:SendHoverText("已落地！等待其他玩家...")
+
+    -- 检查是否所有人都已完成
+    if #self.finishedPlayers >= #self.participants then
+        gg.log("所有参赛玩家均已落地，比赛立即结束！")
         self:End()
-        return
-    end
-
-    local allLanded = true
-    for _, player in ipairs(self.participants) do
-        if player.actor and player.actor.IsOnGround == false then
-            -- 只要还有一个玩家在空中，比赛就继续
-            allLanded = false
-            -- 【核心修正】一旦检测到有玩家离地，就将比赛标记为“已真正开始”
-            self.raceHasTrulyStarted = true
-            break -- 只要有一个人在空中，就无需再检查其他人
-        end
-    end
-
-    -- 【核心修正】结束条件变为：比赛必须真正开始过，并且现在所有人都已落地。
-    if self.raceHasTrulyStarted and allLanded then
-        gg.log("所有玩家均已落地，比赛结束！")
-        self:End() -- 调用结束函数
     end
 end
+
+--- 【移除】旧的比赛结束检测函数，该功能已被事件驱动的 OnPlayerLanded 取代
+-- function RaceGameMode:CheckRaceEndCondition() ... end
 
 
 --- 开始比赛
@@ -155,16 +143,10 @@ function RaceGameMode:Start()
                 self:LaunchPlayer(player)
             end
 
-            -- 【核心改造】启动双重结束条件
-            
-            -- 条件1: 循环检测所有玩家是否落地
-            gg.log("比赛已开始，正在监测玩家落地状态...")
-            if self.checkTimer then self:RemoveTimer(self.checkTimer) end
-            self.checkTimer = self:AddInterval(0.2, function()
-                self:CheckRaceEndCondition()
-            end)
+            -- 【已移除】事件订阅逻辑已移至 RaceGameEventManager
+            gg.log("比赛已开始，等待 RaceGameEventManager 的落地报告...")
 
-            -- 条件2: 比赛到达最大时长后强制结束（超时保护）
+            -- 【保留】比赛到达最大时长后强制结束（超时保护）
             gg.log(string.format("比赛最长持续 %d 秒。", raceTime))
             self:AddDelay(raceTime, function()
                 if self.state == RaceState.RACING then
@@ -178,21 +160,22 @@ end
 
 --- 结束比赛
 function RaceGameMode:End()
-    -- 【核心改造】在函数开始时，立刻停止循环检测的定时器
-    if self.checkTimer then
-        self:RemoveTimer(self.checkTimer)
-        self.checkTimer = nil
-        gg.log("已停止比赛结束条件检测。")
-    end
-
-    -- 懒加载 GameModeManager 和 ServerDataManager 以避免循环依赖
-    local GameModeManager = require(ServerStorage.GameModes.GameModeManager)  ---@type GameModeManager
-    local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     if self.state ~= RaceState.RACING then return end
-    
     self.state = RaceState.FINISHED
+
+    -- 【已移除】不再需要取消订阅，因为订阅逻辑已移至外部管理器
+    gg.log("比赛实例 %s 正在结束...", self.instanceId)
+    
+    -- 懒加载 GameModeManager 和 ServerDataManager 以避免循环依赖
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
+    
     gg.log("比赛结束！")
     
+    -- TODO: 在这里向客户端发送一个结构化的比赛结束事件（如 S2C_RaceFinished），
+    -- 而不是仅仅发送悬浮文字，以便客户端可以展示结算UI。
+    -- 例如: ServerEventManager.PublishToGroup(participants, "S2C_RaceFinished", { ranks = ... })
+
     -- 打印基础的结算信息，并通知玩家
     gg.log("--- 比赛结算 ---")
     for i, player in ipairs(self.participants) do
@@ -212,7 +195,7 @@ function RaceGameMode:End()
 
 
         -- 获取触发这个比赛的场景处理器
-        local handler = ServerDataManager.getSceneNodeHandler(self.handlerId)
+        local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
         
         -- 重点：必须创建一个参与者副本进行遍历，因为 RemovePlayerFromCurrentMode 会修改原始的 self.participants 表
         local playersToRemove = {}

@@ -528,7 +528,7 @@ end
 
 
 -- 获得当前玩家（客户端侧）
----@return Character 当前玩家角色
+---@return Actor 当前玩家角色
 function gg.getClientLocalPlayer()
     return Players.LocalPlayer.Character
 end

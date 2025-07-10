@@ -154,6 +154,18 @@
       local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
       ```
 
+- **管理器架构约定**:
+    - **事件管理器 (EventManager) 必须是静态类**:
+        - **适用范围**: 所有位于 `MSystems/` 目录下的 `*EventManager.lua` 文件，以及为特定游戏模式（位于 `GameModes/Modes/`）创建的事件管理器。
+        - **实现方式**:
+            - 模块返回一个 table。
+            - 所有方法都作为该 table 的字段，使用点 `.` 进行定义，例如 `function MyManager.MyMethod() end`。
+            - 严禁使用冒号 `:` 定义方法，因为这会隐式传递 `self` 参数，不符合静态类的特征。
+            - **示例**: `BagEventManager`, `RaceGameEventManager` 都应遵循此规范。
+    - **功能管理器 (Mgr) 可以是静态类或动态类**:
+        - `*Mgr.lua` 文件如果只负责管理全局状态和逻辑（如 `GameModeManager`），则应实现为静态类。
+        - 如果需要为每个玩家或每个实例创建单独的数据副本（如 `BagMgr` 可能需要为每个玩家管理一个独立的背包实例），则可以实现为动态类（使用冒号 `:` 定义方法并由 `ClassMgr` 管理）。
+
 ## 相关文档体系
 
 本项目使用分层的文档体系来组织API和类型信息：

@@ -98,20 +98,24 @@ function MainServer.initModule()
     -- 初始化核心管理器
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
     serverDataMgr.BagMgr = BagMgr
     serverDataMgr.MailMgr = MailMgr
+    serverDataMgr.GameModeManager = GameModeManager
 
     -- 初始化事件管理器和命令管理器
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
-    local BagEventManager = require(ServerStorage.MSystems.Bag.BagEventManager)
-    local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager)
-    local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager)
+    local BagEventManager = require(ServerStorage.MSystems.Bag.BagEventManager) ---@type BagEventManager
+    local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
+    local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
+    local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
 
-    gg.CommandManager = CommandManager
-    gg.GlobalMailManager = GlobalMailManager:OnInit()
+    serverDataMgr.CommandManager = CommandManager
+    serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
 
-    BagEventManager:Init()
-    MailEventManager:Init()
+    BagEventManager.Init()
+    MailEventManager.Init()
+    RaceGameEventManager.Init()
     
     -- 初始化场景交互系统
     SceneNodeManager:Init()

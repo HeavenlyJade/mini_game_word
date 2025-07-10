@@ -16,6 +16,9 @@ local MServerDataManager = {
 
     MailMgr = nil, ---@type MailMgr | nil
     BagMgr = nil, ---@type BagMgr | nil
+    GameModeManager = nil, ---@type GameModeManager | nil
+    CommandManager= nil, ---@type CommandManager | nil
+    GlobalMailManager = nil, ---@type GlobalMailManager | nil
 
     uuid_start = 0,
     tick = 0
