@@ -71,7 +71,7 @@ function RaceGameMode:LaunchPlayer(player)
 
     -- 【最终方案：指令组合】
     -- 结合能成功触发的 Jump() 指令，和引擎最认可的、相对于相机的 Move() 指令
-    
+
     -- 1. 保存原始速度属性
     local originalJumpSpeed = actor.JumpBaseSpeed
     local originalMoveSpeed = actor.Movespeed
@@ -86,7 +86,7 @@ function RaceGameMode:LaunchPlayer(player)
     -- 3. 执行发射动作
     actor:Jump(true) -- 执行一次超高跳跃，这个指令是有效的
     gg.log(string.format("LaunchPlayer: 已为玩家 %s 调用 Jump(true)", player.name))
-    -- actor:Move(Vector3.new(0, 0, 1), false) 
+    -- actor:Move(Vector3.new(0, 0, 1), false)
     gg.log(string.format("LaunchPlayer: 已为玩家 %s 调用 Move(..., false)", player.name))
 
     -- 4. 短暂延迟后恢复一切
@@ -99,7 +99,7 @@ function RaceGameMode:LaunchPlayer(player)
             gg.log(string.format("LaunchPlayer (延迟恢复): 玩家 %s 的属性已恢复。", player.name))
         end
     end)
-    
+
     gg.log(string.format("玩家 %s 已被发射！", player.name))
 end
 
@@ -111,7 +111,7 @@ function RaceGameMode:Start()
     local raceTime = self.rules["比赛时长"] or 60
 
     gg.log(string.format("比赛将在 %d 秒后开始...", prepareTime))
-    
+
     -- 准备阶段
     self:AddDelay(prepareTime, function()
         -- 倒计时结束后
@@ -137,10 +137,10 @@ function RaceGameMode:End()
     local GameModeManager = require(ServerStorage.GameModes.GameModeManager)  ---@type GameModeManager
     local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     if self.state ~= RaceState.RACING then return end
-    
+
     self.state = RaceState.FINISHED
     gg.log("比赛结束！")
-    
+
     -- 打印基础的结算信息，并通知玩家
     gg.log("--- 比赛结算 ---")
     for i, player in ipairs(self.participants) do
@@ -156,18 +156,18 @@ function RaceGameMode:End()
 
     self:AddDelay(cleanupDelay, function()
         gg.log(string.format("正在清理比赛实例: %s", self.instanceId))
-        
+
 
 
         -- 获取触发这个比赛的场景处理器
         local handler = ServerDataManager.getSceneNodeHandler(self.handlerId)
-        
+
         -- 重点：必须创建一个参与者副本进行遍历，因为 RemovePlayerFromCurrentMode 会修改原始的 self.participants 表
         local playersToRemove = {}
         for _, p in ipairs(self.participants) do
             table.insert(playersToRemove, p)
         end
-        
+
         for _, playerInstance in ipairs(playersToRemove) do
             playerInstance:SendHoverText("已离开比赛。")
             -- OnPlayerLeave 会自动调用 StopFly, 所以这里只需要调用 GameModeManager 的移除方法即可
