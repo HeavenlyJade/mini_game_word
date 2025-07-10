@@ -1417,44 +1417,4 @@ if gg.isServer then
     setmetatable(gg, mt)
 end
 
---- 通用的延迟调用函数
----@param delay number 延迟时间(秒)
----@param callback function 延迟后执行的回调函数
-function gg.AddDelay(delay, callback)
-    if not delay or not callback then
-        gg.logError("gg.AddDelay: 缺少 delay 或 callback 参数。")
-        return
-    end
-
-    -- 在客户端，StarterGui 是一个可靠的父节点
-    -- 在服务器端，需要一个同样可靠的节点，或者在调用时指定
-    local parentNode = game:GetService("StarterGui")
-    if not parentNode then
-        gg.logError("gg.AddDelay: 找不到合适的父节点来挂载Timer。")
-        return
-    end
-
-    local timer = SandboxNode.New("Timer", parentNode)
-    timer.Name = "GlobalDelayTimer_" .. tostring(math.random(1000, 9999))
-    timer.Delay = delay
-    timer.Loop = false
-    timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE -- 客户端节点无需同步
-
-    -- 创建一个新的回调函数，在执行完原始回调后销毁定时器
-    local newCallback = function()
-        -- 首先，执行用户传入的原始回调
-        callback()
-
-        -- 然后，安全地销毁定时器自身
-        if timer and not timer.isDestroyed then
-            timer:Destroy()
-        end
-    end
-
-    timer.Callback = newCallback
-
-    timer:Start()
-    return timer
-end
-
 return gg;
