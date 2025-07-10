@@ -40,7 +40,7 @@ function GameModeBase:AddDelay(delay, callback)
         callback()
     end
     
-    timer = ScheduledTask.AddDelay(delay, wrappedCallback)
+    timer = ScheduledTask.AddDelay(delay, "GameModeBase_Delay_" .. delay, wrappedCallback)
     if timer then
         self.activeTimers[timer] = true
     end
@@ -53,7 +53,7 @@ end
 ---@param callback function 回调函数
 ---@return Timer
 function GameModeBase:AddInterval(interval, callback)
-    local timer = ScheduledTask.AddInterval(interval, callback)
+    local timer = ScheduledTask.AddInterval(interval, "GameModeBase_Interval_" .. interval, callback)
     if timer then
         self.activeTimers[timer] = true
     end

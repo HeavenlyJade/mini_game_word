@@ -106,13 +106,27 @@ function RaceGameMode:OnPlayerLanded(player)
         return -- 防止重复处理
     end
 
+    -- 如果比赛已经结束，则不再处理后续的落地事件
+    if self.state == RaceState.FINISHED then
+        gg.log(string.format("比赛已经结束，忽略玩家 %s 的落地报告。", player.name))
+        return
+    end
+
     -- 记录该玩家已完成
     self.finishedPlayers[player.uin] = true
-    gg.log(string.format("比赛实例 %s: 玩家 %s 已完成。当前进度: %d/%d", self.instanceId, player.name, #self.finishedPlayers, #self.participants))
+
+    -- 【核心修正】手动计算已完成玩家的数量。
+    -- 在 Lua 中，对以非连续数字（如uin）为键的 table 使用 '#' 操作符会返回 0，这是一个已知的语言特性。
+    local finishedCount = 0
+    for _ in pairs(self.finishedPlayers) do
+        finishedCount = finishedCount + 1
+    end
+
+    gg.log(string.format("比赛实例 %s: 玩家 %s 已完成。当前进度: %d/%d", self.instanceId, player.name, finishedCount, #self.participants))
     player:SendHoverText("已落地！等待其他玩家...")
 
-    -- 检查是否所有人都已完成
-    if #self.finishedPlayers >= #self.participants then
+    -- 使用正确的计数值检查是否所有人都已完成
+    if finishedCount >= #self.participants then
         gg.log("所有参赛玩家均已落地，比赛立即结束！")
         self:End()
     end
@@ -187,33 +201,54 @@ function RaceGameMode:End()
 
     -- 使用关卡配置的"准备时间"作为结算展示时长，之后清理实例
     local cleanupDelay = self.rules["准备时间"] or 10
-    gg.log(string.format("将在 %d 秒后清理比赛实例...", cleanupDelay))
+    gg.log(string.format("将在 %d 秒后传送玩家并清理比赛实例...", cleanupDelay))
 
     self:AddDelay(cleanupDelay, function()
-        gg.log(string.format("正在清理比赛实例: %s", self.instanceId))
-        
+        -- 1. 传送所有玩家
+        self:_teleportAllPlayersToRespawn()
 
-
-        -- 获取触发这个比赛的场景处理器
-        local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
-        
-        -- 重点：必须创建一个参与者副本进行遍历，因为 RemovePlayerFromCurrentMode 会修改原始的 self.participants 表
-        local playersToRemove = {}
-        for _, p in ipairs(self.participants) do
-            table.insert(playersToRemove, p)
-        end
-        
-        for _, playerInstance in ipairs(playersToRemove) do
-            playerInstance:SendHoverText("已离开比赛。")
-            -- OnPlayerLeave 会自动调用 StopFly, 所以这里只需要调用 GameModeManager 的移除方法即可
-            GameModeManager:RemovePlayerFromCurrentMode(playerInstance)
-
-            -- 如果找到了处理器，就强制让玩家离开，同步状态
-            if handler then
-                handler:ForceEntityLeave(playerInstance)
+        -- 2. 将所有玩家从比赛模式中移除
+        if GameModeManager then
+            -- 必须从后往前遍历，因为 RemovePlayerFromCurrentMode 可能会修改 self.participants
+            for i = #self.participants, 1, -1 do
+                local p = self.participants[i]
+                if p then
+                    GameModeManager:RemovePlayerFromCurrentMode(p)
+                end
             end
         end
+        gg.log("比赛实例 %s 已清理。", self.instanceId)
     end)
+end
+
+--- 【新增】传送所有参赛者到复活点
+function RaceGameMode:_teleportAllPlayersToRespawn()
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
+
+    if not handler then
+        gg.log(string.format("错误: RaceGameMode - 无法找到ID为 %s 的场景处理器，无法传送玩家。", self.handlerId))
+        return
+    end
+
+    local respawnNode = handler.respawnNode
+    gg.log("传送节点",respawnNode)
+    if not respawnNode then
+        gg.log(string.format("错误: RaceGameMode - 场景 %s 未配置有效的复活点，无法传送玩家。", handler.name))
+        return
+    end
+
+    local TeleportService = game:GetService('TeleportService')
+    local respawnPos = respawnNode.Position
+
+    gg.log(string.format("准备将所有玩家传送至复活点: %s (%s)", respawnNode.Name, tostring(respawnPos)))
+
+    for _, player in ipairs(self.participants) do
+        if player and player.actor then
+            gg.log(string.format("...正在传送玩家 %s", player.name))
+            TeleportService:Teleport(player.actor, respawnPos)
+        end
+    end
 end
 
 return RaceGameMode

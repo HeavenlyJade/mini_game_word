@@ -26,6 +26,9 @@ local Npc = require(ServerStorage.EntityTypes.MNpc) ---@type Npc
 ---@field uuid2Entity table<string, Entity> # 实体UUID到实体的映射 (由子类管理)
 ---@field entitiesInZone table<string, Entity> # 当前真正在区域内的实体
 ---@field tick number # tick计数
+---@field respawnNode SandboxNode|nil # 复活节点 (来自配置)
+---@field teleportNode SandboxNode|nil # 传送节点 (来自配置)
+---@field raceSceneNode SandboxNode|nil # 比赛场景的根节点 (来自配置)
 local SceneNodeHandlerBase = ClassMgr.Class("SceneNodeHandlerBase")
 
 --------------------------------------------------------------------------------
@@ -130,41 +133,69 @@ end
 -- 基类核心逻辑
 --------------------------------------------------------------------------------
 
+--- 内部辅助方法，根据路径获取节点。
+-- 1. 如果路径包含'/'，则从workspace根目录查找。
+-- 2. 否则，先从当前处理器的根节点(visualNode)下递归查找。
+-- 3. 如果找不到，再从visualNode的父节点下递归查找。
+---@param path string 节点路径
+---@return SandboxNode|TriggerBox|nil
+function SceneNodeHandlerBase:_getNodeFromPath(path)
+    if not path or path == "" then
+        return nil
+    end
+
+    -- 规则1: 绝对路径
+    if string.find(path, "/", 1, true) then -- `true` for plain search
+        return gg.GetChild(game.WorkSpace, path)
+    end
+    
+    -- 规则2: 相对路径 - 先在当前节点下查找
+    if self.visualNode then
+        local foundNode = self.visualNode:FindFirstChild(path, true) -- 递归查找
+        if foundNode then
+            return foundNode
+        end
+    end
+    
+    -- 规则3: 相对路径 - 在父节点下查找 (处理兄弟节点的情况)
+    if self.visualNode and self.visualNode.Parent then
+        local foundNode = self.visualNode.Parent:FindFirstChild(path, true)
+        if foundNode then
+            return foundNode
+        end
+    end
+
+    gg.log(string.format("警告: _getNodeFromPath 在 '%s' 及其父节点下都找不到相对路径为 '%s' 的节点。", self.visualNode and self.visualNode.Name or "未知节点", path))
+    return nil
+end
+
 ---初始化
----@param config table # 来自SceneNodeConfig的配置
+---@param config SceneNodeType # 来自ConfigLoader的已实例化配置对象
 ---@param node SandboxNode # 场景中对应的节点
 ---@param debugId number|nil # 用于调试的唯一ID
 function SceneNodeHandlerBase:OnInit(node, config, debugId)
     gg.log("创建节点",node, config, debugId)
     self.config = config
-    self.name = config["名字"] or node.Name
-    self.handlerId = config["唯一ID"]
+    self.name = config.name
+    self.handlerId = config.uuid
     self.visualNode = node
     self.node = nil ---@type TriggerBox
 
-    -- 【核心修正】不再动态创建节点，而是查找预置的子节点
-    local triggerConfig = self.config["区域节点配置"]
-    if triggerConfig and triggerConfig["名字"] then
-        local triggerName = triggerConfig["名字"]
-        local triggerNode = self.visualNode:FindFirstChild(triggerName, true) -- 递归查找子节点
+    -- 【核心修正】改回正确的方式，使用 SceneNodeType 提供的扁平化属性
+    self.respawnNode = self:_getNodeFromPath(config.respawnNodeName)
+    self.teleportNode = self:_getNodeFromPath(config.teleportNodeName)
+    self.raceSceneNode = self:_getNodeFromPath(config.raceScenePath)
+    local triggerName = config.triggerBoxNodeName
+    local triggerNode = self:_getNodeFromPath(triggerName)
+    self.node = triggerNode
+    self:_connectTriggerEvents() -- 为找到的节点绑定事件
 
-        if triggerNode then
-            gg.log(string.format("DEBUG: %s - 成功在 '%s' 下找到了预设的触发器节点 '%s'。", self.name, self.visualNode.Name, triggerName))
-            self.node = triggerNode
-            self:_connectTriggerEvents() -- 为找到的节点绑定事件
-        else
-            gg.log(string.format("错误: %s - 未能在 '%s' 下找到名为 '%s' 的预设触发器子节点。", self.name, self.visualNode.Name, triggerName))
-            return
-        end
-    else
-        gg.log(string.format("警告: %s - 未在配置中找到'区域节点配置'或其'名字'，将不处理任何触发器。", self.name))
-    end
 
-    self.soundAssetId = config["音效资源"] or ""
-    self.enterCommand = config["进入指令"] or ""
-    self.leaveCommand = config["离开指令"] or ""
-    self.isSpawnScene = (self.config["自定义参数"] and self.config["自定义参数"]["是出生场景"]) or false
-    self.bgmSound = (self.config["自定义参数"] and self.config["自定义参数"]["背景音乐"]) or ""
+    self.soundAssetId = config.soundAsset or ""
+    self.enterCommand = config.enterCommand or ""
+    self.leaveCommand = config.leaveCommand or ""
+    self.isSpawnScene = (self.config.gameplayRules and self.config.gameplayRules["是出生场景"] == true) or false
+    self.bgmSound = (self.config.gameplayRules and self.config.gameplayRules["背景音乐"]) or ""
     if self.isSpawnScene then
         gg.spawnSceneHandler = self
     end
@@ -179,8 +210,8 @@ function SceneNodeHandlerBase:OnInit(node, config, debugId)
     -- local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     -- ServerDataManager.addSceneNodeHandler(self)
 
-    if config["定时指令列表"] and #config["定时指令列表"] > 0 then
-        for _, cmd in ipairs(config["定时指令列表"]) do
+    if config.timedCommands and #config.timedCommands > 0 then
+        for _, cmd in ipairs(config.timedCommands) do
             if cmd["指令"] == "UPDATE" and cmd["间隔"] then
                 self.updateInterval = cmd["间隔"]
                 break

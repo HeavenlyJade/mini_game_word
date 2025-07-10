@@ -72,10 +72,6 @@ function MainServer.start_server()
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
     MServerInitPlayer.register_player_in_out()   --玩家进出游戏
     MainServer.initModule()
-    -- for _, node in  pairs(game.WorkSpace.Ground.Children) do -- 旧的场景初始化逻辑，已被SceneNodeManager取代
-    --     local scene = Scene.New( node )
-    --     serverDataMgr.addScene(node.Name, scene)
-    -- end
     MainServer.createNetworkChannel()     --建立网络通道
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick

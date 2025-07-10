@@ -24,8 +24,14 @@ function ScheduledTask.Init()
     -- Timer 节点需要被挂载在场景中才能运行。
     -- 我们在 WorkSpace 下创建一个专用的文件夹来存放这些动态创建的 Timer。
     -- 这样可以避免场景混乱，也方便统一管理和调试。
+    local name = "GlobalScheduledTasks"
+    if gg.isServer then
+        name ="GlobalServerScheduledTasks"
+    else
+        name ="GlobalServerScheduledTasks"
+    end
     timersNode = SandboxNode.New("SandboxNode", game.WorkSpace) -- 【修正】 "Folder" 不是有效的节点类型，使用通用的 "SandboxNode" 作为容器
-    timersNode.Name = "GlobalScheduledTasks"
+    timersNode.Name = name
     gg.log("全局任务调度器 ScheduledTask 已初始化。")
 end
 
@@ -33,8 +39,9 @@ end
 --- 添加一个延迟执行的任务
 ---@param delay number 延迟的秒数
 ---@param callback function 回调函数
+---@param name string 任务名称
 ---@return Timer|nil 返回创建的Timer实例，如果未初始化则返回nil
-function ScheduledTask.AddDelay(delay, callback)
+function ScheduledTask.AddDelay(delay,name, callback)
     if not timersNode or timersNode.isDestroyed then
         gg.log("ERROR: [ScheduledTask] 模块未初始化。请在启动脚本中调用 ScheduledTask.Init()。")
         return nil
@@ -44,6 +51,7 @@ function ScheduledTask.AddDelay(delay, callback)
     timer.Loop = false
     timer.Callback = callback
     timer:Start()
+    timer.Name = name
     return timer
 end
 
@@ -51,8 +59,9 @@ end
 --- 添加一个循环执行的任务
 ---@param interval number 循环间隔的秒数
 ---@param callback function 回调函数
+---@param name string 任务名称
 ---@return Timer|nil 返回创建的Timer实例，如果未初始化则返回nil
-function ScheduledTask.AddInterval(interval, callback)
+function ScheduledTask.AddInterval(interval,name, callback)
     if not timersNode or timersNode.isDestroyed then
         gg.log("ERROR: [ScheduledTask] 模块未初始化。请在启动脚本中调用 ScheduledTask.Init()。")
         return nil
@@ -62,6 +71,7 @@ function ScheduledTask.AddInterval(interval, callback)
     timer.Delay = interval -- 首次触发的延迟
     timer.Interval = interval -- 后续循环的间隔
     timer.Loop = true
+    timer.Name = name
     timer.Callback = callback
     timer:Start()
     return timer

@@ -20,6 +20,7 @@ local EventPlayerConfig = {}
 -- 客户端请求事件 (C2S)
 EventPlayerConfig.REQUEST = {
     -- e.g., REQUEST_JUMP = "PlayerRequest_Jump"
+    PLAYER_LANDED = "cmd_player_landed", -- 新增：玩家落地事件
 }
 
 -- 服务器响应事件 (S2C)

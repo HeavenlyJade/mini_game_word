@@ -1,3 +1,4 @@
+local Enum = Enum
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
@@ -42,7 +43,7 @@ function PlayerActionHandler:OnLaunchPlayer(data)
     local previousState = nil -- 用于记录上一个状态
 
     -- 启动一个新的状态监控，并保存其句柄
-    self.stateMonitorTimer = ScheduledTask.AddInterval(0.2, function()
+    self.stateMonitorTimer = ScheduledTask.AddInterval(0.2, "PlayerActionHandler_StateMonitor", function()
         ---@type Actor
         local actor = gg.getClientLocalPlayer()
         if not actor then
@@ -56,20 +57,29 @@ function PlayerActionHandler:OnLaunchPlayer(data)
 
         local currentState = actor:GetCurMoveState()
 
+        -- 【核心新增】在飞行状态下，持续发出前进指令，模拟按住W键
+        if currentState == Enum.BehaviorState.Fly then
+            actor:Move(Vector3.new(0, 0, 1), true)
+        end
+
         -- 首次检测时，初始化 previousState
         if previousState == nil then
             previousState = currentState
             return
         end
         
-        -- 核心逻辑：检测状态从 Fly 变为 Stand
-        if previousState == Enum.BehaviorState.Fly and currentState == Enum.BehaviorState.Stand then
-            gg.log("状态变化: [飞行] -> [站立]。检测到玩家落地！")
+        -- 核心逻辑：检测状态从 Fly 变为 Stand 或 Walk
+        if previousState == Enum.BehaviorState.Fly and (currentState == Enum.BehaviorState.Walk or currentState == Enum.BehaviorState.Stand) then
+            gg.log("状态变化: [飞行] -> ["..tostring(currentState).."]。检测到玩家落地！")
+
+            -- 【核心新增】玩家落地，立即停止所有由 Move() 引起的移动
+            actor:StopMove()
+            gg.log("已调用 actor:StopMove() 停止前进。")
 
             -- 向服务端发送落地事件
             if gg.network_channel then
-                -- 我们需要先定义这个事件
-                local eventName = "cmd_player_landed" 
+                -- 【核心修正】我们从配置中获取事件名，而不是硬编码
+                local eventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
                 gg.network_channel:fireServer({ cmd = eventName })
                 gg.log("已向服务端发送 " .. eventName .. " 事件。")
             else
@@ -117,11 +127,11 @@ function PlayerActionHandler:OnLaunchPlayer(data)
 
     -- 3. 执行发射动作 (在客户端执行，保证有效)
     actor:Jump(true)
-    actor:Move(Vector3.new(0, 0, 1), true)
-    gg.log("OnLaunchPlayer: 已调用 Jump(true) 和 Move()")
+
+    gg.log("OnLaunchPlayer: 已调用 Jump(true)，将通过状态监控持续前飞。")
     
     -- 【核心修正】使用全局的 ScheduledTask 来执行延迟调用，而不是 actor 自身的 timer
-    ScheduledTask.AddDelay(jumpDuration, function()
+    ScheduledTask.AddDelay(jumpDuration, "PlayerActionHandler_Jump", function()
         if actor and not actor.isDestroyed then
             actor:Jump(false)
             gg.log("OnLaunchPlayer (延迟): 已调用 Jump(false)，停止持续跳跃。")
@@ -129,22 +139,13 @@ function PlayerActionHandler:OnLaunchPlayer(data)
     end)
 
     -- 4. 在指定延迟后，恢复玩家的所有状态
-    ScheduledTask.AddDelay(recoveryDelay, function()
+    ScheduledTask.AddDelay(recoveryDelay, "PlayerActionHandler_Recovery", function()
         if actor and not actor.isDestroyed then
             gg.log("OnLaunchPlayer (延迟恢复): 正在恢复属性...")
             actor:StopMove() -- 停止前冲
             actor.JumpBaseSpeed = originalJumpSpeed
             actor.Movespeed = originalMoveSpeed
             gg.log("OnLaunchPlayer (延迟恢复): 玩家属性已恢复。")
-
-            -- 恢复完成后，停止并移除状态监控
-            -- 【注意】这里的自动停止逻辑可以作为备用保险，
-            -- 但主要停止逻辑已移至落地检测成功之时。
-            if self.stateMonitorTimer then
-                gg.log("恢复延迟到达，作为保险，停止玩家状态监控。")
-                ScheduledTask.Remove(self.stateMonitorTimer)
-                self.stateMonitorTimer = nil
-            end
         end
     end)
 end

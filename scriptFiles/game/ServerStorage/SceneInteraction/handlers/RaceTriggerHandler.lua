@@ -19,10 +19,10 @@ function RaceTriggerHandler:OnEntityEnter(player)
         return
     end
 
-    -- 从处理器配置中获取关联的关卡ID
-    local levelId = self.config["关联关卡"]
+    -- 【核心修正】从处理器配置中获取关联的关卡ID，使用面向对象的方式访问
+    local levelId = self.config.linkedLevel
     if not levelId then
-        gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'关联关卡'字段。", self.name))
+        gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'linkedLevel'字段。", self.name))
         return
     end
 
@@ -48,9 +48,9 @@ function RaceTriggerHandler:OnEntityEnter(player)
 
     -- 5. 调用GameModeManager，请求将玩家加入比赛
     -- 我们使用场景节点配置中的'唯一ID'作为这场比赛的唯一实例ID
-    local instanceId = self.config['唯一ID']
+    local instanceId = self.config.uuid
     if not instanceId then
-        gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'唯一ID'字段。", self.name))
+        gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'uuid'字段。", self.name))
         return
     end
     

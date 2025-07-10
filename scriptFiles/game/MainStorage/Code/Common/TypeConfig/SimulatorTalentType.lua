@@ -1,7 +1,7 @@
 print("Hello world!")local MainStorage  = game:GetService('MainStorage')
 local ClassMgr    = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 
----@class SimulatorTalentType:Class
+---@class SimulatorTalentType : Class
 ---@field id string 天赋的唯一ID (即中文名)
 ---@field name string 天赋名称
 ---@field sortOrder number 排序
