@@ -2,10 +2,11 @@ local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 -- 预加载所有可用的游戏模式，以避免在运行时动态require
 local AVAILABLE_MODES = {
-    ["飞车挑战赛"] = require(ServerStorage.GameModes.Modes.RaceGameMode) ---@type RaceGameMode
+    [EventPlayerConfig.GAME_MODES.RACE_GAME] = require(ServerStorage.GameModes.Modes.RaceGameMode) ---@type RaceGameMode
     -- 未来如果新增其他模式，在这里添加即可
 }
 
@@ -23,9 +24,9 @@ GameModeManager.playerModes = {}
 ---@param mPlayer MPlayer 玩家的Entity实例
 ---@param modeName string 模式的名称 (即模式的文件名, e.g., "RaceGameMode")
 ---@param instanceId string 此次游戏实例的唯一ID (通常是场景节点的路径或UUID)
----@param gameRules table 具体的游戏规则, 来自LevelConfig
+---@param levelType LevelType 关卡配置的LevelType实例
 ---@param handlerId string 触发此模式的场景处理器的ID
-function GameModeManager:AddPlayerToMode(mPlayer, modeName, instanceId, gameRules, handlerId)
+function GameModeManager:AddPlayerToMode(mPlayer, modeName, instanceId, levelType, handlerId)
     if not mPlayer then
         gg.log("错误: GameModeManager:AddPlayerToMode - 传入了无效的mPlayer实例。")
         return
@@ -44,10 +45,10 @@ function GameModeManager:AddPlayerToMode(mPlayer, modeName, instanceId, gameRule
     if not mode then
         local modeClass = AVAILABLE_MODES[modeName]
         if modeClass then
-            mode = modeClass.New(instanceId, modeName, gameRules)
+            mode = modeClass.New(instanceId, modeName, levelType)  -- 传递LevelType实例
             mode.handlerId = handlerId -- 将处理器ID存入比赛实例中
             self.activeModes[instanceId] = mode
-            gg.log(string.format("游戏模式管理器: 已激活新模式'%s'，实例ID为'%s'。", modeName, instanceId))
+            gg.log(string.format("游戏模式管理器: 已激活新模式'%s'，实例ID为'%s'，关卡: %s", modeName, instanceId, levelType.levelName or "未知"))
         else
             gg.log(string.format("错误: 未找到游戏模式'%s'。", modeName))
             return

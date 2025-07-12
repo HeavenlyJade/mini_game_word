@@ -6,13 +6,18 @@ local GameModeBase = require(ServerStorage.GameModes.GameModeBase) ---@type Game
 local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 -- 【已移除】不再需要直接引用 ServerEventManager
 
 ---@class RaceGameMode: GameModeBase
 ---@field participants MPlayer[]
----@field rules table
+---@field levelType LevelType 关卡配置的LevelType实例
 ---@field handlerId string 触发此模式的场景处理器的ID
 ---@field finishedPlayers table<number, boolean> 新增：用于记录已完成比赛的玩家 (uin -> true)
+---@field flightData table<number, FlightPlayerData> 实时飞行数据 (uin -> FlightPlayerData)
+---@field rankings table<number> 按飞行距离排序的玩家uin列表
+---@field distanceTimer Timer 距离计算定时器
+---@field startPositions table<number, Vector3> 玩家起始位置记录 (uin -> Vector3)
 local RaceGameMode = ClassMgr.Class("RaceGameMode", GameModeBase)
 
 -- 比赛状态
@@ -22,13 +27,28 @@ local RaceState = {
     FINISHED = "FINISHED",   -- 比赛已结束
 }
 
+---@class FlightPlayerData
+---@field uin number 玩家UIN
+---@field name string 玩家名称
+---@field startPosition Vector3 起始位置
+---@field currentPosition Vector3 当前位置
+---@field flightDistance number 飞行距离
+---@field rank number 当前排名
+---@field isFinished boolean 是否已完成比赛
 
-
-function RaceGameMode:OnInit(instanceId, modeName, rules)
+function RaceGameMode:OnInit(instanceId, modeName, levelType)
     self.state = RaceState.WAITING
     self.participants = {} -- 存放所有参赛玩家的table, 使用数组形式
-    self.rules = rules or {}
+    self.levelType = levelType -- 存储完整的LevelType实例
+    
+    -- 调试信息：显示比赛模式初始化结果
+    gg.log(string.format("RaceGameMode 初始化 - 实例ID: %s, 关卡: %s", 
+           instanceId, levelType and levelType.name or "无关卡配置"))
     self.finishedPlayers = {} -- 【新增】初始化已完成玩家的记录表
+    self.flightData = {} -- 实时飞行数据 (uin -> FlightPlayerData)
+    self.rankings = {} -- 按飞行距离排序的玩家uin列表
+    self.distanceTimer = nil -- 距离计算定时器
+    self.startPositions = {} -- 玩家起始位置记录 (uin -> Vector3)
 end
 
 --- 当有玩家进入此游戏模式时调用
@@ -37,7 +57,6 @@ function RaceGameMode:OnPlayerEnter(player)
     -- 【核心修正】检查玩家是否已在比赛中，防止因触发器抖动等问题导致重复加入
     for _, p in ipairs(self.participants) do
         if p.uin == player.uin then
-            gg.log(string.format("玩家 %s 已在比赛中，忽略重复的加入请求。", player.name))
             return -- 如果已存在，则直接返回，不执行任何操作
         end
     end
@@ -45,7 +64,6 @@ function RaceGameMode:OnPlayerEnter(player)
     -- 注意：这里不再调用父类的 OnPlayerEnter, 因为父类将其作为字典处理
     -- 而比赛模式需要一个有序的列表来决定排名
     table.insert(self.participants, player)
-    gg.log(string.format("玩家 %s 已加入比赛。当前参赛人数: %d", player.name, #self.participants))
 
     -- 如果是第一个加入的玩家，可以启动一个定时器开始比赛
     if #self.participants == 1 then
@@ -62,7 +80,6 @@ function RaceGameMode:OnPlayerLeave(player)
     for i, p in ipairs(self.participants) do
         if p.uin == player.uin then
             table.remove(self.participants, i)
-            gg.log(string.format("玩家 %s 已离开比赛。剩余人数: %d", player.name, #self.participants))
             break -- 找到并移除后即可退出循环
         end
     end
@@ -72,29 +89,41 @@ end
 ---@param player MPlayer
 function RaceGameMode:LaunchPlayer(player)
     if not player or not player.actor then
-        gg.log(string.format("ERROR: 无法为玩家 %s 发射，因为找不到其 MPlayer 实例或 Actor", tostring(player)))
         return
     end
 
-    gg.log(string.format("LaunchPlayer: 准备向客户端 %s 发送发射指令...", player.name))
+    -- 记录玩家起始位置，用于计算飞行距离
+    if player.actor and player.actor.Position then
+        self.startPositions[player.uin] = player.actor.Position
+        -- 初始化飞行数据
+        self.flightData[player.uin] = {
+            uin = player.uin,
+            name = player.name,
+            startPosition = player.actor.Position,
+            currentPosition = player.actor.Position,
+            flightDistance = 0,
+            rank = #self.participants, -- 初始排名为最后一名
+            isFinished = false
+        }
+    end
 
     -- 【规范化】从配置中读取事件名称和参数，避免硬编码
     local eventName = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER
     local launchParams = EventPlayerConfig.GetActionParams(eventName)
+    
+    -- 获取关卡配置的比赛时长
+    local raceTime = self.levelType.raceTime or 60
 
-    -- 【核心修正】将事件名(cmd)和参数合并到一个新的 table 中发送，以匹配网络框架的期望
     local eventData = gg.clone(launchParams) or {} -- 克隆参数表，如果为nil则创建一个新表
     eventData.cmd = eventName
+    eventData.gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME
+    eventData.gravity = 0
+    eventData.recoveryDelay = raceTime  -- 传送关卡配置的比赛时长作为客户端的恢复延迟
     
     -- 【核心改造】通过网络通道向指定客户端发送事件
     if gg.network_channel then
         gg.network_channel:fireClient(player.uin, eventData)
-        gg.log(string.format("LaunchPlayer: 已向玩家 %s (uin: %s) 发送事件，数据: %s", player.name, player.uin, gg.table2str(eventData)))
-    else
-        gg.log("ERROR: gg.network_channel 未初始化，无法发送客户端事件！")
     end
-    
-    gg.log(string.format("玩家 %s 的发射指令已发送！", player.name))
 end
 
 --- 【核心改造】处理玩家落地，由 RaceGameEventManager 调用
@@ -102,18 +131,19 @@ end
 function RaceGameMode:OnPlayerLanded(player)
     -- 检查该玩家是否已经报告过落地
     if self.finishedPlayers[player.uin] then
-        gg.log(string.format("玩家 %s 已经报告过落地，忽略重复的 OnPlayerLanded 调用。", player.name))
         return -- 防止重复处理
     end
 
     -- 如果比赛已经结束，则不再处理后续的落地事件
     if self.state == RaceState.FINISHED then
-        gg.log(string.format("比赛已经结束，忽略玩家 %s 的落地报告。", player.name))
         return
     end
 
     -- 记录该玩家已完成
     self.finishedPlayers[player.uin] = true
+    
+    -- 标记玩家为已完成状态（用于停止距离计算）
+    self:_markPlayerFinished(player.uin)
 
     -- 【核心修正】手动计算已完成玩家的数量。
     -- 在 Lua 中，对以非连续数字（如uin）为键的 table 使用 '#' 操作符会返回 0，这是一个已知的语言特性。
@@ -122,12 +152,14 @@ function RaceGameMode:OnPlayerLanded(player)
         finishedCount = finishedCount + 1
     end
 
-    gg.log(string.format("比赛实例 %s: 玩家 %s 已完成。当前进度: %d/%d", self.instanceId, player.name, finishedCount, #self.participants))
-    player:SendHoverText("已落地！等待其他玩家...")
+    -- 获取玩家当前排名信息
+    local flightData = self:GetPlayerFlightData(player.uin)
+    local rankInfo = flightData and string.format("第%d名，飞行距离%.1f米", flightData.rank, flightData.flightDistance) or "排名计算中"
+    
+    player:SendHoverText(string.format("已落地！%s 等待其他玩家...", rankInfo))
 
     -- 使用正确的计数值检查是否所有人都已完成
     if finishedCount >= #self.participants then
-        gg.log("所有参赛玩家均已落地，比赛立即结束！")
         self:End()
     end
 end
@@ -140,10 +172,8 @@ end
 function RaceGameMode:Start()
     if self.state ~= RaceState.WAITING then return end
 
-    local prepareTime = self.rules["准备时间"] or 10
-    local raceTime = self.rules["比赛时长"] or 60 -- 【恢复】读取比赛时长配置
-    
-    gg.log(string.format("比赛将在 %d 秒后开始...", prepareTime))
+    -- 从LevelType实例获取玩法规则
+    local prepareTime = self.levelType.prepareTime or 10
     
     -- 准备阶段
     self:AddDelay(prepareTime, function()
@@ -156,18 +186,9 @@ function RaceGameMode:Start()
             for _, player in ipairs(self.participants) do
                 self:LaunchPlayer(player)
             end
-
-            -- 【已移除】事件订阅逻辑已移至 RaceGameEventManager
-            gg.log("比赛已开始，等待 RaceGameEventManager 的落地报告...")
-
-            -- 【保留】比赛到达最大时长后强制结束（超时保护）
-            gg.log(string.format("比赛最长持续 %d 秒。", raceTime))
-            self:AddDelay(raceTime, function()
-                if self.state == RaceState.RACING then
-                    gg.log("比赛达到最大时长，强制结束！")
-                    self:End()
-                end
-            end)
+            
+            -- 启动实时飞行距离计算定时任务
+            self:_startFlightDistanceTracking()
         end
     end)
 end
@@ -177,31 +198,40 @@ function RaceGameMode:End()
     if self.state ~= RaceState.RACING then return end
     self.state = RaceState.FINISHED
 
-    -- 【已移除】不再需要取消订阅，因为订阅逻辑已移至外部管理器
-    gg.log("比赛实例 %s 正在结束...", self.instanceId)
-    
     -- 懒加载 GameModeManager 和 ServerDataManager 以避免循环依赖
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
     
     gg.log("比赛结束！")
+
+    -- 停止实时飞行距离追踪
+    self:_stopFlightDistanceTracking()
     
-    -- TODO: 在这里向客户端发送一个结构化的比赛结束事件（如 S2C_RaceFinished），
-    -- 而不是仅仅发送悬浮文字，以便客户端可以展示结算UI。
-    -- 例如: ServerEventManager.PublishToGroup(participants, "S2C_RaceFinished", { ranks = ... })
-
-    -- 打印基础的结算信息，并通知玩家
-    gg.log("--- 比赛结算 ---")
-    for i, player in ipairs(self.participants) do
-        local rankText = string.format("第 %d 名: %s", i, player.name)
-        gg.log(rankText)
-        player:SendHoverText(rankText) -- 使用 MPlayer 的方法在屏幕上显示文字
+    -- 最终排名确认（基于实际飞行距离）
+    self:_updateRankings()
+    
+    -- 结算基础奖励和排名奖励
+    self:_calculateAndDistributeRewards()
+    
+    -- 打印基础的结算信息，并通知玩家（按真实排名顺序）
+    for _, uin in ipairs(self.rankings) do
+        local flightData = self.flightData[uin]
+        if flightData then
+            local rankText = string.format("第 %d 名: %s (%.1f米)", 
+                                          flightData.rank, flightData.name, flightData.flightDistance)
+            
+            -- 找到对应的玩家实例发送消息
+            for _, player in ipairs(self.participants) do
+                if player.uin == uin then
+                    player:SendHoverText(rankText)
+                    break
+                end
+            end
+        end
     end
-    gg.log("--------------------")
 
-    -- 使用关卡配置的"准备时间"作为结算展示时长，之后清理实例
-    local cleanupDelay = self.rules["准备时间"] or 10
-    gg.log(string.format("将在 %d 秒后传送玩家并清理比赛实例...", cleanupDelay))
+    -- 使用关卡配置的准备时间作为结算展示时长，之后清理实例
+    local cleanupDelay = self.levelType.prepareTime or 10
 
     self:AddDelay(cleanupDelay, function()
         -- 1. 传送所有玩家
@@ -217,7 +247,9 @@ function RaceGameMode:End()
                 end
             end
         end
-        gg.log("比赛实例 %s 已清理。", self.instanceId)
+        
+        -- 确保停止所有定时任务
+        self:_stopFlightDistanceTracking()
     end)
 end
 
@@ -227,27 +259,249 @@ function RaceGameMode:_teleportAllPlayersToRespawn()
     local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
 
     if not handler then
-        gg.log(string.format("错误: RaceGameMode - 无法找到ID为 %s 的场景处理器，无法传送玩家。", self.handlerId))
         return
     end
 
     local respawnNode = handler.respawnNode
-    gg.log("传送节点",respawnNode)
     if not respawnNode then
-        gg.log(string.format("错误: RaceGameMode - 场景 %s 未配置有效的复活点，无法传送玩家。", handler.name))
         return
     end
 
     local TeleportService = game:GetService('TeleportService')
     local respawnPos = respawnNode.Position
 
-    gg.log(string.format("准备将所有玩家传送至复活点: %s (%s)", respawnNode.Name, tostring(respawnPos)))
-
     for _, player in ipairs(self.participants) do
         if player and player.actor then
-            gg.log(string.format("...正在传送玩家 %s", player.name))
             TeleportService:Teleport(player.actor, respawnPos)
         end
+    end
+end
+
+--- 【新增】计算并发放奖励
+function RaceGameMode:_calculateAndDistributeRewards()
+    if not self.levelType then
+        gg.log("RaceGameMode: 关卡配置为空，无法发放奖励")
+        return
+    end
+    
+    gg.log(string.format("RaceGameMode: 开始计算奖励，参与玩家数: %d，排名列表长度: %d", #self.participants, #self.rankings))
+    
+    -- 按照真实排名顺序处理奖励
+    for _, uin in ipairs(self.rankings) do
+        local flightData = self.flightData[uin]
+        if flightData then
+            -- 根据UIN找到对应的MPlayer实例
+            local player = nil
+            for _, p in ipairs(self.participants) do
+                if p.uin == uin then
+                    player = p
+                    break
+                end
+            end
+            
+            if player then
+                -- 使用真实的飞行数据
+                local playerData = {
+                    rank = flightData.rank,  -- 真实排名
+                    distance = flightData.flightDistance, -- 真实飞行距离
+                    playerName = flightData.name,
+                    uin = flightData.uin
+                }
+                
+                gg.log(string.format("RaceGameMode: 计算玩家 %s 的奖励 - 排名: %d, 距离: %.1f米", 
+                       playerData.playerName, playerData.rank, playerData.distance))
+                
+                -- 计算基础奖励
+                local baseRewards = self.levelType:CalculateBaseRewards(playerData)
+                local baseRewardCount = 0
+                if baseRewards then
+                    for _ in pairs(baseRewards) do baseRewardCount = baseRewardCount + 1 end
+                end
+                gg.log(string.format("RaceGameMode: 基础奖励计算完成，奖励项数: %d", baseRewardCount))
+                
+                -- 计算排名奖励
+                local rankRewards = self.levelType:GetRankRewards(playerData.rank)
+                gg.log(string.format("RaceGameMode: 排名奖励获取完成，奖励项数: %d", rankRewards and #rankRewards or 0))
+                
+                -- 发放基础奖励
+                if baseRewards and next(baseRewards) then
+                    gg.log("RaceGameMode: 开始发放基础奖励")
+                    for itemName, amount in pairs(baseRewards) do
+                        gg.log(string.format("RaceGameMode: 发放基础奖励 - %s x%d", itemName, amount))
+                        self:_giveItemToPlayer(player, itemName, amount)
+                    end
+                else
+                    gg.log("RaceGameMode: 无基础奖励可发放")
+                end
+                
+                -- 发放排名奖励
+                if rankRewards and #rankRewards > 0 then
+                    gg.log("RaceGameMode: 开始发放排名奖励")
+                    for _, reward in ipairs(rankRewards) do
+                        local itemName = reward["物品"]
+                        local amount = reward["数量"]
+                        if itemName and amount then
+                            gg.log(string.format("RaceGameMode: 发放排名奖励 - %s x%d", itemName, amount))
+                            self:_giveItemToPlayer(player, itemName, amount)
+                        end
+                    end
+                else
+                    gg.log("RaceGameMode: 无排名奖励可发放")
+                end
+            else
+                gg.log(string.format("RaceGameMode: 未找到 UIN %d 对应的玩家实例", uin))
+            end
+        end
+    end
+end
+
+--- 【新增】给玩家发放物品
+---@param player MPlayer
+---@param itemName string 物品名称
+---@param amount number 物品数量
+function RaceGameMode:_giveItemToPlayer(player, itemName, amount)
+    if not player or not itemName or amount <= 0 then
+        gg.log(string.format("RaceGameMode: 发放物品失败，参数无效 - player: %s, itemName: %s, amount: %s", 
+               tostring(player), tostring(itemName), tostring(amount)))
+        return
+    end
+    
+    gg.log(string.format("RaceGameMode: 尝试给玩家 %s 发放物品 %s x%d", player.name or "未知", itemName, amount))
+    
+    -- 这里集成背包系统来发放物品
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local BagMgr = serverDataMgr.BagMgr
+    
+    if BagMgr and BagMgr.AddItem then
+        local success = BagMgr.AddItem(player, itemName, amount)
+        if success then
+            gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))
+            -- 向玩家发送奖励通知
+            player:SendHoverText(string.format("获得 %s x%d", itemName, amount))
+        else
+            gg.log(string.format("RaceGameMode: 物品发放失败 - %s x%d", itemName, amount))
+        end
+    else
+        gg.log("RaceGameMode: 背包系统不可用，发送提示消息")
+        -- 如果背包系统不可用，至少给玩家发送提示
+        player:SendHoverText(string.format("应获得 %s x%d (系统暂不可用)", itemName, amount))
+    end
+end
+
+--- 【新增】启动实时飞行距离追踪
+function RaceGameMode:_startFlightDistanceTracking()
+    if self.distanceTimer then
+        self:RemoveTimer(self.distanceTimer)
+    end
+    
+    -- 每0.5秒更新一次飞行距离和排名
+    self.distanceTimer = self:AddInterval(0.5, function()
+        self:_updateFlightDistances()
+        self:_updateRankings()
+    end)
+end
+
+--- 【新增】停止实时飞行距离追踪
+function RaceGameMode:_stopFlightDistanceTracking()
+    if self.distanceTimer then
+        self:RemoveTimer(self.distanceTimer)
+        self.distanceTimer = nil
+    end
+end
+
+--- 【新增】更新所有玩家的飞行距离
+function RaceGameMode:_updateFlightDistances()
+    -- 只在比赛进行中才更新距离
+    if self.state ~= RaceState.RACING then
+        return
+    end
+    
+    for _, player in ipairs(self.participants) do
+        if player and player.actor and self.flightData[player.uin] then
+            local flightData = self.flightData[player.uin]
+            
+            -- 只处理未完成的玩家
+            if not flightData.isFinished then
+                -- 获取当前位置
+                local currentPos = player.actor.Position
+                if currentPos then
+                    flightData.currentPosition = currentPos
+                    
+                    -- 计算从起始位置到当前位置的距离
+                    local startPos = flightData.startPosition
+                    local distance = self:_calculateDistance(currentPos, startPos)
+                    
+                    -- 更新飞行距离（只增不减，取最大值）
+                    if distance then
+                        flightData.flightDistance = math.max(flightData.flightDistance, distance)
+                    end
+                end
+            end
+        end
+    end
+end
+
+--- 【新增】根据飞行距离更新排名
+function RaceGameMode:_updateRankings()
+    -- 创建一个包含所有玩家飞行数据的临时表
+    local playerList = {}
+    for uin, flightData in pairs(self.flightData) do
+        table.insert(playerList, flightData)
+    end
+    
+    -- 按飞行距离降序排序（距离越远排名越高）
+    table.sort(playerList, function(a, b)
+        return a.flightDistance > b.flightDistance
+    end)
+    
+    -- 更新排名和rankings列表
+    self.rankings = {}
+    for i, flightData in ipairs(playerList) do
+        flightData.rank = i
+        table.insert(self.rankings, flightData.uin)
+    end
+end
+
+--- 【新增】获取玩家当前排名信息
+---@param uin number 玩家UIN
+---@return FlightPlayerData|nil
+function RaceGameMode:GetPlayerFlightData(uin)
+    return self.flightData[uin]
+end
+
+--- 【新增】获取当前排名列表
+---@return table<number> 按排名顺序的玩家UIN列表
+function RaceGameMode:GetCurrentRankings()
+    return self.rankings
+end
+
+--- 【新增】标记玩家为已完成状态
+---@param uin number 玩家UIN
+function RaceGameMode:_markPlayerFinished(uin)
+    if self.flightData[uin] then
+        self.flightData[uin].isFinished = true
+    end
+end
+
+--- 【简化】计算两个Vector3之间的距离
+---@param pos1 Vector3 位置1
+---@param pos2 Vector3 位置2
+---@return number|nil 距离值，失败时返回nil
+function RaceGameMode:_calculateDistance(pos1, pos2)
+    if not pos1 or not pos2 then
+        return nil
+    end
+    
+    -- 【更新】使用 VectorUtils 模块的距离计算函数
+    local success, distance = pcall(function()
+        return VectorUtils.Vec.Distance3(pos1, pos2)
+    end)
+    
+    if success and type(distance) == "number" then
+        return distance
+    else
+        -- 静默处理错误，避免日志干扰
+        return nil
     end
 end
 

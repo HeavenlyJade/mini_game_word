@@ -3,6 +3,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 -- local common_const = require(MainStorage.Code.Common.GameConfig.MConst) ---@type common_const
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
@@ -166,7 +167,7 @@ function _M:GetPosition()
 end
 
 function _M:GetCenterPosition()
-    return gg.vec.Add3(self:GetPosition(), 0, self:GetSize().y/2, 0)
+    return VectorUtils.Vec.Add3(self:GetPosition(), 0, self:GetSize().y/2, 0)
 end
 
 function _M:GetDirection()
@@ -184,7 +185,7 @@ end
 
 -- 距离判断
 function _M:IsNear(loc, dist)
-    return gg.vec.DistanceSq3(loc, self:GetPosition()) < dist ^ 2
+    return VectorUtils.Vec.DistanceSq3(loc, self:GetPosition()) < dist ^ 2
 end
 
 -- 生命周期管理 --------------------------------------------------------

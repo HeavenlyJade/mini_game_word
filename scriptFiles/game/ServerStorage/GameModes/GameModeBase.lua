@@ -16,11 +16,11 @@ local GameModeBase = ClassMgr.Class("GameModeBase")
 ---@param self GameModeBase
 ---@param instanceId string 实例的唯一ID
 ---@param modeName string 模式的名称
----@param rules table 具体的游戏规则
-function GameModeBase.OnInit(self, instanceId, modeName, rules)
+---@param levelType LevelType|table 关卡配置LevelType实例或具体的游戏规则（向后兼容）
+function GameModeBase.OnInit(self, instanceId, modeName, levelType)
     self.instanceId = instanceId
     self.modeName = modeName
-    self.rules = rules or {}
+    self.levelType = levelType -- 改为存储LevelType实例，子类可以重写此属性
     self.participants = {} -- key: uin, value: MPlayer
     self.activeTimers = {} -- 存放所有由本实例创建的、活跃的定时器句柄
 end

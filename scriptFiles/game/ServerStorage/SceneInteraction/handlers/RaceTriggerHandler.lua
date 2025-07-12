@@ -30,10 +30,31 @@ function RaceTriggerHandler:OnEntityEnter(player)
     -- 在函数内部require, 避免循环依赖
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
     local levelConfig = ConfigLoader.Levels
-    local levelData = levelConfig and levelConfig[levelId]
+    local levelData = levelConfig and levelConfig[levelId] ---@type LevelType
     if not levelData then
         gg.log(string.format("错误: 飞车触发器(%s) - 在LevelConfig中找不到ID为'%s'的关卡配置。", self.name, levelId))
         return
+    end
+    
+    -- 【调试】输出关卡数据信息
+
+    if levelData then
+        -- 如果defaultGameMode为空，尝试输出原始数据
+        if not levelData.defaultGameMode or levelData.defaultGameMode == "" then
+            gg.log("调试: defaultGameMode为空，检查原始配置数据...")
+            
+            -- 尝试访问原始的LevelConfig数据
+            local LevelConfig = require(MainStorage.Code.Common.Config.LevelConfig)
+            local rawData = LevelConfig.Data[levelId]
+            if rawData then
+                gg.log(string.format("调试: 原始配置中的'默认玩法' = %s", tostring(rawData["默认玩法"])))
+                for key, value in pairs(rawData) do
+                    gg.log(string.format("调试: 原始配置[%s] = %s", tostring(key), tostring(value)))
+                end
+            else
+                gg.log("调试: 在原始LevelConfig中也找不到该关卡数据")
+            end
+        end
     end
     
     -- 3. 从关卡规则中，获取游戏模式的名称
@@ -42,9 +63,6 @@ function RaceTriggerHandler:OnEntityEnter(player)
         gg.log(string.format("错误: 飞车触发器(%s) - 关卡'%s'的配置中缺少'默认玩法'字段。", self.name, levelId))
         return
     end
-    
-    -- 4. 获取玩法规则，并准备将其传递给GameModeManager
-    local gameRules = levelData:GetRules()
 
     -- 5. 调用GameModeManager，请求将玩家加入比赛
     -- 我们使用场景节点配置中的'唯一ID'作为这场比赛的唯一实例ID
@@ -54,7 +72,7 @@ function RaceTriggerHandler:OnEntityEnter(player)
         return
     end
     
-    GameModeManager:AddPlayerToMode(player, gameModeName, instanceId, gameRules, self.handlerId)
+    GameModeManager:AddPlayerToMode(player, gameModeName, instanceId, levelData, self.handlerId)
 
     gg.log(string.format("成功: 飞车触发器 - 玩家 %s 已被请求加入游戏模式 %s (实例ID: %s)", player.name, gameModeName, instanceId))
 end

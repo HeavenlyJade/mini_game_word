@@ -3,6 +3,7 @@ local Vector3 = Vector3
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 
 ---@class MobBehavior:Class
@@ -103,9 +104,9 @@ function WanderBehavior:OnInit()
         
         -- 如果需要在出生点附近
         if behavior["保持在出生点附近"] then
-            randomOffset = gg.vec.Add3(entity.spawnPos, randomOffset.x, randomOffset.y, randomOffset.z)
+            randomOffset = VectorUtils.Vec.Add3(entity.spawnPos, randomOffset.x, randomOffset.y, randomOffset.z)
         else
-            randomOffset = gg.vec.Add3(entity:GetPosition(), randomOffset.x, randomOffset.y, randomOffset.z)
+            randomOffset = VectorUtils.Vec.Add3(entity:GetPosition(), randomOffset.x, randomOffset.y, randomOffset.z)
         end ---@cast randomOffset Vector3
         entity.actor.Movespeed = entity:GetStat("速度")
         -- print("NavigateTo", randomOffset)
@@ -159,7 +160,7 @@ function MeleeBehavior:OnInit()
         -- 检查距离
         local escapeRange = behavior["脱战距离"] or 0
         if escapeRange > 0 then
-            local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
+            local distanceSq = VectorUtils.Vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
             return distanceSq <= escapeRange ^ 2
         end
         return true
@@ -207,7 +208,7 @@ function MeleeBehavior:OnInit()
         
         local behavior = entity:GetCurrentBehavior()
         local targetPos = entity.target:GetPosition()
-        local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), targetPos)
+        local distanceSq = VectorUtils.Vec.DistanceSq3(entity:GetPosition(), targetPos)
         
         -- 如果距离太远，退出战斗
         local escapeRange = behavior["脱战距离"] or 0
@@ -276,7 +277,7 @@ function MeleeBehavior:OnInit()
         local behavior = entity:GetCurrentBehavior()
         local escapeRange = behavior["脱战距离"] or 0
         if escapeRange > 0 then
-            local distanceSq = gg.vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
+            local distanceSq = VectorUtils.Vec.DistanceSq3(entity:GetPosition(), entity.target:GetPosition())
             return distanceSq > escapeRange ^ 2
         end
         return false

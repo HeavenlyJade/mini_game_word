@@ -3,6 +3,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local gg                 = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClassMgr           = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 -- local Modifiers          = require(MainStorage.Code.Common.Config.Modifiers) ---@type Modifiers
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler    = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
@@ -137,7 +138,7 @@ function _M:CheckNearbyPlayers()
     for playerUuid, player in pairs(self.nearbyPlayers) do
         if player and player:GetPosition() then
             local playerPos = player:GetPosition()
-            local distance = gg.vec.DistanceSq3(npcPos, playerPos)
+            local distance = VectorUtils.Vec.DistanceSq3(npcPos, playerPos)
             
             -- 如果玩家距离NPC太远，将其移除
             if distance > interactionRadius then

@@ -10,6 +10,7 @@ local EventPlayerConfig = {}
 ---@field moveSpeed number
 ---@field recoveryDelay number
 ---@field jumpDuration number
+---@field gameMode string
 
 --[[
 ===================================
@@ -45,14 +46,13 @@ EventPlayerConfig.NOTIFY = {
 EventPlayerConfig.ACTION_PARAMS = {
     -- 使用事件名作为键，方便查找
     [EventPlayerConfig.NOTIFY.LAUNCH_PLAYER] = {
-        jumpSpeed = 4000,     -- 发射高度
+        jumpSpeed = 200,     -- 发射高度
         moveSpeed = 1000,     -- 发射远度
-        recoveryDelay = 1.5,  -- 恢复所有状态的延迟
         jumpDuration = 0.5    -- Jump(true)的持续时间
     }
 }
 
---[[
+--[[        
 ===================================
 错误码和错误消息定义
 ===================================
@@ -93,5 +93,11 @@ end
 function EventPlayerConfig.GetActionParams(eventName)
     return EventPlayerConfig.ACTION_PARAMS[eventName]
 end
+
+-- 游戏模式枚举
+EventPlayerConfig.GAME_MODES = {
+    NONE = nil, -- 无特殊模式
+    RACE_GAME = "飞车挑战赛" -- 飞车挑战赛
+}
 
 return EventPlayerConfig

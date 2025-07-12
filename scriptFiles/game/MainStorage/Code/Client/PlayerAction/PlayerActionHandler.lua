@@ -6,153 +6,94 @@ local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventMana
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 
+-- 【重构】行为模块注册表
+local ActionModules = {
+    [EventPlayerConfig.GAME_MODES.RACE_GAME] = require(MainStorage.Code.Client.PlayerAction.ActionModules.RaceGameAction)
+    -- 未来新增其他模式的模块，在此处注册即可
+}
+
 
 ---@class PlayerActionHandler
+-- 客户端玩家行为的"管理器"，负责加载和管理不同游戏模式下的具体行为模块。
 local PlayerActionHandler = ClassMgr.Class("PlayerActionHandler")
 
 function PlayerActionHandler:OnInit()
     gg.log("PlayerActionHandler 初始化...")
     self:SubscribeServerEvents()
-    self.stateMonitorTimer = nil -- 用于存放状态监控定时器的句柄
+    self:ListenToPlayerEvents()
+    self.activeModule = nil -- 当前激活的行为模块
+end
+
+--- 监听本地玩家核心事件（如移动状态变化），并将事件转发给激活的模块
+function PlayerActionHandler:ListenToPlayerEvents()
+    ---@type Actor
+    local actor = gg.getClientLocalPlayer()
+    if not actor then
+        return
+    end
+
+    gg.log("PlayerActionHandler: 成功获取本地玩家 Actor，开始监听事件...")
+
+    -- 监听移动状态变化，并转发给当前模块
+    actor.MoveStateChange:Connect(function(before, after)
+        if self.activeModule and self.activeModule.OnMoveStateChange then
+            self.activeModule:OnMoveStateChange(before, after)
+        end
+    end)
+
+    -- 新增：监听飞行状态变化，并转发给当前模块
+    actor.Flying:Connect(function(isFlying)
+        gg.log("PlayerActionHandler: 监听到飞行状态变化，isFlying: ", tostring(isFlying))
+    end)
+end
+
+--- 当具体的行为模块完成其生命周期后，会调用此函数
+---@param module table 已经结束的模块实例
+function PlayerActionHandler:OnModuleFinished(module)
+    -- 确认是当前模块请求的结束
+    if self.activeModule == module then
+        gg.log("PlayerActionHandler: 已收到模块结束通知，正在清理。")
+        self.activeModule = nil
+    end
 end
 
 --- 订阅所有来自服务端的事件
 function PlayerActionHandler:SubscribeServerEvents()
-    -- 从配置中获取事件名
     local launchEventName = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER
     ---@param data LaunchPlayerParams
     ClientEventManager.Subscribe(launchEventName, function(data)
-        self:OnLaunchPlayer(data)
+        -- 将事件分发到独立的方法中处理
+        self:OnReceiveLaunchCommand(data)
     end)
-    
-    -- 以后可以在这里添加更多事件订阅
-    -- ClientEventManager.Subscribe("S2C_AnotherAction", function(data) self:OnAnotherAction(data) end)
 end
 
---- 处理来自服务端的“发射玩家”指令
----@param data LaunchPlayerParams 事件数据，包含发射参数
-function PlayerActionHandler:OnLaunchPlayer(data)
-    gg.log("接收到 S2C_LaunchPlayer 事件, 数据: ", gg.table2str(data))
+--- 处理来自服务端的通用"发射"或"开始特殊模式"指令
+---@param data LaunchPlayerParams
+function PlayerActionHandler:OnReceiveLaunchCommand(data)
+    gg.log("PlayerActionHandler: 接收到启动指令, 数据: ", gg.table2str(data))
 
-    -- 如果上一个监控还在，先移除它
-    if self.stateMonitorTimer then
-        ScheduledTask.Remove(self.stateMonitorTimer)
-        self.stateMonitorTimer = nil
+    -- 1. 如果有旧模块在运行，先调用其 OnEnd() 强制结束
+    if self.activeModule and self.activeModule.OnEnd then
+        gg.log("PlayerActionHandler: 检测到旧模块仍在运行，将强制结束它。")
+        self.activeModule:OnEnd()
+        self.activeModule = nil -- 立即清除引用
     end
 
-    local previousState = nil -- 用于记录上一个状态
+    -- 2. 根据 gameMode 查找对应的模块类
+    local gameMode = data.gameMode
+    local ModuleClass = ActionModules[gameMode]
 
-    -- 启动一个新的状态监控，并保存其句柄
-    self.stateMonitorTimer = ScheduledTask.AddInterval(0.2, "PlayerActionHandler_StateMonitor", function()
-        ---@type Actor
-        local actor = gg.getClientLocalPlayer()
-        if not actor then
-            -- 如果actor无效，也应停止定时器以防万一
-            if self.stateMonitorTimer then
-                ScheduledTask.Remove(self.stateMonitorTimer)
-                self.stateMonitorTimer = nil
-            end
-            return
-        end
-
-        local currentState = actor:GetCurMoveState()
-
-        -- 【核心新增】在飞行状态下，持续发出前进指令，模拟按住W键
-        if currentState == Enum.BehaviorState.Fly then
-            actor:Move(Vector3.new(0, 0, 1), true)
-        end
-
-        -- 首次检测时，初始化 previousState
-        if previousState == nil then
-            previousState = currentState
-            return
-        end
-        
-        -- 核心逻辑：检测状态从 Fly 变为 Stand 或 Walk
-        if previousState == Enum.BehaviorState.Fly and (currentState == Enum.BehaviorState.Walk or currentState == Enum.BehaviorState.Stand) then
-            gg.log("状态变化: [飞行] -> ["..tostring(currentState).."]。检测到玩家落地！")
-
-            -- 【核心新增】玩家落地，立即停止所有由 Move() 引起的移动
-            actor:StopMove()
-            gg.log("已调用 actor:StopMove() 停止前进。")
-
-            -- 向服务端发送落地事件
-            if gg.network_channel then
-                -- 【核心修正】我们从配置中获取事件名，而不是硬编码
-                local eventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
-                gg.network_channel:fireServer({ cmd = eventName })
-                gg.log("已向服务端发送 " .. eventName .. " 事件。")
-            else
-                gg.log("ERROR: gg.network_channel 不可用，无法发送落地通知！")
-            end
-
-            -- 任务完成，停止并移除定时器
-            if self.stateMonitorTimer then
-                ScheduledTask.Remove(self.stateMonitorTimer)
-                self.stateMonitorTimer = nil
-                gg.log("状态监控任务已完成并移除。")
-            end
-        else
-            -- 更新上一个状态，为下一次检测做准备
-            previousState = currentState
-        end
-    end)
-
-    ---@type Actor
-    local actor = gg.getClientLocalPlayer()
-    if not actor then
-        gg.log("OnLaunchPlayer: 无法获取客户端本地玩家的 Actor！")
+    if not ModuleClass then
+        gg.log("PlayerActionHandler: 未找到与游戏模式 '" .. tostring(gameMode) .. "' 对应的行为模块。")
         return
     end
 
-    -- 从配置中获取默认参数
-    local eventName = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER
-    local defaultConfig = EventPlayerConfig.ACTION_PARAMS[eventName]
-
-    -- 从数据中解析参数，如果数据中没有，则使用配置中的默认值
-    local jumpSpeed = data.jumpSpeed or defaultConfig.jumpSpeed
-    local moveSpeed = data.moveSpeed or defaultConfig.moveSpeed
-    local recoveryDelay = data.recoveryDelay or defaultConfig.recoveryDelay
-    local jumpDuration = data.jumpDuration or defaultConfig.jumpDuration
-
-    -- 1. 保存原始速度属性
-    local originalJumpSpeed = actor.JumpBaseSpeed
-    local originalMoveSpeed = actor.Movespeed
-    gg.log(string.format("OnLaunchPlayer: 玩家原始 JumpSpeed: %s, MoveSpeed: %s", tostring(originalJumpSpeed), tostring(originalMoveSpeed)))
-
-    -- 2. 设置一个超高的跳跃速度和前冲速度
-    actor.JumpBaseSpeed = jumpSpeed
-    actor.Movespeed = moveSpeed
-    gg.log(string.format("OnLaunchPlayer: 设置临时 JumpSpeed: %s, MoveSpeed: %s", tostring(actor.JumpBaseSpeed), tostring(actor.Movespeed)))
-
-    -- 3. 执行发射动作 (在客户端执行，保证有效)
-    actor:Jump(true)
-
-    gg.log("OnLaunchPlayer: 已调用 Jump(true)，将通过状态监控持续前飞。")
-    
-    -- 【核心修正】使用全局的 ScheduledTask 来执行延迟调用，而不是 actor 自身的 timer
-    ScheduledTask.AddDelay(jumpDuration, "PlayerActionHandler_Jump", function()
-        if actor and not actor.isDestroyed then
-            actor:Jump(false)
-            gg.log("OnLaunchPlayer (延迟): 已调用 Jump(false)，停止持续跳跃。")
-        end
-    end)
-
-    -- 4. 在指定延迟后，恢复玩家的所有状态
-    ScheduledTask.AddDelay(recoveryDelay, "PlayerActionHandler_Recovery", function()
-        if actor and not actor.isDestroyed then
-            gg.log("OnLaunchPlayer (延迟恢复): 正在恢复属性...")
-            actor:StopMove() -- 停止前冲
-            actor.JumpBaseSpeed = originalJumpSpeed
-            actor.Movespeed = originalMoveSpeed
-            gg.log("OnLaunchPlayer (延迟恢复): 玩家属性已恢复。")
-        end
-    end)
+    -- 3. 创建模块实例，并开始其生命周期
+    gg.log("PlayerActionHandler: 正在创建并启动模块: " .. tostring(gameMode))
+    self.activeModule = ModuleClass.New(self) -- 将自身作为 handler 传入
+    if self.activeModule.OnStart then
+        self.activeModule:OnStart(data)
+    end
 end
-
--- 可以在这里添加其他服务端事件的处理函数
--- function PlayerActionHandler:OnAnotherAction(data)
---     -- ...
--- end
 
 return PlayerActionHandler

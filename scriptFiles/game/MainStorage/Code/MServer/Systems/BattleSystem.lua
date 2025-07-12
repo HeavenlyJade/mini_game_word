@@ -1,6 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 
 ---@class BattleSystem 战斗系统
@@ -294,7 +295,7 @@ function BattleSystem:GetTargetsInRange(position, radius)
     -- 搜索场景中的所有实体
     for _, entity in pairs(self.entity.scene.uuid2Entity) do
         if entity ~= self.entity and entity:CanBeTargeted() then
-            local distance = gg.vec.Distance3(position, entity:GetPosition())
+            local distance = VectorUtils.Vec.Distance3(position, entity:GetPosition())
             if distance <= radius then
                 table.insert(targets, entity)
             end
@@ -318,7 +319,7 @@ function BattleSystem:GetNearestEnemy(maxDistance)
     
     for _, entity in pairs(self.entity.scene.uuid2Entity) do
         if self:IsEnemy(entity) and entity:CanBeTargeted() then
-            local distance = gg.vec.Distance3(myPosition, entity:GetPosition())
+            local distance = VectorUtils.Vec.Distance3(myPosition, entity:GetPosition())
             if distance < nearestDistance then
                 nearestDistance = distance
                 nearestEnemy = entity

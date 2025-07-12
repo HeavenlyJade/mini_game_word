@@ -11,6 +11,7 @@ local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClassMgr      = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local Entity = require(ServerStorage.EntityTypes.Entity) ---@type Entity
@@ -182,7 +183,7 @@ function _M:TryFindTarget(detectRange)
     for _, entity in ipairs(enemies) do
         -- 检查是否是敌对单位
         if entity.isEntity and not entity.isDead then
-            local distanceSq = gg.vec.DistanceSq3(currentPos, entity:GetPosition())
+            local distanceSq = VectorUtils.Vec.DistanceSq3(currentPos, entity:GetPosition())
 
             -- 如果距离更近且目标有效
             if distanceSq < minDistanceSq and entity:CanBeTargeted() then
@@ -272,7 +273,7 @@ function _M:checkTooFarFromPos()
     local currentPos = self:GetPosition()
 
     -- 如果距离超过80单位(80*80=6400)则重新刷新
-    if gg.fast_out_distance(self.spawnPos, currentPos, 6400) then
+    if VectorUtils.Vec.FastOutDistance(self.spawnPos, currentPos, 6400) then
         self:spawnRandomPos(500, 100, 500) -- 重新刷回出生点附近
     end
 end

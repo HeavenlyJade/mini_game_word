@@ -12,350 +12,20 @@ local Players = game:GetService('Players')
 ---@field FireServer fun(self, data: table)
 ---@field fireClient fun(self, uin: number, data: table)
 
-
-local Math = {}
---求半径内的随机点
-function Math.RandomPointInRadius(center, radius)
-    local angle = math.random(0, 360)
-    local x = center.x + radius * math.cos(angle)
-    local z = center.z + radius * math.sin(angle)
-    return Vector3.New(x, center.y, z)
-end
---平滑阻尼插值
-function Math.SmoothDamp(current, target, velocity, smoothTime, maxSpeed, deltaTime)
-    -- 防止除以零
-    if smoothTime == 0 then
-        return target
-    end
-
-    -- 计算减速度常数
-    local timeConstant = math.sqrt(2.0 / smoothTime)
-
-    -- 计算最大速度
-    local maxVelocity = maxSpeed * timeConstant
-
-    -- 限制速度
-    velocity = math.min(velocity, maxVelocity)
-    velocity = math.max(velocity, -maxVelocity)
-
-    -- 计算新的位置
-    local remainingTime = smoothTime - deltaTime
-    local t = 1 - math.exp(-timeConstant * deltaTime)
-
-    -- 使用线性插值（lerp）来平滑移动
-    local smoothedValue = current + (target - current) * t
-
-    -- 更新速度
-    velocity = velocity - (target - smoothedValue) / remainingTime
-
-    return smoothedValue, velocity
-end
-
---范围随机数
-function Math.Random(min, max)
-    return min + math.random() * (max - min)
-end
---随机数加偏移
-function Math.RandomDeviation(value, dev)
-    return value + Math.Random(-dev, dev)
-end
---在一个圈内随机
-function Math.RandomInsideUnitCircle()
-    local x = math.random() * 2 - 1
-    local y = math.random() * 2 - 1
-    local ret = Vector2.New(x, y)
-    return ret:Normalize()
-end
-
---判断一个数字是否在某个范围内
-function Math.IsInRange(value, min, max)
-    return value >= min and value <= max
-end
-
---几乎等于
-function Math.IsAlmostEqual(a, b, epsilon)
-    return math.abs(a - b) < epsilon
-end
-
---补间
-function Math.Lerp(a, b, t)
-    return a + (b - a) * t
-end
---判断是否为NaN
-function Math.IsNaN(x)
-    return x ~= x
-end
---判断数字是否无穷大
-function Math.IsInfinity(x)
-    return x == math.huge or x == -math.huge
-end
---判断浮点是否等于0，接近即可
-function Math.IsZero(x)
-    local r = 0.001
-    return math.abs(x) <= r
-end
---角度差
-function Math.DeltaAngle(a, b)
-    local delta = (b - a) % 360
-    if delta < -180 then
-        delta = delta + 360
-    elseif delta > 180 then
-        delta = delta - 360
-    end
-    return delta
-end
-
---根据一个向量方向，返回的左边方向
-function Math.GetLeftDirection(direction)
-    return Math.GetRightDirection(direction):Negate()
-end
---根据一个向量方向，返回的右边方向
-function Math.GetRightDirection(direction)
-    if direction.x == 0 and direction.z == 0 then
-        return Vector3.New(0, 0, 1)
-    end
-    local orient = Quaternion.lookAt(direction)
-    return orient * Vector3.New(1, 0, 0)
-end
-
-
-
-local vec = {}
-
-vec.M_EPSILON = 0.000001
-vec.M_PI = 3.14159265358979323846
-vec.M_DEGTORAD = vec.M_PI / 180.0
-vec.M_DEGTORAD_2 = vec.M_PI / 360.0
-vec.M_RADTODEG = 1.0 / vec.M_DEGTORAD
-vec.Rad2Deg = 180.0 / vec.M_PI
-vec.Deg2Rad = vec.M_PI / 180.0
-
--- Vector2 specific functions
----@param v Vector2 要标准化的向量
----@return Vector2 标准化后的向量
-function vec.Normalize2(v)
-        return Vector2.Normalize(v)
-end
-
----@param v1 Vector2 第一个向量
----@param v2 Vector2 第二个向量
----@return number 两个向量之间的距离
-function vec.Distance2(v1, v2)
-    return math.sqrt(vec.DistanceSq2(v1, v2))
-end
-
----@param v1 Vector2 第一个向量
----@param v2 Vector2 第二个向量
----@return number 两个向量之间距离的平方
-function vec.DistanceSq2(v1, v2)
-        local dx = v1.x - v2.x
-        local dy = v1.y - v2.y
-    return dx * dx + dy * dy
-end
-
----@param v1 Vector2 第一个向量
----@param v2 Vector2 第二个向量
----@return number 两个向量的点积
-function vec.Dot2(v1, v2)
-    return Vector2.Dot(v1, v2)
-end
-
-
----@param target Vector3|Entity|Vec3
----@return Vector3
-function vec.ToVector3(target)
-    if type(target) == "userdata" then
-        return target
-    else
-        if type(target) == "table" and target.Is and target:Is("Entity") then
-            return target:GetPosition():ToVector3()
-        else
-            return target:ToVector3()
-        end
-    end
-end
-
----@param v1 Vector2 起始向量
----@param v2 Vector2 目标向量
----@param percent number 插值比例(0-1)
----@return Vector2 插值后的向量
-function vec.Lerp2(v1, v2, percent)
-    return Vector2.Lerp(v1, v2, percent)
-end
-
----@param v1 Vector2 向量
----@param x number x坐标
----@param y number y坐标
----@return Vector2 相加后的向量
-function vec.Add2(v1, x, y)
-    return Vector2.New(v1.x + x, v1.y + y)
-end
-
-function vec.ToDirection(v1)
-    -- Convert angles to radians
-    local pitch = v1.x * vec.M_DEGTORAD
-    local yaw = v1.y * vec.M_DEGTORAD
-
-    -- Calculate direction vector components
-    local x = math.sin(yaw) * math.cos(pitch)
-    local y = -math.sin(pitch)
-    local z = math.cos(yaw) * math.cos(pitch)
-
-    -- Return normalized direction vector
-    return Vector3.New(x, y, z)
-end
-
----@param v Vector2 向量
----@param scalar_or_vec number|Vector2 标量值或向量
----@return Vector2 相乘后的向量
-function vec.Multiply2(v, scalar_or_vec)
-    if type(scalar_or_vec) == "number" then
-        return Vector2.New(v.x * scalar_or_vec, v.y * scalar_or_vec)
-    else
-        return Vector2.New(v.x * scalar_or_vec.x, v.y * scalar_or_vec.y)
-    end
-end
-
--- Vector3 specific functions
----@param v Vector3 要标准化的向量
----@return Vector3 标准化后的向量
-function vec.Normalize3(v)
-    return Vector3.Normalize(v)
-end
-
----@param v1 Vector3 第一个向量
----@param v2 Vector3 第二个向量
----@return number 两个向量之间的距离
-function vec.Distance3(v1, v2)
-    return math.sqrt(vec.DistanceSq3(v1, v2))
-end
-
----@param v1 Vector3 第一个向量
----@param v2 Vector3 第二个向量
----@return number 两个向量之间距离的平方
-function vec.DistanceSq3(v1, v2)
-        local dx = v1.x - v2.x
-        local dy = v1.y - v2.y
-        local dz = v1.z - v2.z
-        return dx * dx + dy * dy + dz * dz
-end
-
----@param v1 Vector3 第一个向量
----@param v2 Vector3 第二个向量
----@return number 两个向量的点积
-function vec.Dot3(v1, v2)
-        return Vector3.Dot(v1, v2)
-end
-
----@param v1 Vector3 起始向量
----@param v2 Vector3 目标向量
----@param percent number 插值比例(0-1)
----@return Vector3 插值后的向量
-function vec.Lerp3(v1, v2, percent)
-        return Vector3.Lerp(v1, v2, percent)
-end
-
----@param v1 Vector3 第一个向量
----@param v2 Vector3 第二个向量
----@return Vector3 两个向量的叉积
-function vec.Cross3(v1, v2)
-        return Vector3.Cross(v1, v2)
-    end
-
----@param v1 Vector3 向量
----@param x number x坐标
----@param y number y坐标
----@param z number z坐标
----@return Vector3 相加后的向量
-function vec.Add3(v1, x, y, z)
-    return Vector3.New(v1.x + x, v1.y + y, v1.z + z)
-end
-
----@param v Vector3 向量
----@param scalar_or_vec number|Vector3 标量值或向量
----@return Vector3 相乘后的向量
-function vec.Multiply3(v, scalar_or_vec)
-    if type(scalar_or_vec) == "number" then
-        return Vector3.New(v.x * scalar_or_vec, v.y * scalar_or_vec, v.z * scalar_or_vec)
-    else
-        return Vector3.New(v.x * scalar_or_vec.x, v.y * scalar_or_vec.y, v.z * scalar_or_vec.z)
-    end
-end
-
--- Vector4 specific functions
----@param v Vector4 要标准化的向量
----@return Vector4 标准化后的向量
-function vec.Normalize4(v)
-    return Vector4.Normalize(v)
-end
-
----@param v1 Vector4 第一个向量
----@param v2 Vector4 第二个向量
----@return number 两个向量之间的距离
-function vec.Distance4(v1, v2)
-    return math.sqrt(vec.DistanceSq4(v1, v2))
-end
-
----@param v1 Vector4 第一个向量
----@param v2 Vector4 第二个向量
----@return number 两个向量之间距离的平方
-function vec.DistanceSq4(v1, v2)
-    local dx = v1.x - v2.x
-    local dy = v1.y - v2.y
-    local dz = v1.z - v2.z
-    local dw = v1.w - v2.w
-    return dx * dx + dy * dy + dz * dz + dw * dw
-end
-
----@param v1 Vector4 第一个向量
----@param v2 Vector4 第二个向量
----@return number 两个向量的点积
-function vec.Dot4(v1, v2)
-    return Vector4.Dot(v1, v2)
-end
-
----@param v1 Vector4 起始向量
----@param v2 Vector4 目标向量
----@param percent number 插值比例(0-1)
----@return Vector4 插值后的向量
-function vec.Lerp4(v1, v2, percent)
-    return Vector4.Lerp(v1, v2, percent)
-end
-
----@param v1 Vector4 向量
----@param x number x坐标
----@param y number y坐标
----@param z number z坐标
----@param w number w坐标
----@return Vector4 相加后的向量
-function vec.Add4(v1, x, y, z, w)
-        return Vector4.New(v1.x + x, v1.y + y, v1.z + z, v1.w + w)
-end
-
----@param v Vector4 向量
----@param scalar_or_vec number|Vector4 标量值或向量
----@return Vector4 相乘后的向量
-function vec.Multiply4(v, scalar_or_vec)
-    if type(scalar_or_vec) == "number" then
-        return Vector4.New(v.x * scalar_or_vec, v.y * scalar_or_vec, v.z * scalar_or_vec, v.w * scalar_or_vec)
-    else
-        return Vector4.New(v.x * scalar_or_vec.x, v.y * scalar_or_vec.y, v.z * scalar_or_vec.z, v.w * scalar_or_vec.w)
-    end
-end
-
 ---@class gg      --存放自定义的global全局变量和函数  
 local gg = {
     isServer = nil,
     opUin = {[1995296726]= true, [1999522565]= true, [1997748985] = true, [1831921352] = true, [1995494850] = true, [1997807412] = true, [1972857840] = true},
-    math = Math,
-    vec = vec,
+    
+    -- 【移除】不再通过 gg 重定向向量计算函数，请直接使用 VectorUtils 模块
     Vec2 = Vec2, ---@type Vec2
     Vec3 = Vec3, ---@type Vec3
     Vec4 = Vec4, ---@type Vec4
     Quat = Quat, ---@type Quat
-    noise = require(MainStorage.Code.Untils.Math.PerlinNoise),
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
+    
+    noise = require(MainStorage.Code.Untils.Math.PerlinNoise),
     uuid_start = nil,
     CommandManager = nil, ---@type CommandManager
     GlobalMailManager = nil, ---@type GlobalMailManager
@@ -381,7 +51,6 @@ local gg = {
         user_name = nil,
         user_id = nil
     }
-
 }
 
 ---@param node SandboxNode
@@ -410,6 +79,193 @@ function gg.ProcessVariables(formula, caster, target)
     end)
     return processedFormula
 end
+
+--- 复杂数学表达式计算器，支持中文符号和数学函数
+---@param expr string 数学表达式
+---@return number 计算结果
+function gg.eval(expr)
+    -- 自动修正常见中文符号为英文
+    expr = expr
+        :gsub("，", ",")
+        :gsub("（", "(")
+        :gsub("）", ")")
+        :gsub("－", "-")
+        :gsub("−", "-")
+        :gsub("—", "-")
+        :gsub("＋", "+")
+        :gsub("×", "*")
+        :gsub("＊", "*")
+        :gsub("÷", "/")
+        :gsub("／", "/")
+        :gsub("．", ".")
+    local ok, result = pcall(function()
+        expr = expr:gsub("%s+", "")  -- 移除空格
+        local pos = 1
+
+        -- 先声明所有函数（避免未定义错误）
+        local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber
+
+        parseNumber = function()
+            local start = pos
+            if expr:sub(pos, pos) == "-" then pos = pos + 1 end
+            while pos <= #expr and (expr:sub(pos, pos):match("%d") or expr:sub(pos, pos) == ".") do
+                pos = pos + 1
+            end
+            return tonumber(expr:sub(start, pos - 1))
+        end
+
+        parseAtom = function()
+            -- 支持 max/min/clamp 函数
+            local func3 = expr:sub(pos, pos+2)
+            local func5 = expr:sub(pos, pos+4)
+
+            if func3 == "max" or func3 == "min" then
+                pos = pos + 3
+                -- 跳过函数名后的空白字符
+                while pos <= #expr and expr:sub(pos, pos):match("%s") do
+                    pos = pos + 1
+                end
+
+                if pos > #expr or expr:sub(pos, pos) ~= "(" then
+                    error("Missing '(' after function name")
+                end
+                pos = pos + 1
+
+                local args = {}
+                -- 解析第一个参数
+                if pos <= #expr and expr:sub(pos, pos) ~= ")" then
+                    args[1] = parseExpr()
+
+                    -- 解析后续参数
+                    while pos <= #expr and expr:sub(pos, pos) == "," do
+                        pos = pos + 1
+                        if pos <= #expr then
+                            args[#args+1] = parseExpr()
+                        end
+                    end
+                end
+
+                if pos > #expr or expr:sub(pos, pos) ~= ")" then
+                    error("Missing ')' after function arguments")
+                end
+                pos = pos + 1
+
+                if func3 == "max" then
+                    return math.max(unpack(args))
+                else
+                    return math.min(unpack(args))
+                end
+            elseif func5 == "clamp" then
+                pos = pos + 5
+                -- 跳过函数名后的空白字符
+                while pos <= #expr and expr:sub(pos, pos):match("%s") do
+                    pos = pos + 1
+                end
+
+                if pos > #expr or expr:sub(pos, pos) ~= "(" then
+                    error("Missing '(' after clamp function name")
+                end
+                pos = pos + 1
+
+                local args = {}
+                -- 解析第一个参数
+                if pos <= #expr and expr:sub(pos, pos) ~= ")" then
+                    args[1] = parseExpr()
+
+                    -- 解析后续参数
+                    while pos <= #expr and expr:sub(pos, pos) == "," do
+                        pos = pos + 1
+                        if pos <= #expr then
+                            args[#args+1] = parseExpr()
+                        end
+                    end
+                end
+
+                if pos > #expr or expr:sub(pos, pos) ~= ")" then
+                    error("Missing ')' after clamp function arguments")
+                end
+                pos = pos + 1
+
+                -- clamp(value, min, max) 函数实现
+                if #args >= 3 then
+                    local value, minVal, maxVal = args[1], args[2], args[3]
+                    -- 使用与 math.clamp 相同的逻辑
+                    if value < minVal then return minVal end
+                    if value > maxVal then return maxVal end
+                    return value
+                else
+                    error("clamp function requires 3 arguments: clamp(value, min, max)")
+                end
+            elseif expr:sub(pos, pos) == "(" then
+                pos = pos + 1
+                local val = parseExpr()
+                if pos > #expr or expr:sub(pos, pos) ~= ")" then
+                    error("Missing closing parenthesis")
+                end
+                pos = pos + 1
+                return val
+            else
+                return parseNumber()
+            end
+        end
+
+        parsePower = function()
+            local left = parseAtom()
+            while pos <= #expr and expr:sub(pos, pos) == "^" do
+                pos = pos + 1
+                left = left ^ parseAtom()  -- 右结合（如 2^3^2 = 2^(3^2)）
+            end
+            return left
+        end
+
+        parseMulDiv = function()
+            local left = parsePower()
+            while pos <= #expr do
+                local op = expr:sub(pos, pos)
+                if op == "*" or op == "/" then
+                    pos = pos + 1
+                    local right = parsePower()
+                    if op == "*" then
+                        left = left * right
+                    else
+                        left = left / right
+                    end
+                else
+                    break
+                end
+            end
+            return left
+        end
+
+        parseExpr = function()
+            local left = parseMulDiv()
+            while pos <= #expr do
+                local op = expr:sub(pos, pos)
+                if op == "+" or op == "-" then
+                    pos = pos + 1
+                    local right = parseMulDiv()
+                    if op == "+" then
+                        left = left + right
+                    else
+                        left = left - right
+                    end
+                else
+                    break
+                end
+            end
+            return left
+        end
+
+        return parseExpr()
+    end)
+    if ok then
+        return result
+    else
+        gg.log("[gg.eval] 公式计算失败: " .. tostring(result) .. "，表达式: " .. tostring(expr))
+        return 0
+    end
+end
+
 function gg.ProcessFormula(formula, caster, target)
     if not formula then
         return nil
@@ -873,56 +729,12 @@ function gg.log(...)
     print(table.concat(tab, ' '))
 end
 
--- 快速判断一个xyz的每个轴距都在len的范围内
----@param dir_ Vector3 方向向量
----@param len number 长度
----@return boolean 是否在范围内
-function gg.fast_in_distance(dir_, len)
-    if dir_.x > 0 - len and dir_.x < len and dir_.y > 0 - len and dir_.y < len and dir_.z > 0 - len and dir_.z < len then
-        return true
-    else
-        return false
-    end
-end
-
--- 快速判断两个点是否超距离
----@param pos1 Vector3 位置1
----@param pos2 Vector3 位置2
----@param len number 距离
----@return boolean 是否超出距离
-function gg.fast_out_distance(pos1, pos2, len)
-    local xx_ = math.abs(pos1.x - pos2.x)
-    local yy_ = math.abs(pos1.y - pos2.y)
-    local zz_ = math.abs(pos1.z - pos2.z)
-    if zz_ > len or xx_ > len or yy_ > len then
-        return true
-    else
-        return false
-    end
-end
-
--- 快速判断两个点是否超距离(length)
----@param pos1 Vector3 位置1
----@param pos2 Vector3 位置2
----@param len number 距离
----@return boolean 是否超出距离
-function gg.out_distance(pos1, pos2, len)
-    local dis_ = (pos1 - pos2).length
-    return dis_ > len
-end
-
--- Vector2.Normalize
----@param x number X坐标
----@param y number Y坐标
----@return number, number 标准化后的X,Y坐标
-function gg.Normalize2(x, y)
-    local len = math.sqrt(x * x + y * y)
-    if len > 0 then
-        return x / len, y / len
-    else
-        return 0, 0
-    end
-end
+-- 【移除】距离计算函数已迁移到 VectorUtils 模块
+-- 如需使用，请调用：
+-- gg.vec.FastInDistance(dir_, len)
+-- gg.vec.FastOutDistance(pos1, pos2, len) 
+-- gg.vec.OutDistance(pos1, pos2, len)
+-- gg.vec.Normalize2Coords(x, y)
 
 -- 克隆一个物体 template下对模型
 ---@param name_ string 模型名称

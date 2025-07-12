@@ -1,16 +1,17 @@
 local MainStorage = game:GetService('MainStorage')
 local Players = game:GetService('Players')
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local Vec2 = require(MainStorage.code.common.math.Vec2)
-local Vec3 = require(MainStorage.code.common.math.Vec3)
-local Vec4 = require(MainStorage.code.common.math.Vec4)
-local Quat = require(MainStorage.code.common.math.Quat)
-local Mat4x4 = require(MainStorage.code.common.math.Matrix4x4)
-local Mat3x4 = require(MainStorage.code.common.math.Matrix3x4)
-local MathDefines = require(MainStorage.code.common.math.MathDefines)
-local ShakeController = require(MainStorage.code.client.camera.ShakeController) ---@type ShakeController
-local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
+local Vec2 = require(MainStorage.Code.Untils.Math.Vec2)
+local Vec3 = require(MainStorage.Code.Untils.Math.Vec3)
+local Vec4 = require(MainStorage.Code.Untils.Math.Vec4)
+local Quat = require(MainStorage.Code.Untils.Math.Quat)
+local Mat4x4 = require(MainStorage.Code.Untils.Math.Matrix4x4)
+local Mat3x4 = require(MainStorage.Code.Untils.Math.Matrix3x4)
+local MathDefines = require(MainStorage.Code.Untils.Math.MathDefines)
+local ShakeController = require(MainStorage.Code.Client.Camera.ShakeController) ---@type ShakeController
+local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 
 ---@class CameraController
 local CameraController = {}
@@ -276,9 +277,9 @@ function CameraController.ThirdPersonUpdate(dt)
 
     -- 使用SmoothDamp平滑处理鼠标X轴和Y轴的旋转
     _mouseXSmooth, _mouseXCurrentVelocity =
-        gg.math.SmoothDamp(_mouseXSmooth, _mouseX, _mouseXCurrentVelocity, _mouseSmoothTime, 0, dt)
+        VectorUtils.Math.SmoothDamp(_mouseXSmooth, _mouseX, _mouseXCurrentVelocity, _mouseSmoothTime, 0, dt)
     _mouseYSmooth, _mouseYCurrentVelocity =
-        gg.math.SmoothDamp(_mouseYSmooth, _mouseY, _mouseYCurrentVelocity, _mouseSmoothTime, 0, dt)
+        VectorUtils.Math.SmoothDamp(_mouseYSmooth, _mouseY, _mouseYCurrentVelocity, _mouseSmoothTime, 0, dt)
     -- 计算摄像机旋转
     _currentCameraRot = CameraController.CalcCameraRotation(_mouseXSmooth, _mouseYSmooth)
 
@@ -291,7 +292,7 @@ function CameraController.ThirdPersonUpdate(dt)
     if not isHit then
         -- 如果没有碰撞，平滑处理摄像机距离
         _distanceSmooth, _distanceCurrentVelocity =
-            gg.math.SmoothDamp(
+            VectorUtils.Math.SmoothDamp(
             _distanceSmooth,
             closestDistance,
             _distanceCurrentVelocity,
@@ -337,11 +338,11 @@ end
 
 --获取摄像机朝向，未抖动
 function CameraController.GetForward()
-    return gg.vec.ToDirection(Vector3.New(_rawMouseX, _rawMouseY, 0))
+    return VectorUtils.Vec.ToDirection(Vector3.New(_rawMouseX, _rawMouseY, 0))
 end
 
 function CameraController.GetRealForward(horizontalRecoil, verticalRecoil)
-    return gg.vec.ToDirection(Vector3.New(_mouseX + horizontalRecoil, _mouseY + verticalRecoil, 0))
+    return VectorUtils.Vec.ToDirection(Vector3.New(_mouseX + horizontalRecoil, _mouseY + verticalRecoil, 0))
 end
 
 --获取摄像机观察点位置
@@ -398,7 +399,7 @@ function CameraController.AlignWithAngle(yAngle, inverted)
     local delta = targetRotation * inverseRotation
     local deltaEuler = delta:ToEuler().y
     local deltaEuler = delta:ToEuler().y
-    if gg.math.IsAlmostEqual(deltaEuler, 0, 0.5) then
+    if VectorUtils.Math.IsAlmostEqual(deltaEuler, 0, 0.5) then
         return
     end
     if deltaEuler > 180 then

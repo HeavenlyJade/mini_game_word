@@ -1,8 +1,3 @@
----
-description: 
-globs: 
-alwaysApply: false
----
 # PVZWord 项目规则
 
 本文档概述了 PVZWord 游戏项目的架构、约定和重要文件。
@@ -11,7 +6,9 @@ alwaysApply: false
 
 - **项目类型**: 游戏
 - **语言**: Lua (使用 LuaJIT-2.1.ROLLING 版本)
-- **环境**: 项目遵循类似 Roblox 的结构，包含 `ServerScriptService` 和 `ServerStorage` 等目录。这是一个客户端-服务器架构。
+- **环境**: 项目遵循类似 Roblox 的结构，包含 `ServerScriptService` 和 `ServerStorage` 等目录。这是一个客户端-服
+日志打印使用gg.log
+务器架构。
 
 ## 架构
 
@@ -87,11 +84,42 @@ alwaysApply: false
 
 ## 编码约定
 
-- **类系统**: 项目使用在 `scriptFiles/game/MainStorage/Code/Untils/ClassMgr.lua` 中定义的自定义类系统。
-    - 定义一个类: `local MyClass = ClassMgr.Class("MyClass", SuperClass)`
-    - 创建一个实例: `local myInstance = MyClass.New(...)`
-    - 构造函数方法是 `OnInit`。
-    - 使用 `instance:Is("ClassName")` 检查一个对象是否是某个类的实例。
+- **类系统**: 项目使用在 `scriptFiles/game/MainStorage/Code/Untils/ClassMgr.lua` 中定义的自定义类系统。其核心规则如下：
+    - **定义**: 使用 `ClassMgr.Class("ClassName", SuperClass)` 来定义一个类。第二个参数（父类）是可选的。
+      ```lua
+      local MyClass = ClassMgr.Class("MyClass", BaseClass)
+      ```
+    - **构造函数**: 构造函数的方法名是 `OnInit`。
+      ```lua
+      function MyClass:OnInit(param1, param2)
+          -- 初始化逻辑
+      end
+      ```
+    - **实例化**: 使用 `ClassName.New(...)` 创建一个类的实例。
+      ```lua
+      local myInstance = MyClass.New("a", "b")
+      ```
+    - **继承与构造**：`ClassMgr` 会在子类实例化时，**自动地**、**从顶层父类开始**逐级调用继承链上所有类别的 `OnInit` 方法，最后再调用其自身的`OnInit`。
+      > **🚨重要**: 开发者 **禁止** 在子类的 `OnInit` 方法中手动调用 `self.super.OnInit(self)`。系统会自动处理该过程。
+
+    - **类型注解 (Annotation)**: 为了让代码编辑器能够正确识别类的类型和继承关系，从而消除不必要的警告并提供准确的代码补全，请务必遵循以下注解规范：
+        - **基类**: 如果一个类不继承自任何其他自定义类，它的 `@class` 注解需要继承自 `Class`。
+          ```lua
+          ---@class MyBaseClass : Class
+          local MyBaseClass = ClassMgr.Class("MyBaseClass")
+          ```
+        - **子类**: 如果一个类继承自某个父类，它的 `@class` 注解需要指明其父类。
+          ```lua
+          ---@class MyChildClass : MyBaseClass
+          local MyChildClass = ClassMgr.Class("MyChildClass", MyBaseClass)
+          ```
+
+    - **类型检查**: 使用 `instance:Is("ClassName")` 检查一个对象是否是某个类的实例或其子类的实例。
+      ```lua
+      if myInstance:Is("BaseClass") then
+          print("这是一个BaseClass或其子类的实例")
+      end
+      ```
 
 - **命名约定**:
     - 包含类或主要系统的模块通常以 `M` 为前缀（例如 `MConfig`, `MMonster`）。
@@ -107,6 +135,36 @@ alwaysApply: false
             - *Mgr：业务逻辑处理、数据操作、系统间通信
             - *EventManager：事件监听、事件分发、玩家交互响应
             - *CloudDataMgr：数据结构定义、序列化、云存储格式
+
+- **日志打印规范**:
+    - **必须** 使用 `gg.log()` 进行日志输出，禁止使用原生的 `print()` 函数。
+    - 日志内容**必须**使用中文，以便于团队内快速定位和理解问题。
+      ```lua
+      -- 正确示例
+      gg.log("错误：找不到ID为'xxx'的配置。")
+
+      -- 错误示例
+      print("Error: Config not found for ID 'xxx'.")
+      ```
+
+- **模块引用约定**:
+    - 在引用自定义的类模块时，为了获得更好的代码提示和类型检查，请务必在 `require` 语句后附上 `---@type` 注释。
+    - **玩家 (`MPlayer`) 引用示例**: 当需要获取玩家对象类型时，必须使用以下格式：
+      ```lua
+      local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
+      ```
+
+- **管理器架构约定**:
+    - **事件管理器 (EventManager) 必须是静态类**:
+        - **适用范围**: 所有位于 `MSystems/` 目录下的 `*EventManager.lua` 文件，以及为特定游戏模式（位于 `GameModes/Modes/`）创建的事件管理器。
+        - **实现方式**:
+            - 模块返回一个 table。
+            - 所有方法都作为该 table 的字段，使用点 `.` 进行定义，例如 `function MyManager.MyMethod() end`。
+            - 严禁使用冒号 `:` 定义方法，因为这会隐式传递 `self` 参数，不符合静态类的特征。
+            - **示例**: `BagEventManager`, `RaceGameEventManager` 都应遵循此规范。
+    - **功能管理器 (Mgr) 可以是静态类或动态类**:
+        - `*Mgr.lua` 文件如果只负责管理全局状态和逻辑（如 `GameModeManager`），则应实现为静态类。
+        - 如果需要为每个玩家或每个实例创建单独的数据副本（如 `BagMgr` 可能需要为每个玩家管理一个独立的背包实例），则可以实现为动态类（使用冒号 `:` 定义方法并由 `ClassMgr` 管理）。
 
 ## 相关文档体系
 
