@@ -2,8 +2,18 @@ local MainStorage  = game:GetService('MainStorage')
 
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
+---@class Class
+---@field className string 类名
+---@field super Class|nil 父类
+---@field OnInit fun(self: Class, ...: any)|nil 初始化方法
+---@field Destroy fun(self: Class)|nil 销毁方法
+---@field ToString fun(self: Class): string 转字符串方法
+---@field GetToStringParams fun(self: Class): table<number, any>|nil 获取ToString参数
+---@field New fun(...: any): Class 创建实例
+---@field Is fun(self: Class, className: string): boolean 判断是否继承自指定类
+
 ---@class ClassMgr        对class父子继承类的封装
----@field Class fun<T: Class>(name: string, ...: Class): T
+---@field Class fun(name: string, ...: Class): Class
 ---@field Clone fun(object: table): table
 ---@field GetRegisterClass fun(classname: string): any
 ---@field Is fun(inst: table, className: string): boolean
@@ -44,13 +54,6 @@ function ClassMgr.RegisterClass( classname, cls)
 	s_register_class[classname] = cls
 end
 
----@class Class
----@field className string 类名
----@field ToString fun(self:Class) : string
----@field GetToStringParams fun(self:Class) : table{number, any}
----@field New fun(...: any): any 返回本类的实例
----@field Is fun(self:Class, className: string): boolean 判断实例是否继承自指定类名
-local Class = {}
 
 function ClassMgr.Is(inst, className)
     if type(inst) == "table" then
@@ -59,10 +62,9 @@ function ClassMgr.Is(inst, className)
 	return false
 end
 
----@generic T : Class
 ---@param name string 类名
 ---@param ... Class 父类
----@return T 返回类定义
+---@return Class 返回类定义
 function ClassMgr.Class( name, ...)
 	local cls = nil
 	local super = ...
@@ -102,10 +104,11 @@ function ClassMgr.Class( name, ...)
 		return false
 	end
 
-	-- 修复后的递归创建函数
-	local create
+	-- 修复：显式初始化 create 函数为 nil，避免诊断警告
+	local create = nil
 	create = function(instance, c, ...)
-		if c.super then
+		-- 增加 create 存在性检查，避免诊断工具警告
+		if c.super and create then
 			create(instance, c.super, ...)
 		end
 		-- 关键修复：只有当子类的OnInit和父类的OnInit不是同一个函数时，才调用子类的。
@@ -118,7 +121,9 @@ function ClassMgr.Class( name, ...)
 	function cls.New(...)
 		local instance = setmetatable({}, cls)
 		-- 调用修复后的递归创建函数
-		create(instance, cls, ...)
+		if create then
+			create(instance, cls, ...)
+		end
 		return instance
 	end
 

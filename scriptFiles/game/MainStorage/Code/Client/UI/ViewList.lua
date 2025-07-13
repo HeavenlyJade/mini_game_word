@@ -1,8 +1,6 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
-local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
 
 ---@class ViewList : ViewComponent
 ---@field node UIList
@@ -12,6 +10,13 @@ local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 ---@field New fun(node: UIComponent|ViewComponent, ui: ViewBase, path: string, onAddElementCb: fun(child: SandboxNode): ViewComponent): ViewList
 local ViewList = ClassMgr.Class("ViewList", ViewComponent)
 
+
+local function RecursivlySetNotifyStop(button)
+    button.IsNotifyEventStop = false
+    for _, child in ipairs(button.Children) do
+        RecursivlySetNotifyStop(child)
+    end
+end
 
 ---@param node SandboxNode
 ---@param ui ViewBase
@@ -25,7 +30,6 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
     for _, child in pairs(self.node.Children) do
         local childName = child.Name
         local num = childName:match("_([0-9]+)")
-        -- print("Init ViewList", path, ui.className, num)
         if num then
             if not self.childNameTemplate then
                 local pos = childName:find("_") -- 找到 _ 的位置
@@ -34,6 +38,7 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
             local childPath = self.path .. "/" .. child.Name
             local button = self.onAddElementCb(child, childPath)
             if button then
+                RecursivlySetNotifyStop(button.node)
                 button.path = childPath
                 local idx = tonumber(num)
                 if idx then
@@ -45,6 +50,10 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
     end
 end
 
+---@private
+function ViewList:RegisterComponent(child)
+end
+
 function ViewList:GetToStringParams()
     local d = ViewComponent.GetToStringParams(self)
     d["Child"] = self.childrens
@@ -54,6 +63,9 @@ end
 ---@param index number
 ---@return ViewComponent
 function ViewList:GetChild(index)
+    if index <= 0 then
+        return nil
+    end
     local child = self.childrens[index]
     if not child then
         self:SetElementSize(index)
@@ -87,9 +99,11 @@ function ViewList:SetElementSize(size)
             child:SetParent(self.node)
             child.Name = self.childNameTemplate .. i
             if self.onAddElementCb then
-                local button = self.onAddElementCb(child)
+                local childPath = self.path .. "/" .. child.Name
+                local button = self.onAddElementCb(child, childPath)
                 if button then
-                    button.path = self.path .. "/" .. child.Name
+                    RecursivlySetNotifyStop(button.node)
+                    button.path = childPath
                     button.index = i
                     self.childrens[i] = button
                 end

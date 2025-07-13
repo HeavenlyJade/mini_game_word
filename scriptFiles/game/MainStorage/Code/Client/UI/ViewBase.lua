@@ -1,30 +1,46 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler) ---@type ClientScheduler
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 
 local displayingUI = {}
-local allUI = {}
+local hiddenHuds = {} -- 记录被隐藏的layer=0界面
 
 ---@class ViewConfig
 ---@field uiName string 界面名称
 ---@field hideOnInit boolean 是否在初始化时隐藏
 ---@field layer number 0=主界面Hud， >1=GUI界面。 GUI在打开时关闭其他同layer的GUI
+---@field closeHuds boolean
+---@field mouseVisible boolean
+---@field closeHideMouse boolean
 
----@class ViewBase:Class
----@field New fun(node: SandboxNode, config: ViewConfig): ViewBase
----@field GetUI fun(name: string): ViewBase
+---@class ViewBase : Class
+---@field topGui ViewBase
+---@field allUI table<string, ViewBase>
+---@field mouseLockTaskId number
+---@field node SandboxNode
+---@field displaying boolean
+---@field layer number
+---@field closeHuds boolean
+---@field mouseVisible boolean
+---@field closeHideMouse boolean
+---@field hideOnInit boolean
+---@field isOnTop boolean
+---@field componentCache table<string, ViewComponent>
+---@field openCb fun()|nil
+---@field closeCb fun()|nil
+---@field openSound string
+---@field closeSound string
+---@field bgmMusic string
 local ViewBase = ClassMgr.Class("ViewBase")
 ViewBase.topGui = nil ---@type ViewBase
-ViewBase.UiBag = nil ---@type UiBag
-ViewBase.UIConfirm = nil ---@type UIConfirm
+ViewBase.allUI = {}
 
----@generic T : ViewBase
 ---@param name string
----@return T
+---@return ViewBase
 function ViewBase.GetUI(name)
-    return allUI[name]
+    return ViewBase.allUI[name]
 end
 
 ---@param visible boolean 是否锁定鼠标
@@ -47,6 +63,9 @@ function ViewBase.LockMouseVisible(visible)
             end
             -- 恢复鼠标模式
             game.MouseService:SetMode(1)
+            -- 新增：通知CameraController进入极限输入保护期
+            local CameraController = require(MainStorage.Code.Client.Camera.CameraController)
+            CameraController.BlockExtremeInputFor(0.1)
         end
     end
 end
@@ -63,11 +82,10 @@ if game.RunService:IsPC() then
 end
 
 
----@generic T : ViewComponent
 ---@param path string 组件路径
----@param type? T 组件类型
+---@param type? ViewComponent 组件类型
 ---@param ... any 额外参数
----@return T
+---@return ViewComponent
 function ViewBase:Get(path, type, ...)
     local cacheKey = path
     if self.componentCache[cacheKey] then
@@ -100,7 +118,7 @@ function ViewBase:Get(path, type, ...)
     end
 
     if not type then
-        local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
+        local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
         type = ViewComponent
     end
     ---@cast type ViewComponent
@@ -118,26 +136,48 @@ function ViewBase:OnInit(node, config)
     self.closeCb = nil
     self.componentCache = {}
     self.node = node ---@type SandboxNode
-    self.openSound = self.node:GetAttribute("打开音效")
-    self.closeSound = self.node:GetAttribute("关闭音效")
     self.hideOnInit = config.hideOnInit == nil and true or config.hideOnInit
     self.layer = config.layer == nil and 1 or config.layer
+    self.closeHuds = config.closeHuds
+    self.mouseVisible = config.mouseVisible or self.layer > 0
+    self.closeHideMouse = config.closeHideMouse
+    if self.closeHideMouse == nil then
+        self.closeHideMouse = self.mouseVisible
+    end
+    if self.closeHuds == nil then
+        self.closeHuds = self.layer >= 1
+    end
     self.displaying = false
     self.isOnTop = false
-    allUI[self.className] = self
+    ViewBase.allUI[self.className] = self
     ViewBase[self.className] = self
 
     if self.hideOnInit then
-        self:Close()
+        self:SetVisible(false)
+        self.displaying = false
     else
-        self:Open()
+        self:SetVisible(true)
+        self.displaying = true
     end
 end
 
-function ViewBase:GetScreenSize()
+---@return Vector2
+function ViewBase.GetScreenSize()
     local evt = {}
     ClientEventManager.Publish("GetScreenSize", evt)
     return evt.size
+end
+
+---@param key string 属性名称
+---@return string|nil
+function ViewBase:GetAttribute(key)
+    if self.node then
+        local value = self.node:GetAttribute(key)
+        if value and value ~= "" then
+            return value
+        end
+    end
+    return nil
 end
 
 function ViewBase:SetVisible(visible)
@@ -147,14 +187,35 @@ end
 
 function ViewBase:Close()
     self:SetVisible(false)
-    print("CloseSound", self.closeSound)
-    if self.closeSound then
+    if not self.displaying then
+        return
+    end
+    local bgmMusic = self:GetAttribute("背景音乐")
+    if bgmMusic then
         ClientEventManager.Publish("PlaySound", {
-            soundAssetId = self.closeSound
+            close = true,
+            key = "bgm",
+            layer = self.layer + 5,
         })
     end
-    if self.layer > 0 then
-        ViewBase.LockMouseVisible(false)
+    local closeSound = self:GetAttribute("关闭音效")
+    if closeSound then
+        ClientEventManager.Publish("PlaySound", {
+            soundAssetId = closeSound
+        })
+    end
+    if self.closeHideMouse then
+        -- 只有没有任何layer>=1的界面显示时才隐藏鼠标
+        local hasOtherLayerUI = false
+        for _, ui in pairs(ViewBase.allUI) do
+            if ui ~= self and ui.layer and ui.layer > 0 and ui.displaying then
+                hasOtherLayerUI = true
+                break
+            end
+        end
+        if not hasOtherLayerUI then
+            ViewBase.LockMouseVisible(false)
+        end
     end
     if displayingUI[self.layer] == self then
         displayingUI[self.layer] = nil
@@ -176,18 +237,41 @@ function ViewBase:Close()
         end
     end
     self.displaying = false
+    if self.closeHuds then
+        for _, ui in ipairs(hiddenHuds) do
+            if ui and ui.displaying then
+                ui:SetVisible(true)
+            end
+        end
+        hiddenHuds = {}
+    end
     if self.closeCb then
         self.closeCb()
     end
 end
 
 function ViewBase:Open()
+    if self.displaying then
+        return
+    end
     self.displaying = true
     self:SetVisible(true)
-    ClientEventManager.Publish("PlaySound", {
-        soundAssetId = self.openSound
-    })
-    if self.layer > 0 then
+    local bgmMusic = self:GetAttribute("背景音乐")
+    if bgmMusic then
+        ClientEventManager.Publish("PlaySound", {
+            soundAssetId = bgmMusic,
+            key = "bgm",
+            layer = self.layer + 5,
+            volume = 0.2
+        })
+    end
+    local openSound = self:GetAttribute("打开音效")
+    if openSound then
+        ClientEventManager.Publish("PlaySound", {
+            soundAssetId = openSound
+        })
+    end
+    if self.mouseVisible then
         ViewBase.LockMouseVisible(true)
     end
     if self.layer > 0 then
@@ -210,6 +294,15 @@ function ViewBase:Open()
         -- 更新 topGui
         if not ViewBase.topGui or self.layer > ViewBase.topGui.layer then
             ViewBase.topGui = self
+        end
+    end
+    if self.closeHuds then
+        -- 隐藏所有正在显示的layer=0界面
+        for _, ui in pairs(ViewBase.allUI) do
+            if ui.layer == 0 and ui.displaying and ui ~= self then
+                ui:SetVisible(false)
+                table.insert(hiddenHuds, ui)
+            end
         end
     end
     if self.openCb then
