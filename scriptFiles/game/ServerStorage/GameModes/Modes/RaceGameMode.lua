@@ -177,18 +177,31 @@ function RaceGameMode:Start()
     
     -- 准备阶段
     self:AddDelay(prepareTime, function()
-        -- 倒计时结束后
-        if self.state == RaceState.WAITING then -- 增加状态检查，防止重复执行
+        if self.state == RaceState.WAITING then
             self.state = RaceState.RACING
-            gg.log("比赛开始！")
+            gg.log("比赛开始准备！")
 
-            -- 将所有参赛者发射出去
-            for _, player in ipairs(self.participants) do
-                self:LaunchPlayer(player)
-            end
+            -- 1. 先传送所有玩家到传送节点
+            local teleportSuccess = self:TeleportAllPlayersToStartPosition()
             
-            -- 启动实时飞行距离计算定时任务
-            self:_startFlightDistanceTracking()
+            if teleportSuccess then
+                -- 2. 给传送一点时间完成，然后发射玩家
+                self:AddDelay(0.5, function()
+                    gg.log("传送完成，开始发射玩家！")
+                    for _, player in ipairs(self.participants) do
+                        self:LaunchPlayer(player)
+                    end
+                    -- 启动实时飞行距离计算
+                    self:_startFlightDistanceTracking()
+                end)
+            else
+                gg.log("传送失败，直接开始比赛")
+                -- 如果传送失败，直接发射（保持向后兼容）
+                for _, player in ipairs(self.participants) do
+                    self:LaunchPlayer(player)
+                end
+                self:_startFlightDistanceTracking()
+            end
         end
     end)
 end
@@ -253,28 +266,9 @@ function RaceGameMode:End()
     end)
 end
 
---- 【新增】传送所有参赛者到复活点
+--- 【简化】传送所有参赛者到复活点（使用基类方法）
 function RaceGameMode:_teleportAllPlayersToRespawn()
-    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
-    local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
-
-    if not handler then
-        return
-    end
-
-    local respawnNode = handler.respawnNode
-    if not respawnNode then
-        return
-    end
-
-    local TeleportService = game:GetService('TeleportService')
-    local respawnPos = respawnNode.Position
-
-    for _, player in ipairs(self.participants) do
-        if player and player.actor then
-            TeleportService:Teleport(player.actor, respawnPos)
-        end
-    end
+    return self:TeleportAllPlayersToRespawn()
 end
 
 --- 【新增】计算并发放奖励

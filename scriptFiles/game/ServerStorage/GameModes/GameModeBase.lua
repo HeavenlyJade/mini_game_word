@@ -4,6 +4,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
 local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
+local gg = require(MainStorage.Code.Untils.MGlobal)
 
 ---@class GameModeBase : Class
 ---@field participants table<string, MPlayer>
@@ -67,6 +68,82 @@ function GameModeBase:RemoveTimer(timer)
         ScheduledTask.Remove(timer)
         self.activeTimers[timer] = nil -- 从追踪表中移除
     end
+end
+
+--- 传送所有参赛者到指定位置
+---@param targetPosition Vector3 目标位置
+---@param logPrefix string|nil 日志前缀，用于调试
+---@return boolean 是否成功传送至少一个玩家
+function GameModeBase:TeleportAllPlayersToPosition(targetPosition, logPrefix)
+    if not targetPosition then
+        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 目标位置为空")
+        return false
+    end
+
+    local TeleportService = game:GetService('TeleportService')
+    local successCount = 0
+    local totalCount = 0
+
+    -- 遍历所有参赛者进行传送
+    for _, player in pairs(self.participants) do
+        if player and player.actor then
+            totalCount = totalCount + 1
+            TeleportService:Teleport(player.actor, targetPosition)
+            successCount = successCount + 1
+            gg.log(string.format("%s: 已传送玩家 %s 到位置 %s", 
+                logPrefix or "GameModeBase", player.name, tostring(targetPosition)))
+        end
+    end
+
+    gg.log(string.format("%s: 传送完成 - 成功: %d/%d", 
+        logPrefix or "GameModeBase", successCount, totalCount))
+    
+    return successCount > 0
+end
+
+--- 传送所有参赛者到指定的处理器节点
+---@param nodeType string 节点类型："respawn"|"teleport"
+---@param logPrefix string|nil 日志前缀
+---@return boolean 是否成功传送
+function GameModeBase:TeleportAllPlayersToHandlerNode(nodeType, logPrefix)
+    
+    -- 延迟加载，避免循环依赖
+    local serverDataMgr = require(game:GetService("ServerStorage").Manager.MServerDataManager)
+    local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
+
+    if not handler then
+        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 无法找到处理器实例")
+        return false
+    end
+
+    local targetNode
+    if nodeType == "respawn" then
+        targetNode = handler.respawnNode
+    elseif nodeType == "teleport" then
+        targetNode = handler.teleportNode
+    else
+        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 未知节点类型: " .. tostring(nodeType))
+        return false
+    end
+
+    if not targetNode or not targetNode.Position then
+        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - " .. nodeType .. "节点不存在或无位置信息")
+        return false
+    end
+
+    return self:TeleportAllPlayersToPosition(targetNode.Position, logPrefix)
+end
+
+--- 传送所有参赛者到传送节点（比赛起始位置）
+---@return boolean 是否成功传送
+function GameModeBase:TeleportAllPlayersToStartPosition()
+    return self:TeleportAllPlayersToHandlerNode("teleport", self.modeName)
+end
+
+--- 传送所有参赛者到复活节点
+---@return boolean 是否成功传送
+function GameModeBase:TeleportAllPlayersToRespawn()
+    return self:TeleportAllPlayersToHandlerNode("respawn", self.modeName)
 end
 
 --- 当有玩家进入此游戏模式时调用

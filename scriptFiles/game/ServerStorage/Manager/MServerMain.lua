@@ -142,7 +142,7 @@ function MainServer.OnServerNotify(uin_, args)
     if type(args) ~= 'table' then return end
     if not args.cmd then return end
 
-    local player_ = gg.getPlayerByUin(uin_)
+    local player_ = serverDataMgr.getPlayerByUin(uin_)
     if not player_ then
         return
     end
