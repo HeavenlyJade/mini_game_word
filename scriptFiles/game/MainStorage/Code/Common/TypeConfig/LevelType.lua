@@ -3,6 +3,7 @@
 
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
+local RewardManager = require(MainStorage.Code.GameReward.RewardManager) --[[@type RewardManager]]
 
 ---@class LevelType : Class
 ---@field id string 关卡的唯一ID (来自配置的Key)
@@ -17,6 +18,7 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
 ---@field victoryCondition string 胜利条件
 ---@field baseRewards table 基础奖励列表
 ---@field rankRewards table<string, table> 排名奖励字典 (名次 -> 奖励配置)
+---@field _calculator RewardBase 缓存的奖励计算器实例
 local LevelType = ClassMgr.Class("LevelType")
 
 function LevelType:OnInit(data)
@@ -49,10 +51,31 @@ function LevelType:OnInit(data)
         self.rankRewards[rankName] = rankReward["奖励列表"] or {}
     end
     
+    -- 【新增】缓存计算器实例
+    self._calculator = nil
+    
     -- 调试信息：显示关卡配置加载结果
     local gg = require(game:GetService("MainStorage").Code.Untils.MGlobal)
     gg.log(string.format("LevelType 初始化完成 - 关卡: %s, 基础奖励数: %d, 每米得分: %.1f", 
            self.name, #self.baseRewards, self.scorePerMeter))
+end
+
+--- 【新增】获取或创建并缓存奖励计算器
+---@return RewardBase|nil
+function LevelType:_GetCalculator()
+    -- 如果已有缓存，直接返回
+    if self._calculator then
+        return self._calculator
+    end
+
+    -- 否则，从管理器获取一个新的实例
+    local calculator = RewardManager.GetCalculator(self.defaultGameMode)
+    if calculator then
+        self._calculator = calculator -- 缓存实例
+        return self._calculator
+    end
+
+    return nil
 end
 
 --- 获取基础奖励
@@ -65,6 +88,7 @@ end
 ---@param rank number 排名 (1, 2, 3...)
 ---@return table|nil
 function LevelType:GetRankRewards(rank)
+    -- 【修正】恢复为简单的数据获取方法，不再调用计算器
     local rankName = string.format("第%d名", rank)
     return self.rankRewards[rankName]
 end
@@ -106,118 +130,18 @@ function LevelType:IsPlayerCountValid(playerCount)
     return playerCount >= self.minPlayers and playerCount <= self.maxPlayers
 end
 
---- 结算基础奖励
 ---@param playerData table 玩家数据，包含飞行距离等信息 {distance: number, rank: number, ...}
 ---@return table<string, number> 奖励结果，格式为 {["物品名"] = 数量, ...}
 function LevelType:CalculateBaseRewards(playerData)
-    local rewards = {}
-    
-    if not self.baseRewards or #self.baseRewards == 0 then
-        return rewards -- 如果没有配置基础奖励，返回空表
+    local calculator = self:_GetCalculator()
+    if not calculator then
+        local gg = require(game:GetService("MainStorage").Code.Untils.MGlobal)
+        gg.log(string.format("错误: [LevelType] 无法为玩法 '%s' 获取奖励计算器。", self.defaultGameMode))
+        return {}
     end
-    
-    local gg = require(game:GetService("MainStorage").Code.Untils.MGlobal)
-    
-    gg.log(string.format("LevelType: 开始计算基础奖励，配置项数量: %d", #self.baseRewards))
-    
-    for _, rewardConfig in ipairs(self.baseRewards) do
-        local itemName = rewardConfig["奖励物品"] or rewardConfig["物品"] -- 兼容两种字段名
-        local calculationMethod = rewardConfig["计算方式"] or "固定数量"
-        local fixedAmount = rewardConfig["固定数量"] or rewardConfig["数量"] or 0
-        local formula = rewardConfig["奖励公式"] or ""
-        
-        if itemName and itemName ~= "" then
-            local finalAmount = 0
-            
-            -- 根据计算方式确定最终奖励数量
-            if calculationMethod == "固定数量" then
-                finalAmount = fixedAmount
-            elseif calculationMethod == "飞车挑战赛" then
-                -- 飞车挑战赛特殊计算：基础奖励 + 距离奖励
-                local baseAmount = fixedAmount or 20
-                local distance = playerData.distance or 0
-                local distanceBonus = math.floor(distance * (self.scorePerMeter or 1.0))
-                finalAmount = baseAmount + distanceBonus
-            elseif calculationMethod == "公式计算" and formula ~= "" then
-                -- 使用公式计算（这里可以扩展更复杂的公式解析）
-                finalAmount = self:_evaluateRewardFormula(formula, playerData)
-            else
-                -- 默认使用固定数量
-                finalAmount = fixedAmount
-            end
-            
-            -- 确保奖励数量不为负数
-            finalAmount = math.max(0, math.floor(finalAmount))
-            
-            -- 累加同类型物品的奖励
-            if rewards[itemName] then
-                rewards[itemName] = rewards[itemName] + finalAmount
-            else
-                rewards[itemName] = finalAmount
-            end
-            
-            gg.log(string.format("LevelType: 奖励计算 - %s: %d (方式: %s)", itemName, finalAmount, calculationMethod))
-        end
-    end
-    
-    local rewardCount = 0
-    for _ in pairs(rewards) do rewardCount = rewardCount + 1 end
-    gg.log(string.format("LevelType: 基础奖励计算完成，最终奖励项目数: %d", rewardCount))
-    
-    return rewards
-end
 
---- 内部方法：计算奖励公式（使用强大的 gg.eval 解析器）
---- 支持的变量：distance(飞行距离), rank(排名), scorePerMeter(每米得分), playerName(玩家名), 
---- raceTime(比赛时长), minPlayers(最少人数), maxPlayers(最多人数)
---- 
---- 支持的操作符：+ - * / ^ ( )
---- 支持的函数：max(a,b,...), min(a,b,...), clamp(value,min,max)
---- 支持中文符号：，（）－×÷ 等会自动转换为英文
---- 
---- 示例公式：
----   "20 + distance * 0.5" -> 基础20 + 距离*0.5
----   "max(10, 100 - rank * 15)" -> 排名奖励，最低保底10
----   "clamp(distance * 0.3, 5, 50)" -> 距离奖励，最低5最高50
----   "20 + distance^1.2 / 10" -> 使用幂运算的非线性奖励
----   "min(50，距离×0.5)" -> 支持中文符号（自动转换）
----@param formula string 奖励公式字符串
----@param playerData table 玩家数据
----@return number 计算结果
-function LevelType:_evaluateRewardFormula(formula, playerData)
-    local gg = require(game:GetService("MainStorage").Code.Untils.MGlobal)
-    
-    -- 准备变量表，确保安全的变量访问
-    local variables = {
-        distance = playerData.distance or 0,
-        rank = playerData.rank or 1,
-        scorePerMeter = self.scorePerMeter or 1.0,
-        -- 扩展更多可用变量
-        playerName = playerData.playerName or "",
-        raceTime = self.raceTime or 60,
-        minPlayers = self.minPlayers or 1,
-        maxPlayers = self.maxPlayers or 8
-    }
-    
-    -- 使用模式匹配进行安全的变量替换，确保只替换完整的变量名
-    local result = formula
-    for varName, varValue in pairs(variables) do
-        -- 使用边界匹配确保只替换完整的变量名
-        local pattern = "%f[%w_]" .. varName .. "%f[^%w_]"
-        result = string.gsub(result, pattern, tostring(varValue))
-    end
-    
-    -- 使用新的 gg.eval 函数进行安全计算
-    local calculatedValue = gg.eval(result)
-    
-    -- 确保返回值为非负数
-    if type(calculatedValue) == "number" and calculatedValue >= 0 then
-        return calculatedValue
-    else
-        -- 只在计算失败时记录错误日志
-        gg.log(string.format("LevelType: 公式计算失败 - %s", formula))
-        return 0
-    end
+    -- 将计算任务完全委托给计算器
+    return calculator:CalcBaseReward(playerData, self)
 end
 
 return LevelType 

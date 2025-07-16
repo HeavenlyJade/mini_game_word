@@ -271,79 +271,63 @@ function RaceGameMode:_teleportAllPlayersToRespawn()
     return self:TeleportAllPlayersToRespawn()
 end
 
---- 【新增】计算并发放奖励
+--- 【核心重构】计算并发放奖励，直接使用 LevelType 实例
 function RaceGameMode:_calculateAndDistributeRewards()
     if not self.levelType then
-        gg.log("RaceGameMode: 关卡配置为空，无法发放奖励")
+        gg.log("错误: [RaceGameMode] 关卡实例(levelType)为空，无法发放奖励。")
         return
     end
     
-    gg.log(string.format("RaceGameMode: 开始计算奖励，参与玩家数: %d，排名列表长度: %d", #self.participants, #self.rankings))
+    gg.log(string.format("信息: [RaceGameMode] 开始计算奖励，参与玩家数: %d", #self.participants))
     
     -- 按照真实排名顺序处理奖励
     for _, uin in ipairs(self.rankings) do
         local flightData = self.flightData[uin]
         if flightData then
-            -- 根据UIN找到对应的MPlayer实例
-            local player = nil
-            for _, p in ipairs(self.participants) do
-                if p.uin == uin then
-                    player = p
-                    break
-                end
-            end
+            local player = self:GetPlayerByUin(uin)
             
             if player then
-                -- 使用真实的飞行数据
+                -- 准备要传递给 LevelType 计算方法的数据
                 local playerData = {
-                    rank = flightData.rank,  -- 真实排名
-                    distance = flightData.flightDistance, -- 真实飞行距离
+                    rank = flightData.rank,
+                    distance = flightData.flightDistance,
                     playerName = flightData.name,
                     uin = flightData.uin
                 }
                 
-                gg.log(string.format("RaceGameMode: 计算玩家 %s 的奖励 - 排名: %d, 距离: %.1f米", 
-                       playerData.playerName, playerData.rank, playerData.distance))
+                gg.log(string.format("信息: [RaceGameMode] 开始为玩家 %s (第%d名) 计算奖励...", playerData.playerName, playerData.rank))
                 
-                -- 计算基础奖励
+                -- 1. 计算并分发基础奖励
                 local baseRewards = self.levelType:CalculateBaseRewards(playerData)
-                local baseRewardCount = 0
-                if baseRewards then
-                    for _ in pairs(baseRewards) do baseRewardCount = baseRewardCount + 1 end
-                end
-                gg.log(string.format("RaceGameMode: 基础奖励计算完成，奖励项数: %d", baseRewardCount))
-                
-                -- 计算排名奖励
-                local rankRewards = self.levelType:GetRankRewards(playerData.rank)
-                gg.log(string.format("RaceGameMode: 排名奖励获取完成，奖励项数: %d", rankRewards and #rankRewards or 0))
-                
-                -- 发放基础奖励
                 if baseRewards and next(baseRewards) then
-                    gg.log("RaceGameMode: 开始发放基础奖励")
+                    gg.log(" -> 开始发放基础奖励...")
                     for itemName, amount in pairs(baseRewards) do
-                        gg.log(string.format("RaceGameMode: 发放基础奖励 - %s x%d", itemName, amount))
-                        self:_giveItemToPlayer(player, itemName, amount)
-                    end
-                else
-                    gg.log("RaceGameMode: 无基础奖励可发放")
-                end
-                
-                -- 发放排名奖励
-                if rankRewards and #rankRewards > 0 then
-                    gg.log("RaceGameMode: 开始发放排名奖励")
-                    for _, reward in ipairs(rankRewards) do
-                        local itemName = reward["物品"]
-                        local amount = reward["数量"]
-                        if itemName and amount then
-                            gg.log(string.format("RaceGameMode: 发放排名奖励 - %s x%d", itemName, amount))
+                        if amount > 0 then
+                            gg.log(string.format("    - 基础奖励: %s x%d", itemName, amount))
                             self:_giveItemToPlayer(player, itemName, amount)
                         end
                     end
                 else
-                    gg.log("RaceGameMode: 无排名奖励可发放")
+                    gg.log(" -> 无基础奖励可发放。")
+                end
+                
+                -- 2. 获取并分发排名奖励
+                local rankRewards = self.levelType:GetRankRewards(playerData.rank)
+                if rankRewards and #rankRewards > 0 then
+                    gg.log(" -> 开始发放排名奖励...")
+                    for _, rewardItem in ipairs(rankRewards) do
+                        local itemName = rewardItem["物品"]
+                        local amount = rewardItem["数量"]
+                        if itemName and amount and amount > 0 then
+                            gg.log(string.format("    - 排名奖励: %s x%d", itemName, amount))
+                            self:_giveItemToPlayer(player, itemName, amount)
+                        end
+                    end
+                else
+                    gg.log(string.format(" -> 玩家 %s (第%d名) 无排名奖励可发放。", playerData.playerName, playerData.rank))
                 end
             else
-                gg.log(string.format("RaceGameMode: 未找到 UIN %d 对应的玩家实例", uin))
+                gg.log(string.format("警告: [RaceGameMode] 未找到 UIN %d 对应的玩家实例，无法发放奖励。", uin))
             end
         end
     end
@@ -461,6 +445,18 @@ end
 ---@return FlightPlayerData|nil
 function RaceGameMode:GetPlayerFlightData(uin)
     return self.flightData[uin]
+end
+
+--- 【新增】根据UIN获取玩家实例
+---@param uin number
+---@return MPlayer|nil
+function RaceGameMode:GetPlayerByUin(uin)
+    for _, p in ipairs(self.participants) do
+        if p.uin == uin then
+            return p
+        end
+    end
+    return nil
 end
 
 --- 【新增】获取当前排名列表
