@@ -1,13 +1,13 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
-local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
-local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-local MailEventConfig = require(MainStorage.code.common.event_conf.event_maill) ---@type MailEventConfig
-local TimeUtils = require(MainStorage.code.common.func_utils.time_utils) ---@type TimeUtils
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
+local ViewList = require(MainStorage.Code.Client.UI.ViewList) ---@type ViewList
+local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
+local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
+local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
+local MailEventConfig = require(MainStorage.Code.Event.EventMail) ---@type MailEventConfig
+local TimeUtils = require(MainStorage.Code.Untils.TimeUntils) ---@type TimeUtils
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class NewMailNotificationPayload
 ---@field cmd string 事件命令

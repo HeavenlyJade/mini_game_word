@@ -48,16 +48,5 @@ MS.PerlinNoise = require(MS.MainStorage.Code.Untils.Math.PerlinNoise)
 
 
 
--- 通用配置和常量
--- 
-
-
--- 事件系统
-MS.EventBag = require(MS.MainStorage.Code.Event.event_bag)
-MS.EventSkill = require(MS.MainStorage.Code.Event.event_sklii)
-MS.EventMail = require(MS.MainStorage.Code.Event.EventMail)
-
-
-
 
 return MS

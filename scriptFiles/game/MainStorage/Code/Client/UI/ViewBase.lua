@@ -82,10 +82,13 @@ if game.RunService:IsPC() then
 end
 
 
+-- ViewBase.lua
+
+---@generic T : ViewComponent
 ---@param path string 组件路径
----@param type? ViewComponent 组件类型
----@param ... any 额外参数
----@return ViewComponent
+---@param type? fun(node: UIComponent, ui: ViewBase, path: string, ...): T|T 组件类型类或实例
+---@param ... any 额外参数  
+---@return T
 function ViewBase:Get(path, type, ...)
     local cacheKey = path
     if self.componentCache[cacheKey] then
@@ -121,7 +124,8 @@ function ViewBase:Get(path, type, ...)
         local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
         type = ViewComponent
     end
-    ---@cast type ViewComponent
+    
+    ---@type T
     local component = type.New(node, self, fullPath, ...)
 
     -- Cache the component

@@ -292,6 +292,10 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     self.lastTouchInTime = 0  -- 防抖：记录上次TouchIn时间
     self.lastTouchOutTime = 0 -- 防抖：记录上次TouchOut时间
     self.state = ButtonState.IDLE
+    
+    -- 正确设置 self.node（ViewComponent基类需要）
+    self.node = node
+    
     self.img = node ---@type UIImage
     if realButtonPath then
         self.img = self.img[realButtonPath]

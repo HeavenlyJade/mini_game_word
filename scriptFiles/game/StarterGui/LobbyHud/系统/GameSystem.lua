@@ -1,10 +1,11 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local CoreUI = game:GetService("CoreUI")
-local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
 
+
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
+local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class GameSystem:ViewBase
 local GameSystem = ClassMgr.Class("GameSystem", ViewBase)
 

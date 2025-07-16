@@ -1,8 +1,7 @@
 local MainStorage = game:GetService('MainStorage')
 local Players = game:GetService('Players')
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
-local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
+
 local Vec2 = require(MainStorage.Code.Untils.Math.Vec2)
 local Vec3 = require(MainStorage.Code.Untils.Math.Vec3)
 local Vec4 = require(MainStorage.Code.Untils.Math.Vec4)
@@ -12,7 +11,6 @@ local Mat3x4 = require(MainStorage.Code.Untils.Math.Matrix3x4)
 local MathDefines = require(MainStorage.Code.Untils.Math.MathDefines)
 local ShakeController = require(MainStorage.Code.Client.Camera.ShakeController) ---@type ShakeController
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
-
 ---@class CameraController
 local CameraController = {}
 
@@ -39,7 +37,7 @@ local _lockMouseY = false
 local _invertMouseX = false
 local _invertMouseY = false
 local _mouseXSensitivity = 0.2
-local _mouseYSensitivity = 0.2
+local _mouseYSensitivity = 0.1
 local _wheelSensitivity = 50
 local _mouseXMin = -60.0
 local _mouseXMax = 60.0
@@ -96,16 +94,32 @@ local _InputBeganEvent = nil
 local _InputEndedEvent = nil
 local _InputChangedEvent = nil
 
+local _cameraLocked = false -- 新增：摄像机锁定标志
+
+local _lastExtremeInputTime = 0 -- 极限输入冷却
+local EXTREME_INPUT_THRESHOLD = 20
+local EXTREME_INPUT_COOLDOWN = 1.0
+
+local _extremeInputBlockUntil = 0 -- 极限输入保护期
+local _pendingExtremeInputBlockDuration = nil -- 新增：待激活保护时长
+
+local _lastDeltaX = 0
+local _lastDeltaY = 0
 
 ClientEventManager.Subscribe("UpdateCameraView", function(data)
     if data.x then
-        _rawMouseX = data.x
-        _rawMouseY = data.y + 180
+        CameraController.RotateTo(data.x, data.y)
     end
 end)
 -- 在 CameraController.lua 中，替换 SetActive 函数中的鼠标处理部分：
+local touchCameraId = nil
 
+function CameraController.RotateTo(x, y)
+    _rawMouseY = x
+    _rawMouseX = y + 180
+end
 function CameraController.SetActive(active)
+    local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
     _owner = Players.LocalPlayer
     if active then
         CameraController.SetCamera(game.WorkSpace.CurrentCamera)
@@ -115,15 +129,18 @@ function CameraController.SetActive(active)
             _TouchStartedEvent =
                 game.UserInputService.TouchStarted:Connect(
                 function(inputObj, gameprocessed)
-                    _isTouching = true
-                    CameraController.OnTouchStarted(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
+                    if inputObj.Position.x > ViewBase.GetScreenSize().x / 2 then
+                        touchCameraId = inputObj.TouchId
+                        _isTouching = true
+                        CameraController.OnTouchStarted(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
+                    end
                 end
             )
 
             _TouchMovedEvent =
                 game.UserInputService.TouchMoved:Connect(
                 function(inputObj, gameprocessed)
-                    if _isTouching then
+                    if _isTouching and inputObj.TouchId == touchCameraId then
                         CameraController.OnTouchMoved(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
                     end
                 end
@@ -132,8 +149,10 @@ function CameraController.SetActive(active)
             _TouchEndedEvent =
                 game.UserInputService.TouchEnded:Connect(
                 function(inputObj, gameprocessed)
-                    _isTouching = false
-                    CameraController.OnTouchEnded(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
+                    if inputObj.TouchId == touchCameraId then
+                        _isTouching = false
+                        CameraController.OnTouchEnded(inputObj.Position.x, inputObj.Position.y, inputObj.TouchId)
+                    end
                 end
             )
         elseif game.UserInputService.MouseEnabled then -- 鼠标设备
@@ -152,13 +171,22 @@ function CameraController.SetActive(active)
                 game.UserInputService.InputChanged:Connect(
                 function(inputObj, gameprocessed)
                     if inputObj.UserInputType == Enum.UserInputType.MouseMovement.Value then
-                        -- 只有在按住鼠标右键时才处理鼠标移动
                         if _isTouching or game.MouseService:IsSight() then
-                            CameraController.OnTouchMoved(
-                                _currentTouchPos.x + inputObj.Delta.x,
-                                _currentTouchPos.y + inputObj.Delta.y,
-                                inputObj.TouchId
-                            )
+                            local currentTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
+                            local elapsedTime = currentTime - _touchStartTime
+                            if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
+                                local deltaY = inputObj.Delta.y
+                                if game.RunService:IsPC() then
+                                    if not game.MouseService:IsSight() then
+                                        deltaY = -deltaY
+                                    end
+                                end
+                                if _alignWhenMoving and _lockedOnTarget then
+                                    CameraController.InputMove(0, deltaY)
+                                else
+                                    CameraController.InputMove(inputObj.Delta.x, deltaY)
+                                end
+                            end
                         end
                     end
                 end
@@ -224,6 +252,11 @@ function CameraController.LaterUpdateClient(dt)
         return
     end
 
+    if _cameraLocked then
+        -- 摄像机锁定时不自动更新位置和旋转
+        return
+    end
+
     CameraController.ShakeUpdate(dt)
 
     if _cameraMode == CameraController.CameraMode.ThirdPerson then
@@ -277,9 +310,9 @@ function CameraController.ThirdPersonUpdate(dt)
 
     -- 使用SmoothDamp平滑处理鼠标X轴和Y轴的旋转
     _mouseXSmooth, _mouseXCurrentVelocity =
-        VectorUtils.Math.SmoothDamp(_mouseXSmooth, _mouseX, _mouseXCurrentVelocity, _mouseSmoothTime, 0, dt)
+        gg.math.SmoothDamp(_mouseXSmooth, _mouseX, _mouseXCurrentVelocity, _mouseSmoothTime, 0, dt)
     _mouseYSmooth, _mouseYCurrentVelocity =
-        VectorUtils.Math.SmoothDamp(_mouseYSmooth, _mouseY, _mouseYCurrentVelocity, _mouseSmoothTime, 0, dt)
+        gg.math.SmoothDamp(_mouseYSmooth, _mouseY, _mouseYCurrentVelocity, _mouseSmoothTime, 0, dt)
     -- 计算摄像机旋转
     _currentCameraRot = CameraController.CalcCameraRotation(_mouseXSmooth, _mouseYSmooth)
 
@@ -292,7 +325,7 @@ function CameraController.ThirdPersonUpdate(dt)
     if not isHit then
         -- 如果没有碰撞，平滑处理摄像机距离
         _distanceSmooth, _distanceCurrentVelocity =
-            VectorUtils.Math.SmoothDamp(
+            gg.math.SmoothDamp(
             _distanceSmooth,
             closestDistance,
             _distanceCurrentVelocity,
@@ -338,12 +371,14 @@ end
 
 --获取摄像机朝向，未抖动
 function CameraController.GetForward()
-    return VectorUtils.Vec.ToDirection(Vector3.New(_rawMouseX, _rawMouseY, 0))
+    local winSize = _camera.WindowSize
+    local ray_   =  _camera:ViewportPointToRay( winSize.x/2, winSize.y/2, 12800 )
+    return ray_.Direction
 end
 
-function CameraController.GetRealForward(horizontalRecoil, verticalRecoil)
-    return VectorUtils.Vec.ToDirection(Vector3.New(_mouseX + horizontalRecoil, _mouseY + verticalRecoil, 0))
-end
+-- function CameraController.GetRealForward(horizontalRecoil, verticalRecoil)
+--     return gg.vec.ToDirection(Vector3.New(_mouseX + horizontalRecoil, _mouseY + verticalRecoil, 0))
+-- end
 
 --获取摄像机观察点位置
 function CameraController.CalcPivotPosition(axisDegrees)
@@ -399,7 +434,7 @@ function CameraController.AlignWithAngle(yAngle, inverted)
     local delta = targetRotation * inverseRotation
     local deltaEuler = delta:ToEuler().y
     local deltaEuler = delta:ToEuler().y
-    if VectorUtils.Math.IsAlmostEqual(deltaEuler, 0, 0.5) then
+    if gg.math.IsAlmostEqual(deltaEuler, 0, 0.5) then
         return
     end
     if deltaEuler > 180 then
@@ -534,8 +569,18 @@ function CameraController.SetInputEnabled(enabled)
 end
 
 function CameraController.InputMove(deltaX, deltaY)
-    -- deltaX: 水平输入，驱动偏航（Yaw）
-    -- deltaY: 垂直输入，驱动俯仰（Pitch）
+    local now = gg.GetTimeStamp()
+    -- 若有待激活保护，首次输入时激活保护期
+    if _pendingExtremeInputBlockDuration then
+        _extremeInputBlockUntil = now + _pendingExtremeInputBlockDuration
+        _pendingExtremeInputBlockDuration = nil
+    end
+    if now < _extremeInputBlockUntil then
+        if math.abs(deltaX) > EXTREME_INPUT_THRESHOLD or math.abs(deltaY) > EXTREME_INPUT_THRESHOLD then
+            return
+        end
+    end
+
     local yawInput   = deltaX
     local pitchInput = deltaY
 
@@ -558,7 +603,6 @@ function CameraController.InputMove(deltaX, deltaY)
     -- 更新 raw 值
     _rawMouseX = _rawMouseX + yawInput   * _mouseXSensitivity
     _rawMouseY = _rawMouseY + pitchInput * _mouseYSensitivity
-
     -- 偏航限制Y轴
     _rawMouseY = math.clamp(_rawMouseY, _mouseYMin, _mouseYMax)
 end
@@ -586,25 +630,41 @@ function CameraController.EnableSightTouch()
     end
 end
 
+function CameraController.SetCameraAt(pos, rot)
+    local Vec3 = require(MainStorage.code.common.math.Vec3)
+    local Quat = require(MainStorage.code.common.math.Quat)
+    local targetPos = Vec3.new(pos)
+    local targetRot = Quat.new()
+    targetRot:FromEuler(Vec3.new(rot))
+    if _camera then
+        _camera.Position = Vector3.New(targetPos.x, targetPos.y, targetPos.z)
+        _camera.Rotation = Quaternion.New(targetRot.x, targetRot.y, targetRot.z, targetRot.w)
+    end
+    _viewDirty = true
+    _projectionDirty = true
+    _cameraLocked = true -- 新增：锁定摄像机
+end
+
+function CameraController.UnlockCamera()
+    _cameraLocked = false
+    -- 触发一次自动更新，恢复摄像机到当前跟随/第三人称等逻辑
+    if _cameraMode == CameraController.CameraMode.ThirdPerson then
+        CameraController.ThirdPersonUpdate(0)
+    end
+    _viewDirty = true
+    _projectionDirty = true
+end
+
 function CameraController.OnTouchMoved(x, y, touchId)
     _currentTouchPos.x = x
     _currentTouchPos.y = y
 
     if _lastTouchPos.x ~= 0 and _lastTouchPos.y ~= 0 then
         local delta = _currentTouchPos - _lastTouchPos
-        local currentTime = gg.GetTimeStamp()  -- Use gg.GetTimeStamp() instead of game.TimeService:GetTime()
-        local elapsedTime = currentTime - _touchStartTime
-
-        if _inputEnabled and elapsedTime >= 0.1 then  -- Only allow movement after 0.1 seconds
-            local deltaY = delta.y
-            if not game.MouseService:IsSight() or not game.RunService:IsPC() then
-                deltaY = -deltaY
-            end
-            if _alignWhenMoving and _lockedOnTarget then
-                CameraController.InputMove(0, deltaY)
-            else
-                CameraController.InputMove(delta.x, deltaY)
-            end
+        if _alignWhenMoving and _lockedOnTarget then
+            CameraController.InputMove(0, delta.y)
+        else
+            CameraController.InputMove(delta.x, delta.y)
         end
     end
 
@@ -635,6 +695,10 @@ end
 --是否在震动
 function CameraController.IsShaking()
     return ShakeController.IsShaking()
+end
+
+function CameraController.BlockExtremeInputFor(duration)
+    _pendingExtremeInputBlockDuration = duration
 end
 
 CameraController.SetActive(true)
