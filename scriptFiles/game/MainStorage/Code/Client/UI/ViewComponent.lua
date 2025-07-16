@@ -1,13 +1,18 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 
 
 
----@class ViewComponent:Class
+---@class ViewComponent : Class
 ---@field node UIComponent
----@field New fun(node: SandboxNode, ui: ViewBase, path?:string,  ...): ViewComponent
+---@field ui ViewBase
 ---@field path string 组件的绝对路径
-local  ViewComponent = ClassMgr.Class("ViewComponent")
+---@field defaultPos Vector2
+---@field defaultSize Vector2
+---@field defaultRotation number
+---@field index number
+---@field extraParams table
+local ViewComponent = ClassMgr.Class("ViewComponent")
 
 
 function ViewComponent:OnInit(node, ui, path)
