@@ -138,24 +138,30 @@ function MainServer.createNetworkChannel()
 end
 
 
---消息回调 (优化版本，使用命令表和错误处理)
 function MainServer.OnServerNotify(uin_, args)
     if type(args) ~= 'table' then return end
     if not args.cmd then return end
 
-    local player_ = serverDataMgr.getPlayerByUin(uin_)
+    local player_ = gg.getPlayerByUin(uin_)
+    if not player_ then
+        return
+    end
     args.player = player_
     if args.__cb then
         args.Return = function(returnData)
-            gg.network_channel:fireClient(uin_, {
+            game:GetService("NetworkChannel"):fireClient({
                 cmd = args.__cb .. "_Return",
                 data = returnData
             })
         end
     end
-    ServerEventManager.Publish(args.cmd, args)
-    return
 
+    -- 自动判断：如果玩家有该事件的本地订阅，则作为本地事件发布，否则作为全局事件广播
+    if ServerEventManager.HasLocalSubscription(player_, args.cmd) then
+        ServerEventManager.PublishToPlayer(player_, args.cmd, args)
+    else
+        ServerEventManager.Publish(args.cmd, args)
+    end
 end
 
 --开启update

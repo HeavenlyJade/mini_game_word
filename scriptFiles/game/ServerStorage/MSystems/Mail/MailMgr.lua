@@ -17,7 +17,6 @@ local cloudService = game:GetService("CloudService") ---@type CloudService
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local MailEventConfig = require(MainStorage.Code.Event.EventMail) ---@type MailEventConfig
 local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
-local Mail = require(ServerStorage.MSystems.Mail.Mail) ---@type Mail
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 ---@class MailMgr

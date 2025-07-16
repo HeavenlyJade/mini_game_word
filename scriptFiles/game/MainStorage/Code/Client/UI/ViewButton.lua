@@ -80,10 +80,6 @@ end
 
 function ViewButton:SetGray(isGray)
     self.img.Grayed = isGray
-    -- for _, props in pairs(self.childClickImgs) do
-    --     local child = props.node
-    --     child.Grayed= isGray
-    -- end
 end
 
 --- 集中处理状态变化的视觉和音效
@@ -132,7 +128,7 @@ function ViewButton:_changeState(newState)
     end
 end
 
-function ViewButton:OnTouchOut()
+function ViewButton:OnTouchOut(vector2)
     local currentTime = gg.GetTimeStamp()
     if currentTime - self.lastTouchOutTime < 0.1 then return end
     self.lastTouchOutTime = currentTime
@@ -146,8 +142,8 @@ function ViewButton:OnTouchOut()
         })
     end
 
-    -- 判断抬起时是否还在按钮上
-    local isHover = self.node:IsRollOver()
+    -- 判断抬起时是否还在按钮上（使用内置的悬浮状态）
+    local isHover = self.isHover
     if isHover then
         -- 触发点击事件
         self:OnClick()
@@ -159,7 +155,7 @@ function ViewButton:OnTouchOut()
     end
 
     if self.touchEndCb then
-        self.touchEndCb(self.ui, self)
+        self.touchEndCb(self.ui, self, vector2)
     end
 end
 
@@ -268,7 +264,7 @@ function ViewButton:_BindNodeAndChild(child, isDeep, bindEvents)
             end)
             child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
                 print("TouchEnd", self.path)
-                self:OnTouchOut()
+                self:OnTouchOut(vector2)
             end)
             child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
                 self:OnTouchMove(node, isTouchMove, vector2, number)
@@ -323,7 +319,6 @@ function ViewButton:RebindToNewNode(newNode, realButtonPath)
 
     -- 更新节点引用
     self.node = newNode ---@type UIImage
-    local oldImg = self.img
     self.img = newNode ---@type UIImage
     if realButtonPath then
         self.img = self.img[realButtonPath]

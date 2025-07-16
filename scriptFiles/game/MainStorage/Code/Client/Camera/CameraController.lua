@@ -11,6 +11,7 @@ local Mat3x4 = require(MainStorage.Code.Untils.Math.Matrix3x4)
 local MathDefines = require(MainStorage.Code.Untils.Math.MathDefines)
 local ShakeController = require(MainStorage.Code.Client.Camera.ShakeController) ---@type ShakeController
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 ---@class CameraController
 local CameraController = {}
 
@@ -119,7 +120,7 @@ function CameraController.RotateTo(x, y)
     _rawMouseX = y + 180
 end
 function CameraController.SetActive(active)
-    local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
+    local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
     _owner = Players.LocalPlayer
     if active then
         CameraController.SetCamera(game.WorkSpace.CurrentCamera)
@@ -310,9 +311,9 @@ function CameraController.ThirdPersonUpdate(dt)
 
     -- 使用SmoothDamp平滑处理鼠标X轴和Y轴的旋转
     _mouseXSmooth, _mouseXCurrentVelocity =
-        gg.math.SmoothDamp(_mouseXSmooth, _mouseX, _mouseXCurrentVelocity, _mouseSmoothTime, 0, dt)
+        VectorUtils.Math.SmoothDamp(_mouseXSmooth, _mouseX, _mouseXCurrentVelocity, _mouseSmoothTime, 0, dt)
     _mouseYSmooth, _mouseYCurrentVelocity =
-        gg.math.SmoothDamp(_mouseYSmooth, _mouseY, _mouseYCurrentVelocity, _mouseSmoothTime, 0, dt)
+        VectorUtils.Math.SmoothDamp(_mouseYSmooth, _mouseY, _mouseYCurrentVelocity, _mouseSmoothTime, 0, dt)
     -- 计算摄像机旋转
     _currentCameraRot = CameraController.CalcCameraRotation(_mouseXSmooth, _mouseYSmooth)
 
@@ -325,7 +326,7 @@ function CameraController.ThirdPersonUpdate(dt)
     if not isHit then
         -- 如果没有碰撞，平滑处理摄像机距离
         _distanceSmooth, _distanceCurrentVelocity =
-            gg.math.SmoothDamp(
+            VectorUtils.Math.SmoothDamp(
             _distanceSmooth,
             closestDistance,
             _distanceCurrentVelocity,
@@ -434,7 +435,7 @@ function CameraController.AlignWithAngle(yAngle, inverted)
     local delta = targetRotation * inverseRotation
     local deltaEuler = delta:ToEuler().y
     local deltaEuler = delta:ToEuler().y
-    if gg.math.IsAlmostEqual(deltaEuler, 0, 0.5) then
+    if VectorUtils.Math.IsAlmostEqual(deltaEuler, 0, 0.5) then
         return
     end
     if deltaEuler > 180 then

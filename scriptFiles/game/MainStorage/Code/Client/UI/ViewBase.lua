@@ -27,7 +27,7 @@ local hiddenHuds = {} -- 记录被隐藏的layer=0界面
 ---@field closeHideMouse boolean
 ---@field hideOnInit boolean
 ---@field isOnTop boolean
----@field componentCache table<string, ViewComponent>
+---@field componentCache table<string, ViewComponent|ViewButton>
 ---@field openCb fun()|nil
 ---@field closeCb fun()|nil
 ---@field openSound string

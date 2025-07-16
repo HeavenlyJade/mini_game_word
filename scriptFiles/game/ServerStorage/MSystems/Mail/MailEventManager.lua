@@ -3,38 +3,14 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local MailEventConfig = require(MainStorage.Code.Event.EventMail) ---@type MailEventConfig
 
 ---@class MailEventManager
 local MailEventManager = {}
 
--- 邮件相关事件命令
-MailEventManager.EVENTS = {
-    -- 客户端请求
-    GET_MAIL_LIST = "mail_get_list",           -- 获取邮件列表
-    READ_MAIL = "mail_read",                   -- 读取邮件
-    CLAIM_MAIL = "mail_claim",                 -- 领取邮件附件
-    DELETE_MAIL = "mail_delete",               -- 删除邮件
-    BATCH_CLAIM = "mail_batch_claim",          -- 批量领取
-    DELETE_READ_MAILS = "mail_delete_read",    -- 删除已读邮件
-    
-    -- 服务器通知
-    MAIL_LIST_UPDATE = "mail_list_update",     -- 邮件列表更新
-    NEW_MAIL_NOTIFY = "mail_new_notify",       -- 新邮件通知
-    MAIL_CLAIMED = "mail_claimed",             -- 邮件已领取
-    MAIL_DELETED = "mail_deleted"              -- 邮件已删除
-}
-
--- 错误码
-MailEventManager.ERROR_CODES = {
-    SUCCESS = 0,
-    MAIL_NOT_FOUND = 1001,        -- 邮件不存在
-    MAIL_EXPIRED = 1002,          -- 邮件已过期
-    MAIL_NO_ATTACHMENT = 1003,    -- 邮件没有附件
-    MAIL_ALREADY_CLAIMED = 1004,  -- 邮件已领取
-    BAG_FULL = 1005,              -- 背包已满
-    PLAYER_NOT_FOUND = 1006,      -- 玩家不存在
-    INVALID_PARAM = 1007          -- 参数无效
-}
+-- 使用EventMail配置中的事件定义
+MailEventManager.EVENTS = MailEventConfig
+MailEventManager.ERROR_CODES = MailEventConfig.ERROR_CODES
 
 ---------------------------------------------------------------------------------------------------
 --                                      邮件发送功能 (从MailManager合并)
@@ -64,10 +40,10 @@ function MailEventManager.SendPersonalMail(recipientUin, title, content, attachm
     
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local now = os.time()
-    local finalExpireDays = expireDays or 7 -- 默认7天过期
+    local finalExpireDays = expireDays or MailEventConfig.DEFAULT_EXPIRE_DAYS
     
     local mailData = {
-        type = MailMgr.MAIL_TYPE.PLAYER,
+        type = MailEventConfig.MAIL_TYPE.PLAYER,
         title = title,
         content = content,
         attachments = attachments or {},
@@ -93,10 +69,10 @@ function MailEventManager.SendGlobalMail(title, content, attachments, expireDays
     
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
     local now = os.time()
-    local finalExpireDays = expireDays or 7 -- 默认7天过期
+    local finalExpireDays = expireDays or MailEventConfig.DEFAULT_EXPIRE_DAYS
     
     local mailData = {
-        type = MailMgr.MAIL_TYPE.GLOBAL,
+        type = MailEventConfig.MAIL_TYPE.SYSTEM,
         title = title,
         content = content,
         attachments = attachments or {},
@@ -122,32 +98,32 @@ end
 -- 注册网络事件处理器
 function MailEventManager.RegisterNetworkHandlers()
     -- 获取邮件列表
-    ServerEventManager.Subscribe(MailEventManager.EVENTS.GET_MAIL_LIST, function(event)
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.GET_LIST, function(event)
         MailEventManager.HandleGetMailList(event)
     end, 100)
     
-    -- 读取邮件
-    ServerEventManager.Subscribe(MailEventManager.EVENTS.READ_MAIL, function(event)
+    -- 标记邮件为已读
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.MARK_READ, function(event)
         MailEventManager.HandleReadMail(event)
     end, 100)
     
     -- 领取邮件附件
-    ServerEventManager.Subscribe(MailEventManager.EVENTS.CLAIM_MAIL, function(event)
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.CLAIM_MAIL, function(event)
         MailEventManager.HandleClaimMail(event)
     end, 100)
     
     -- 删除邮件
-    ServerEventManager.Subscribe(MailEventManager.EVENTS.DELETE_MAIL, function(event)
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.DELETE_MAIL, function(event)
         MailEventManager.HandleDeleteMail(event)
     end, 100)
     
     -- 批量领取
-    ServerEventManager.Subscribe(MailEventManager.EVENTS.BATCH_CLAIM, function(event)
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.BATCH_CLAIM, function(event)
         MailEventManager.HandleBatchClaim(event)
     end, 100)
     
     -- 删除已读邮件
-    ServerEventManager.Subscribe(MailEventManager.EVENTS.DELETE_READ_MAILS, function(event)
+    ServerEventManager.Subscribe(MailEventConfig.REQUEST.DELETE_READ_MAILS, function(event)
         MailEventManager.HandleDeleteReadMails(event)
     end, 100)
     
@@ -167,15 +143,15 @@ function MailEventManager.HandleGetMailList(event)
     
     if result.success then
         gg.network_channel:fireClient(player.uin, {
-            cmd = MailEventManager.EVENTS.MAIL_LIST_UPDATE,
-            code = MailEventManager.ERROR_CODES.SUCCESS,
+            cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
+            code = MailEventConfig.ERROR_CODES.SUCCESS,
             mailList = result.mailList
         })
     else
         gg.network_channel:fireClient(player.uin, {
-            cmd = MailEventManager.EVENTS.MAIL_LIST_UPDATE,
-            code = MailEventManager.ERROR_CODES.PLAYER_NOT_FOUND,
-            message = result.message or "获取邮件列表失败"
+            cmd = MailEventConfig.RESPONSE.ERROR,
+            code = MailEventConfig.ERROR_CODES.PLAYER_NOT_FOUND,
+            message = result.message or MailEventConfig.GetErrorMessage(MailEventConfig.ERROR_CODES.PLAYER_NOT_FOUND)
         })
     end
 end
@@ -194,9 +170,9 @@ function MailEventManager.HandleReadMail(event)
     local result = MailMgr.ReadMail(player.uin, mailId)
     
     gg.network_channel:fireClient(player.uin, {
-        cmd = MailEventManager.EVENTS.READ_MAIL,
+        cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
         code = result.code,
-        message = result.message,
+        message = result.message or MailEventConfig.GetErrorMessage(result.code),
         mailId = mailId
     })
 end
@@ -215,9 +191,9 @@ function MailEventManager.HandleClaimMail(event)
     local result = MailMgr.ClaimMailAttachment(player.uin, mailId)
     
     gg.network_channel:fireClient(player.uin, {
-        cmd = MailEventManager.EVENTS.MAIL_CLAIMED,
+        cmd = MailEventConfig.RESPONSE.CLAIM_RESPONSE,
         code = result.code,
-        message = result.message,
+        message = result.message or MailEventConfig.GetErrorMessage(result.code),
         mailId = mailId,
         rewards = result.rewards
     })
@@ -237,9 +213,9 @@ function MailEventManager.HandleDeleteMail(event)
     local result = MailMgr.DeleteMail(player.uin, mailId)
     
     gg.network_channel:fireClient(player.uin, {
-        cmd = MailEventManager.EVENTS.MAIL_DELETED,
+        cmd = MailEventConfig.RESPONSE.DELETE_RESPONSE,
         code = result.code,
-        message = result.message,
+        message = result.message or MailEventConfig.GetErrorMessage(result.code),
         mailId = mailId
     })
 end
@@ -258,9 +234,9 @@ function MailEventManager.HandleBatchClaim(event)
     local result = MailMgr.BatchClaimMails(player.uin, mailIds)
     
     gg.network_channel:fireClient(player.uin, {
-        cmd = MailEventManager.EVENTS.MAIL_CLAIMED,
+        cmd = MailEventConfig.RESPONSE.BATCH_CLAIM_SUCCESS,
         code = result.code,
-        message = result.message,
+        message = result.message or MailEventConfig.GetErrorMessage(result.code),
         rewards = result.rewards
     })
 end
@@ -278,9 +254,9 @@ function MailEventManager.HandleDeleteReadMails(event)
     local result = MailMgr.DeleteReadMails(player.uin)
     
     gg.network_channel:fireClient(player.uin, {
-        cmd = MailEventManager.EVENTS.MAIL_DELETED,
+        cmd = MailEventConfig.RESPONSE.DELETE_READ_SUCCESS,
         code = result.code,
-        message = result.message,
+        message = result.message or MailEventConfig.GetErrorMessage(result.code),
         deletedCount = result.deletedCount
     })
 end
@@ -292,7 +268,7 @@ function MailEventManager.NotifyNewMail(uin, mailData)
     end
     
     gg.network_channel:fireClient(uin, {
-        cmd = MailEventManager.EVENTS.NEW_MAIL_NOTIFY,
+        cmd = MailEventConfig.NOTIFY.NEW_MAIL,
         mailData = mailData
     })
     
@@ -321,8 +297,8 @@ function MailEventManager.NotifyMailListUpdate(uin, mailList)
     end
     
     gg.network_channel:fireClient(uin, {
-        cmd = MailEventManager.EVENTS.MAIL_LIST_UPDATE,
-        code = MailEventManager.ERROR_CODES.SUCCESS,
+        cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
+        code = MailEventConfig.ERROR_CODES.SUCCESS,
         mailList = mailList or {}
     })
     
