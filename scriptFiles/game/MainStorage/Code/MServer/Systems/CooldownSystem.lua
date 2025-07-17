@@ -1,6 +1,6 @@
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr 
 
 ---@class CooldownSystem 冷却系统
 ---@field cd_list table<string, number> 全局冷却列表

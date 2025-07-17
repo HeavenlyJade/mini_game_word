@@ -1,8 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-
 ---@class VariableSystem:Class
 ---@field variables table<string, number> 变量存储
 ---@field entity MPlayer 所属实体

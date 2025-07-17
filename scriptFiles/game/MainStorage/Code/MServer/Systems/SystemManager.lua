@@ -1,6 +1,6 @@
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr 
 
 -- 引入各个系统
 local TagSystem = require(MainStorage.Code.MServer.Systems.TagSystem) ---@type TagSystem

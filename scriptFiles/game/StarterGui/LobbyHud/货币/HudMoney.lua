@@ -1,13 +1,16 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
-local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local TweenService = game:GetService("TweenService")
-local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
-local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
-local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
+local Players = game:GetService('Players')
+local TweenService = game:GetService('TweenService')
+
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
+local ViewList = require(MainStorage.Code.Client.UI.ViewList) ---@type ViewList
+local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
+local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler)
+local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
+local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig)
 
 
 ---@class HudMoney:ViewBase

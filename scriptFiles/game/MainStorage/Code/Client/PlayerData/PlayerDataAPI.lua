@@ -1,8 +1,8 @@
-print("Hello world!")
 
-local MainStorage = script:GetCustomProperty("MainStorage"):WaitForObject()
+local MainStorage = game:GetService("MainStorage")
 local PlayerDataManager = require(MainStorage.Code.Client.PlayerData.PlayerDataManager)
 local LocalEventBus = require(MainStorage.Code.Client.PlayerData.LocalEventBus)
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class PlayerDataAPI
 local PlayerDataAPI = {}

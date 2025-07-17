@@ -76,6 +76,11 @@ end
 ---@param priority? number 优先级，默认为10
 ---@param key? string 记录ID，可用 ServerEventManager.UnsubscribeByKey(key) 移除所有指定key的监听器
 function ServerEventManager.Subscribe(eventType, listener, priority, key)
+    if not eventType then
+        gg.log("错误：尝试订阅一个 nil 事件类型。\n" .. debug.traceback())
+        return
+    end
+
     local priority = priority or 10
     local l = {
         key = key,

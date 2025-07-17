@@ -1,12 +1,13 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
-local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
 local Players = game:GetService('Players')
-local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-local ClientScheduler = require(MainStorage.code.client.ClientScheduler)
+
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
+local ViewList = require(MainStorage.Code.Client.UI.ViewList) ---@type ViewList
+local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
+local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler)
 
 ---@class HudAvatar:ViewBase
 local HudAvatar = ClassMgr.Class("HudAvatar", ViewBase)

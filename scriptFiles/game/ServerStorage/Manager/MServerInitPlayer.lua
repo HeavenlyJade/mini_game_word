@@ -149,10 +149,45 @@ function MServerInitPlayer.player_enter_game(player)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
     gg.log("玩家", uin_, "登录完成，邮件数据已加载到MailMgr")
+    MServerInitPlayer.syncPlayerDataToClient(player_)
 
     
 end
 
+-- 向客户端同步玩家数据
+function MServerInitPlayer.syncPlayerDataToClient(mplayer)
+    local uin = mplayer.uin
+    
+    -- 获取背包数据
+    local bagData = BagMgr.GetPlayerBagData(uin)
+    
+    -- 获取变量数据
+    local variableData = mplayer.variables or {}
+    
+    -- 获取任务数据
+    local questData = mplayer.questData or {}
+    
+    -- 分别发送三种数据类型
+    gg.network_channel:fireClient(uin, { 
+        cmd = "PlayerDataSync_Bag", 
+        bagData = bagData,
+        timestamp = os.time()
+    })
+    
+    gg.network_channel:fireClient(uin, { 
+        cmd = "PlayerDataSync_Variable", 
+        variableData = variableData,
+        timestamp = os.time()
+    })
+    
+    gg.network_channel:fireClient(uin, { 
+        cmd = "PlayerDataSync_Quest", 
+        questData = questData,
+        timestamp = os.time()
+    })
+    
+    gg.log("已向客户端", uin, "同步完整玩家数据")
+end
 -- 玩家离开游戏
 function MServerInitPlayer.player_leave_game(player)
     gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)

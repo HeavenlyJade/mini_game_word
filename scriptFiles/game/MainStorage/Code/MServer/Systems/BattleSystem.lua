@@ -1,6 +1,6 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr 
 local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 
