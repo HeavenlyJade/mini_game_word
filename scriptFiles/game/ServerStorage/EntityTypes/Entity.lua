@@ -7,6 +7,8 @@ local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type Vector
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem)
+
 
 ---@class Entity :Class  轻量级实体容器，管理actor实例和基本属性
 ---@field info any
@@ -72,7 +74,6 @@ function _M:OnInit(info_)
     self.isDestroyed = false
     self.isEntity = true
     self.isPlayer = false
-    
     -- 属性系统
     self.stats = {} ---@type table<string, table<string, number>> 属性存储 [source][statName] = value
     self._attackCache = 0 -- 攻击力缓存

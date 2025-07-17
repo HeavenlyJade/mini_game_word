@@ -3,15 +3,20 @@ local gg = require(MainStorage.Code.Common.Untils.MGlobal) ---@type gg
 local ClassMgr = require(MainStorage.Code.Common.Untils.ClassMgr) ---@type ClassMgr
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 
----@class VariableSystem 变量系统
+---@class VariableSystem:Class
 ---@field variables table<string, number> 变量存储
----@field entity any 所属实体
+---@field entity MPlayer 所属实体
 local VariableSystem = ClassMgr.Class("VariableSystem")
 
 -- 初始化变量系统
 function VariableSystem:OnInit(entity)
-    self.variables = {} -- 变量存储
     self.entity = entity -- 所属实体
+    -- 自动从实体中获取variables数据
+    if entity and entity.variables then
+        self.variables = entity.variables -- 直接引用实体的variables
+    else
+        self.variables = {} -- 如果没有数据则初始化为空
+    end
 end
 
 -- 变量管理 --------------------------------------------------------
@@ -33,43 +38,9 @@ end
 ---@return number 变量值
 function VariableSystem:GetVariable(key, defaultValue)
     defaultValue = defaultValue or 0
-    
-    -- 检查是否是特殊格式的变量名（category#variable）
-    if string.find(key, "#") then
-        return self:GetComplexVariable(key, defaultValue)
-    end
 
     -- 返回普通变量值
     return self.variables[key] or defaultValue
-end
-
---- 获取复杂变量（category#variable格式）
----@param key string 变量名
----@param defaultValue number 默认值
----@return number 变量值
-function VariableSystem:GetComplexVariable(key, defaultValue)
-    local parts = {}
-    for part in string.gmatch(key, "[^#]+") do
-        table.insert(parts, part)
-    end
-
-    if #parts == 2 then
-        local category = parts[1]
-        local variable = parts[2]
-
-        -- 创建并发布事件
-        local evt = {
-            entity = self.entity,
-            category = category,
-            variable = variable,
-            value = 0
-        }
-        ServerEventManager.Publish("VariableEvent", evt)
-
-        return evt.value or defaultValue
-    end
-
-    return defaultValue
 end
 
 --- 增加变量值

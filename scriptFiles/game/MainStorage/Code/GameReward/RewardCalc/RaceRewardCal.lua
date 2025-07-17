@@ -22,7 +22,8 @@ function RaceRewardCal:BuildVariableContext(playerData, levelInstance)
     local context = self.super.BuildVariableContext(self, playerData, levelInstance)
     
     -- 添加飞车挑战赛专用变量
-    context.distance = playerData.distance or 0       -- 兼容旧配置
+    context.distance = playerData.distance or 0        -- 飞行距离
+    context.flay_dist = playerData.distance or 0       -- 兼容旧配置
     context.speed = playerData.speed or 0               -- 平均速度
     context.crashCount = playerData.crashCount or 0     -- 碰撞次数
     context.comboCount = playerData.comboCount or 0     -- 连击数
