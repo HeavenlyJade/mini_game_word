@@ -8,6 +8,7 @@ local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventMan
 local cloudDataMgr    =     require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type MCloudDataMgr
 local Entity             = require(ServerStorage.EntityTypes.Entity) ---@type Entity
 
+local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem) ---@type VariableSystem
 
 
 ---@class MPlayer : Entity    --玩家类  (单个玩家) (管理玩家状态)
@@ -18,6 +19,7 @@ local Entity             = require(ServerStorage.EntityTypes.Entity) ---@type En
 ---@field auto_wait_tick number 等待tick
 ---@field player_net_stat number 玩家网络状态
 ---@field loginTime number 登录时间
+---@field variableSystem VariableSystem 变量系统实例
 local _MPlayer = ClassMgr.Class('MPlayer', Entity)
 
 function _MPlayer:OnInit(info_)
@@ -27,7 +29,8 @@ function _MPlayer:OnInit(info_)
     self.uin = info_.uin
     self.name = info_.nickname or info_.name or ""
     self.isPlayer = true
-    self.variables = info_.variables or {} -- 玩家变量数据
+    ---@type VariableSystem
+    self.variableSystem = VariableSystem.New(self) -- 创建VariableSystem并自动加载variables
 
     -- 技能相关
     self.dict_btn_skill = nil -- 技能按钮映射
@@ -126,6 +129,10 @@ end
 --玩家离开游戏 (立即存盘)
 function _MPlayer:leaveGame()
     -- 保存各种数据
+    if self.variableSystem then
+        self.variables = self.variableSystem.variables
+        gg.log("同步VariableSystem数据到variables", self.uin)
+    end
     cloudDataMgr.SavePlayerData(self.uin, true)
     -- cloudDataMgr.SaveGameTaskData(self)
     -- cloudDataMgr.SaveSkillConfig(self)

@@ -13,7 +13,7 @@ local ActionModules = {
 }
 
 
----@class PlayerActionHandler
+---@class PlayerActionHandler : Class
 -- 客户端玩家行为的"管理器"，负责加载和管理不同游戏模式下的具体行为模块。
 local PlayerActionHandler = ClassMgr.Class("PlayerActionHandler")
 

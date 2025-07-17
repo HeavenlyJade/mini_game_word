@@ -3,14 +3,11 @@ local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
 local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.code.client.ui.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
 local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local SkillTypeConfig = require(MainStorage.config.SkillTypeConfig) ---@type SkillTypeConfig
 local TweenService = game:GetService("TweenService")
 local ItemTypeConfig = require(MainStorage.config.ItemTypeConfig) ---@type ItemTypeConfig
 local BagEventConfig = require(MainStorage.code.common.event_conf.event_bag) ---@type BagEventConfig
 local ClientEventManager= require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-local CoreUI = game:GetService("CoreUI")
 
 
 ---@class HudMoney:ViewBase

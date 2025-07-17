@@ -146,8 +146,6 @@ function MServerInitPlayer.player_enter_game(player)
     -- player_.inited = true
     ServerEventManager.Publish("PlayerInited", {player = player_})
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
-    print("玩家速度属性:", player_:GetStat("速度"))
-    print("当前玩家移动速度:", player_actor_.Movespeed)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
     gg.log("玩家", uin_, "登录完成，邮件数据已加载到MailMgr")
@@ -166,7 +164,6 @@ function MServerInitPlayer.player_leave_game(player)
         MailMgr.OnPlayerLeave(uin_)
         BagMgr.OnPlayerLeave(uin_)
         -- 其他管理器（如技能、任务等）的离线处理也可以在这里添加
-
         mplayer:leaveGame() -- 保存玩家基础数据
         serverDataMgr.removePlayer(uin_, player.Name)
     end

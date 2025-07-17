@@ -8,7 +8,7 @@ local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventMan
 ---@field level number 词条等级
 ---@field handlers table<string, any[]> 词条处理器映射
 
----@class TagSystem 词条系统
+---@class TagSystem:Class
 ---@field tagHandlers table<string, EquipingTag[]> 词条处理器
 ---@field tagIds table<string, EquipingTag> 词条ID映射
 local TagSystem = ClassMgr.Class("TagSystem")

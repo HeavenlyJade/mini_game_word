@@ -1,4 +1,3 @@
-
 local MainStorage     = game:GetService("MainStorage")
 local game            = game
 local Enum            = Enum  ---@type Enum
@@ -10,6 +9,13 @@ local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type Conf
 local Controller = require(MainStorage.Code.Client.MController) ---@type Controller
 ---@class ClientMain
 local ClientMain = ClassMgr.Class("ClientMain")
+
+--- 新增：初始化数据系统
+function ClientMain.InitDataSystems()
+    local PlayerDataManager = require(MainStorage.Code.Client.PlayerData.PlayerDataManager)
+    PlayerDataManager:Init()
+    gg.log("玩家数据系统初始化完成")
+end
 
 --- 新增：专门用于初始化所有“动作处理器”模块的函数
 function ClientMain.InitActionHandlers()
@@ -35,6 +41,7 @@ function ClientMain.start_client()
     ClientMain.handleCoreUISettings()
     Controller.init()
     ClientMain.InitActionHandlers() -- 初始化所有动作处理器
+    ClientMain.InitDataSystems() -- 初始化数据系统
 
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE

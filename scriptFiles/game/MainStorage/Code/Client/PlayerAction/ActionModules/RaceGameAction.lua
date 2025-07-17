@@ -4,7 +4,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local WorldService = game:GetService("WorldService")
----@class RaceGameAction
+---@class RaceGameAction : Class
 -- 飞车挑战赛的行为模块，负责处理该模式下客户端的所有特殊逻辑
 local RaceGameAction = ClassMgr.Class("RaceGameAction")
 

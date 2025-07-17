@@ -344,15 +344,4 @@ function VariableSystem:DeserializeVariables(data)
     end
 end
 
--- 静态方法 --------------------------------------------------------
-
---- 创建新的变量系统实例
----@param entity any 所属实体
----@return VariableSystem
-function VariableSystem.New(entity)
-    local instance = VariableSystem()
-    instance:OnInit(entity)
-    return instance
-end
-
 return VariableSystem 
