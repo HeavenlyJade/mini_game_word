@@ -155,11 +155,21 @@ function MServerInitPlayer.player_enter_game(player)
 end
 
 -- 向客户端同步玩家数据
+-- 向客户端同步玩家数据
 function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     local uin = mplayer.uin
     
-    -- 获取背包数据
-    local bagData = BagMgr.GetPlayerBagData(uin)
+    -- 获取背包数据 - 修改这里
+    local bag = BagMgr.GetPlayerBag(uin)  -- 使用正确的方法名
+    local bagData = nil
+    if bag then
+        -- 提取背包中的具体数据
+        bagData = {
+            items = bag.bag_items or {},
+            currencies = bag.currencies or {},
+            -- 其他需要的背包字段
+        }
+    end
     
     -- 获取变量数据
     local variableData = mplayer.variables or {}

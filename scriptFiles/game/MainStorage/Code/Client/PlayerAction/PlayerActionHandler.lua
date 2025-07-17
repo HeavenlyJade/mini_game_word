@@ -42,9 +42,9 @@ function PlayerActionHandler:ListenToPlayerEvents()
     end)
 
     -- 新增：监听飞行状态变化，并转发给当前模块
-    actor.Flying:Connect(function(isFlying)
-        gg.log("PlayerActionHandler: 监听到飞行状态变化，isFlying: ", tostring(isFlying))
-    end)
+    -- actor.Flying:Connect(function(isFlying)
+    --     -- gg.log("PlayerActionHandler: 监听到飞行状态变化，isFlying: ", tostring(isFlying))
+    -- end)
 end
 
 --- 当具体的行为模块完成其生命周期后，会调用此函数
