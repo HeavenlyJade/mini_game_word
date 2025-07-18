@@ -18,22 +18,22 @@ local BagMgr = {
     need_sync_bag = {} ---@type table<Bag, boolean>
 }
 
-function SyncAll()
-    for bag, _ in pairs(BagMgr.need_sync_bag) do
-        bag:SyncToClient()
-    end
-    BagMgr.need_sync_bag = {}
-end
+-- function SyncAll()
+--     for bag, _ in pairs(BagMgr.need_sync_bag) do
+--         bag:SyncToClient()
+--     end
+--     BagMgr.need_sync_bag = {}
+-- end
 
--- 使用Timer替代ServerScheduler
-local timer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-timer.Name = 'BAG_SYNC_ALL'
-timer.Delay = 0.1
-timer.Loop = true      -- 是否循环
-timer.Interval = 2     -- 循环间隔多少秒 (0.2秒 = 2帧, 1秒=10帧)
-timer.Callback = SyncAll
-timer:Start()
+-- -- 使用Timer替代ServerScheduler
+-- local timer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+-- timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+-- timer.Name = 'BAG_SYNC_ALL'
+-- timer.Delay = 0.1
+-- timer.Loop = true      -- 是否循环
+-- timer.Interval = 2     -- 循环间隔多少秒 (0.2秒 = 2帧, 1秒=10帧)
+-- timer.Callback = SyncAll
+-- timer:Start()
 
 -- ---刷新玩家的背包数据（服务器 to 客户端）
 -- ---@param uin_ number 玩家ID
@@ -206,6 +206,7 @@ function BagMgr.AddItem(player, itemName, amount)
     
     local success = bag:AddItem(itemData)
     if success then
+        bag:SyncToClient()
         gg.log("BagMgr.AddItem: 成功给玩家", player.uin, "添加物品", itemName, "x" .. amount)
     else
         gg.log("BagMgr.AddItem: 给玩家", player.uin, "添加物品失败", itemName, "x" .. amount)

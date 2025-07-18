@@ -313,6 +313,8 @@ function Bag:MarkDirty(slot)
 end
 
 function Bag:SyncToClient()
+    gg.log("Bag:SyncToClient 开始 - dirtySyncSlots:", #self.dirtySyncSlots, "dirtySyncAll:", self.dirtySyncAll)
+
     if #self.dirtySyncSlots == 0 and not self.dirtySyncAll then
         return
     end

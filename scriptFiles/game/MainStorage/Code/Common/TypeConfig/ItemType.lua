@@ -92,6 +92,22 @@ function ItemType:GetToStringParams()
     }
 end
 
+---创建完整的物品数据
+---@param amount number 数量
+---@param enhanceLevel number|nil 强化等级
+---@param quality string|nil 品质
+---@return ItemData 物品数据
+function ItemType:CreateCompleteItemData(amount, enhanceLevel, quality)
+    return {
+        name = self.name,
+        amount = amount or 1,
+        enhanceLevel = enhanceLevel or 0,
+        quality = quality,
+        itemType = self.name,
+        itype = self.name
+    }
+end
+
 -- function ItemType:ToItem(count)
 --     local Item = require(MainStorage.code.server.bag.Item) ---@type Item
 --     local item = Item.New()
