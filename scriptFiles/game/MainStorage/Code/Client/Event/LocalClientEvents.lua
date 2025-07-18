@@ -7,4 +7,4 @@
 
 ---@class SyncInventoryItems
 ---@field items table<Slot, SerializedItem> 背包物品
----@field moneys table<number, MoneyAmount>
+---@field deletedSlots table<number, {c:number, s:number}> 被删除的槽位列表

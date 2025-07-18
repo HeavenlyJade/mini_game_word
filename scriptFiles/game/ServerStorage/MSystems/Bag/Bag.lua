@@ -18,6 +18,7 @@ local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@ty
 ---@field dirtySyncSlots BagPosition[] 需要同步到客户端的槽位
 ---@field dirtySave boolean 数据是否需要保存到云端
 ---@field dirtySyncAll boolean 是否需要全量同步到客户端
+---@field deletedSlots table<number, number[]> 追踪被删除的槽位
 ---@field New fun(player: MPlayer): Bag
 local Bag = ClassMgr.Class("Bag")
 
@@ -31,7 +32,7 @@ function Bag:OnInit(player)
     self.dirtySyncSlots = {}
     self.dirtySave = false
     self.dirtySyncAll = false
-    
+    self.deletedSlots = {}
     -- 初始化所有货币类型为0（如果背包中没有的话）
     self:InitializeCurrencies()
 end
@@ -456,6 +457,8 @@ function Bag:RemoveItem(position)
         end
     end
 
+    -- 记录删除的槽位
+    table.insert(self.deletedSlots, {c = position.c, s = position.s})
     self:MarkDirty()
 end
 
@@ -472,38 +475,10 @@ function Bag:MarkDirty(slot)
 end
 
 function Bag:SyncToClient()
-
-    if #self.dirtySyncSlots == 0 and not self.dirtySyncAll then
+    if #self.dirtySyncSlots == 0 and not self.dirtySyncAll and #self.deletedSlots == 0 then
         return
     end
 
-    local moneys = {}
-    local allItemTypes = ConfigLoader.GetAllItems()
-    
-    -- 获取所有货币类型并按序号排序
-    local currencyTypes = {}
-    for itemName, itemType in pairs(allItemTypes) do
-        if itemType.isMoney and itemType.moneyIndex > 0 then
-            table.insert(currencyTypes, {
-                name = itemType.name,
-                index = itemType.moneyIndex,
-                itemType = itemType
-            })
-        end
-    end
-    
-    table.sort(currencyTypes, function(a, b)
-        return a.index < b.index
-    end)
-    
-    -- 构建货币数据
-    for idx, currencyInfo in ipairs(currencyTypes) do
-        moneys[idx] = {
-            it = currencyInfo.name,
-            a = self:GetItemAmount(currencyInfo.name)
-        }
-    end
-    
     local syncItems = {}
     if self.dirtySyncAll then
         syncItems = self.bag_items
@@ -518,16 +493,19 @@ function Bag:SyncToClient()
             end
         end
     end
-    
-    self.dirtySyncAll = false
-    self.dirtySyncSlots = {}
 
     local ret = {
         cmd = BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS,
         items = syncItems,
-        moneys = moneys
+        deletedSlots = self.deletedSlots
     }
-    gg.log("Bag:SyncToClient 开始 - ret:", ret)
+
+    -- 清空所有标记
+    self.dirtySyncAll = false
+    self.dirtySyncSlots = {}
+    self.deletedSlots = {}
+
+    gg.log("Bag:SyncToClient - ret:", ret)
     gg.network_channel:fireClient(self.uin, ret)
 end
 
