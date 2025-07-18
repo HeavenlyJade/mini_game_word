@@ -1,5 +1,5 @@
 local MainStorage = game:GetService('MainStorage')
-local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) ---@type ItemQualityConfig
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
@@ -35,7 +35,7 @@ function ItemUtils.GetItemType(itemData)
     end
     
     -- 从配置获取并缓存
-    local itemType = ItemTypeConfig[itemTypeName]
+    local itemType = ConfigLoader.GetItem(itemTypeName)
     if itemType then
         itemTypeCache[itemTypeName] = itemType
     end
@@ -273,7 +273,7 @@ end
 ---@param quality string|nil 品质
 ---@return ItemData|nil, string 创建的物品数据，错误信息
 function ItemUtils.CreateItemData(itemTypeName, amount, enhanceLevel, quality)
-    local itemType = ItemUtils.GetItemType(itemTypeName)
+    local itemType = ItemUtils.GetItemType(itemTypeName) ---@type ItemType|nil
     if not itemType then
         return nil, "找不到物品配置: " .. tostring(itemTypeName)
     end

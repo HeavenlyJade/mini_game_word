@@ -10,7 +10,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler)
 local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
-local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig)
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 
 
 ---@class HudMoney:ViewBase
@@ -75,7 +75,7 @@ function HudMoney:OnInit(node, config)
                 local button = self.moneyButtonList:GetChild(idx)
                 if button then
                     local node = button:Get("Text").node ---@cast node UITextLabel
-                    local itemType = ItemTypeConfig.Get(money.it)
+                    local itemType = ConfigLoader.GetItem(money.it)
                     local mainAmount = money.a or 0
                     local displayText = ""
                     -- 检查是否有货币增加
@@ -85,7 +85,7 @@ function HudMoney:OnInit(node, config)
                         -- 设置增加值的显示
                         local diff = money.a - self.lastMoneyValues[idx]
                         moneyAdd.Title = "+" .. gg.FormatLargeNumber(diff)
-                        moneyAdd["UIImage"].Icon = ItemTypeConfig.Get(money.it).icon
+                        moneyAdd["UIImage"].Icon = ConfigLoader.GetItem(money.it).icon
                         moneyAdd.Scale = Vector2.New(2, 2)
                         local screenSize = self:GetScreenSize()
                         -- 添加±20%的随机浮动

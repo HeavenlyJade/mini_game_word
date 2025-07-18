@@ -2,7 +2,7 @@ local MainStorage = game:GetService('MainStorage')
 local ServerStorage = game:GetService('ServerStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local ItemConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemConfig
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType) ---@type ItemType
 local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) ---@type ItemQualityConfig
 
@@ -88,7 +88,7 @@ function Item:Load(data)
     self.amount = data.amount or 0
     self.enhanceLevel = data.el or 0
     if type(data.itype) == "string" then
-        self.itemType = ItemTypeConfig.Get(data.itype)
+        self.itemType = ConfigLoader.GetItem(data.itype)
     else
         self.itemType = data.itype
     end

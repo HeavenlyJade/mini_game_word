@@ -8,6 +8,7 @@ local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventMana
 local MailEventConfig = require(MainStorage.Code.Event.EventMail) ---@type MailEventConfig
 local TimeUtils = require(MainStorage.Code.Untils.TimeUntils) ---@type TimeUtils
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 
 ---@class NewMailNotificationPayload
 ---@field cmd string 事件命令
@@ -541,7 +542,7 @@ function MailGui:ProcessRewardData(rewards)
             local amount = rewardData.amount
             if itemName and amount and amount > 0 then
                 ---@type ItemType
-                local itemConfig = ItemTypeConfig.Get(itemName)
+                local itemConfig = ConfigLoader.GetItem(itemName)
 
                 if itemConfig then
                     table.insert(rewardItems, {

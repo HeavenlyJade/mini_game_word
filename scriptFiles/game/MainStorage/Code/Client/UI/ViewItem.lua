@@ -2,7 +2,7 @@ local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
 local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
-local ItemTypeConfig = require(MainStorage.Config.ItemTypeConfig) ---@type ItemTypeConfig
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class ViewItem:ViewButton
 ---@field New fun(node: SandboxNode, ui: ViewBase, path?: string, realButtonPath?: string): ViewItem
@@ -38,7 +38,7 @@ end
 function ViewItem:SetItem(item)
     self._itemCache = item
     if type(item) == "string" then
-        item = ItemTypeConfig.Get(item)
+        item = ConfigLoader.GetItem(item)
     end
     local itemType = item
     if ClassMgr.Is(item, "Item") then
