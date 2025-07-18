@@ -84,10 +84,10 @@ end
 
 -- ViewBase.lua
 
----@generic T : ViewComponent
+---@generic T : ViewComponent|ViewButton|ViewList
 ---@param path string 组件路径
----@param type? fun(node: UIComponent, ui: ViewBase, path: string, ...): T|T 组件类型类或实例
----@param ... any 额外参数  
+---@param type? T 组件类型
+---@---@param ... any 额外参数  
 ---@return T
 function ViewBase:Get(path, type, ...)
     local cacheKey = path
@@ -167,9 +167,9 @@ end
 
 ---@return Vector2
 function ViewBase.GetScreenSize()
-    local evt = {}
-    ClientEventManager.Publish("GetScreenSize", evt)
-    return evt.size
+    -- local evt = {}
+    -- ClientEventManager.Publish("GetScreenSize", evt)
+    return gg.get_ui_size()
 end
 
 ---@param key string 属性名称

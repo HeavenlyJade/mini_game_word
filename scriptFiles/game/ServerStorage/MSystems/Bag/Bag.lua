@@ -47,7 +47,6 @@ end
 ---@param itemCategoryNumber number 物品类型编号
 ---@return number 分类编号
 function Bag:GetCategoryFromItemCategory(itemCategoryNumber)
-    local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
     
     -- 验证传入的编号是否有效
     if itemCategoryNumber and common_config.ItemTypeNames[itemCategoryNumber] then
@@ -66,19 +65,14 @@ function Bag:InitializeCurrencies()
     -- 筛选出货币类型的物品
     local currencyTypes = {}
     for itemName, itemType in pairs(allItemTypes) do
-        if itemType.isMoney and itemType.moneyIndex > 0 then
+        if itemType.isMoney then
             table.insert(currencyTypes, {
                 name = itemType.name,
-                index = itemType.moneyIndex,
                 itemType = itemType
             })
         end
     end
     
-    -- 按货币序号排序
-    table.sort(currencyTypes, function(a, b)
-        return a.index < b.index
-    end)
     
     -- 初始化每种货币
     for _, currencyInfo in ipairs(currencyTypes) do
@@ -94,7 +88,7 @@ function Bag:InitializeCurrencies()
                 itype = currencyInfo.name
             }
             self:AddItem(currencyData)
-            gg.log("初始化货币:", currencyInfo.name, "序号:", currencyInfo.index)
+            gg.log("初始化货币:", currencyInfo.name)
         end
     end
 end
@@ -380,6 +374,7 @@ function Bag:SetItem(position, newItemData)
     return true
 end
 
+
 ---根据物品类型获取分类编号
 ---@param itemType ItemType 物品类型配置
 ---@return number 分类编号
@@ -387,16 +382,10 @@ function Bag:GetCategoryFromItemType(itemType)
     if not itemType then
         return 0
     end
+    -- 根据物品类型字段判断
+    local itemTypeStr = itemType.itemTypeStr
+    return common_config.ItemTypeEnum[itemTypeStr]
     
-    -- 根据物品类型配置确定分类
-    if itemType.isMoney then
-        return common_config.ItemTypeEnum["货币"] or 5
-    elseif itemType.category then
-        return common_config.ItemTypeEnum[itemType.category] or 0
-    else
-        -- 默认分类逻辑，可根据实际需求调整
-        return 4 -- 材料类
-    end
 end
 
 ---@param position BagPosition 背包位置

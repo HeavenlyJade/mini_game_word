@@ -2153,9 +2153,6 @@
 
 
 
----@class ViewBase
----@field RenderIndex number UI渲染层级（值越大，渲染越靠后，越处于上层）
----@field UIVisibleNode boolean
 
 
 

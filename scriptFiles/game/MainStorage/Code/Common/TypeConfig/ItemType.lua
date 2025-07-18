@@ -84,7 +84,8 @@ function ItemType:OnInit(data)
     
     -- 显示与货币
     self.showInBag = data["在背包里显示"] or true
-    self.isMoney = data["是货币"] or false
+    self.itemTypeStr = data["物品类型"]
+    self.isMoney = (self.itemTypeStr == "货币")
     self.isStackable = data["是否可堆叠"] or false
     self.maxStack = data["最大数量"] or 1
 end

@@ -402,7 +402,6 @@ end
 ---@return Vector2 屏幕尺寸
 function gg.get_ui_size()
     if not gg.ui_size then
-        wait(1)
         gg.ui_size = game:GetService('WorldService'):GetUISize()
         gg.log('获取屏幕大小====', gg.ui_size)
     end

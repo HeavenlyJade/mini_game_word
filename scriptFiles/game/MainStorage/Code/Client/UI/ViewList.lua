@@ -1,6 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class ViewList : ViewComponent
 ---@field node UIList
@@ -22,30 +23,22 @@ end
 ---@param ui ViewBase
 ---@param onAddElementCb fun(child: SandboxNode): ViewComponent
 function ViewList:OnInit(node, ui, path, onAddElementCb)
-    self.childrens = {} ---@type ViewComponent[]
+    self.childrens = {} ---@type table<string, ViewComponent>
     self.childNameTemplate = nil
     self.onAddElementCb = onAddElementCb or function(child, childPath)
         return ViewComponent.New(child, ui, childPath)
     end
-    for _, child in pairs(self.node.Children) do
+    gg.log("self.node.Children",self.node.Children)
+    for idx, child in pairs(self.node.Children) do
+        gg.log("child",child,idx)
         local childName = child.Name
-        local num = childName:match("_([0-9]+)")
-        if num then
-            if not self.childNameTemplate then
-                local pos = childName:find("_") -- 找到 _ 的位置
-                self.childNameTemplate = childName:sub(1, pos)
-            end
-            local childPath = self.path .. "/" .. child.Name
-            local button = self.onAddElementCb(child, childPath)
-            if button then
-                RecursivlySetNotifyStop(button.node)
-                button.path = childPath
-                local idx = tonumber(num)
-                if idx then
-                    self.childrens[idx] = button
-                    button.index = idx
-                end
-            end
+        local childPath = self.path .. "/" .. childName
+        local button = self.onAddElementCb(child)
+        if button then
+            RecursivlySetNotifyStop(button.node)
+            button.path = childPath
+            self.childrens[childName] = button
+            button.index = idx
         end
     end
 end
@@ -196,12 +189,7 @@ end
 ---@param childName string 要查找的子节点名称
 ---@return ViewComponent|nil
 function ViewList:GetChildByName(childName)
-    for _, child in ipairs(self.childrens) do
-        if child.node and child.node.Name == childName then
-            return child
-        end
-    end
-    return nil
+    return self.childrens[childName]
 end
 
 --- 通过名称移除子节点
