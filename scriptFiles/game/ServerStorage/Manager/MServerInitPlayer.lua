@@ -157,18 +157,21 @@ end
 -- 向客户端同步玩家数据
 -- 向客户端同步玩家数据
 function MServerInitPlayer.syncPlayerDataToClient(mplayer)
+    local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
+    local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+
     local uin = mplayer.uin
     
     -- 获取背包数据 - 修改这里
-    local bag = BagMgr.GetPlayerBag(uin)  -- 使用正确的方法名
-    local bagData = nil
+
+    local bag = BagMgr.GetPlayerBag(uin)
     if bag then
-        -- 提取背包中的具体数据
-        bagData = {
-            items = bag.bag_items or {},
-            currencies = bag.currencies or {},
-            -- 其他需要的背包字段
-        }
+        -- 标记为全量同步，确保发送完整的背包数据
+        bag:MarkDirty(true)  -- true 表示全量同步
+        bag:SyncToClient()   -- 直接调用背包的同步方法
+        gg.log("已使用 Bag:SyncToClient() 同步背包数据到客户端:", uin)
+    else
+        gg.log("警告: 玩家", uin, "的背包数据不存在，跳过背包同步")
     end
     
     -- 获取变量数据
@@ -177,23 +180,14 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     -- 获取任务数据
     local questData = mplayer.questData or {}
     
-    -- 分别发送三种数据类型
     gg.network_channel:fireClient(uin, { 
-        cmd = "PlayerDataSync_Bag", 
-        bagData = bagData,
-        timestamp = os.time()
-    })
-    
-    gg.network_channel:fireClient(uin, { 
-        cmd = "PlayerDataSync_Variable", 
+        cmd = EventPlayerConfig.RESPONSE.PLAYER_DATA_SYNC_VARIABLE, 
         variableData = variableData,
-        timestamp = os.time()
     })
     
     gg.network_channel:fireClient(uin, { 
-        cmd = "PlayerDataSync_Quest", 
+        cmd = EventPlayerConfig.RESPONSE.PLAYER_DATA_SYNC_QUEST, 
         questData = questData,
-        timestamp = os.time()
     })
     
     gg.log("已向客户端", uin, "同步完整玩家数据")

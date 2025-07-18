@@ -27,6 +27,8 @@ EventPlayerConfig.REQUEST = {
 -- 服务器响应事件 (S2C)
 EventPlayerConfig.RESPONSE = {
     -- e.g., JUMP_RESPONSE = "PlayerResponse_Jump"
+    PLAYER_DATA_SYNC_VARIABLE = "PlayerDataSync_Variable", -- 同步变量
+    PLAYER_DATA_SYNC_QUEST = "PlayerDataSync_Quest", -- 同步任务
 }
 
 -- 服务器通知事件 (S2C)

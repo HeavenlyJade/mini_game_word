@@ -1,8 +1,9 @@
-
 local MainStorage = game:GetService("MainStorage")
 local LocalEventBus = require(MainStorage.Code.Client.PlayerData.LocalEventBus)
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager)
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local PlayerDataEventConfig = require(MainStorage.Code.Event.event_player_data) ---@type PlayerDataEventConfig
+local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
 
 ---@class PlayerDataManager
 local PlayerDataManager = {
@@ -17,16 +18,23 @@ local PlayerDataManager = {
 
 --- 订阅服务端事件
 function PlayerDataManager:SubscribeServerEvents()
-    ClientEventManager.Subscribe("PlayerBagUpdate", function(data)
-        self:UpdateBagData(data.bagData)
+    -- 【修改】订阅背包系统原有的同步事件，而不是新的 PlayerDataSync_Bag
+    ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
+        self:HandleBagSyncFromBagSystem(data)
     end)
 
-    ClientEventManager.Subscribe("PlayerVariableUpdate", function(data)
-        self:UpdateVariableData(data.variables)
+    -- 订阅新的变量和任务数据同步事件
+    ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
+        self:HandleVariableSync(data)
     end)
 
-    ClientEventManager.Subscribe("PlayerQuestUpdate", function(data)
-        self:UpdateQuestData(data.quests)
+    ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_SYNC_QUEST, function(data)
+        self:HandleQuestSync(data)
+    end)
+
+    -- 订阅错误响应
+    ClientEventManager.Subscribe(PlayerDataEventConfig.RESPONSE.PLAYER_DATA_LOADED, function(data)
+        self:HandleDataLoadResponse(data)
     end)
 end
 
@@ -41,27 +49,107 @@ function PlayerDataManager:Init()
     gg.log("PlayerDataManager 初始化完成。")
 end
 
---- 更新背包数据并通知
----@param data table 背包数据
-function PlayerDataManager:UpdateBagData(data)
-    self.bagData = data
-    gg.log("背包数据已更新")
+--- 【新增】处理来自背包系统的数据同步
+function PlayerDataManager:HandleBagSyncFromBagSystem(data)
+    gg.log("收到背包系统同步数据:", data)
+    
+    -- 将背包系统的数据格式转换为 PlayerData 格式
+    local bagData = {
+        items = data.items or {},
+        moneys = data.moneys or {} 
+    }
+    
+    self:UpdateBagData(bagData, "full")  -- 背包系统的同步默认为全量同步
+end
+
+--- 【修改】处理新格式的变量数据同步
+function PlayerDataManager:HandleVariableSync(data)
+    if data.errorCode and data.errorCode ~= PlayerDataEventConfig.ERROR_CODES.SUCCESS then
+        gg.log("变量数据同步失败:", PlayerDataEventConfig.GetErrorMessage(data.errorCode))
+        return
+    end
+    
+    self:UpdateVariableData(data.variableData, data.syncType)
+end
+
+--- 【修改】处理新格式的任务数据同步
+function PlayerDataManager:HandleQuestSync(data)
+    if data.errorCode and data.errorCode ~= PlayerDataEventConfig.ERROR_CODES.SUCCESS then
+        gg.log("任务数据同步失败:", PlayerDataEventConfig.GetErrorMessage(data.errorCode))
+        return
+    end
+    
+    self:UpdateQuestData(data.questData, data.syncType)
+end
+
+--- 处理数据加载响应（包括错误处理）
+function PlayerDataManager:HandleDataLoadResponse(data)
+    if data.errorCode == PlayerDataEventConfig.ERROR_CODES.SUCCESS then
+        gg.log("玩家数据加载成功")
+        LocalEventBus.Publish("PlayerDataLoaded", true)
+    else
+        gg.log("玩家数据加载失败:", PlayerDataEventConfig.GetErrorMessage(data.errorCode))
+        LocalEventBus.Publish("PlayerDataLoadError", {
+            errorCode = data.errorCode,
+            errorMessage = data.errorMessage
+        })
+    end
+end
+
+--- 增强的数据更新方法，支持增量和全量同步
+function PlayerDataManager:UpdateBagData(data, syncType)
+    if not data then return end
+    
+    if syncType == "full" then
+        -- 全量替换
+        self.bagData = data
+    else
+        -- 增量合并
+        if not self.bagData then self.bagData = {} end
+        for key, value in pairs(data) do
+            self.bagData[key] = value
+        end
+    end
+    
+    gg.log("背包数据已更新 (", syncType, ")")
     LocalEventBus.Publish("BagDataChanged", self.bagData)
 end
 
---- 更新变量数据并通知
----@param data table 变量数据
-function PlayerDataManager:UpdateVariableData(data)
-    self.variableData = data
-    gg.log("玩家变量数据已更新")
+--- 增强的数据更新方法，支持增量和全量同步
+function PlayerDataManager:UpdateVariableData(data, syncType)
+    if not data then return end
+    
+    if syncType == "full" then
+        -- 全量替换
+        self.variableData = data
+    else
+        -- 增量合并
+        if not self.variableData then self.variableData = {} end
+        for key, value in pairs(data) do
+            self.variableData[key] = value
+        end
+    end
+    
+    gg.log("玩家变量数据已更新 (", syncType, ")")
     LocalEventBus.Publish("VariableDataChanged", self.variableData)
 end
 
---- 更新任务数据并通知
----@param data table 任务数据
-function PlayerDataManager:UpdateQuestData(data)
-    self.questData = data
-    gg.log("任务数据已更新")
+--- 增强的数据更新方法，支持增量和全量同步
+function PlayerDataManager:UpdateQuestData(data, syncType)
+    if not data then return end
+    
+    if syncType == "full" then
+        -- 全量替换
+        self.questData = data
+    else
+        -- 增量合并
+        if not self.questData then self.questData = {} end
+        for key, value in pairs(data) do
+            self.questData[key] = value
+        end
+    end
+    
+    gg.log("任务数据已更新 (", syncType, ")")
     LocalEventBus.Publish("QuestDataChanged", self.questData)
 end
 
