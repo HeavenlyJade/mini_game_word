@@ -105,7 +105,8 @@ function ItemType:CreateCompleteItemData(amount, enhanceLevel, quality)
         enhanceLevel = enhanceLevel or 0,
         quality = quality,
         itemType = self.name,
-        itype = self.name
+        itype = self.name,
+        isStackable = self.isStackable, -- 是否可堆叠
     }
 end
 
