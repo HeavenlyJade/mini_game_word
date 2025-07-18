@@ -347,10 +347,10 @@ function RaceGameMode:_giveItemToPlayer(player, itemName, amount)
     gg.log(string.format("RaceGameMode: 尝试给玩家 %s 发放物品 %s x%d", player.name or "未知", itemName, amount))
     
     -- 这里集成背包系统来发放物品
-    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
-    local BagMgr = serverDataMgr.BagMgr
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)  ---@type MServerDataManager
+    local BagMgr = serverDataMgr.BagMgr ---@type BagMgr
     
-    if BagMgr and BagMgr.AddItem then
+    if BagMgr then
         local success = BagMgr.AddItem(player, itemName, amount)
         if success then
             gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))

@@ -35,7 +35,7 @@ function ItemUtils.GetItemType(itemData)
     end
     
     -- 从配置获取并缓存
-    local itemType = ItemTypeConfig.Get(itemTypeName)
+    local itemType = ItemTypeConfig[itemTypeName]
     if itemType then
         itemTypeCache[itemTypeName] = itemType
     end
@@ -197,7 +197,7 @@ function ItemUtils.GetPower(itemData)
 
     local quality = nil
     if itemData.quality then
-        quality = ItemQualityConfig.Get(itemData.quality)
+        quality = ItemQualityConfig[itemData.quality]
     end
     
     return itemType:CalculatePower(itemData.enhanceLevel or 0, quality)
@@ -372,7 +372,7 @@ function ItemUtils.GetSortWeight(itemData)
     
     -- 按品质排序
     if itemData.quality then
-        local qualityConfig = ItemQualityConfig.Get(itemData.quality)
+        local qualityConfig = ItemQualityConfig[itemData.quality]
         if qualityConfig then
             weight = weight - (qualityConfig.level or 0) * 100
         end

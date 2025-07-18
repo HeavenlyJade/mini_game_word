@@ -2,7 +2,7 @@ local MainStorage = game:GetService("MainStorage")
 local LocalEventBus = require(MainStorage.Code.Client.PlayerData.LocalEventBus)
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager)
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local PlayerDataEventConfig = require(MainStorage.Code.Event.event_player_data) ---@type PlayerDataEventConfig
+local PlayerDataEventConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
 
 ---@class PlayerDataManager
