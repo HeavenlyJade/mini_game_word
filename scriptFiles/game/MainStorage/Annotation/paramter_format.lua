@@ -81,5 +81,6 @@
 ---@field itype string 物品类型名称
 ---@field name string 物品名称
 ---@field bagPos BagPosition 背包位置
+---@field isStackable boolean 是否可堆叠
 
 ---@alias BagItems table<ItemCategory, ItemData[]>

@@ -10,7 +10,7 @@ local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
 
----@class Bag
+---@class Bag:Class
 ---@field uin number 玩家UIN
 ---@field bag_items table<number, ItemData[]> 存放所有物品, 按物品类型的数字分类索引
 ---@field bag_index table<string, BagPosition[]> 按物品名称索引, 方便快速查找
@@ -157,9 +157,9 @@ function Bag:Save()
                 if itemData then
                     -- 创建清理后的物品数据副本
                     local cleanItem = {}
+                    local allowed = { bagPos = true, name = true, amount = true, enhanceLevel = true }
                     for k, v in pairs(itemData) do
-                        -- 保留bagPos，移除itemType和itype
-                        if k ~= "itemType" and k ~= "itype" then
+                        if allowed[k] then
                             cleanItem[k] = v
                         end
                     end
@@ -206,24 +206,68 @@ end
 function Bag:AddItem(itemData)
     gg.log("Bag:AddItem 开始 - itemData:", itemData)
     if not itemData or not itemData.name then
+        gg.log("物品数据无效")
         return false
     end
 
-    -- 如果是可堆叠物品，尝试合并
-    if itemData.amount and itemData.amount > 0 then
+    -- 获取物品配置，验证物品是否存在
+    local itemType = ItemUtils.GetItemType(itemData)
+    if not itemType then
+        gg.log("找不到物品配置:", itemData.name)
+        return false
+    end
+    
+    -- 确保物品有正确的类型分类
+    if not itemData.itemCategory then
+        itemData.itemCategory = self:GetCategoryFromItemType(itemType)
+    end
+
+    -- 检查是否可堆叠（货币或配置允许堆叠）
+    local canStack = itemType.isMoney or (itemType.isStackable and (itemType.maxStack or 1) > 1)
+    
+    if canStack then
+        -- 查找现有同名同类型物品进行合并
         local existingItems = self:GetItemByName(itemData.name)
         for _, existingItem in ipairs(existingItems) do
+            -- 检查是否可以合并（同类型、同强化等级）
             if existingItem.itemCategory == itemData.itemCategory and 
-               existingItem.enhanceLevel == itemData.enhanceLevel then
-                existingItem.amount = existingItem.amount + itemData.amount
-                self:MarkDirty(existingItem.bagPos)
-                return true
+               (existingItem.enhanceLevel or 0) == (itemData.enhanceLevel or 0) then
+                
+                local addAmount = itemData.amount or 1
+                local currentAmount = existingItem.amount or 1
+                
+                -- 对于货币类型，无堆叠限制
+                if itemType.isMoney then
+                    existingItem.amount = currentAmount + addAmount
+                    self:MarkDirty(existingItem.bagPos)
+                    gg.log("货币堆叠成功:", itemData.name, "新数量:", existingItem.amount)
+                    return true
+                -- 对于其他可堆叠物品，检查堆叠上限
+                elseif itemType.maxStack then
+                    local maxStack = itemType.maxStack
+                    if currentAmount + addAmount <= maxStack then
+                        existingItem.amount = currentAmount + addAmount
+                        self:MarkDirty(existingItem.bagPos)
+                        gg.log("物品堆叠成功:", itemData.name, "新数量:", existingItem.amount)
+                        return true
+                    else
+                        -- 部分合并，剩余数量需要新建槽位
+                        local canAdd = maxStack - currentAmount
+                        if canAdd > 0 then
+                            existingItem.amount = maxStack
+                            itemData.amount = addAmount - canAdd
+                            self:MarkDirty(existingItem.bagPos)
+                            gg.log("物品部分堆叠:", itemData.name, "剩余数量:", itemData.amount)
+                            -- 继续处理剩余数量
+                        end
+                    end
+                end
             end
         end
     end
-
-    -- 无法合并，添加到新位置
-    local category = self:GetCategoryFromItemCategory(itemData.itemCategory)
+    
+    -- 无法合并或不可堆叠，创建新槽位
+    local category = itemData.itemCategory
     if not self.bag_items[category] then
         self.bag_items[category] = {}
     end
@@ -233,14 +277,125 @@ function Bag:AddItem(itemData)
     local position = {c = category, s = #self.bag_items[category]}
     itemData.bagPos = position
     
-    -- 添加到索引
+    -- 更新索引
     if not self.bag_index[itemData.name] then
         self.bag_index[itemData.name] = {}
     end
     table.insert(self.bag_index[itemData.name], position)
     
     self:MarkDirty(position)
+    gg.log("物品添加到新槽位:", itemData.name, "位置:", position.c, position.s)
     return true
+end
+
+---@param position BagPosition 背包位置
+---@param newItemData ItemData 新物品数据
+---@return boolean 是否设置成功
+function Bag:SetItem(position, newItemData)
+    gg.log("Bag:SetItem 开始 - position:", position, "newItemData:", newItemData)
+    
+    -- 检查位置有效性
+    if not position or not position.c or not position.s then
+        gg.log("背包位置无效")
+        return false
+    end
+    
+    -- 获取当前位置的物品
+    local currentItem = self:GetItemByPosition(position)
+    
+    -- 如果新物品数据为空，则移除当前物品
+    if not newItemData then
+        if currentItem then
+            self:RemoveItem(position)
+            gg.log("移除位置物品:", position.c, position.s)
+        end
+        return true
+    end
+    
+    -- 验证新物品数据
+    if not newItemData.name then
+        gg.log("新物品数据无效：缺少物品名称")
+        return false
+    end
+    
+    -- 获取新物品的配置
+    local itemType = ItemUtils.GetItemType(newItemData)
+    if not itemType then
+        gg.log("找不到物品配置:", newItemData.name)
+        return false
+    end
+    
+    -- 确保新物品有正确的类型分类
+    if not newItemData.itemCategory then
+        newItemData.itemCategory = self:GetCategoryFromItemType(itemType)
+    end
+    
+    -- 检查位置分类是否匹配
+    if newItemData.itemCategory ~= position.c then
+        gg.log("物品类型与位置分类不匹配:", newItemData.itemCategory, "vs", position.c)
+        return false
+    end
+    
+    -- 如果当前位置有物品，先从索引中移除
+    if currentItem then
+        local oldName = currentItem.name
+        if self.bag_index[oldName] then
+            for i, pos in ipairs(self.bag_index[oldName]) do
+                if pos.c == position.c and pos.s == position.s then
+                    table.remove(self.bag_index[oldName], i)
+                    break
+                end
+            end
+            if #self.bag_index[oldName] == 0 then
+                self.bag_index[oldName] = nil
+            end
+        end
+    end
+    
+    -- 设置新物品数据
+    newItemData.bagPos = position
+    
+    -- 确保背包分类存在
+    if not self.bag_items[position.c] then
+        self.bag_items[position.c] = {}
+    end
+    
+    -- 如果当前位置不存在，扩展数组
+    while #self.bag_items[position.c] < position.s do
+        table.insert(self.bag_items[position.c], nil)
+    end
+    
+    -- 设置物品到指定位置
+    self.bag_items[position.c][position.s] = newItemData
+    
+    -- 更新索引
+    if not self.bag_index[newItemData.name] then
+        self.bag_index[newItemData.name] = {}
+    end
+    table.insert(self.bag_index[newItemData.name], position)
+    
+    self:MarkDirty(position)
+    gg.log("物品设置成功:", newItemData.name, "位置:", position.c, position.s)
+    return true
+end
+
+---根据物品类型获取分类编号
+---@param itemType ItemType 物品类型配置
+---@return number 分类编号
+function Bag:GetCategoryFromItemType(itemType)
+    if not itemType then
+        return 0
+    end
+    
+    -- 根据物品类型配置确定分类
+    if itemType.isMoney then
+        return common_config.ItemTypeEnum["货币"] or 5
+    elseif itemType.category then
+        return common_config.ItemTypeEnum[itemType.category] or 0
+    else
+        -- 默认分类逻辑，可根据实际需求调整
+        return 4 -- 材料类
+    end
 end
 
 ---@param position BagPosition 背包位置

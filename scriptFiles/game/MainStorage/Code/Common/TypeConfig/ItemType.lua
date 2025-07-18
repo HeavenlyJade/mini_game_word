@@ -27,6 +27,7 @@ local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type g
 ---@field sellPrice number 售出价格
 ---@field showInBag boolean 是否在背包里显示
 ---@field isStackable boolean 是否可堆叠
+---@field maxStack number 最大堆叠数量
 ---@field gainSound string 获得音效
 ---@field cancelGain boolean 是否取消获得
 ---@field gainCommands table 获得时执行的指令
@@ -85,6 +86,7 @@ function ItemType:OnInit(data)
     self.showInBag = data["在背包里显示"] or true
     self.isMoney = data["是货币"] or false
     self.isStackable = data["是否可堆叠"] or false
+    self.maxStack = data["最大数量"] or 1
 end
 
 function ItemType:GetToStringParams()
