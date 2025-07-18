@@ -118,11 +118,13 @@ function Bag:Load(data)
             
             for i, itemData in ipairs(itemList) do
                 if itemData and type(itemData) == "table" then
-                    -- [修正] 为物品数据添加 itemCategory 字段，确保内存中数据结构一致
+                    -- 确保物品数据包含itemCategory字段
                     itemData.itemCategory = category
 
-                    -- 确保物品数据包含bagPos字段
-                    itemData.bagPos = {c = category, s = i}
+                    -- 使用云端保存的bagPos，如果没有则重建
+                    if not itemData.bagPos then
+                        itemData.bagPos = {c = category, s = i}
+                    end
                     
                     -- 添加到背包
                     table.insert(self.bag_items[category], itemData)
@@ -133,20 +135,20 @@ function Bag:Load(data)
                         if not self.bag_index[itemName] then
                             self.bag_index[itemName] = {}
                         end
-                        table.insert(self.bag_index[itemName], {c = category, s = i})
+                        table.insert(self.bag_index[itemName], itemData.bagPos)
                     end
                 end
             end
         end
     end
-    
+
     gg.log("Bag:Load完成，bag_items:", self.bag_items)
     gg.log("Bag:Load完成，bag_index:", self.bag_index)
     self:MarkDirty(true)
 end
 
 function Bag:Save()
-    -- 清理数据，移除临时字段如bagPos
+    -- 清理数据，保留槽位信息，移除itemType和itype字段
     local cleanItems = {}
     for category, itemList in pairs(self.bag_items) do
         if itemList and #itemList > 0 then
@@ -156,7 +158,8 @@ function Bag:Save()
                     -- 创建清理后的物品数据副本
                     local cleanItem = {}
                     for k, v in pairs(itemData) do
-                        if k ~= "bagPos" then  -- 排除临时字段
+                        -- 保留bagPos，移除itemType和itype
+                        if k ~= "itemType" and k ~= "itype" then
                             cleanItem[k] = v
                         end
                     end
@@ -201,6 +204,7 @@ end
 ---@param itemData ItemData 物品数据
 ---@return boolean 是否添加成功
 function Bag:AddItem(itemData)
+    gg.log("Bag:AddItem 开始 - itemData:", itemData)
     if not itemData or not itemData.name then
         return false
     end
@@ -212,7 +216,7 @@ function Bag:AddItem(itemData)
             if existingItem.itemCategory == itemData.itemCategory and 
                existingItem.enhanceLevel == itemData.enhanceLevel then
                 existingItem.amount = existingItem.amount + itemData.amount
-                self:MarkDirty()
+                self:MarkDirty(existingItem.bagPos)
                 return true
             end
         end
@@ -235,7 +239,7 @@ function Bag:AddItem(itemData)
     end
     table.insert(self.bag_index[itemData.name], position)
     
-    self:MarkDirty()
+    self:MarkDirty(position)
     return true
 end
 

@@ -61,7 +61,7 @@ function HudMoney:OnInit(node, config)
     MoneyAddPool.template = self:Get("货币增加").node ---@type UITextLabel
     MoneyAddPool.template.Visible = false
 
-    self.moneyButtonList = self:Get("货币/货币", ViewList, function(n)
+    self.moneyButtonList = self:Get("货币/金币", ViewList, function(n)
         local button = ViewButton.New(n, self)
         button.clickCb = OnMoneyClick
         return button
@@ -70,6 +70,7 @@ function HudMoney:OnInit(node, config)
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(evt)
         local evt = evt ---@type SyncInventoryItems
         -- 更新货币显示
+        gg.log("HudMoney:SyncInventoryItems", gg.log(evt))
         if evt.moneys then
             for idx, money in ipairs(evt.moneys) do
                 local button = self.moneyButtonList:GetChild(idx)

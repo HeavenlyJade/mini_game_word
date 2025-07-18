@@ -19,6 +19,7 @@ local PlayerDataManager = {
 --- 订阅服务端事件
 function PlayerDataManager:SubscribeServerEvents()
     -- 【修改】订阅背包系统原有的同步事件，而不是新的 PlayerDataSync_Bag
+    gg.log("PlayerDataManager:SubscribeServerEvents: " .. tostring(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS))
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
         self:HandleBagSyncFromBagSystem(data)
     end)
@@ -33,7 +34,7 @@ function PlayerDataManager:SubscribeServerEvents()
     end)
 
     -- 订阅错误响应
-    ClientEventManager.Subscribe(PlayerDataEventConfig.RESPONSE.PLAYER_DATA_LOADED, function(data)
+    ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_LOADED, function(data)
         self:HandleDataLoadResponse(data)
     end)
 end

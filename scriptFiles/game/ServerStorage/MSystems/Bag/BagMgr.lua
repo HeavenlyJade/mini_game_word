@@ -18,30 +18,25 @@ local BagMgr = {
     need_sync_bag = {} ---@type table<Bag, boolean>
 }
 
--- function SyncAll()
---     for bag, _ in pairs(BagMgr.need_sync_bag) do
---         bag:SyncToClient()
---     end
---     BagMgr.need_sync_bag = {}
--- end
+function SaveAllPlayerBags()
+    local count = 0
+    for uin, bag in pairs(BagMgr.server_player_bag_data) do
+        if bag then
+            BagCloudDataMgr.SavePlayerBag(uin, bag, false)
+            count = count + 1
+        end
+    end
+    gg.log("定时保存背包数据完成，保存了", count, "个玩家的背包")
+end
 
--- -- 使用Timer替代ServerScheduler
--- local timer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
--- timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
--- timer.Name = 'BAG_SYNC_ALL'
--- timer.Delay = 0.1
--- timer.Loop = true      -- 是否循环
--- timer.Interval = 2     -- 循环间隔多少秒 (0.2秒 = 2帧, 1秒=10帧)
--- timer.Callback = SyncAll
--- timer:Start()
-
--- ---刷新玩家的背包数据（服务器 to 客户端）
--- ---@param uin_ number 玩家ID
--- ---@param param table 参数
--- function BagMgr.s2c_PlayerBagItems( uin_, param )
---     local player_data_ = BagMgr.GetPlayerBag( uin_ )
---     BagMgr.returnBagInfoByVer( uin_, player_data_ )
--- end
+local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+saveTimer.Name = 'BAG_SAVE_ALL'
+saveTimer.Delay = 60
+saveTimer.Loop = true
+saveTimer.Interval = 60
+saveTimer.Callback = SaveAllPlayerBags
+saveTimer:Start()
 
 ---使用物品
 ---@param uin_ number 玩家ID

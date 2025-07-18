@@ -24,17 +24,14 @@ EventPlayerConfig.REQUEST = {
     PLAYER_LANDED = "cmd_player_landed", -- 新增：玩家落地事件
 }
 
--- 服务器响应事件 (S2C)
-EventPlayerConfig.RESPONSE = {
-    -- e.g., JUMP_RESPONSE = "PlayerResponse_Jump"
-    PLAYER_DATA_SYNC_VARIABLE = "PlayerDataSync_Variable", -- 同步变量
-    PLAYER_DATA_SYNC_QUEST = "PlayerDataSync_Quest", -- 同步任务
-}
 
 -- 服务器通知事件 (S2C)
 -- 这些是由服务器主动发起的，用于指令客户端对玩家进行操作的事件
 EventPlayerConfig.NOTIFY = {
     LAUNCH_PLAYER = "S2C_LaunchPlayer",
+    PLAYER_DATA_SYNC_VARIABLE = "PlayerDataSync_Variable", -- 同步变量
+    PLAYER_DATA_SYNC_QUEST = "PlayerDataSync_Quest", -- 同步任务
+    PLAYER_DATA_LOADED = "PlayerDataLoaded", -- 玩家数据加载完成
 }
 
 --[[

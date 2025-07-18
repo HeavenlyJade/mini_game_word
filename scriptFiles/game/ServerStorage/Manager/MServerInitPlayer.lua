@@ -181,12 +181,12 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     local questData = mplayer.questData or {}
     
     gg.network_channel:fireClient(uin, { 
-        cmd = EventPlayerConfig.RESPONSE.PLAYER_DATA_SYNC_VARIABLE, 
+        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, 
         variableData = variableData,
     })
     
     gg.network_channel:fireClient(uin, { 
-        cmd = EventPlayerConfig.RESPONSE.PLAYER_DATA_SYNC_QUEST, 
+        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_QUEST, 
         questData = questData,
     })
     
