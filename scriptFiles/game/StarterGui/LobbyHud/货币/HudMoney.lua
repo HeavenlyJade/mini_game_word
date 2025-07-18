@@ -69,17 +69,19 @@ function HudMoney:OnInit(node, config)
 
 
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
-        gg.log("背包的数据", gg.log(data))
+
         self:OnSyncInventoryItems(data)
     end)
     gg.log("按钮初始化结束")
 
 end
 
-function HudMoney:OnSyncInventoryItems(evt)
+function HudMoney:OnSyncInventoryItems(data)
+    gg.log("背包的数据")
+    gg.log(data)
     -- 更新货币显示
-    if evt.moneys then
-        for idx, money in ipairs(evt.moneys) do
+    if data.moneys then
+        for idx, money in ipairs(data.moneys) do
             local button = self.moneyButtonList:GetChild(idx)
             if button then
                 local node = button:Get("Text").node ---@cast node UITextLabel
@@ -149,7 +151,7 @@ function HudMoney:OnSyncInventoryItems(evt)
         end
         -- 保存当前货币值用于下次比较
         self.lastMoneyValues = {}
-        for idx, money in ipairs(evt.moneys) do
+        for idx, money in ipairs(data.moneys) do
             self.lastMoneyValues[idx] = money.a
         end
     end
