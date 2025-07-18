@@ -1,4 +1,4 @@
-print("Hello world!")
+
 
 local MainStorage = game:GetService("MainStorage")
 

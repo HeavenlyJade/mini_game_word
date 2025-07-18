@@ -317,7 +317,6 @@ function Bag:MarkDirty(slot)
 end
 
 function Bag:SyncToClient()
-    gg.log("Bag:SyncToClient 开始 - dirtySyncSlots:", #self.dirtySyncSlots, "dirtySyncAll:", self.dirtySyncAll)
 
     if #self.dirtySyncSlots == 0 and not self.dirtySyncAll then
         return
@@ -373,6 +372,7 @@ function Bag:SyncToClient()
         items = syncItems,
         moneys = moneys
     }
+    gg.log("Bag:SyncToClient 开始 - ret:", ret)
     gg.network_channel:fireClient(self.uin, ret)
 end
 

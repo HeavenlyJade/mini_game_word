@@ -26,6 +26,7 @@ local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type g
 ---@field boundTags table 获得词条
 ---@field sellPrice number 售出价格
 ---@field showInBag boolean 是否在背包里显示
+---@field isStackable boolean 是否可堆叠
 ---@field gainSound string 获得音效
 ---@field cancelGain boolean 是否取消获得
 ---@field gainCommands table 获得时执行的指令
@@ -83,7 +84,7 @@ function ItemType:OnInit(data)
     -- 显示与货币
     self.showInBag = data["在背包里显示"] or true
     self.isMoney = data["是货币"] or false
-    self.moneyIndex = data["货币序号"] or -1
+    self.isStackable = data["是否可堆叠"] or false
 end
 
 function ItemType:GetToStringParams()

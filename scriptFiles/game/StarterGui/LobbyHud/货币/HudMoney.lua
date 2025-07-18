@@ -70,7 +70,7 @@ function HudMoney:OnInit(node, config)
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(evt)
         local evt = evt ---@type SyncInventoryItems
         -- 更新货币显示
-        gg.log("HudMoney:SyncInventoryItems", gg.log(evt))
+        gg.log("背包的数据", gg.log(evt))
         if evt.moneys then
             for idx, money in ipairs(evt.moneys) do
                 local button = self.moneyButtonList:GetChild(idx)

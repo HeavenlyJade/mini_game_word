@@ -1,4 +1,4 @@
-print("Hello world!")local MainStorage  = game:GetService('MainStorage')
+local MainStorage  = game:GetService('MainStorage')
 local ClassMgr    = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 
 ---@class SimulatorTalentType : Class

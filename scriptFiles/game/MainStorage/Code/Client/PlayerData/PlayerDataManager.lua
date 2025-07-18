@@ -19,10 +19,7 @@ local PlayerDataManager = {
 --- 订阅服务端事件
 function PlayerDataManager:SubscribeServerEvents()
     -- 【修改】订阅背包系统原有的同步事件，而不是新的 PlayerDataSync_Bag
-    gg.log("PlayerDataManager:SubscribeServerEvents: " .. tostring(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS))
-    ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
-        self:HandleBagSyncFromBagSystem(data)
-    end)
+
 
     -- 订阅新的变量和任务数据同步事件
     ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
