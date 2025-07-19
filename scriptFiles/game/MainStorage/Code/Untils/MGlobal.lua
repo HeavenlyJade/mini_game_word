@@ -11,7 +11,7 @@ local Players = game:GetService('Players')
 ---@field OnClientNotify Event<fun(self, event: string, data: table)>
 ---@field FireServer fun(self, data: table)
 ---@field fireClient fun(self, uin: number, data: table)
-
+---@
 ---@class gg      --存放自定义的global全局变量和函数  
 local gg = {
     isServer = nil,
