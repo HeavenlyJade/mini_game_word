@@ -18,6 +18,8 @@ local RewardManager = {}
 -- Value: 预加载的计算器类
 local CALCULATOR_CLASSES = {
     ['飞车挑战赛'] = require(MainStorage.Code.GameReward.RewardCalc.RaceRewardCal),
+    ['成就天赋'] = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal), -- 新增
+
     -- ['时间挑战赛'] = require(MainStorage.Code.GameReward.RewardCalc.TimeTrialRewardCal), -- 预留
 }
 

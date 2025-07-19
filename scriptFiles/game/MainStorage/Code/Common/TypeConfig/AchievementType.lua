@@ -172,31 +172,6 @@ function AchievementType:CalculateUpgradeCost(formula, level)
    return 0
 end
 
---- 验证成就配置有效性
----@return boolean, string 是否有效，错误信息
-function AchievementType:ValidateConfig()
-   -- 检查基本字段
-   if not self.name or self.name == "" then
-       return false, "成就名称不能为空"
-   end
-   
-   if not self.type or (self.type ~= "普通成就" and self.type ~= "天赋成就") then
-       return false, "成就类型必须是'普通成就'或'天赋成就'"
-   end
-   
-   -- 检查天赋成就专有字段
-   if self.type == "天赋成就" then
-       if not self.maxLevel or self.maxLevel <= 0 then
-           return false, "天赋成就必须设置有效的最大等级"
-       end
-       
-       if not self.levelEffects or #self.levelEffects == 0 then
-           return false, "天赋成就必须设置等级效果"
-       end
-   end
-   
-   return true
-end
 
 
 return AchievementType
