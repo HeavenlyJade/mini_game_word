@@ -17,8 +17,6 @@ function SimulatorDataSystem:LoadData(playerUID)
     local data = {
         currentPower = 0,       -- 当前战力
         highestPower = 0,       -- 历史最高战力
-        gold = 0,               -- 金币 (用于抽奖/升级天赋)
-        trophies = 0,           -- 奖杯 (用于升级稀有天赋，如重生档位)
         rebirths = 0,           -- 重生总次数
 
         -- 天赋等级
