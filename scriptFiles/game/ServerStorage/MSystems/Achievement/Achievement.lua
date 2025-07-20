@@ -2,9 +2,11 @@
 -- 成就实例类 - 表示玩家已解锁的成就状态和业务逻辑
 
 local MainStorage = game:GetService("MainStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
+local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 
 ---@class Achievement : Class
 ---@field achievementType AchievementType AchievementType配置引用

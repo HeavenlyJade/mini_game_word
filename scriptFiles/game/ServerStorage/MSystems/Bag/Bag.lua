@@ -2,7 +2,6 @@ local MainStorage = game:GetService('MainStorage')
 local ServerStorage = game:GetService('ServerStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType) ---@type ItemType
 local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
 local ItemUtils = require(ServerStorage.MSystems.Bag.ItemUtils) ---@type ItemUtils
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr

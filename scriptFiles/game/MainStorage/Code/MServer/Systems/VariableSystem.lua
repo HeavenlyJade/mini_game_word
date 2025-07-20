@@ -343,4 +343,33 @@ function VariableSystem:DeserializeVariables(data)
     end
 end
 
+--- 检查单个变量条件（使用>=运算符）
+---@param variableName string 变量名
+---@param requiredValue number 需求值
+---@return boolean 是否满足条件
+function VariableSystem:CheckCondition(variableName, requiredValue)
+    local currentValue = self:GetVariable(variableName, 0)
+    return currentValue >= requiredValue
+end
+
+--- 批量检查多个变量条件（全部满足才返回true）
+---@param conditions table[] 条件列表，格式：{{variableName, requiredValue}, ...}
+---@return boolean 是否全部满足条件
+function VariableSystem:CheckConditions(conditions)
+    if not conditions or #conditions == 0 then
+        return true
+    end
+    
+    for _, condition in ipairs(conditions) do
+        local variableName = condition[1] or condition.variableName
+        local requiredValue = condition[2] or condition.requiredValue
+        
+        if not self:CheckCondition(variableName, requiredValue) then
+            return false
+        end
+    end
+    
+    return true
+end
+
 return VariableSystem 
