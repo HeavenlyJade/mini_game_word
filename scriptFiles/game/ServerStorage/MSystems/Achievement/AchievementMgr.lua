@@ -2,9 +2,10 @@
 -- 成就管理器 - 静态类，管理所有玩家的成就数据，负责解锁、升级、保存、同步等操作
 
 local MainStorage = game:GetService("MainStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local Achievement = require(MainStorage.Code.Common.TypeConfig.Achievement) ---@type Achievement
-local AchievementCloudDataMgr = require(MainStorage.Code.MServer.CloudDataMgr.AchievementCloudDataMgr) ---@type AchievementCloudDataMgr
+local Achievement = require(ServerStorage.MSystems.Achievement.Achievement) ---@type Achievement
+local AchievementCloudDataMgr = require(ServerStorage.MSystems.Achievement.AchievementCloudDataMgr) ---@type AchievementCloudDataMgr
 
 -- 所有玩家的成就数据管理，服务器侧
 

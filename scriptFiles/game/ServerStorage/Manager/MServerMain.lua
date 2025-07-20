@@ -95,9 +95,11 @@ function MainServer.initModule()
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
+    local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
     serverDataMgr.BagMgr = BagMgr
     serverDataMgr.MailMgr = MailMgr
     serverDataMgr.GameModeManager = GameModeManager
+    serverDataMgr.AchievementMgr = AchievementMgr
 
     -- 初始化事件管理器和命令管理器
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
@@ -105,6 +107,7 @@ function MainServer.initModule()
     local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
     local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
     local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
+    local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
 
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
@@ -112,6 +115,7 @@ function MainServer.initModule()
     BagEventManager.Init()
     MailEventManager.Init()
     RaceGameEventManager.Init()
+    AchievementEventManager.Init()
     
     -- 初始化场景交互系统
     SceneNodeManager:Init()

@@ -6,7 +6,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-local AchievementEventConfig = require(MainStorage.Code.Event.EventAchievement) ---@type AchievementEventConfig
+local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent) ---@type AchievementEventConfig
 
 ---@class AchievementEventManager
 local AchievementEventManager = {}

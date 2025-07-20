@@ -19,7 +19,7 @@ local MServerDataManager = {
     GameModeManager = nil, ---@type GameModeManager | nil
     CommandManager= nil, ---@type CommandManager | nil
     GlobalMailManager = nil, ---@type GlobalMailManager | nil
-
+    AchievementMgr = nil, ---@type AchievementMgr | nil
     uuid_start = 0,
     tick = 0
 }
