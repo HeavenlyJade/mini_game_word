@@ -30,9 +30,11 @@
         - 其他玩家相关数据模块...
         
         **每个系统的标准结构**：
-        - `*Mgr.lua` - 功能管理器，是一个静态类，负责存放对应玩家的云端数据并处理业务逻辑。
-        - `*EventManager.lua` - 事件管理器，存放玩家需要交互的所有事件
-        - `*CloudDataMgr.lua` - 云数据管理器，处理数据持久化和管理
+        - `*Mgr.lua` - 功能管理器（静态类），负责缓存在线玩家的数据实例并处理业务逻辑
+        - `*EventManager.lua` - 事件管理器（静态类），处理客户端请求和服务器响应事件
+        - `*CloudDataMgr.lua` - 云数据管理器，定义数据结构和序列化格式
+        - `*SystemName.lua` - 核心数据类，使用ClassMgr定义的数据实体
+        - `[其他业务文件].lua` - 工具类、配置等辅助文件
 
 
 ### 目录访问权限与用途
@@ -125,16 +127,18 @@
     - 包含类或主要系统的模块通常以 `M` 为前缀（例如 `MConfig`, `MMonster`）。
     - 管理器模块通常以后缀 `Mgr` 结尾（例如 `BagMgr`, `ClassMgr`）。
     - **MSystems 模块规范**：
-        - 每个玩家数据系统都有独立的目录（如 `Bag/`, `Mail/`, `Skill/`）
+        - 每个玩家数据系统都有独立的目录（如 `Bag/`, `Mail/`, `Pet/`, `Achievement/`）
         - **标准文件结构**：
-            - `*Mgr.lua` - 功能管理器，处理核心业务逻辑
-            - `*EventManager.lua` - 事件管理器，管理玩家交互事件
-            - `CloudDataMgr.lua/` - 存放运输机的目录
-            - 其他业务相关的类文件（如 `Item.lua`, `Mail.lua` 等）
+            - `*Mgr.lua` - 功能管理器（静态类），缓存在线玩家数据实例
+            - `*EventManager.lua` - 事件管理器（静态类），处理客户端请求和服务器响应
+            - `*CloudDataMgr.lua` - 云数据管理器，定义数据结构和序列化格式
+            - `*SystemName.lua` - 核心数据类，使用ClassMgr定义的数据实体
+            - 其他业务相关的工具文件（如 `ItemUtils.lua` 等）
         - **职责分离原则**：
-            - *Mgr：业务逻辑处理、数据操作、系统间通信
-            - *EventManager：事件监听、事件分发、玩家交互响应
+            - *Mgr：在线玩家数据实例缓存、业务逻辑处理、数据操作
+            - *EventManager：事件监听、事件分发、客户端交互响应
             - *CloudDataMgr：数据结构定义、序列化、云存储格式
+            - *SystemName：数据实体定义、业务方法实现
 
 - **日志打印规范**:
     - **必须** 使用 `gg.log()` 进行日志输出，禁止使用原生的 `print()` 函数。
@@ -155,16 +159,18 @@
       ```
 
 - **管理器架构约定**:
-    - **事件管理器 (EventManager) 必须是静态类**:
-        - **适用范围**: 所有位于 `MSystems/` 目录下的 `*EventManager.lua` 文件，以及为特定游戏模式（位于 `GameModes/Modes/`）创建的事件管理器。
+    - **所有 MSystems 管理器都是静态类**:
+        - **适用范围**: 所有位于 `MSystems/` 目录下的 `*Mgr.lua` 和 `*EventManager.lua` 文件
         - **实现方式**:
-            - 模块返回一个 table。
-            - 所有方法都作为该 table 的字段，使用点 `.` 进行定义，例如 `function MyManager.MyMethod() end`。
-            - 严禁使用冒号 `:` 定义方法，因为这会隐式传递 `self` 参数，不符合静态类的特征。
-            - **示例**: `BagEventManager`, `RaceGameEventManager` 都应遵循此规范。
-    - **功能管理器 (Mgr) 可以是静态类或动态类**:
-        - `*Mgr.lua` 文件如果只负责管理全局状态和逻辑（如 `GameModeManager`），则应实现为静态类。
-        - 如果需要为每个玩家或每个实例创建单独的数据副本（如 `BagMgr` 可能需要为每个玩家管理一个独立的背包实例），则可以实现为动态类（使用冒号 `:` 定义方法并由 `ClassMgr` 管理）。
+            - 模块返回一个 table
+            - 所有方法都作为该 table 的字段，使用点 `.` 进行定义，例如 `function MyManager.MyMethod() end`
+            - 严禁使用冒号 `:` 定义方法，因为这会隐式传递 `self` 参数，不符合静态类的特征
+            - **数据缓存**: 在模块内部使用局部变量缓存在线玩家的数据实例
+        - **示例**: `BagMgr`, `PetMgr`, `MailMgr`, `BagEventManager`, `PetEventManager` 等都遵循此规范
+    - **数据缓存规则**:
+        - **缓存内容**: 存放对应系统的玩家数据实例（如 `Bag` 实例、`Pet` 实例、`Mail` 实例）
+        - **缓存结构**: 使用 `{uin = 数据实例}` 或 `{uin = {slotIndex = 数据实例}}` 的形式
+        - **生命周期**: 玩家登录时创建实例，离线时清理缓存
 
 ## 相关文档体系
 
@@ -236,7 +242,7 @@ end)
 ### 核心脚本文件
 - **`scriptFiles/game/ServerScriptService/server_enter.lua`**: 服务器主入口点。所有服务器端逻辑都从这里开始。
 - **`scriptFiles/game/ServerStorage/MServerMain.lua`**: 可能包含入口之后的主服务器循环和初始化逻辑。
-- **`scriptFiles/game/ServerStorage/MSystems.lua`**: **玩家数据系统总入口**，负责所有玩家相关系统的注册和初始化。
+- **`scriptFiles/game/ServerStorage/Manager/MServerMain.lua`**: **服务器主管理器**，负责所有玩家数据系统的初始化和事件管理器注册。
 - **`scriptFiles/game/MainStorage/Code/Common/GameConfig/MConfig.lua`**: 游戏配置值的主要文件。
 - **`scriptFiles/game/MainStorage/Code/Untils/ClassMgr.lua`**: 定义了项目的面向对象编程基础。
 - **`scriptFiles/game/MainStorage/Code/Untils/MGlobal.lua`**: 包含全局可访问的实用函数。
@@ -244,45 +250,82 @@ end)
 ### 玩家数据系统文件 (MSystems/)
 
 #### 背包系统 (`MSystems/Bag/`)
-- **`BagMgr.lua`** - 背包功能管理器
+- **`BagMgr.lua`** - 背包功能管理器（静态类）
+    - 在线玩家背包实例缓存管理
     - 物品添加、删除、移动逻辑
     - 装备穿戴、卸下处理
     - 背包容量管理
-- **`BagEventManager.lua`** - 背包事件管理器
+- **`BagEventManager.lua`** - 背包事件管理器（静态类）
     - 玩家物品使用事件
     - 装备更换事件
     - 背包整理事件
-- **`BagCloudDataMgr.lua`** - 背包云数据结构
+- **`BagCloudDataMgr.lua`** - 背包云数据管理器
     - 背包数据格式定义
     - 物品属性结构
     - 装备状态数据
+- **`Bag.lua`** - 背包核心数据类
 - **`Item.lua`** - 物品数据类
 - **`ItemUtils.lua`** - 物品工具函数
 
 #### 邮件系统 (`MSystems/Mail/`)
-- **`MailMgr.lua`** - 邮件功能管理器
+- **`MailMgr.lua`** - 邮件功能管理器（静态类）
+    - 在线玩家邮件数据缓存管理
     - 邮件发送、接收逻辑
     - 附件处理
     - 邮件状态管理
-- **`MailEventManager.lua`** - 邮件事件管理器
+- **`MailEventManager.lua`** - 邮件事件管理器（静态类）
     - 玩家查看邮件事件
     - 领取附件事件
     - 删除邮件事件
-- **`cloudMailData.lua`** - 邮件云数据结构
+- **`MailCloudDataMgr.lua`** - 邮件云数据管理器
     - 邮件数据格式
     - 附件数据结构
     - 邮件状态定义
+- **`Mail.lua`** - 邮件核心数据类
+- **`GlobalMailManager.lua`** - 全局邮件管理器
+
+#### 宠物系统 (`MSystems/Pet/`)
+- **`PetMgr.lua`** - 宠物功能管理器（静态类）
+    - 在线玩家宠物实例缓存管理
+    - 宠物激活、升级、升星逻辑
+    - 宠物技能学习、喂养管理
+- **`PetEventManager.lua`** - 宠物事件管理器（静态类）
+    - 宠物列表获取事件
+    - 宠物激活、升级事件
+    - 宠物技能学习、喂养事件
+- **`PetCloudDataMgr.lua`** - 宠物云数据管理器
+    - 宠物数据格式定义
+    - 宠物属性结构
+    - 宠物状态数据
+- **`Pet.lua`** - 宠物核心数据类
+
+#### 成就系统 (`MSystems/Achievement/`)
+- **`AchievementMgr.lua`** - 成就功能管理器（静态类）
+    - 在线玩家成就实例缓存管理
+    - 成就进度跟踪、完成逻辑
+    - 成就奖励发放管理
+- **`AchievementEventManager.lua`** - 成就事件管理器（静态类）
+    - 成就列表获取事件
+    - 成就进度更新事件
+    - 成就完成、奖励领取事件
+- **`AchievementCloudDataMgr.lua`** - 成就云数据管理器
+    - 成就数据格式定义
+    - 成就进度结构
+    - 成就状态数据
+- **`Achievement.lua`** - 成就核心数据类
 
 
-#### 未来扩展系统示例
-- **`MSystems/Skill/`** - 技能系统
-    - `SkillManager.lua` - 技能功能管理
-    - `SkillEventManager.lua` - 技能交互事件
-    - `Skillclouddata.lua` - 技能数据结构
-- **`MSystems/Quest/`** - 任务系统
-    - `QuestManager.lua` - 任务功能管理
-    - `QuestEventManager.lua` - 任务交互事件
-    - `Questclouddata.lua` - 任务数据结构
+#### 待实现系统示例
+- **`MSystems/Skill/`** - 技能系统（待实现）
+    - `SkillMgr.lua` - 技能功能管理器（静态类）
+    - `SkillEventManager.lua` - 技能事件管理器（静态类）
+    - `SkillCloudDataMgr.lua` - 技能云数据管理器
+    - `PlayerSkill.lua` - 玩家技能核心数据类
+- **`MSystems/Quest/`** - 任务系统（待实现）
+    - `QuestMgr.lua` - 任务功能管理器（静态类）
+    - `QuestEventManager.lua` - 任务事件管理器（静态类）
+    - `QuestCloudDataMgr.lua` - 任务云数据管理器
+    - `Quest.lua` - 任务核心数据类
 
 ### 文档规则文件
 - **`.cursorrule`** (本文件): 项目核心规则、架构概览和编码约定
@@ -432,49 +475,63 @@ print("玩家的初始生命值是: " .. settings.PlayerHealth)
 **1. 创建系统目录结构**
 ```
 MSystems/NewSystem/
-├── NewSystemManager.lua          -- 功能管理器
-├── NewSystemEventManager.lua     -- 事件管理器
-│   NewSystemCloudDataMgr.lua     -- 云存储
-├── NewSystemBase.lua             -- 基础类（可选）
+├── NewSystemMgr.lua              -- 功能管理器（静态类）
+├── NewSystemEventManager.lua     -- 事件管理器（静态类）
+├── NewSystemCloudDataMgr.lua     -- 云数据管理器
+├── NewSystem.lua                 -- 核心数据类
 └── NewSystemUtils.lua            -- 工具函数（可选）
 ```
 
 **2. Manager 实现示例**
 ```lua
--- NewSystemManager.lua - 功能管理器
-local NewSystemManager = ClassMgr.Class("NewSystemManager")
+-- NewSystemMgr.lua - 功能管理器（静态类）
+local NewSystemMgr = {}
 
-function NewSystemManager:OnInit()
-    -- 初始化业务逻辑
+-- 在线玩家数据实例缓存
+local server_player_new_system_data = {} ---@type table<number, NewSystem>
+
+function NewSystemMgr.OnPlayerJoin(player)
+    -- 从云数据加载玩家数据并创建实例
+    local playerData = NewSystemCloudDataMgr.LoadPlayerData(player.Uin)
+    local newSystemInstance = NewSystem.New(playerData)
+    server_player_new_system_data[player.Uin] = newSystemInstance
 end
 
-function NewSystemManager:ProcessPlayerAction(player, action, data)
+function NewSystemMgr.OnPlayerLeave(uin)
+    -- 保存数据并清理缓存
+    local instance = server_player_new_system_data[uin]
+    if instance then
+        NewSystemCloudDataMgr.SavePlayerData(uin, instance:GetData())
+        server_player_new_system_data[uin] = nil
+    end
+end
+
+function NewSystemMgr.ProcessPlayerAction(player, action, data)
     -- 处理玩家操作
-    -- 调用云数据保存
-    -- 触发相关事件
+    local instance = server_player_new_system_data[player.Uin]
+    if instance then
+        -- 执行业务逻辑
+        -- 触发相关事件
+    end
 end
 
-return NewSystemManager
+return NewSystemMgr
 ```
 
 **3. EventManager 实现示例**
 ```lua
--- NewSystemEventManager.lua - 事件管理器
-local NewSystemEventManager = ClassMgr.Class("NewSystemEventManager")
+-- NewSystemEventManager.lua - 事件管理器（静态类）
+local NewSystemEventManager = {}
 
-function NewSystemEventManager:OnInit()
-    -- 注册玩家交互事件
-    self:RegisterPlayerEvents()
-end
-
-function NewSystemEventManager:RegisterPlayerEvents()
-    -- 监听玩家交互事件
+function NewSystemEventManager.Init()
+    -- 注册事件监听器
     -- 参考 .cursorrule-api 中的事件系统
 end
 
-function NewSystemEventManager:OnPlayerInteract(player, eventData)
-    -- 处理玩家交互
+function NewSystemEventManager.OnPlayerRequest(player, eventData)
+    -- 处理玩家请求
     -- 调用对应的Manager方法
+    NewSystemMgr.ProcessPlayerAction(player, eventData.action, eventData.data)
 end
 
 
