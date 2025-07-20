@@ -372,4 +372,79 @@ function VariableSystem:CheckConditions(conditions)
     return true
 end
 
+-- 三段式变量名解析 --------------------------------------------------------
+
+--- 解析三段式变量名：操作类型_加成方式_变量名称
+---@param variableName string 三段式变量名
+---@return table|nil 解析结果 {operation, method, name} 或 nil
+function VariableSystem:ParseVariableName(variableName)
+    local parts = {}
+    for part in string.gmatch(variableName, "([^_]+)") do
+        table.insert(parts, part)
+    end
+    
+    if #parts == 3 then
+        return {
+            operation = parts[1],   -- 操作类型：解锁、加成、计数、状态等
+            method = parts[2],      -- 加成方式：百分比、绝对值、固定值等
+            name = parts[3]         -- 变量名称：攻击力、生命值、经验倍率等
+        }
+    end
+    
+    return nil -- 不是三段式格式
+end
+
+--- 智能应用变量值（支持三段式解析）
+---@param variableName string 变量名
+---@param value number 变量值
+function VariableSystem:ApplyVariableValue(variableName, value)
+    local parsed = self:ParseVariableName(variableName)
+    
+    if parsed then
+        -- 三段式变量处理
+        self:_ApplyParsedVariable(parsed, variableName, value)
+    else
+        -- 不是三段式格式，直接设置变量
+        self:SetVariable(variableName, value)
+    end
+end
+
+--- 处理三段式变量
+---@param parsed table 解析结果
+---@param variableName string 完整变量名
+---@param value number 变量值
+---@private
+function VariableSystem:_ApplyParsedVariable(parsed, variableName, value)
+    local operation = parsed.operation
+    local method = parsed.method
+    
+    -- 根据加成方式处理数值
+    local finalValue = self:_CalculateValueByMethod(variableName, value, method)
+    
+    -- 根据操作类型应用变量
+    if operation == "加成" or operation == "计数" then
+        self:AddVariable(variableName, finalValue)
+    else
+        self:SetVariable(variableName, finalValue)
+    end
+end
+
+--- 根据加成方式计算最终数值
+---@param variableName string 变量名
+---@param value number 原始值
+---@param method string 加成方式
+---@return number 计算后的值
+---@private
+function VariableSystem:_CalculateValueByMethod(variableName, value, method)
+    if method == "百分比" then
+        -- 百分比加成：当前值 * (1 + 百分比值/100)
+        local currentValue = self:GetVariable(variableName, 0)
+        return currentValue * value / 100
+    else
+        -- 固定值/绝对值：直接使用原始值
+        return value
+    end
+end
+
+
 return VariableSystem 
