@@ -8,6 +8,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
 local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 
+
 ---@class Achievement : Class
 ---@field achievementType AchievementType AchievementType配置引用
 ---@field playerId string 所属玩家ID
@@ -43,7 +44,7 @@ function Achievement:GetCurrentLevel()
 end
 
 --- 是否可以升级（仅天赋成就）
----@param player table 玩家实例
+---@param player MPlayer 玩家实例
 ---@return boolean
 function Achievement:CanUpgrade(player)
     if not self:IsTalentAchievement() then
@@ -87,7 +88,7 @@ function Achievement:CanUpgrade(player)
 end
 
 --- 执行升级（仅天赋成就）
----@param player table 玩家实例
+---@param player MPlayer 玩家实例
 ---@return boolean 升级是否成功
 function Achievement:Upgrade(player)
     if not self:CanUpgrade(player) then
@@ -141,7 +142,7 @@ function Achievement:GetCurrentEffect()
 end
 
 --- 应用效果到玩家
----@param player table 玩家实例
+---@param player MPlayer 玩家实例
 function Achievement:ApplyEffects(player)
     local effects = self:GetCurrentEffect()
     if not effects then
@@ -162,7 +163,7 @@ end
 
 --- 应用单个效果
 ---@param effect table 效果配置
----@param player table 玩家实例
+---@param player MPlayer 玩家实例
 ---@private
 function Achievement:_ApplySingleEffect(effect, player)
     local effectType = effect["效果类型"]
@@ -208,13 +209,13 @@ function Achievement:_ApplyToVariableSystem(fieldName, effectValue, player)
     end
     
     -- 根据变量名前缀决定应用方式
-    if string.find(fieldName, "^加成_") then
-        -- 加成类变量：累加效果值
+    if string.find(fieldName, "^加成_") or string.find(fieldName, "^计数_") then
+        -- 累加类变量：使用AddVariable
         player.variableSystem:AddVariable(fieldName, effectValue)
         gg.log(string.format("成就[%s]累加变量: %s +%s", 
             self.achievementType.id, fieldName, tostring(effectValue)))
     else
-        -- 其他类型变量（解锁_、配置_等）：直接设置
+        -- 其他类型变量：使用SetVariable
         player.variableSystem:SetVariable(fieldName, effectValue)
         gg.log(string.format("成就[%s]设置变量: %s = %s", 
             self.achievementType.id, fieldName, tostring(effectValue)))
@@ -224,26 +225,19 @@ end
 --- 应用效果到属性系统
 ---@param fieldName string 属性名
 ---@param effectValue number 效果值
----@param player table 玩家实例
+---@param player MPlayer 玩家实例
 ---@private
 function Achievement:_ApplyToStatSystem(fieldName, effectValue, player)
-    if not player.statSystem then
-        gg.log("玩家属性系统不存在:", self.playerId)
-        return
-    end
-    
-    -- 使用成就作为属性来源
+    -- 使用Entity现有的属性系统
     local source = "ACHIEVEMENT_" .. self.achievementType.id
-    
-    -- 添加属性（会自动触发TRIGGER_STAT_TYPES处理）
-    player.statSystem:AddStat(fieldName, effectValue, source, true)
+    player:AddStat(fieldName, effectValue, source, true)
     
     gg.log(string.format("成就[%s]增加属性: %s +%s (来源:%s)", 
         self.achievementType.id, fieldName, tostring(effectValue), source))
 end
 
 --- 移除成就效果（当成就失效或天赋重置时使用）
----@param player table 玩家实例
+---@param player MPlayer 玩家实例
 function Achievement:RemoveEffects(player)
     if not self:IsTalentAchievement() then
         -- 普通成就解锁后不应该移除效果
@@ -272,18 +266,5 @@ function Achievement:GetSaveData()
     }
 end
 
---- 获取客户端同步数据
----@return table
-function Achievement:GetSyncData()
-    return {
-        id = self.achievementType.id,
-        name = self.achievementType.name,
-        type = self.achievementType.type,
-        unlockTime = self.unlockTime,
-        currentLevel = self.currentLevel,
-        maxLevel = self.achievementType:GetMaxLevel(),
-        canUpgrade = false -- 这个需要在有玩家上下文时计算
-    }
-end
 
 return Achievement
