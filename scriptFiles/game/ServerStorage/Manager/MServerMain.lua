@@ -94,10 +94,12 @@ function MainServer.initModule()
     -- 初始化核心管理器
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
     local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
     local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
     serverDataMgr.BagMgr = BagMgr
     serverDataMgr.MailMgr = MailMgr
+    serverDataMgr.PetMgr = PetMgr
     serverDataMgr.GameModeManager = GameModeManager
     serverDataMgr.AchievementMgr = AchievementMgr
 
@@ -105,6 +107,7 @@ function MainServer.initModule()
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
     local BagEventManager = require(ServerStorage.MSystems.Bag.BagEventManager) ---@type BagEventManager
     local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
+    local PetEventManager = require(ServerStorage.MSystems.Pet.PetEventManager) ---@type PetEventManager
     local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
     local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
@@ -114,6 +117,7 @@ function MainServer.initModule()
 
     BagEventManager.Init()
     MailEventManager.Init()
+    PetEventManager.Init()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
     

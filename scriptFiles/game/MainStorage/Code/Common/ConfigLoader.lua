@@ -11,6 +11,7 @@ local EffectType = require(MainStorage.Code.Common.TypeConfig.EffectType)
 local LevelType = require(MainStorage.Code.Common.TypeConfig.LevelType)
 local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType)
 local AchievementType = require(MainStorage.Code.Common.TypeConfig.AchievementType)
+local PetType = require(MainStorage.Code.Common.TypeConfig.PetType)
 
 -- 引用所有 Config 的原始数据
 local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig)
@@ -19,6 +20,7 @@ local EffectTypeConfig = require(MainStorage.Code.Common.Config.EffectTypeConfig
 local LevelConfig = require(MainStorage.Code.Common.Config.LevelConfig)
 local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig)
 local AchievementConfig = require(MainStorage.Code.Common.Config.AchievementConfig)
+local PetConfig = require(MainStorage.Code.Common.Config.PetConfig)
 -- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) -- 已移除
 -- local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) -- 已移除
 
@@ -35,6 +37,7 @@ ConfigLoader.ItemQualities = {}
 ConfigLoader.Npcs = {}
 ConfigLoader.SceneNodes = {}
 ConfigLoader.Achievements = {}
+ConfigLoader.Pets = {}
 
 --- 一个通用的加载函数，避免重复代码
 ---@param configData table 从Config目录加载的原始数据
@@ -69,6 +72,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(LevelConfig, LevelType, ConfigLoader.Levels, "Level")
     ConfigLoader.LoadConfig(SceneNodeConfig, SceneNodeType, ConfigLoader.SceneNodes, "SceneNode")
     ConfigLoader.LoadConfig(AchievementConfig, AchievementType, ConfigLoader.Achievements, "Achievement")
+    ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
     -- ConfigLoader.LoadConfig(ItemQualityConfig, nil, ConfigLoader.ItemQualities, "ItemQuality") -- 暂无ItemQualityType
     -- ConfigLoader.LoadConfig(MailConfig, nil, ConfigLoader.Mails, "Mail") -- 暂无MailType
     -- ConfigLoader.LoadConfig(NpcConfig, nil, ConfigLoader.Npcs, "Npc") -- 暂无NpcType
@@ -128,6 +132,17 @@ end
 ---@return table<string, AchievementType>
 function ConfigLoader.GetAllAchievements()
     return ConfigLoader.Achievements
+end
+
+---@param id string
+---@return PetType
+function ConfigLoader.GetPet(id)
+    return ConfigLoader.Pets[id]
+end
+
+---@return table<string, PetType>
+function ConfigLoader.GetAllPets()
+    return ConfigLoader.Pets
 end
 
 return ConfigLoader 

@@ -17,6 +17,7 @@ local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventMan
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 
@@ -90,6 +91,9 @@ function MServerInitPlayer.player_enter_game(player)
             -- 清理旧玩家的邮件缓存
             local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
             MailMgr:OnPlayerLeave(uin_)
+            -- 清理旧玩家的宠物缓存
+            local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr)
+            PetMgr.OnPlayerLeave(uin_)
             serverDataMgr.removePlayer(uin_, oldPlayer.name or "Unknown")  -- 从列表中移除
             gg.log('Old player instance removed for uin:', uin_)
         end
@@ -148,7 +152,8 @@ function MServerInitPlayer.player_enter_game(player)
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
-    gg.log("玩家", uin_, "登录完成，邮件数据已加载到MailMgr")
+    PetMgr.OnPlayerJoin(player_)
+    gg.log("玩家", uin_, "登录完成，邮件和宠物数据已加载")
     MServerInitPlayer.syncPlayerDataToClient(player_)
 
     
@@ -202,6 +207,7 @@ function MServerInitPlayer.player_leave_game(player)
         -- 通知各个系统玩家已离开
         MailMgr.OnPlayerLeave(uin_)
         BagMgr.OnPlayerLeave(uin_)
+        PetMgr.OnPlayerLeave(uin_)
         -- 其他管理器（如技能、任务等）的离线处理也可以在这里添加
         mplayer:leaveGame() -- 保存玩家基础数据
         serverDataMgr.removePlayer(uin_, player.Name)
