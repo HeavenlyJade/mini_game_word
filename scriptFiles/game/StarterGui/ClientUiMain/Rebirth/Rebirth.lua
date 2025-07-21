@@ -11,7 +11,7 @@ local uiConfig = {
     uiName = "RebirthGui",
     layer = 3,
     hideOnInit = true,
-    closeHuds = false,  -- 设置为false，不隐藏layer=0的界面
+    closeHuds = true,  -- 改为true，正确管理layer=0界面
 }
 
 ---@class RebirthGui:ViewBase

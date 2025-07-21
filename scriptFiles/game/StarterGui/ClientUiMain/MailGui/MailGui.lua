@@ -16,7 +16,7 @@ local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type Conf
 
 local uiConfig = {
     uiName = "MailGui",
-    layer = 3,
+    layer = -1,
     hideOnInit = true,
     closeHuds = false,  -- 设置为false，不隐藏layer=0的界面
 }

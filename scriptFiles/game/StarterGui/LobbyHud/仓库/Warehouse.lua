@@ -9,9 +9,8 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 local uiConfig = {
     uiName = "Warehouse",
-    layer = -1,
-    hideOnInit = false,
-    closeHuds = false
+    layer = 3,
+    hideOnInit = false,  -- 改为false，让界面在初始化时显示
 }
 
 ---@class Warehouse:ViewBase
@@ -66,10 +65,11 @@ function Warehouse:RegisterButtonEvents()
     
     -- 重生按钮
     self.rebirthSection.clickCb = function()
-        gg.log("重生按钮被点击")
         ViewBase["RebirthGui"]:Open()
     end
-
+    self.wingsSection.clickCb =function ()
+        ViewBase["WingsGui"]:Open()
+    end
     gg.log("仓库界面按钮事件注册完成")
 end
 
