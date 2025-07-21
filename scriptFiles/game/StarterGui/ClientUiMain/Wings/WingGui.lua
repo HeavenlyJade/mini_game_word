@@ -34,12 +34,11 @@ function WingGui:OnInit(node, config)
     self.upgradeAttribute = self:Get("翅膀界面/翅膀显示卡/属性介绍/重生栏位/最大重生/升星属性", ViewComponent) ---@type ViewComponent
     
     -- 功能操作按钮
-    self.upgradeButton = self:Get("翅膀界面/升星", ViewButton) ---@type ViewButton
-    self.equipButton = self:Get("翅膀界面/装备", ViewButton) ---@type ViewButton
-    self.unequipButton = self:Get("翅膀界面/卸下", ViewButton) ---@type ViewButton
-    self.wingUI = self:Get("翅膀界面/翅膀UI", ViewComponent) ---@type ViewComponent
-    self.starUI = self:Get("翅膀界面/星级UI", ViewComponent) ---@type ViewComponent
-    self.fullBodyButton = self:Get("翅膀界面/全身", ViewButton) ---@type ViewButton
+    self.upgradeButton = self:Get("翅膀界面/翅膀显示栏/升星", ViewButton) ---@type ViewButton
+    self.equipButton = self:Get("翅膀界面/翅膀显示栏/装备", ViewButton) ---@type ViewButton
+    self.unequipButton = self:Get("翅膀界面/翅膀显示栏/卸下", ViewButton) ---@type ViewButton
+    self.wingUI = self:Get("翅膀界面/翅膀显示栏/翅膀UI", ViewComponent) ---@type ViewComponent
+    self.starUI = self:Get("翅膀界面/翅膀显示栏/星级UI", ViewComponent) ---@type ViewComponent
     
     -- 翅膀栏位列表
     self.wingSlotList = self:Get("翅膀界面/翅膀栏位", ViewList) ---@type ViewList
@@ -90,10 +89,6 @@ function WingGui:RegisterButtonEvents()
         gg.log("卸下按钮被点击")
     end
     
-    -- 全身按钮
-    self.fullBodyButton.clickCb = function()
-        gg.log("全身按钮被点击")
-    end
 
     gg.log("翅膀界面按钮事件注册完成")
 end

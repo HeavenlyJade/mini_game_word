@@ -11,7 +11,7 @@ local GameSystem = ClassMgr.Class("GameSystem", ViewBase)
 
 local uiConfig = {
     uiName = "GameSystem",
-    layer = 0,
+    layer = -1,
     hideOnInit = false,
 }
 

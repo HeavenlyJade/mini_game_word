@@ -6,6 +6,7 @@ local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewB
 local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 
 local uiConfig = {
     uiName = "TalentGui",
@@ -24,22 +25,12 @@ function TalentGui:OnInit(node, config)
 
     -- 天赋栏位
     self.talentSlotList = self:Get("天赋界面/天赋栏位", ViewList) ---@type ViewList
-    self.talentFrame = self:Get("天赋界面/天赋栏位/天赋框", ViewComponent) ---@type ViewComponent
-    self.descLabel = self:Get("天赋界面/天赋栏位/天赋框/说明", ViewComponent) ---@type ViewComponent
-    self.upgradeButton = self:Get("天赋界面/天赋栏位/天赋框/升级", ViewButton) ---@type ViewButton
-    self.resourceUI = self:Get("天赋界面/天赋栏位/天赋框/资源UI", ViewComponent) ---@type ViewComponent
-    self.consumeLabel = self:Get("天赋界面/天赋栏位/天赋框/消耗", ViewComponent) ---@type ViewComponent
+    self.talentSlotDemoList = self:Get("天赋界面/天赋模板", ViewList) ---@type ViewList
+    self.talentDemoFrame = self:Get("天赋界面/天赋模板/天赋框", ViewComponent) ---@type ViewComponent
+
 
     -- 升级对比
-    self.upgradeCompare = self:Get("天赋界面/天赋栏位/天赋框/升级对比", ViewComponent) ---@type ViewComponent
-    self.compareBefore = self:Get("天赋界面/天赋栏位/天赋框/升级对比/前", ViewComponent) ---@type ViewComponent
-    self.compareAfter = self:Get("天赋界面/天赋栏位/天赋框/升级对比/后", ViewComponent) ---@type ViewComponent
 
-    -- 消耗栏位
-    self.consumeSlotList = self:Get("天赋界面/天赋栏位/天赋框/消耗栏位", ViewList) ---@type ViewList
-    self.consumeSlotBg = self:Get("天赋界面/天赋栏位/天赋框/消耗栏位/背景", ViewComponent) ---@type ViewComponent
-    self.consumeAmount = self:Get("天赋界面/天赋栏位/天赋框/消耗栏位/背景/消耗数量", ViewComponent) ---@type ViewComponent
-    self.consumeResourceUI = self:Get("天赋界面/天赋栏位/天赋框/消耗栏位/背景/消耗资源UI", ViewComponent) ---@type ViewComponent
 
     -- 数据存储
     self.talentData = {} ---@type table
@@ -52,6 +43,9 @@ function TalentGui:OnInit(node, config)
     self:RegisterButtonEvents()
 
     gg.log("TalentGui 天赋界面初始化完成")
+
+    -- 初始化天赋栏位
+    self:InitTalentList()
 end
 
 function TalentGui:RegisterEvents()
@@ -63,9 +57,7 @@ function TalentGui:RegisterButtonEvents()
         self:Close()
         gg.log("天赋界面已关闭")
     end
-    self.upgradeButton.clickCb = function()
-        gg.log("升级按钮被点击")
-    end
+
     gg.log("天赋界面按钮事件注册完成")
 end
 
@@ -75,6 +67,38 @@ end
 
 function TalentGui:OnClose()
     gg.log("TalentGui天赋界面关闭")
+end
+
+function TalentGui:InitTalentList()
+    local allAchievements = ConfigLoader.GetAllAchievements()
+    local talentList = {}
+    for id, achievementType in pairs(allAchievements) do
+        if achievementType:IsTalentAchievement() then
+            table.insert(talentList, achievementType)
+        end
+    end
+    
+    for i, talent in ipairs(talentList) do
+        gg.log("天赋", i,talent)
+        local cloneNode = self.talentDemoFrame.node:Clone()
+        cloneNode.Name = talent.name or ("TalentSlot" .. i)
+        self.talentSlotList:AppendChild(cloneNode)
+        self:SetupTalentSlot(cloneNode, talent)
+    end
+
+    gg.log("天赋列表初始化完成，共加载" .. #talentList .. "个天赋")
+end
+
+function TalentGui:SetupTalentSlot(slotNode, talentType)
+    -- slotNode: UI节点
+    -- talentType: AchievementType 实例
+    if slotNode["天赋名"] then
+        slotNode["天赋名"].Title = talentType.name or ""
+    end
+    if slotNode["天赋描述"] then
+        slotNode["天赋描述"].Title = talentType.description or ""
+    end
+    -- 可根据UI结构补充更多字段，如图标、等级等
 end
 
 return TalentGui.New(script.Parent, uiConfig)
