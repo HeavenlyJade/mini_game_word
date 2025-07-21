@@ -18,6 +18,7 @@ local uiConfig = {
     uiName = "MailGui",
     layer = 3,
     hideOnInit = true,
+    closeHuds = false,  -- 设置为false，不隐藏layer=0的界面
 }
 
 -- 邮件类型常量
