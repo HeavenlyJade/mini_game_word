@@ -68,9 +68,21 @@ function Warehouse:RegisterButtonEvents()
         ViewBase["RebirthGui"]:Open()
     end
     self.wingsSection.clickCb =function ()
-        ViewBase["WingsGui"]:Open()
+        ViewBase["WingGui"]:Open()
     end
-    gg.log("仓库界面按钮事件注册完成")
+    self.companionSection.clickCb = function ()
+        ViewBase["CompanionGui"]:Open()
+    end
+    self.petSection.clickCb = function ()
+        ViewBase["PetGui"]:Open()
+    end
+    self.trajectorySection.clickCb = function ()
+        ViewBase["TrailGui"]:Open()
+    end
+    self.talentSection.clickCb = function ()
+        ViewBase["TalentGui"]:Open()
+    end
+    gg.log("仓库界面按钮事件注册完成")  
 end
 
 -- 打开界面时的操作
