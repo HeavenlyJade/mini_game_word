@@ -22,17 +22,16 @@ function Warehouse:OnInit(node, config)
     self.backgroundPanel = self:Get("底图", ViewComponent) ---@type ViewComponent
     self.collapseButton = self:Get("底图/收起", ViewButton) ---@type ViewButton
     self.expandButton = self:Get("底图/展开", ViewButton) ---@type ViewButton
-    
-    -- 仓库节点
-    self.warehouseList = self:Get("底图/仓库", ViewList) ---@type ViewList
+    self.bgSection = self:Get("底图/背景", ViewComponent) ---@type ViewComponent
+    self.warehouseList = self:Get("底图/背景/仓库", ViewList) ---@type ViewList
     
     -- 仓库下的所有子节点
-    self.rebirthSection = self:Get("底图/仓库/重生", ViewButton) ---@type ViewButton
-    self.wingsSection = self:Get("底图/仓库/翅膀", ViewButton) ---@type ViewButton
-    self.companionSection = self:Get("底图/仓库/伙伴", ViewButton) ---@type ViewButton
-    self.petSection = self:Get("底图/仓库/宠物", ViewButton) ---@type ViewButton
-    self.trajectorySection = self:Get("底图/仓库/轨迹", ViewButton) ---@type ViewButton
-    self.talentSection = self:Get("底图/仓库/天赋", ViewButton) ---@type ViewButton
+    self.rebirthSection = self:Get("底图/背景/仓库/重生", ViewButton) ---@type ViewButton
+    self.wingsSection = self:Get("底图/背景/仓库/翅膀", ViewButton) ---@type ViewButton
+    self.companionSection = self:Get("底图/背景/仓库/伙伴", ViewButton) ---@type ViewButton
+    self.petSection = self:Get("底图/背景/仓库/宠物", ViewButton) ---@type ViewButton
+    self.trajectorySection = self:Get("底图/背景/仓库/轨迹", ViewButton) ---@type ViewButton
+    self.talentSection = self:Get("底图/背景/仓库/天赋", ViewButton) ---@type ViewButton
 
     -- 数据存储
     self.warehouseData = {} ---@type table 仓库数据
@@ -55,11 +54,17 @@ end
 function Warehouse:RegisterButtonEvents()
     -- 收起按钮
     self.collapseButton.clickCb = function()
+        self.bgSection:SetVisible(false)
+        self.expandButton:SetVisible(true)
+        self.collapseButton:SetVisible(false)
         gg.log("收起按钮被点击")
     end
     
     -- 展开按钮
     self.expandButton.clickCb = function()
+        self.bgSection:SetVisible(true)
+        self.collapseButton:SetVisible(true)
+        self.expandButton:SetVisible(false)
         gg.log("展开按钮被点击")
     end
     
