@@ -35,6 +35,7 @@ function TalentGui:OnInit(node, config)
     -- 数据存储
     self.talentData = {} ---@type table
     self.selectedTalent = nil ---@type table
+    self.upgradeBtnMap = {}  -- 新增：存放天赋名->升级按钮映射
 
     -- 2. 事件注册
     self:RegisterEvents()
@@ -77,28 +78,60 @@ function TalentGui:InitTalentList()
             table.insert(talentList, achievementType)
         end
     end
-    
+    -- 按sort字段从小到大排序
+    table.sort(talentList, function(a, b)
+        return (a.sort or 0) < (b.sort or 0)
+    end)
     for i, talent in ipairs(talentList) do
-        gg.log("天赋", i,talent)
+        gg.log("天赋", i, talent)
         local cloneNode = self.talentDemoFrame.node:Clone()
-        cloneNode.Name = talent.name or ("TalentSlot" .. i)
+        self:SetupTalentSlot(cloneNode, talent, 0)
         self.talentSlotList:AppendChild(cloneNode)
-        self:SetupTalentSlot(cloneNode, talent)
     end
-
     gg.log("天赋列表初始化完成，共加载" .. #talentList .. "个天赋")
 end
 
-function TalentGui:SetupTalentSlot(slotNode, talentType)
+function TalentGui:OnClickUpgradeTalent(talentType, currentLevel)
+    gg.log("点击升级天赋：" .. (talentType.name or ""))
+    -- TODO: 这里写具体升级逻辑，比如消耗校验、等级提升、UI刷新等
+end
+
+function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     -- slotNode: UI节点
     -- talentType: AchievementType 实例
-    if slotNode["天赋名"] then
-        slotNode["天赋名"].Title = talentType.name or ""
+    -- currentLevel: 当前天赋等级，由外部传入
+    gg.log("slotNode",slotNode)
+    slotNode["说明"].Title = talentType.name or ""
+   
+    slotNode.Name = talentType.name 
+
+    -- slotNode["天赋描述"].Title = talentType.description or ""
+
+    -- 升级消耗栏位
+    local costList = ViewList.New(slotNode["消耗栏位"], self,"消耗栏位")
+    local costs = talentType:GetUpgradeCosts(currentLevel)
+    gg.log("costs",costs)
+    
+    costList:SetElementSize(#costs)
+    for i, cost in ipairs(costs) do
+        local costNode = costList:GetChild(i)
+        if costNode and costNode["背景"] then
+            -- if costNode["背景"]["消耗资源UI"] then
+            --     costNode["背景"]["消耗资源UI"].Title = cost.item or ""
+            -- end
+            if costNode["背景"]["消耗数量"] then
+                costNode["背景"]["消耗数量"].Title = tostring(cost.amount or 0)
+            end
+        end
     end
-    if slotNode["天赋描述"] then
-        slotNode["天赋描述"].Title = talentType.description or ""
+    gg.log("costList",costList.childrens)
+    -- 升级按钮绑定
+    local upgradeBtn = ViewButton.New(slotNode["升级"], self, "升级")
+    self.upgradeBtnMap[talentType.name] = upgradeBtn
+    upgradeBtn.clickCb = function()
+        self:OnClickUpgradeTalent(talentType, currentLevel)
     end
-    -- 可根据UI结构补充更多字段，如图标、等级等
+
 end
 
 return TalentGui.New(script.Parent, uiConfig)

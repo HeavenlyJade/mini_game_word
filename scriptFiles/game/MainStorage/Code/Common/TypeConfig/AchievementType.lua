@@ -4,6 +4,7 @@
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
 
 ---@class AchievementType : Class
 ---@field id string 成就唯一ID
@@ -27,7 +28,7 @@ function AchievementType:OnInit(data)
    self.type = data["类型"] or "普通成就"
    self.description = data["描述"] or ""
    self.icon = data["图标"] or ""
-   
+   self.sort = data["排序"] or 1 
    -- 解锁相关
    self.unlockConditions = data["解锁条件"] or {}
    self.unlockRewards = data["解锁奖励"] or {}
@@ -74,51 +75,16 @@ function AchievementType:GetLevelEffect(level)
    return nil
 end
 
---- 计算等级效果数值
+--- 获取等级效果数值
 ---@param level number 天赋等级
----@param effectConfig table 效果配置
 ---@return any 计算后的效果值
-function AchievementType:CalculateEffectValue(level, effectConfig)
-   local formula = effectConfig["效果数值"]
-   if not formula then
-       return 0
-   end
-   
-   -- 如果是数值，直接返回
-   if type(formula) == "number" then
-       return formula
-   end
-   
-   -- 如果是公式字符串，进行计算
-   if type(formula) == "string" then
-       return self:EvaluateEffectFormula(formula, level)
-   end
-   
-   return 0
-end
-
---- 计算效果公式
----@param formula string 公式字符串
----@param level number 天赋等级
----@return number 计算结果
-function AchievementType:EvaluateEffectFormula(formula, level)
-   -- 将 T_LVL 替换为实际等级
-   local expression = string.gsub(formula, "T_LVL", tostring(level))
-   
-   -- 使用 load 函数安全地执行表达式
-   local func = load("return " .. expression)
-   if func then
-       local success, result = pcall(func)
-       if success and type(result) == "number" then
-           return math.floor(result)
-       else
-           gg.log("效果公式计算失败:", formula, "错误:", result)
-       end
-   else
-       gg.log("效果公式解析失败:", formula)
-   end
-   
-   return 0
+function AchievementType:GetLevelEffectValue(level)
+    if not self.levelEffects or #self.levelEffects == 0 then
+        return nil
+    end
+    local effectConfig = self.levelEffects[1] -- 假设只有一个效果
+    local formula = effectConfig["效果数值"]
+    return AchievementRewardCal:CalculateEffectValue(formula, level, self)
 end
 
 --- 获取升级消耗
@@ -135,7 +101,7 @@ function AchievementType:GetUpgradeCosts(currentLevel)
        local costFormula = condition["消耗数量"]
        
        if itemName and costFormula and itemName ~= "" and costFormula ~= "" then
-           local amount = self:CalculateUpgradeCost(costFormula, currentLevel)
+           local amount = self:GetUpgradeCostValue(costFormula, currentLevel)
            if amount > 0 then
                table.insert(costs, {
                    item = itemName,
@@ -148,30 +114,12 @@ function AchievementType:GetUpgradeCosts(currentLevel)
    return costs
 end
 
---- 计算升级消耗数量
+--- 获取升级消耗数值
 ---@param formula string 消耗公式
 ---@param level number 当前等级
----@return number 消耗数量
-function AchievementType:CalculateUpgradeCost(formula, level)
-   -- 将 T_LVL 替换为实际等级
-   local expression = string.gsub(formula, "T_LVL", tostring(level))
-   
-   -- 使用 load 函数安全地执行表达式
-   local func = load("return " .. expression)
-   if func then
-       local success, result = pcall(func)
-       if success and type(result) == "number" then
-           return math.floor(result)
-       else
-           gg.log("升级消耗公式计算失败:", formula, "错误:", result)
-       end
-   else
-       gg.log("升级消耗公式解析失败:", formula)
-   end
-   
-   return 0
+---@return number|nil 消耗数量
+function AchievementType:GetUpgradeCostValue(formula, level)
+    return AchievementRewardCal:CalculateUpgradeCost(formula, level, self)
 end
-
-
 
 return AchievementType

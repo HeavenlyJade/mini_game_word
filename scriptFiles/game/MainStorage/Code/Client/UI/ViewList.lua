@@ -23,14 +23,13 @@ end
 ---@param ui ViewBase
 ---@param onAddElementCb fun(child: SandboxNode): ViewComponent
 function ViewList:OnInit(node, ui, path, onAddElementCb)
-    self.childrens = {} ---@type table<string, ViewComponent>
+    self.childrens = {}      -- 名字索引
+    self.childrensList = {}  -- 数组索引
     self.childNameTemplate = nil
     self.onAddElementCb = onAddElementCb or function(child, childPath)
         return ViewComponent.New(child, ui, childPath)
     end
-    gg.log("self.node.Children",self.node.Children)
     for idx, child in pairs(self.node.Children) do
-        gg.log("child",child,idx)
         local childName = child.Name
         local childPath = self.path .. "/" .. childName
         local button = self.onAddElementCb(child)
@@ -38,6 +37,7 @@ function ViewList:OnInit(node, ui, path, onAddElementCb)
             RecursivlySetNotifyStop(button.node)
             button.path = childPath
             self.childrens[childName] = button
+            self.childrensList[#self.childrensList + 1] = button
             button.index = idx
         end
     end
@@ -49,7 +49,7 @@ end
 
 function ViewList:GetToStringParams()
     local d = ViewComponent.GetToStringParams(self)
-    d["Child"] = self.childrens
+    d["Child"] = self.childrensList
     return d
 end
 
@@ -59,58 +59,79 @@ function ViewList:GetChild(index)
     if index <= 0 then
         return nil
     end
-    local child = self.childrens[index]
+    local child = self.childrensList[index]
     if not child then
         self:SetElementSize(index)
-        child = self.childrens[index]
+        child = self.childrensList[index]
     end
     child.node.Visible = true
     return child
 end
 
 function ViewList:HideChildrenFrom(index)
-    if #self.childrens > index then
+    if #self.childrensList > index then
         for i = index + 1, #self.childrens do
-            self.childrens[i]:SetVisible(false)
+            self.childrensList[i]:SetVisible(false)
         end
     end
 end
 
 ---@return number
 function ViewList:GetChildCount()
-    return #self.childrens
+    return #self.childrensList
 end
 
 ---@param size number
 function ViewList:SetElementSize(size)
-    if size < 0 then
-        size = 0
+    if size < 0 then size = 0 end
+    -- 只保留模板节点（如'背景'）克隆逻辑
+    local templateKey, templateNode
+    local count = 0
+    gg.log("self.childrens",self.childrens)
+    for k, v in pairs(self.childrens) do
+        templateKey = k
+        templateNode = v
+        count = count + 1
     end
-    for i = 1, size do
-        if not self.childrens[i] then
-            local child = self.childrens[1].node:Clone()
+    -- 扩容
+    gg.log("templateKey",templateKey)
+    gg.log("templateNode",templateNode.node)
+    for i = #self.childrensList + 1, size do
+
+        if  templateKey and templateNode then
+            local childName = templateKey .. i
+            local child = templateNode.node:Clone()
             child:SetParent(self.node)
-            child.Name = self.childNameTemplate .. i
+            child.Name = childName
             if self.onAddElementCb then
-                local childPath = self.path .. "/" .. child.Name
+                local childPath = self.path .. "/" .. childName
                 local button = self.onAddElementCb(child, childPath)
                 if button then
                     RecursivlySetNotifyStop(button.node)
                     button.path = childPath
                     button.index = i
-                    self.childrens[i] = button
+                    self.childrensList[i] = button
+                    self.childrens[childName] = button  -- 同步名字索引
+                    button:SetVisible(true)
                 end
             end
         end
-        self.childrens[i]:SetVisible(true)
     end
-    if #self.childrens > size then
-        for i = size + 1, #self.childrens do
-			if self.childrens[i] then
-				self.childrens[i]:SetVisible(false)
-			end
-        end
-    end
+    gg.log("生成后的",self.childrensList)
+    gg.log("self.childrens",self.childrens)
+    -- -- 显示/隐藏并同步移除多余名字key
+    -- for i = 1, #self.childrensList do
+    --     local button = self.childrensList[i]
+    --     if i <= size then
+    --         button:SetVisible(true)
+    --     else
+    --         button:SetVisible(false)
+    --         -- 移除名字索引
+    --         if self.childrens[button.node.Name] == button then
+    --             self.childrens[button.node.Name] = nil
+    --         end
+    --     end
+    -- end
 end
 
 ---@param visible boolean
@@ -167,22 +188,27 @@ end
 ---@param shouldRefresh boolean|nil 是否在插入后立即刷新UI布局，默认为false
 function ViewList:InsertChild(childNode, index, shouldRefresh)
     -- 步骤 1: 创建逻辑包装器
+    childNode.Parent = self.node
     local viewComponent = self.onAddElementCb(childNode)
     if not viewComponent then
         return -- 如果创建失败，则直接返回
     end
-    -- 步骤 2: 插入到childrens数组
-    self:insertIntoChildrens(viewComponent, index)
+    -- 步骤 2: 插入到childrens 字典
+    -- 名字索引
+    self.childrens[childNode.Name] = viewComponent
+    -- 数字索引
+    if not index or index > #self.childrensList + 1 or index < 1 then
+        index = #self.childrensList + 1
+    end
+    table.insert(self.childrensList, index, viewComponent)
     -- 步骤 3: 如果需要，则刷新布局
     if shouldRefresh then
         self:_refreshLayout()
     end
 end
 
----@param childNode SandboxNode 要添加的子节点
 function ViewList:AppendChild(childNode)
-    -- AppendChild 默认立即刷新UI
-    self:InsertChild(childNode, #self.childrens + 1, false)
+    self:InsertChild(childNode, #self.childrensList + 1, false)
 end
 
 --- 通过名称获取子节点实例
@@ -196,28 +222,23 @@ end
 ---@param childName string 要移除的子节点的名称
 ---@return boolean true|false
 function ViewList:RemoveChildByName(childName)
-    local indexToRemove
-    for i, child in ipairs(self.childrens) do
-        if child.node and child.node.Name == childName then
-            indexToRemove = i
-            break
+    -- 先从名字索引删除
+    local button = self.childrens[childName]
+    self.childrens[childName] = nil
+
+    -- 再从数字索引数组删除
+    if button then
+        for i, v in ipairs(self.childrensList) do
+            if v == button then
+                table.remove(self.childrensList, i)
+                break
+            end
+        end
+        -- 销毁节点
+        if button.node then
+            button.node:Destroy()
         end
     end
-
-    if indexToRemove then
-        local removedComponent = table.remove(self.childrens, indexToRemove)
-        if removedComponent and removedComponent.node  then
-            removedComponent.node:Destroy()
-        end
-
-        -- 更新后续元素的索引以保持一致性
-        for i = indexToRemove, #self.childrens do
-            self.childrens[i].index = i
-        end
-        return true
-    end
-
-    return false
 end
 
 ---清空所有子元素
