@@ -211,9 +211,13 @@ function Achievement:_ApplyToVariableSystem(fieldName, effectValue, player)
     -- 根据变量名前缀决定应用方式
     if string.find(fieldName, "^加成_") or string.find(fieldName, "^计数_") then
         -- 累加类变量：使用AddVariable
-        player.variableSystem:AddVariable(fieldName, effectValue)
-        gg.log(string.format("成就[%s]累加变量: %s +%s", 
-            self.achievementType.id, fieldName, tostring(effectValue)))
+        local valueType = string.find(fieldName, "^加成_") and "百分比" or "固定值"
+        local source = "天赋_" .. self.achievementType.name
+        player.variableSystem:SetSourceValue(fieldName, source, effectValue, valueType)
+    
+         gg.log(string.format("天赋[%s-L%d]应用变量效果: %s = %s (%s, 来源:%s)", 
+        self.achievementType.id, self.currentLevel, 
+        fieldName, tostring(effectValue), valueType, source))
     else
         -- 其他类型变量：使用SetVariable
         player.variableSystem:SetVariable(fieldName, effectValue)
