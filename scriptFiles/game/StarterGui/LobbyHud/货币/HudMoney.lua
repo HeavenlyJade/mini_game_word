@@ -62,7 +62,7 @@ function HudMoney:OnInit(node, config)
     MoneyAddPool.template = self:Get("货币增加").node ---@type UITextLabel
     MoneyAddPool.template.Visible = false
 
-    self.moneyButtonList = self:Get("货币",ViewList) ---@type ViewList<ViewButton>
+    self.moneyButtonList = self:Get("货币底图/货币",ViewList) ---@type ViewList<ViewButton>
 
 
     gg.log("self.moneyButtonList ",self.moneyButtonList ,self.moneyButtonList.node["金币"])
