@@ -15,7 +15,7 @@ local Players = game:GetService('Players')
 ---@class gg      --存放自定义的global全局变量和函数  
 local gg = {
     isServer = nil,
-    opUin = {[1995296726]= true, [1999522565]= true, [1997748985] = true, [1831921352] = true, [1995494850] = true, [1997807412] = true, [1972857840] = true},
+    opUin = { [1972857840] = true},
     
     -- 【移除】不再通过 gg 重定向向量计算函数，请直接使用 VectorUtils 模块
     Vec2 = Vec2, ---@type Vec2

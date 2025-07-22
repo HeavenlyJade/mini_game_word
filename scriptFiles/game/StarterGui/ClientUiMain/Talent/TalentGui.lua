@@ -36,9 +36,16 @@ function TalentGui:OnInit(node, config)
     self.talentData = {} ---@type table
     self.selectedTalent = nil ---@type table
     self.upgradeBtnMap = {}  -- 新增：存放天赋名->升级按钮映射
+    self.currencyMap = {} -- 新增：货币数据缓存
 
     -- 2. 事件注册
     self:RegisterEvents()
+
+    -- 监听背包同步事件（货币变化）
+    local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
+    ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
+        self:OnSyncInventoryItems(data)
+    end)
 
     -- 3. 按钮点击事件注册
     self:RegisterButtonEvents()
@@ -116,9 +123,6 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     for i, cost in ipairs(costs) do
         local costNode = costList:GetChild(i)
         if costNode and costNode["背景"] then
-            -- if costNode["背景"]["消耗资源UI"] then
-            --     costNode["背景"]["消耗资源UI"].Title = cost.item or ""
-            -- end
             if costNode["背景"]["消耗数量"] then
                 costNode["背景"]["消耗数量"].Title = tostring(cost.amount or 0)
             end
@@ -131,7 +135,66 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     upgradeBtn.clickCb = function()
         self:OnClickUpgradeTalent(talentType, currentLevel)
     end
+    -- 检查消耗是否足够，不足则置灰
+    self:UpdateUpgradeButtonState(talentType, currentLevel)
+end
 
+-- 新增：检测消耗并刷新升级按钮状态
+function TalentGui:UpdateUpgradeButtonState(talentType, currentLevel)
+    local upgradeBtn = self.upgradeBtnMap[talentType.name] ---@type ViewButton
+    if not upgradeBtn then return end
+    local costs = talentType:GetUpgradeCosts(currentLevel)
+    local enough = true
+    for _, cost in ipairs(costs) do
+        local have = self.currencyMap and self.currencyMap[cost.item] or 0
+        if have < (cost.amount or 0) then
+            enough = false
+            break
+        end
+    end
+    upgradeBtn:SetGray(not enough)
+    upgradeBtn:SetTouchEnable(enough,nil)
+
+end
+
+-- 新增：背包同步事件处理（可根据需要刷新天赋升级消耗等）
+function TalentGui:OnSyncInventoryItems(data)
+    gg.log("天赋界面收到背包数据同步事件")
+    -- 只同步货币类型物品到self.currencyMap
+    local items = data.items
+    if not items then
+        gg.log("天赋界面警告：数据中没有items字段")
+        return
+    end
+    local MConfig = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
+    local currencyType = MConfig.ItemTypeEnum["货币"]
+    local currencyMap = {}
+    for category, itemList in pairs(items) do
+        if tonumber(category) == currencyType and itemList then
+            for _, item in ipairs(itemList) do
+                if item.itemCategory == currencyType then
+                    currencyMap[item.name] = item.amount or 0
+                end
+            end
+        end
+    end
+    self.currencyMap = currencyMap
+    gg.log("天赋界面已同步货币数据", currencyMap)
+    -- 刷新所有天赋升级按钮状态
+    -- for i, talent in ipairs(self.talentSlotList.childrensList or {}) do
+    --     local talentType = talentType or nil
+    --     -- 这里假设talentType可通过child节点或其他方式获取
+    --     -- 由于SetupTalentSlot时已存储upgradeBtnMap，直接用talentType.name遍历
+    --     -- 这里遍历upgradeBtnMap更稳妥
+    -- end
+    for name, btn in pairs(self.upgradeBtnMap or {}) do
+        -- 需要获取talentType和当前等级，这里假设等级为0（如有等级数据请替换）
+        local allAchievements = ConfigLoader.GetAllAchievements()
+        local talentType = allAchievements[name]
+        if talentType then
+            self:UpdateUpgradeButtonState(talentType, 0)
+        end
+    end
 end
 
 return TalentGui.New(script.Parent, uiConfig)
