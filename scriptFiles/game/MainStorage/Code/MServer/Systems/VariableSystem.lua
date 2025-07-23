@@ -4,8 +4,8 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 
 ---@class VariableSystem:Class
+---@field dataCategory string 数据分类标识
 ---@field variables table<string, VariableData> 变量存储
----@field entity MPlayer 所属实体
 local VariableSystem = ClassMgr.Class("VariableSystem")
 
 ---@class VariableData
@@ -17,18 +17,35 @@ local VariableSystem = ClassMgr.Class("VariableSystem")
 ---@field type string 类型："固定值" | "百分比"
 
 -- 初始化变量系统
-function VariableSystem:OnInit(entity)
-    self.entity = entity -- 所属实体
-    self.variables = {} -- 新的变量存储结构
-    
-    -- 自动从实体中获取variables数据（如果存在）
-    if entity and entity.variables then
-        self:_MigrateOldData(entity.variables)
-        entity.variables = self.variables -- 更新引用
+function VariableSystem:OnInit(dataCategory, initialData)
+    assert(type(dataCategory) == "string", "数据分类必须是字符串")
+    self.dataCategory = dataCategory -- 数据分类标识
+    self.variables = initialData or {} -- 直接使用传入的数据
+    self:_ValidateDataStructure()
+end
+
+--- 兼容旧的实体初始化方式
+---@param entity table
+function VariableSystem:InitWithEntity(entity)
+    local category = "通用" -- 默认分类
+    local data = entity and entity.variables or {}
+    self:OnInit(category, data)
+    -- 保持实体引用用于兼容
+    if entity then
+        entity.variableSystem = self
     end
 end
 
--- 基础值管理 --------------------------------------------------------
+
+--- 数据结构验证
+function VariableSystem:_ValidateDataStructure()
+    assert(type(self.variables) == "table", "变量数据必须为table")
+    for k, v in pairs(self.variables) do
+        assert(type(v) == "table", "每个变量值必须为table")
+        assert(type(v.base) == "number" or v.base == nil, "base字段必须为number或nil")
+        assert(type(v.sources) == "table" or v.sources == nil, "sources字段必须为table或nil")
+    end
+end
 
 --- 设置基础值
 ---@param key string 变量名
@@ -539,7 +556,7 @@ end
 function VariableSystem:TriggerVariableEvent(eventType, key, oldValue, newValue)
     local evt = {
         eventType = eventType,
-        entity = self.entity,
+        dataCategory = self.dataCategory,  -- 改为数据分类
         key = key,
         oldValue = oldValue,
         newValue = newValue

@@ -1,274 +1,416 @@
 -- Achievement.lua
--- 成就实例类 - 表示玩家已解锁的成就状态和业务逻辑
+-- 玩家成就聚合类 - 管理单个玩家的所有成就和天赋数据
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
-local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 
+---@class PlayerAchievement 
+---@field playerId string 玩家ID
+---@field talentData table<string, TalentInfo> 天赋数据映射
+---@field normalAchievements table<string, AchievementInfo> 普通成就数据
+---@field talentVariableSystem VariableSystem 天赋变量系统
+---@field lastUpdateTime number 最后更新时间
+local PlayerAchievement = ClassMgr.Class("PlayerAchievement")
 
----@class Achievement : Class
----@field achievementType AchievementType AchievementType配置引用
----@field playerId string 所属玩家ID
+---@class TalentInfo
+---@field currentLevel number 当前等级
 ---@field unlockTime number 解锁时间戳
----@field currentLevel number 当前等级（天赋成就用，普通成就为1）
-local Achievement = ClassMgr.Class("Achievement")
 
---- 初始化成就实例
----@param achievementType AchievementType 成就类型配置
+---@class AchievementInfo
+---@field unlocked boolean 是否已解锁
+---@field unlockTime number 解锁时间戳
+
+--- 初始化玩家成就聚合实例
 ---@param playerId string 玩家ID
----@param unlockTime number|nil 解锁时间戳，默认为当前时间
----@param currentLevel number|nil 初始等级，默认为1
-function Achievement:OnInit(achievementType, playerId, unlockTime, currentLevel)
-    self.achievementType = achievementType
+function PlayerAchievement:OnInit(playerId)
     self.playerId = playerId
-    self.unlockTime = unlockTime or os.time()
-    self.currentLevel = currentLevel or 1
+    self.talentData = {} -- 天赋数据映射
+    self.normalAchievements = {} -- 普通成就数据
+    self.lastUpdateTime = os.time()
     
-    -- 初始化天赋成就的奖励计算器
+    -- 创建天赋变量系统
+    local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem)
+    self.talentVariableSystem = VariableSystem.CreateForCategory("天赋", {})
+    
+    -- 初始化奖励计算器
     self._rewardCalculator = AchievementRewardCal.New()
+    
+    gg.log(string.format("初始化玩家[%s]成就聚合实例", playerId))
 end
 
---- 是否为天赋成就
----@return boolean
-function Achievement:IsTalentAchievement()
-    return self.achievementType:IsTalentAchievement()
+-- 天赋管理方法 --------------------------------------------------------
+
+--- 获取天赋等级
+---@param talentId string 天赋ID
+---@return number 当前等级，未解锁返回0
+function PlayerAchievement:GetTalentLevel(talentId)
+    local talentInfo = self.talentData[talentId]
+    return talentInfo and talentInfo.currentLevel or 0
 end
 
---- 获取当前等级
----@return number
-function Achievement:GetCurrentLevel()
-    return self.currentLevel
+--- 设置天赋等级（用于数据恢复）
+---@param talentId string 天赋ID
+---@param level number 等级
+---@param unlockTime number|nil 解锁时间戳
+function PlayerAchievement:SetTalentLevel(talentId, level, unlockTime)
+    if not self.talentData[talentId] then
+        self.talentData[talentId] = {}
+    end
+    
+    self.talentData[talentId].currentLevel = level
+    self.talentData[talentId].unlockTime = unlockTime or os.time()
+    
+    gg.log(string.format("玩家[%s]天赋[%s]设置为L%d", self.playerId, talentId, level))
 end
 
---- 是否可以升级（仅天赋成就）
+--- 检查天赋是否可以升级
+---@param talentId string 天赋ID
 ---@param player MPlayer 玩家实例
----@return boolean
-function Achievement:CanUpgrade(player)
-    if not self:IsTalentAchievement() then
+---@return boolean 是否可以升级
+function PlayerAchievement:CanUpgradeTalent(talentId, player)
+    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
+    local talentConfig = ConfigLoader.GetAchievement(talentId)
+    
+    if not talentConfig or not talentConfig:IsTalentAchievement() then
         return false
     end
+    
+    local currentLevel = self:GetTalentLevel(talentId)
     
     -- 检查是否已达到最大等级
-    if self.currentLevel >= self.achievementType:GetMaxLevel() then
+    if currentLevel >= talentConfig:GetMaxLevel() then
         return false
     end
     
-    -- 检查升级条件
-    local upgradeConditions = self.achievementType.upgradeConditions
-    if not upgradeConditions then
-        return true
+    -- TODO: 检查升级条件（资源消耗等）
+    return true
+end
+
+--- 升级天赋
+---@param talentId string 天赋ID
+---@param player MPlayer 玩家实例
+---@return boolean 是否升级成功
+function PlayerAchievement:UpgradeTalent(talentId, player)
+    if not self:CanUpgradeTalent(talentId, player) then
+        gg.log(string.format("玩家[%s]天赋[%s]升级条件不满足", self.playerId, talentId))
+        return false
     end
     
-    -- 检查每个升级条件
-    for _, condition in ipairs(upgradeConditions) do
-        local itemName = condition["消耗物品"]
-        local costFormula = condition["消耗数量"]
+    local oldLevel = self:GetTalentLevel(talentId)
+    local newLevel = oldLevel + 1
+    
+    -- 如果是首次解锁
+    if oldLevel == 0 then
+        self.talentData[talentId] = {
+            currentLevel = 1,
+            unlockTime = os.time()
+        }
+        gg.log(string.format("玩家[%s]解锁天赋[%s]", self.playerId, talentId))
+    else
+        -- 升级现有天赋
+        self.talentData[talentId].currentLevel = newLevel
+    end
+    
+    -- 移除旧等级效果并应用新等级效果
+    self:_RemoveTalentEffect(talentId, oldLevel, player)
+    self:ApplyTalentEffect(talentId, player)
+    
+    gg.log(string.format("玩家[%s]天赋[%s]从L%d升级到L%d", 
+        self.playerId, talentId, oldLevel, newLevel))
+    
+    return true
+end
+
+--- 重置指定天赋
+---@param talentId string 天赋ID
+---@param player MPlayer 玩家实例
+function PlayerAchievement:ResetTalent(talentId, player)
+    local oldLevel = self:GetTalentLevel(talentId)
+    
+    if oldLevel > 0 then
+        -- 移除当前效果
+        self:_RemoveTalentEffect(talentId, oldLevel, player)
         
-        if itemName and costFormula and costFormula ~= "" then
-            -- 计算所需消耗数量
-            local requiredAmount = self._rewardCalculator:CalculateUpgradeCost(
-                costFormula, 
-                self.currentLevel, 
-                self.achievementType
-            )
-            
-            if requiredAmount and requiredAmount > 0 then
-                -- 通过玩家背包检查是否有足够的物品
-                if not player:CanConsumeItem(itemName, requiredAmount) then
-                    return false
-                end
-            end
+        -- 重置到1级
+        self.talentData[talentId].currentLevel = 1
+        
+        -- 应用1级效果
+        self:ApplyTalentEffect(talentId, player)
+        
+        gg.log(string.format("玩家[%s]天赋[%s]从L%d重置到L1", 
+            self.playerId, talentId, oldLevel))
+    end
+end
+
+--- 重置所有天赋
+---@param player MPlayer 玩家实例
+function PlayerAchievement:ResetAllTalents(player)
+    gg.log(string.format("开始重置玩家[%s]的所有天赋", self.playerId))
+    
+    -- 移除所有天赋效果
+    if self.talentVariableSystem then
+        self.talentVariableSystem:RemoveSourcesByPattern("天赋_")
+    end
+    
+    -- 重置所有天赋等级到1级
+    local resetCount = 0
+    for talentId, talentInfo in pairs(self.talentData) do
+        if talentInfo.currentLevel > 1 then
+            talentInfo.currentLevel = 1
+            resetCount = resetCount + 1
         end
     end
     
-    return true
+    -- 重新应用所有1级天赋效果
+    self:ApplyAllTalentEffects(player)
+    
+    gg.log(string.format("玩家[%s]天赋系统重置完成，重置了%d个天赋", 
+        self.playerId, resetCount))
 end
 
---- 执行升级（仅天赋成就）
+-- 天赋效果应用 --------------------------------------------------------
+
+--- 应用单个天赋效果
+---@param talentId string 天赋ID
 ---@param player MPlayer 玩家实例
----@return boolean 升级是否成功
-function Achievement:Upgrade(player)
-    if not self:CanUpgrade(player) then
-        return false
-    end
-    
-    -- 消耗升级材料
-    local upgradeConditions = self.achievementType.upgradeConditions
-    if upgradeConditions then
-        for _, condition in ipairs(upgradeConditions) do
-            local itemName = condition["消耗物品"]
-            local costFormula = condition["消耗数量"]
-            
-            if itemName and costFormula and costFormula ~= "" then
-                local requiredAmount = self._rewardCalculator:CalculateUpgradeCost(
-                    costFormula, 
-                    self.currentLevel, 
-                    self.achievementType
-                )
-                
-                if requiredAmount and requiredAmount > 0 then
-                    -- 通过玩家背包系统消耗物品
-                    player:ConsumeItem(itemName, requiredAmount)
-                end
-            end
-        end
-    end
-    
-    -- 提升等级
-    self.currentLevel = self.currentLevel + 1
-    
-    -- 应用新等级的效果
-    self:ApplyEffects(player)
-    
-    gg.log(string.format("玩家 %s 成就 %s 升级至 %d 级", 
-        self.playerId, self.achievementType.id, self.currentLevel))
-    
-    return true
-end
-
---- 获取当前等级效果
----@return table|nil
-function Achievement:GetCurrentEffect()
-    if not self:IsTalentAchievement() then
-        -- 普通成就使用解锁奖励
-        return self.achievementType.unlockRewards
-    end
-    
-    -- 天赋成就获取当前等级的效果
-    return self.achievementType:GetLevelEffect(self.currentLevel)
-end
-
---- 应用效果到玩家
----@param player MPlayer 玩家实例
-function Achievement:ApplyEffects(player)
-    local effects = self:GetCurrentEffect()
-    if not effects then
+function PlayerAchievement:ApplyTalentEffect(talentId, player)
+    local talentInfo = self.talentData[talentId]
+    if not talentInfo or talentInfo.currentLevel <= 0 then
         return
     end
     
-    -- 处理不同类型的成就效果
-    if self:IsTalentAchievement() then
-        -- 天赋成就：应用等级效果
-        self:_ApplySingleEffect(effects, player)
-    else
-        -- 普通成就：应用解锁奖励
-        for _, reward in ipairs(effects) do
-            self:_ApplySingleEffect(reward, player)
-        end
-    end
-end
-
---- 应用单个效果
----@param effect table 效果配置
----@param player MPlayer 玩家实例
----@private
-function Achievement:_ApplySingleEffect(effect, player)
-    local effectType = effect["效果类型"]
-    local fieldName = effect["效果字段名称"]
-    local valueFormula = effect["效果数值"]
+    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
+    local talentConfig = ConfigLoader.GetAchievement(talentId)
     
-    if not effectType or not fieldName then
-        gg.log("成就效果配置不完整:", self.achievementType.id, effectType, fieldName)
+    if not talentConfig or not talentConfig:IsTalentAchievement() then
+        gg.log("警告：天赋配置不存在或非天赋成就:", talentId)
+        return
+    end
+    
+    -- 获取当前等级的效果配置
+    local effectConfig = talentConfig:GetLevelEffect(talentInfo.currentLevel)
+    if not effectConfig then
+        gg.log("警告：天赋等级效果配置不存在:", talentId, talentInfo.currentLevel)
         return
     end
     
     -- 计算效果数值
     local effectValue = self._rewardCalculator:CalculateEffectValue(
-        valueFormula, 
-        self.currentLevel, 
-        self.achievementType
+        effectConfig["效果数值"],
+        talentInfo.currentLevel,
+        talentConfig
     )
     
     if not effectValue then
-        gg.log("成就效果数值计算失败:", self.achievementType.id, valueFormula)
+        gg.log("警告：天赋效果数值计算失败:", talentId, effectConfig["效果数值"])
         return
     end
     
-    -- 根据效果类型应用到不同系统
-    if effectType == "玩家变量" then
-        self:_ApplyToVariableSystem(fieldName, effectValue, player)
-    elseif effectType == "玩家属性" then
-        self:_ApplyToStatSystem(fieldName, effectValue, player)
-    else
-        gg.log("未知的效果类型:", effectType, "成就:", self.achievementType.id)
-    end
+    -- 应用到天赋变量系统
+    self:_ApplyToTalentVariableSystem(talentId, effectConfig, effectValue, player)
 end
 
---- 应用效果到变量系统
----@param fieldName string 变量名
----@param effectValue number 效果值
----@param player table 玩家实例
----@private
-function Achievement:_ApplyToVariableSystem(fieldName, effectValue, player)
-    if not player.variableSystem then
-        gg.log("玩家变量系统不存在:", self.playerId)
-        return
+--- 应用所有天赋效果
+---@param player MPlayer 玩家实例
+function PlayerAchievement:ApplyAllTalentEffects(player)
+    local count = 0
+    for talentId, _ in pairs(self.talentData) do
+        self:ApplyTalentEffect(talentId, player)
+        count = count + 1
     end
     
-    -- 根据变量名前缀决定应用方式
-    if string.find(fieldName, "^加成_") or string.find(fieldName, "^计数_") then
-        -- 累加类变量：使用AddVariable
-        local valueType = string.find(fieldName, "^加成_") and "百分比" or "固定值"
-        local source = "天赋_" .. self.achievementType.name
-        player.variableSystem:SetSourceValue(fieldName, source, effectValue, valueType)
-    
-         gg.log(string.format("天赋[%s-L%d]应用变量效果: %s = %s (%s, 来源:%s)", 
-        self.achievementType.id, self.currentLevel, 
-        fieldName, tostring(effectValue), valueType, source))
-    else
-        -- 其他类型变量：使用SetVariable
-        player.variableSystem:SetVariable(fieldName, effectValue)
-        gg.log(string.format("成就[%s]设置变量: %s = %s", 
-            self.achievementType.id, fieldName, tostring(effectValue)))
-    end
+    gg.log(string.format("玩家[%s]应用了%d个天赋效果", self.playerId, count))
 end
 
---- 应用效果到属性系统
----@param fieldName string 属性名
+--- 应用效果到天赋变量系统
+---@param talentId string 天赋ID
+---@param effectConfig table 效果配置
 ---@param effectValue number 效果值
 ---@param player MPlayer 玩家实例
 ---@private
-function Achievement:_ApplyToStatSystem(fieldName, effectValue, player)
-    -- 使用Entity现有的属性系统
-    local source = "ACHIEVEMENT_" .. self.achievementType.id
-    player:AddStat(fieldName, effectValue, source, true)
-    
-    gg.log(string.format("成就[%s]增加属性: %s +%s (来源:%s)", 
-        self.achievementType.id, fieldName, tostring(effectValue), source))
-end
-
---- 移除成就效果（当成就失效或天赋重置时使用）
----@param player MPlayer 玩家实例
-function Achievement:RemoveEffects(player)
-    if not self:IsTalentAchievement() then
-        -- 普通成就解锁后不应该移除效果
+function PlayerAchievement:_ApplyToTalentVariableSystem(talentId, effectConfig, effectValue, player)
+    if not self.talentVariableSystem then
+        gg.log("天赋变量系统不存在:", self.playerId)
         return
     end
     
-    -- 天赋成就：清除属性系统中的成就效果
-    if player.statSystem then
-        local source = "ACHIEVEMENT_" .. self.achievementType.id
-        player.statSystem:ResetStats(source)
-        gg.log(string.format("移除成就[%s]的所有属性效果", self.achievementType.id))
+    local fieldName = effectConfig["效果字段名称"]
+    if not fieldName then
+        gg.log("效果字段名称未配置:", talentId)
+        return
     end
     
-    -- 注意：变量系统的效果通常不移除，因为它们代表解锁状态
-    -- 如果需要移除变量效果，需要在具体业务逻辑中处理
+    -- 生成天赋来源标识
+    local currentLevel = self:GetTalentLevel(talentId)
+    local source = string.format("天赋_%s_L%d", talentId, currentLevel)
+    
+    -- 判断数值类型
+    local valueType = "固定值"
+    if string.find(fieldName, "^加成_") then
+        valueType = "百分比"
+    end
+    
+    -- 应用到天赋变量系统
+    self.talentVariableSystem:SetSourceValue(fieldName, source, effectValue, valueType)
+    
+    gg.log(string.format("天赋[%s-L%d]应用变量效果: %s = %s (%s, 来源:%s)", 
+        talentId, currentLevel, fieldName, tostring(effectValue), valueType, source))
 end
+
+--- 移除天赋效果
+---@param talentId string 天赋ID
+---@param level number 要移除的等级
+---@param player MPlayer 玩家实例
+---@private
+function PlayerAchievement:_RemoveTalentEffect(talentId, level, player)
+    if not self.talentVariableSystem or level <= 0 then
+        return
+    end
+    
+    -- 移除指定等级的天赋效果
+    local source = string.format("天赋_%s_L%d", talentId, level)
+    self.talentVariableSystem:RemoveSourcesByPattern(source)
+    
+    gg.log(string.format("移除天赋[%s-L%d]的效果", talentId, level))
+end
+
+-- 普通成就管理 --------------------------------------------------------
+
+--- 解锁普通成就
+---@param achievementId string 成就ID
+---@param unlockTime number|nil 解锁时间戳
+function PlayerAchievement:UnlockNormalAchievement(achievementId, unlockTime)
+    if self.normalAchievements[achievementId] then
+        gg.log("成就已解锁:", achievementId)
+        return false
+    end
+    
+    self.normalAchievements[achievementId] = {
+        unlocked = true,
+        unlockTime = unlockTime or os.time()
+    }
+    
+    gg.log(string.format("玩家[%s]解锁成就[%s]", self.playerId, achievementId))
+    return true
+end
+
+--- 检查普通成就是否已解锁
+---@param achievementId string 成就ID
+---@return boolean 是否已解锁
+function PlayerAchievement:IsNormalAchievementUnlocked(achievementId)
+    local achievementInfo = self.normalAchievements[achievementId]
+    return achievementInfo and achievementInfo.unlocked or false
+end
+
+-- 查询方法 --------------------------------------------------------
+
+--- 获取所有天赋数据
+---@return table<string, TalentInfo>
+function PlayerAchievement:GetAllTalentData()
+    return self.talentData
+end
+
+--- 获取所有普通成就数据
+---@return table<string, AchievementInfo>
+function PlayerAchievement:GetAllNormalAchievements()
+    return self.normalAchievements
+end
+
+--- 获取天赋总数
+---@return number
+function PlayerAchievement:GetTalentCount()
+    local count = 0
+    for _ in pairs(self.talentData) do
+        count = count + 1
+    end
+    return count
+end
+
+--- 获取已解锁的普通成就总数
+---@return number
+function PlayerAchievement:GetUnlockedNormalAchievementCount()
+    local count = 0
+    for _, achievementInfo in pairs(self.normalAchievements) do
+        if achievementInfo.unlocked then
+            count = count + 1
+        end
+    end
+    return count
+end
+
+-- 数据持久化 --------------------------------------------------------
 
 --- 获取保存数据格式
----@return table
-function Achievement:GetSaveData()
-    return {
-        achievementId = self.achievementType.id,
-        playerId = self.playerId,
-        unlockTime = self.unlockTime,
-        currentLevel = self.currentLevel
-    }
+---@return table 保存数据
+function PlayerAchievement:GetSaveData()
+    local saveData = {}
+    
+    -- 保存天赋数据
+    for talentId, talentInfo in pairs(self.talentData) do
+        saveData[talentId] = {
+            achievementId = talentId,
+            playerId = self.playerId,
+            unlockTime = talentInfo.unlockTime,
+            currentLevel = talentInfo.currentLevel
+        }
+    end
+    
+    -- 保存普通成就数据
+    for achievementId, achievementInfo in pairs(self.normalAchievements) do
+        saveData[achievementId] = {
+            achievementId = achievementId,
+            playerId = self.playerId,
+            unlockTime = achievementInfo.unlockTime,
+            currentLevel = 1 -- 普通成就固定为1级
+        }
+    end
+    
+    return saveData
 end
 
+--- 从保存数据恢复（用于数据加载）
+---@param saveData table 保存的数据
+function PlayerAchievement:RestoreFromSaveData(saveData)
+    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
+    
+    for achievementId, data in pairs(saveData) do
+        local achievementType = ConfigLoader.GetAchievement(achievementId)
+        if achievementType then
+            if achievementType:IsTalentAchievement() then
+                -- 恢复天赋数据
+                self:SetTalentLevel(achievementId, data.currentLevel, data.unlockTime)
+            else
+                -- 恢复普通成就数据
+                self:UnlockNormalAchievement(achievementId, data.unlockTime)
+            end
+        else
+            gg.log("警告：成就配置不存在，跳过恢复:", achievementId)
+        end
+    end
+    
+    gg.log(string.format("玩家[%s]成就数据恢复完成，天赋:%d个，成就:%d个", 
+        self.playerId, self:GetTalentCount(), self:GetUnlockedNormalAchievementCount()))
+end
 
-return Achievement
+-- 调试和工具方法 --------------------------------------------------------
+
+--- 获取调试信息
+---@return string 调试信息字符串
+function PlayerAchievement:GetDebugInfo()
+    local info = string.format("玩家[%s]成就数据:\n", self.playerId)
+    info = info .. string.format("  天赋数量: %d\n", self:GetTalentCount())
+    info = info .. string.format("  普通成就数量: %d\n", self:GetUnlockedNormalAchievementCount())
+    info = info .. "  天赋详情:\n"
+    
+    for talentId, talentInfo in pairs(self.talentData) do
+        info = info .. string.format("    %s: L%d (解锁时间:%s)\n", 
+            talentId, talentInfo.currentLevel, os.date("%Y-%m-%d %H:%M:%S", talentInfo.unlockTime))
+    end
+    
+    return info
+end
+
+return PlayerAchievement
