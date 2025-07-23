@@ -2,8 +2,10 @@ local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
+local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 local MailCommand = require(ServerStorage.CommandSys.Commands.MmailCom) ---@type MailCommand
+local BagCommand = require(ServerStorage.CommandSys.Commands.MbagCom) ---@type BagCommand
 -- local SkillCommands = require(ServerStorage.CommandSys.Commands.MskillCom)     ---@type SkillCommands
 local json = require(MainStorage.Code.Untils.json) ---@type json
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
@@ -15,6 +17,7 @@ local CommandManager = {}
 -- 所有指令处理器 (使用多级嵌套结构)
 CommandManager.handlers = {
     -- 物品相关
+    ["PlayerItem"] = BagCommand.main,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
     -- 装载默认的配置技能
@@ -59,9 +62,20 @@ function CommandManager.ExecuteCommand(commandStr, player, silent)
         --- 获取玩家
 
     elseif params["玩家"] then
-        player = gg.getLivingByName(params["玩家"])
+        player = serverDataMgr.getLivingByName(params["玩家"])
         if not player then
             gg.log("玩家不存在: " .. params["玩家"])
+            return false
+        end
+    elseif params["玩家UID"] then
+        local targetUin = tonumber(params["玩家UID"])
+        if not targetUin then
+            gg.log("玩家UID格式错误: " .. params["玩家UID"])
+            return false
+        end
+        player = serverDataMgr.getPlayerByUin(targetUin)
+        if not player then
+            gg.log("玩家不存在: " .. targetUin)
             return false
         end
     end

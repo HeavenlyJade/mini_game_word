@@ -1,10 +1,10 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-local ViewComponent = require(MainStorage.code.client.ui.ViewComponent) ---@type ViewComponent
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local MConfig = require(MainStorage.code.common.MConfig)
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
+local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
+local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local MConfig = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
 
 ---@class Assistant:ViewBase
 local Assistant = ClassMgr.Class("Assistant", ViewBase)
@@ -18,13 +18,13 @@ local uiConfig = {
 ---@override
 function Assistant:OnInit(node, config)
     -- 获取"脱离卡死"按钮
-    self.unstuckButton = self:Get("脱离卡死", ViewButton) ---@type ViewButton
+    self.unstuckButton = self:Get("底图/脱离卡死", ViewButton) ---@type ViewButton
 
     -- 获取确认传送UI组件
-    self.confirmTeleportUI = self:Get("确认传送", ViewComponent) ---@type ViewComponent
+    self.confirmTeleportUI = self:Get("底图/确认传送", ViewComponent) ---@type ViewComponent
     self.confirmTeleportContent = self.confirmTeleportUI.node.content ---@type UITextLabel
-    self.confirmTeleportButton = self:Get("确认传送/b_confirm", ViewButton) ---@type ViewButton
-    self.cancelTeleportButton = self:Get("确认传送/b_cancel", ViewButton) ---@type ViewButton
+    self.confirmTeleportButton = self:Get("底图/确认传送/b_confirm", ViewButton) ---@type ViewButton
+    self.cancelTeleportButton = self:Get("底图/确认传送/b_cancel", ViewButton) ---@type ViewButton
 
     if not self.unstuckButton or not self.confirmTeleportUI then
         return

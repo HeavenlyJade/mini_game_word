@@ -1,5 +1,8 @@
 local MainStorage = game:GetService("MainStorage")
-local gg = require(MainStorage.code.common.MGlobal)            ---@type gg
+local gg              = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+
+local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
+local UserInputService = game:GetService("UserInputService") ---@type UserInputService
 
 local commandInput = script.Parent ---@type UITextInput
 local uiImage = commandInput.Parent ---@type UIImage
@@ -13,8 +16,6 @@ else
     uiImage.Visible = true
 end
 
-local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-local UserInputService = game:GetService("UserInputService") ---@type UserInputService
 
 local commandHistory = {}
 local commandHistoryIndex = 1
