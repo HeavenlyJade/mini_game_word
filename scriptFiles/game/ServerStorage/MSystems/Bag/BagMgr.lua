@@ -269,6 +269,21 @@ function BagMgr.RemoveItem(player, itemName, amount)
     return success
 end
 
+---一次性扣除消耗列表中的所有物品（对外接口）
+---@param player MPlayer 玩家对象
+---@param costs table 消耗列表，格式为{ {item=物品名, amount=数量}, ... }
+---@return boolean 是否全部扣除成功
+function BagMgr.RemoveItemsByCosts(player, costs)
+    if not player or not costs then
+        return false
+    end
+    local bag = BagMgr.GetPlayerBag(player.uin)
+    if not bag then
+        return false
+    end
+    return bag:RemoveItemsByCosts(costs)
+end
+
 ---检查玩家是否拥有足够的物品
 ---@param player MPlayer 玩家对象
 ---@param itemName string 物品名称
@@ -347,6 +362,22 @@ function BagMgr.ForceSyncToClient(uin)
         bag:SyncToClient()
         gg.log("BagMgr.ForceSyncToClient: 强制同步背包数据", uin)
     end
+end
+
+---检测消耗列表中的所有物品是否足够（对外接口）
+---@param player MPlayer 玩家对象
+---@param costs table 消耗列表，格式为{ {item=物品名, amount=数量}, ... }
+---@return boolean 是否全部足够
+function BagMgr.HasItemsByCosts(player, costs)
+    if not player or not costs then
+        return false
+    end
+    local bag = BagMgr.GetPlayerBag(player.uin)
+    if not bag then
+        return false
+    end
+    local costMap = bag.CostsToMap(costs)
+    return bag:HasItems(costMap)
 end
 
 return BagMgr

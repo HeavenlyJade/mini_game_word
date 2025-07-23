@@ -134,35 +134,15 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     -- 【关键】检查和扣除升级消耗
     local costs = talentConfig:GetUpgradeCosts(oldLevel)
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-    -- 第一步：检查所有材料是否足够
-    for _, cost in ipairs(costs) do
-        local itemName = cost.item
-        local requiredAmount = cost.amount or 0
-        local currentAmount = BagMgr.GetItemAmount(player, itemName)
-        if currentAmount < requiredAmount then
-            gg.log("升级材料不足:", itemName, "需要:", requiredAmount, "拥有:", currentAmount)
-            AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
-            return
-        end
+    if not BagMgr.HasItemsByCosts(player, costs) then
+        gg.log("升级材料不足:", costs,oldLevel)
+        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
+        return
     end
-    -- 第二步：扣除所有材料
-    for _, cost in ipairs(costs) do
-        local itemName = cost.item
-        local requiredAmount = cost.amount or 0
-        local bag = BagMgr.GetPlayerBag(player.uin)
-        if bag then
-            local removeSuccess = bag:RemoveItems({[itemName] = requiredAmount})
-            if not removeSuccess then
-                gg.log("扣除材料失败:", itemName, requiredAmount)
-                AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
-                return
-            else
-                gg.log("扣除升级材料:", itemName, requiredAmount)
-            end
-        else
-            AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR, AchievementEventConfig.ERROR_CODES.SYSTEM_ERROR)
-            return
-        end
+    if not BagMgr.RemoveItemsByCosts(player, costs) then
+        gg.log("扣除材料失败:", costs)
+        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
+        return
     end
     -- 同步背包变化到客户端
     local bag = BagMgr.GetPlayerBag(player.uin)
@@ -171,7 +151,7 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     end
     
     -- 执行升级（确保成功，因为前面已经检查过所有条件）
-    local upgradeSuccess = AchievementMgr.UpgradeTalent(playerId, talentId, player)
+    local upgradeSuccess = AchievementMgr.UpgradeTalent(playerId, talentId)
     
     if upgradeSuccess then
         local newLevel = AchievementMgr.GetTalentLevel(playerId, talentId)

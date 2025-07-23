@@ -628,6 +628,28 @@ function Bag:RemoveItems(items)
     return true
 end
 
+---一次性扣除消耗列表中的所有物品
+---@param costs table 消耗列表，格式为{ {item=物品名, amount=数量}, ... }
+---@return boolean 是否全部扣除成功
+function Bag:RemoveItemsByCosts(costs)
+    local costMap = self.CostsToMap(costs)
+    if not self:HasItems(costMap) then
+        return false
+    end
+    return self:RemoveItems(costMap)
+end
+
+---将消耗列表转换为物品名-数量的映射表
+---@param costs table 消耗列表，格式为{ {item=物品名, amount=数量}, ... }
+---@return table 物品名到数量的映射表
+function Bag.CostsToMap(costs)
+    local map = {}
+    for _, cost in ipairs(costs) do
+        map[cost.item] = cost.amount or 0
+    end
+    return map
+end
+
 function Bag:PrintContent()
     local lines = {}
     local first = true
