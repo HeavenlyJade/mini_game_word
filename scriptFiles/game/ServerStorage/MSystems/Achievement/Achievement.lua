@@ -214,7 +214,7 @@ function PlayerAchievement:ApplyTalentEffect(talentId, player)
 end
 
 --- 应用所有天赋效果
----@param player MPlayer 玩家实例
+---@param player MPlayer|nil 玩家实例
 function PlayerAchievement:ApplyAllTalentEffects(player)
     local count = 0
     for talentId, _ in pairs(self.talentData) do

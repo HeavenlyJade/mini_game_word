@@ -6,23 +6,24 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local PlayerAchievement = require(ServerStorage.MSystems.Achievement.Achievement) ---@type PlayerAchievement
 local AchievementCloudDataMgr = require(ServerStorage.MSystems.Achievement.AchievementCloudDataMgr) ---@type AchievementCloudDataMgr
+local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 ---@class AchievementMgr
 local AchievementMgr = {
-    server_player_achievement_data = {}, ---@type table<string, PlayerAchievement> [playerId] = PlayerAchievement实例
+    server_player_achievement_data = {}, ---@type table<number, PlayerAchievement> [playerId] = PlayerAchievement实例
 }
 
 -- 玩家生命周期 --------------------------------------------------------
 
 --- 玩家上线处理
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 function AchievementMgr.OnPlayerJoin(playerId)
     
     -- 从云端加载数据
     local success, achievementData = AchievementCloudDataMgr.LoadPlayerAchievements(playerId)
     
     -- 创建玩家成就实例
-    local playerAchievement = PlayerAchievement.New()
+    local playerAchievement = PlayerAchievement.New() ---@type PlayerAchievement
     playerAchievement:OnInit(playerId)
     
     -- 恢复数据
@@ -37,12 +38,13 @@ function AchievementMgr.OnPlayerJoin(playerId)
     AchievementMgr.server_player_achievement_data[playerId] = playerAchievement
     
     -- 应用天赋效果（变量系统在PlayerAchievement内部管理）
-    playerAchievement:ApplyAllTalentEffects()
+    local player = MServerDataManager.getPlayerInfoByUin(playerId)
+    playerAchievement:ApplyAllTalentEffects(player)
 end
 
 
 --- 玩家离线处理
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 function AchievementMgr.OnPlayerLeave(playerId)
     
     -- 保存数据
@@ -57,7 +59,7 @@ end
 -- 数据保存 --------------------------------------------------------
 
 --- 保存玩家成就数据
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 function AchievementMgr.SavePlayerAchievements(playerId)
     local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]
     if not playerAchievement then
@@ -71,7 +73,7 @@ end
 -- 天赋操作 --------------------------------------------------------
 
 --- 获取天赋等级
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 ---@param talentId string 天赋ID
 ---@return number 天赋等级
 function AchievementMgr.GetTalentLevel(playerId, talentId)
@@ -80,7 +82,7 @@ function AchievementMgr.GetTalentLevel(playerId, talentId)
 end
 
 --- 升级天赋
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 ---@param talentId string 天赋ID
 ---@return boolean 是否升级成功
 function AchievementMgr.UpgradeTalent(playerId, talentId)
@@ -94,7 +96,7 @@ function AchievementMgr.UpgradeTalent(playerId, talentId)
 end
 
 --- 重置所有天赋
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 function AchievementMgr.ResetAllTalents(playerId)
     local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]
     
@@ -106,7 +108,7 @@ end
 -- 普通成就操作 --------------------------------------------------------
 
 --- 解锁成就
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 ---@param achievementId string 成就ID
 ---@return boolean 是否解锁成功
 function AchievementMgr.UnlockAchievement(playerId, achievementId)
@@ -120,7 +122,7 @@ function AchievementMgr.UnlockAchievement(playerId, achievementId)
 end
 
 --- 检查成就是否已解锁
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 ---@param achievementId string 成就ID
 ---@return boolean 是否已解锁
 function AchievementMgr.HasAchievement(playerId, achievementId)

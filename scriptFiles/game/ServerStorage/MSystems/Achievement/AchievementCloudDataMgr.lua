@@ -9,16 +9,15 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local AchievementCloudDataMgr = {}
 
 --- 从云端加载玩家成就数据
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 ---@return boolean, table|nil 是否成功，成就数据
 function AchievementCloudDataMgr.LoadPlayerAchievements(playerId)
-    local uin = tonumber(playerId)
-    if not uin then
+    if not playerId then
         gg.log("无效的玩家ID:", playerId)
         return false, nil
     end
     
-    local key = "achievement_data_" .. uin
+    local key = "achievement_data_" .. playerId
     local success, cloudData = cloudService:GetTableOrEmpty(key)
     
     if success and cloudData and cloudData.achievements then
@@ -31,13 +30,12 @@ function AchievementCloudDataMgr.LoadPlayerAchievements(playerId)
 end
 
 --- 保存玩家成就数据到云端
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 ---@param saveData table 成就数据
 ---@param force boolean|nil 是否强制保存
 ---@return boolean 是否成功
 function AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData, force)
-    local uin = tonumber(playerId)
-    if not uin then
+    if not playerId then
         gg.log("无效的玩家ID:", playerId)
         return false
     end
@@ -48,12 +46,12 @@ function AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData, forc
     end
     
     local cloudData = {
-        uin = uin,
+        uin = playerId,
         achievements = saveData,
         lastUpdate = os.time()
     }
     
-    local key = "achievement_data_" .. uin
+    local key = "achievement_data_" .. playerId
     
     cloudService:SetTableAsync(key, cloudData, function(success)
         if success then
@@ -67,16 +65,15 @@ function AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData, forc
 end
 
 --- 清空玩家成就数据
----@param playerId string 玩家ID
+---@param playerId number 玩家ID
 ---@return boolean 是否成功
 function AchievementCloudDataMgr.ClearPlayerAchievements(playerId)
-    local uin = tonumber(playerId)
-    if not uin then
+    if not playerId then
         gg.log("无效的玩家ID:", playerId)
         return false
     end
     
-    local key = "achievement_data_" .. uin
+    local key = "achievement_data_" .. playerId
     
     cloudService:SetTableAsync(key, nil, function(success)
         if success then

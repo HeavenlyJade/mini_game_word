@@ -41,7 +41,7 @@ end
 -- 处理获取成就列表请求
 function AchievementEventManager.HandleGetAchievementList(event)
     local uin = event.uin
-    local playerId = tostring(uin)
+    local playerId = uin
     
     gg.log("处理获取成就列表请求:", playerId)
     
@@ -92,7 +92,7 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     local uin = event.uin
     local params = event.args or {}
     local talentId = params.talentId
-    local playerId = tostring(uin)
+    local playerId = uin
     
     gg.log("处理升级天赋成就请求:", playerId, talentId)
     
@@ -136,7 +136,7 @@ function AchievementEventManager.HandleGetTalentLevel(event)
     local uin = event.uin
     local params = event.args or {}
     local talentId = params.talentId
-    local playerId = tostring(uin)
+    local playerId = uin
     
     if not talentId or talentId == "" then
         AchievementEventManager.SendErrorResponse(uin, "AchievementResponse_GetTalentLevel",
