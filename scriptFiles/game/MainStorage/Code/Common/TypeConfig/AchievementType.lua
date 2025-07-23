@@ -134,4 +134,6 @@ function AchievementType:GetUpgradeCostValue(formula, level)
     return AchievementRewardCal:CalculateUpgradeCost(formula, level, self)
 end
 
+
+
 return AchievementType

@@ -29,7 +29,8 @@ local Achievement = ClassMgr.Class("Achievement")
 ---@param playerId number 玩家ID
 ---@param achievementData AchievementDataTable|nil 玩家成就数据
 function Achievement:OnInit(playerId, achievementData)
-    gg.log("初始化玩家成就聚合实例", playerId,achievementData)
+    gg.log("开始初始化Achievement实例", playerId)
+
     self.playerId = playerId
     self.talentData = {} -- 天赋数据映射
     self.normalAchievements = {} -- 普通成就数据
@@ -41,13 +42,15 @@ function Achievement:OnInit(playerId, achievementData)
     end
     
     -- 将天赋数据转换为VariableSystem格式（同时处理玩家变量）
-    self.talentVariableData = self:_ConvertTalentDataToVariableFormat()
     
     -- 创建天赋变量系统，只存储系统变量
     self.talentVariableSystem = VariableSystem.New("天赋", self.talentVariableData)
     
     -- 初始化奖励计算器
     self._rewardCalculator = AchievementRewardCal.New()
+    self.talentVariableData = self:_ConvertTalentDataToVariableFormat()
+
+    gg.log("初始化玩家成就聚合实例", playerId,achievementData,self._rewardCalculator)
 
 end
 

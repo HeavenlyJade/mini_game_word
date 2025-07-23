@@ -47,6 +47,21 @@ function TalentGui:OnInit(node, config)
         self:OnSyncInventoryItems(data)
     end)
 
+    -- 引入成就事件配置
+    local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent) ---@type AchievementEventConfig
+    -- 监听天赋升级响应事件
+    ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.UPGRADE_RESPONSE, function(data)
+        self:OnTalentUpgradeResponse(data)
+    end)
+    -- 监听天赋升级通知事件
+    ClientEventManager.Subscribe(AchievementEventConfig.NOTIFY.TALENT_UPGRADED, function(data)
+        self:OnTalentUpgradeNotify(data)
+    end)
+    -- 监听错误响应事件
+    ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.ERROR, function(data)
+        self:OnTalentErrorResponse(data)
+    end)
+
     -- 3. 按钮点击事件注册
     self:RegisterButtonEvents()
 
@@ -98,42 +113,114 @@ function TalentGui:InitTalentList()
     gg.log("天赋列表初始化完成，共加载" .. #talentList .. "个天赋")
 end
 
+---@param talentType AchievementType
+---@param currentLevel number
 function TalentGui:OnClickUpgradeTalent(talentType, currentLevel)
-    gg.log("点击升级天赋：" .. (talentType.name or ""))
-    -- TODO: 这里写具体升级逻辑，比如消耗校验、等级提升、UI刷新等
+    gg.log("点击升级天赋：", talentType, "当前等级：", currentLevel,talentType.name)
+    if currentLevel >= talentType:GetMaxLevel() then
+        gg.log("天赋已达最大等级")
+        return
+    end
+    local costs = talentType:GetUpgradeCosts(currentLevel)
+    gg.log("升级消耗", costs)
+
+    -- 检查本地货币缓存是否足够
+    for _, cost in ipairs(costs) do
+        local item = cost.item
+        local amount = cost.amount or 0
+        local have = self.currencyMap[item] or 0
+        if have < amount then
+            gg.log("材料不足：", item, "需要：", amount, "拥有：", have)
+            -- 可在此处弹窗提示
+            return
+        end
+    end
+
+    self:SendUpgradeTalentRequest(talentType.name)
+end
+
+
+
+function TalentGui:SendUpgradeTalentRequest(talentId)
+    local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent) ---@type AchievementEventConfig
+    local requestData = {
+        cmd = AchievementEventConfig.REQUEST.UPGRADE_TALENT,
+        args = { talentId = talentId }
+    }
+    gg.log("发送天赋升级请求:", talentId)
+    gg.network_channel:fireServer(requestData)
+end
+
+function TalentGui:OnTalentUpgradeResponse(data)
+    gg.log("收到天赋升级响应:", data)
+    if data.success then
+        local responseData = data.data
+        gg.log("天赋升级成功:", responseData.talentId, responseData.oldLevel, "->", responseData.newLevel)
+        self:RefreshTalentDisplay(responseData.talentId, responseData.newLevel)
+        self:RefreshAllUpgradeButtons()
+    else
+        gg.log("天赋升级失败:", data.errorCode)
+    end
+end
+
+function TalentGui:OnTalentUpgradeNotify(data)
+    gg.log("收到天赋升级通知:", data)
+    local notifyData = data.data
+    if notifyData then
+        gg.log("天赋升级通知:", notifyData.talentId, notifyData.oldLevel, "->", notifyData.newLevel)
+        -- 可播放升级特效、音效等
+    end
+end
+
+function TalentGui:OnTalentErrorResponse(data)
+    gg.log("收到天赋系统错误响应:", data)
+    local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent) ---@type AchievementEventConfig
+    local errorMessage = AchievementEventConfig.GetErrorMessage(data.errorCode or 1999)
+    gg.log("错误信息:", errorMessage)
+end
+
+function TalentGui:RefreshTalentDisplay(talentId, newLevel)
+    gg.log("刷新天赋显示:", talentId, "新等级:", newLevel)
+    -- 这里需要根据你的UI结构来实现
+    -- 示例：
+    -- local talentNode = self:FindTalentNode(talentId)
+    -- if talentNode then
+    --     local levelText = talentNode:FindChild("等级文本")
+    --     if levelText then
+    --         levelText.Title = "Lv." .. newLevel
+    --     end
+    -- end
+end
+
+function TalentGui:RefreshAllUpgradeButtons()
+    for talentName, btn in pairs(self.upgradeBtnMap or {}) do
+        local allAchievements = ConfigLoader.GetAllAchievements()
+        local talentType = allAchievements[talentName]
+        if talentType then
+            self:UpdateUpgradeButtonState(talentType, 0) -- 真实等级需从服务端同步
+        end
+    end
 end
 
 function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
-    -- slotNode: UI节点
-    -- talentType: AchievementType 实例
-    -- currentLevel: 当前天赋等级，由外部传入
     slotNode["说明"].Title = talentType.name or ""
-   
-    slotNode.Name = talentType.name 
-
-    -- slotNode["天赋描述"].Title = talentType.description or ""
-
-    -- 升级消耗栏位
+    slotNode.Name = talentType.name
     local costList = ViewList.New(slotNode["消耗栏位"], self,"消耗栏位")
     local costs = talentType:GetUpgradeCosts(currentLevel)
-    gg.log("costs",costs)
-    
     costList:SetElementSize(#costs)
     for i, cost in ipairs(costs) do
         local costNode = costList:GetChild(i)
-        if costNode and costNode["背景"] then
-            if costNode["背景"]["消耗数量"] then
-                costNode["背景"]["消耗数量"].Title = tostring(cost.amount or 0)
+        if costNode and costNode.node then
+            if costNode.node["消耗数量"] then
+                costNode.node["消耗数量"].Title = tostring(cost.amount or 0)
             end
         end
     end
     -- 升级按钮绑定
     local upgradeBtn = ViewButton.New(slotNode["升级"], self, "升级")
     self.upgradeBtnMap[talentType.name] = upgradeBtn
-    upgradeBtn.clickCb = function()
-        self:OnClickUpgradeTalent(talentType, currentLevel)
-    end
-    -- 检查消耗是否足够，不足则置灰
+    gg.log("升级按钮绑定????",talentType.name)
+    upgradeBtn.clickCb = function() self:OnClickUpgradeTalent(talentType, currentLevel) end
     self:UpdateUpgradeButtonState(talentType, currentLevel)
 end
 

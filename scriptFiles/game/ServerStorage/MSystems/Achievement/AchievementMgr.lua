@@ -78,10 +78,11 @@ end
 ---@param talentId string 天赋ID
 ---@return boolean 是否升级成功
 function AchievementMgr.UpgradeTalent(playerId, talentId)
-    local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]
+    local achievement = AchievementMgr.server_player_achievement_data[playerId]
     
-    if playerAchievement then
-        return playerAchievement:UpgradeTalent(talentId)
+    if achievement then
+        local player = MServerDataManager.getPlayerInfoByUin(playerId)
+        return achievement:UpgradeTalent(talentId, player)
     end
     
     return false

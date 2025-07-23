@@ -85,10 +85,13 @@ function AchievementEventManager.HandleGetAchievementList(event)
     AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.LIST_RESPONSE, responseData)
 end
 
--- 处理升级天赋成就请求
+-- 处理升级天赋成就请求（修复版本，包含资源检查和扣除）
 function AchievementEventManager.HandleUpgradeTalent(event)
-    local uin = event.uin
-    local params = event.args or {}
+    gg.log("HandleUpgradeTalent",event)
+    local env_player = event.player
+    local uin = env_player.uin
+
+    local params = event.args
     local talentId = params.talentId
     local playerId = uin
     
@@ -100,13 +103,45 @@ function AchievementEventManager.HandleUpgradeTalent(event)
         return
     end
     
+    -- 获取玩家实例
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local player = MServerDataManager.getPlayerByUin(playerId)
+    if not player then
+        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
+            AchievementEventConfig.ERROR_CODES.PLAYER_NOT_FOUND)
+        return
+    end
+    
+    -- 获取天赋配置
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local talentConfig = ConfigLoader.GetAchievement(talentId)
+    if not talentConfig or not talentConfig:IsTalentAchievement() then
+        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
+            AchievementEventConfig.ERROR_CODES.ACHIEVEMENT_NOT_FOUND)
+        return
+    end
+    
     -- 记录升级前等级
     local oldLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
     
-    -- 执行升级
-    local success = AchievementMgr.UpgradeTalent(playerId, talentId)
+    -- 检查是否已达最大等级
+    if oldLevel >= talentConfig:GetMaxLevel() then
+        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
+            AchievementEventConfig.ERROR_CODES.TALENT_ALREADY_MAX_LEVEL)
+        return
+    end
     
-    if success then
+    -- 【关键】检查和扣除升级消耗
+    local success, errorCode = AchievementEventManager.CheckAndConsumeUpgradeCost(player, talentConfig, oldLevel)
+    if not success then
+        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR, errorCode)
+        return
+    end
+    
+    -- 执行升级（确保成功，因为前面已经检查过所有条件）
+    local upgradeSuccess = AchievementMgr.UpgradeTalent(playerId, talentId, player)
+    
+    if upgradeSuccess then
         local newLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
         
         -- 构建响应数据
@@ -123,10 +158,76 @@ function AchievementEventManager.HandleUpgradeTalent(event)
         -- 发送升级通知
         AchievementEventManager.SendUpgradeNotification(uin, talentId, oldLevel, newLevel)
         
+        gg.log("天赋升级成功:", playerId, talentId, oldLevel, "->", newLevel)
+        
     else
+        -- 理论上不应该到这里，因为前面已经检查过所有条件
+        gg.log("警告：天赋升级意外失败:", playerId, talentId)
         AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
-            AchievementEventConfig.ERROR_CODES.TALENT_CANNOT_UPGRADE)
+            AchievementEventConfig.ERROR_CODES.SYSTEM_ERROR)
     end
+end
+
+-- 【新增】检查和扣除升级消耗
+---@param player MPlayer 玩家对象
+---@param talentConfig AchievementType 天赋配置
+---@param currentLevel number 当前等级
+---@return boolean, number 是否成功, 错误码
+function AchievementEventManager.CheckAndConsumeUpgradeCost(player, talentConfig, currentLevel)
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
+    
+    local upgradeConditions = talentConfig.upgradeConditions
+    if not upgradeConditions then
+        -- 没有升级条件，直接成功
+        return true, AchievementEventConfig.ERROR_CODES.SUCCESS
+    end
+    
+    -- 第一步：检查所有材料是否足够
+    local requiredItems = {}
+    for _, condition in ipairs(upgradeConditions) do
+        local itemName = condition["消耗物品"]
+        local amountFormula = condition["消耗数量"]
+        
+        if itemName and amountFormula then
+            -- 计算所需数量
+            local requiredAmount = AchievementRewardCal:CalculateUpgradeCost(amountFormula, currentLevel + 1, talentConfig)
+            if requiredAmount and requiredAmount > 0 then
+                requiredItems[itemName] = requiredAmount
+                
+                -- 检查是否拥有足够的材料
+                local currentAmount = BagMgr.GetItemAmount(player, itemName)
+                if currentAmount < requiredAmount then
+                    gg.log("升级材料不足:", itemName, "需要:", requiredAmount, "拥有:", currentAmount)
+                    return false, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS
+                end
+            end
+        end
+    end
+    
+    -- 第二步：扣除所有材料
+    for itemName, requiredAmount in pairs(requiredItems) do
+        local bag = BagMgr.GetPlayerBag(player.uin)
+        if bag then
+            local removeSuccess = bag:RemoveItems({[itemName] = requiredAmount})
+            if not removeSuccess then
+                gg.log("扣除材料失败:", itemName, requiredAmount)
+                return false, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS
+            else
+                gg.log("扣除升级材料:", itemName, requiredAmount)
+            end
+        else
+            return false, AchievementEventConfig.ERROR_CODES.SYSTEM_ERROR
+        end
+    end
+    
+    -- 同步背包变化到客户端
+    local bag = BagMgr.GetPlayerBag(player.uin)
+    if bag then
+        bag:SyncToClient()
+    end
+    
+    return true, AchievementEventConfig.ERROR_CODES.SUCCESS
 end
 
 -- 处理获取天赋等级请求
