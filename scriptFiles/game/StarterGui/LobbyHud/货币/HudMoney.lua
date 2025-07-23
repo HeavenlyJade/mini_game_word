@@ -55,27 +55,28 @@ end
 function OnMoneyClick(ui, viewButton)
 end
 
+-- 【新增】初始化方法中添加货币数据缓存初始化
 function HudMoney:OnInit(node, config)
     gg.log("菜单按钮HudMoney初始化")
     self.selectingCard = 0
+    
+    -- 【新增】初始化货币数据缓存
+    self.currentCurrencyData = {}
+    
     -- 初始化对象池
     MoneyAddPool.template = self:Get("货币增加").node ---@type UITextLabel
     MoneyAddPool.template.Visible = false
 
     self.moneyButtonList = self:Get("货币底图/货币",ViewList) ---@type ViewList<ViewButton>
 
-
     gg.log("self.moneyButtonList ",self.moneyButtonList ,self.moneyButtonList.node["金币"])
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
-
         self:OnSyncInventoryItems(data)
     end)
     gg.log("按钮初始化结束")
-
 end
 
 function HudMoney:OnSyncInventoryItems(data)
-    gg.log("背包数据更新")
 
     local items = data.items
     if not items then 
@@ -83,26 +84,47 @@ function HudMoney:OnSyncInventoryItems(data)
         return 
     end
 
-    -- 获取货币类型物品
-    local currencyItems = {}
+    -- 初始化当前的货币数据缓存（如果不存在）
+    if not self.currentCurrencyData then
+        self.currentCurrencyData = {}
+    end
+
     local currencyType = MConfig.ItemTypeEnum["货币"]
-    gg.log("服务的背包数据",items)
-    -- 遍历所有分类，查找货币类型的物品
+    
+    -- 【关键修改】更新货币数据缓存
+    local hasUpdateData = false
     for category, itemList in pairs(items) do
-        if tonumber(category) == currencyType and itemList then
-            for _, item in ipairs(itemList) do
-                if item.itemCategory == currencyType then
-                    table.insert(currencyItems, item)
+        if category == currencyType and itemList then
+            hasUpdateData = true
+            -- 【重要】这里要按位置索引更新，而不是按数组遍历
+            for slotIndex, item in pairs(itemList) do
+                if item and item.itemCategory == currencyType then
+                    -- 直接使用服务端发送的最新数据
+                    self.currentCurrencyData[item.name] = item
+                    gg.log("更新货币缓存:", item.name, "数量:", item.amount, "位置:", slotIndex)
                 end
             end
         end
     end
 
-    gg.log("客户端加载的货币的数量:", currencyItems)
+    -- 如果没有货币数据更新，直接返回，保持当前显示
+    if not hasUpdateData then
+        gg.log("本次同步没有货币数据变更，保持当前显示")
+        return
+    end
 
-    -- 如果没有货币物品，清空显示
+    -- 转换为数组格式以兼容原有的显示逻辑
+    local currencyItems = {}
+    for itemName, currencyItem in pairs(self.currentCurrencyData) do
+        table.insert(currencyItems, currencyItem)
+    end
+
+
+
+    -- 【修改】如果缓存为空才清空显示，避免误清空
     if #currencyItems == 0 then
-        self:ClearMoneyDisplay()
+        gg.log("警告：货币数据缓存为空，可能存在数据同步问题")
+        -- 暂时不清空显示，等待后续数据
         return
     end
 
@@ -131,6 +153,7 @@ function HudMoney:OnSyncInventoryItems(data)
     -- 更新记录的货币值
     self:UpdateLastMoneyValues(currencyItems)
 end
+
 
 function HudMoney:ClearMoneyDisplay()
     for i = 1, self.moneyButtonList:GetChildCount() do
@@ -221,3 +244,4 @@ function HudMoney:UpdateLastMoneyValues(currencyItems)
 end
 
 return HudMoney.New(script.Parent, uiConfig)
+

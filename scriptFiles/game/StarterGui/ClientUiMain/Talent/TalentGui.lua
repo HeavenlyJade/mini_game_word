@@ -107,7 +107,6 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     -- slotNode: UI节点
     -- talentType: AchievementType 实例
     -- currentLevel: 当前天赋等级，由外部传入
-    gg.log("slotNode",slotNode)
     slotNode["说明"].Title = talentType.name or ""
    
     slotNode.Name = talentType.name 
@@ -128,7 +127,6 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
             end
         end
     end
-    gg.log("costList",costList.childrens)
     -- 升级按钮绑定
     local upgradeBtn = ViewButton.New(slotNode["升级"], self, "升级")
     self.upgradeBtnMap[talentType.name] = upgradeBtn
@@ -157,38 +155,43 @@ function TalentGui:UpdateUpgradeButtonState(talentType, currentLevel)
 
 end
 
--- 新增：背包同步事件处理（可根据需要刷新天赋升级消耗等）
 function TalentGui:OnSyncInventoryItems(data)
     gg.log("天赋界面收到背包数据同步事件")
-    -- 只同步货币类型物品到self.currencyMap
+    
     local items = data.items
     if not items then
         gg.log("天赋界面警告：数据中没有items字段")
         return
     end
+    
     local MConfig = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
     local currencyType = MConfig.ItemTypeEnum["货币"]
-    local currencyMap = {}
+    
+    -- 【关键修改】检查是否有货币数据更新
+    local hasCurrencyUpdate = false
     for category, itemList in pairs(items) do
         if tonumber(category) == currencyType and itemList then
-            for _, item in ipairs(itemList) do
-                if item.itemCategory == currencyType then
-                    currencyMap[item.name] = item.amount or 0
+            hasCurrencyUpdate = true
+            -- 【重要修复】使用 pairs 而不是 ipairs，处理槽位索引
+            for slotIndex, item in pairs(itemList) do
+                if item and item.itemCategory == currencyType then
+                    self.currencyMap[item.name] = item.amount or 0
+                    gg.log("天赋界面更新货币:", item.name, "数量:", item.amount, "槽位:", slotIndex)
                 end
             end
         end
     end
-    self.currencyMap = currencyMap
-    gg.log("天赋界面已同步货币数据", currencyMap)
+    
+    -- 如果没有货币数据更新，直接返回，避免误操作
+    if not hasCurrencyUpdate then
+        gg.log("天赋界面：本次同步无货币数据变更")
+        return
+    end
+    
+    gg.log("天赋界面已同步货币数据", self.currencyMap)
+    
     -- 刷新所有天赋升级按钮状态
-    -- for i, talent in ipairs(self.talentSlotList.childrensList or {}) do
-    --     local talentType = talentType or nil
-    --     -- 这里假设talentType可通过child节点或其他方式获取
-    --     -- 由于SetupTalentSlot时已存储upgradeBtnMap，直接用talentType.name遍历
-    --     -- 这里遍历upgradeBtnMap更稳妥
-    -- end
     for name, btn in pairs(self.upgradeBtnMap or {}) do
-        -- 需要获取talentType和当前等级，这里假设等级为0（如有等级数据请替换）
         local allAchievements = ConfigLoader.GetAllAchievements()
         local talentType = allAchievements[name]
         if talentType then
