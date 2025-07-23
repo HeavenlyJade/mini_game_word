@@ -6,6 +6,18 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
 
+---@class LevelEffect
+---@field 效果类型 string 效果类型（如“玩家变量”）
+---@field 效果字段名称 string 效果字段名称（如“加成_百分比_双倍训练”）
+---@field 基础数值 number 基础数值
+---@field 效果数值 string 效果数值公式（如“T_LVL*0.2”）
+---@field 效果描述 string 效果描述
+---@field 等级 number|nil 适用等级，可选
+
+---@class UpgradeCondition
+---@field 消耗物品 string 物品名称
+---@field 消耗数量 string 消耗数量公式（如“T_LVL*2+10”）
+
 ---@class AchievementType : Class
 ---@field id string 成就唯一ID
 ---@field name string 成就名称
@@ -15,8 +27,8 @@ local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Achi
 ---@field unlockConditions table[] 解锁条件列表
 ---@field unlockRewards table[] 解锁奖励列表
 ---@field maxLevel number|nil 最大等级 (天赋成就专用)
----@field upgradeConditions table[]|nil 升级条件列表 (天赋成就专用)
----@field levelEffects table[]|nil 等级效果列表 (天赋成就专用)
+---@field upgradeConditions UpgradeCondition[]|nil 升级条件列表 (天赋成就专用)
+---@field levelEffects LevelEffect[]|nil 等级效果列表 (天赋成就专用)
 local AchievementType = ClassMgr.Class("AchievementType")
 
 --- 初始化成就类型

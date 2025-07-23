@@ -39,14 +39,16 @@ function PlayerAchievement:OnInit(playerId, achievementData)
         self:_RestoreFromAchievementData(achievementData)
     end
     
-    -- 创建天赋变量系统，传入成就数据用于构建变量
+    -- 将天赋数据转换为VariableSystem格式（同时处理玩家变量）
+    self.talentVariableData = self:_ConvertTalentDataToVariableFormat()
+    
+    -- 创建天赋变量系统，只存储系统变量
     local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem)
-    self.talentVariableSystem = VariableSystem.New("天赋", achievementData or {})
+    self.talentVariableSystem = VariableSystem.New("天赋", self.talentVariableData)
     
     -- 初始化奖励计算器
     self._rewardCalculator = AchievementRewardCal.New()
-    
-    gg.log(string.format("初始化玩家[%s]成就聚合实例", playerId))
+
 end
 
 --- 从成就数据恢复到内部数据结构
@@ -72,6 +74,116 @@ function PlayerAchievement:_RestoreFromAchievementData(achievementData)
             end
         end
     end
+end
+
+--- 将天赋数据转换为VariableSystem变量格式
+---@return table<string, table> VariableSystem格式的变量数据
+---@private
+function PlayerAchievement:_ConvertTalentDataToVariableFormat()
+    local talentVariableData = {}    -- 天赋系统的变量数据
+    local playerVariableData = {}    -- 玩家系统的变量数据
+    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
+    
+    -- 遍历所有天赋数据
+    for talentId, talentInfo in pairs(self.talentData) do
+        local talentConfig = ConfigLoader.GetAchievement(talentId)
+        if talentConfig and talentConfig:IsTalentAchievement() then
+            -- 获取当前等级的效果配置
+            local effectConfig = talentConfig:GetLevelEffect(talentInfo.currentLevel)
+            if effectConfig then
+                local effectType = effectConfig["效果类型"]        -- "玩家变量" 或 "系统变量"
+                local fieldName = effectConfig["效果字段名称"]      -- 如 "加成_百分比_双倍训练"
+                
+                if fieldName then
+                    -- 计算效果值
+                    local effectValue = self._rewardCalculator:CalculateEffectValue(
+                        effectConfig["效果数值"],
+                        talentInfo.currentLevel,
+                        talentConfig
+                    )
+                    
+                    if effectValue then
+                        -- 生成来源标识
+                        local source = string.format("天赋_%s_L%d", talentId, talentInfo.currentLevel)
+                        
+                        -- 判断数值类型
+                        local valueType = "固定值"
+                        if string.find(fieldName, "^加成_") then
+                            valueType = "百分比"
+                        end
+                        
+                        -- 根据效果类型选择目标数据表
+                        local targetData = nil
+                        if effectType == "玩家变量" then
+                            targetData = playerVariableData
+                        else
+                            -- 其他类型（系统变量等）存储在天赋变量系统中
+                            targetData = talentVariableData
+                        end
+                        
+                        -- 确保变量存在
+                        if not targetData[fieldName] then
+                            targetData[fieldName] = {
+                                base = 0,
+                                sources = {}
+                            }
+                        end
+                        
+                        -- 添加来源值
+                        targetData[fieldName].sources[source] = {
+                            value = effectValue,
+                            type = valueType
+                        }
+                    end
+                end
+            end
+        end
+    end
+    
+    -- 将玩家变量数据应用到玩家的变量系统
+    self:_ApplyToPlayerVariableSystem(playerVariableData)
+    
+    -- 返回天赋系统的变量数据
+    return talentVariableData
+end
+
+--- 将玩家变量数据应用到玩家的变量系统
+---@param playerVariableData table 玩家变量数据
+---@private
+function PlayerAchievement:_ApplyToPlayerVariableSystem(playerVariableData)
+    -- 获取玩家实例
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager)
+    local player = MServerDataManager.getPlayerInfoByUin(tonumber(self.playerId))
+    
+    if not player or not player.variableSystem then
+        gg.log("玩家或玩家变量系统不存在:", self.playerId)
+        return
+    end
+    
+    -- 应用每个变量
+    for fieldName, variableData in pairs(playerVariableData) do
+        for source, sourceData in pairs(variableData.sources) do
+            player.variableSystem:SetSourceValue(fieldName, source, sourceData.value, sourceData.type)
+        end
+    end
+    
+    gg.log(string.format("玩家[%s]应用了%d个天赋变量到玩家系统", 
+        self.playerId, self:_CountVariables(playerVariableData)))
+end
+
+--- 统计变量数量
+---@param variableData table
+---@return number
+function PlayerAchievement:_CountVariables(variableData)
+    local count = 0
+    for _, v in pairs(variableData) do
+        if v.sources then
+            for _ in pairs(v.sources) do
+                count = count + 1
+            end
+        end
+    end
+    return count
 end
 
 -- 天赋管理方法 --------------------------------------------------------
