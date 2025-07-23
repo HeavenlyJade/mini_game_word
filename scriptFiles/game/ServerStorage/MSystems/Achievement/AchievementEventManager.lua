@@ -35,7 +35,6 @@ function AchievementEventManager.RegisterNetworkHandlers()
         AchievementEventManager.HandleGetTalentLevel(event)
     end, 100)
     
-    gg.log("AchievementEventManager 网络事件注册完成")
 end
 
 -- 处理获取成就列表请求
@@ -43,7 +42,6 @@ function AchievementEventManager.HandleGetAchievementList(event)
     local uin = event.uin
     local playerId = uin
     
-    gg.log("处理获取成就列表请求:", playerId)
     
     -- 获取玩家成就实例
     local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]

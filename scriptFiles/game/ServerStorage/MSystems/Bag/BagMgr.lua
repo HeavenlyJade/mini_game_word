@@ -26,7 +26,7 @@ function SaveAllPlayerBags()
             count = count + 1
         end
     end
-    gg.log("定时保存背包数据完成，保存了", count, "个玩家的背包")
+    -- gg.log("定时保存背包数据完成，保存了", count, "个玩家的背包")
 end
 
 local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer

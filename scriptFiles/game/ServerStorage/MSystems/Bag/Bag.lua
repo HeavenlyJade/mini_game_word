@@ -136,8 +136,8 @@ function Bag:Load(data)
         end
     end
 
-    gg.log("Bag:Load完成，bag_items:", self.bag_items)
-    gg.log("Bag:Load完成，bag_index:", self.bag_index)
+    -- gg.log("Bag:Load完成，bag_items:", self.bag_items)
+    -- gg.log("Bag:Load完成，bag_index:", self.bag_index)
     self:MarkDirty(true)
 end
 

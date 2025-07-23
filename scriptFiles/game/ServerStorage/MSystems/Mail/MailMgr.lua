@@ -147,7 +147,7 @@ end
 ---@param mailData table 邮件数据
 function MailMgr.SetPlayerMailData(uin, mailData)
     MailMgr.server_player_mail_data[uin] = mailData
-    gg.log("玩家邮件数据已缓存", uin)
+    -- gg.log("玩家邮件数据已缓存", uin)
 end
 
 ---玩家上线处理
@@ -159,7 +159,7 @@ function MailMgr.OnPlayerJoin(player)
     end
     
     local uin = player.uin
-    gg.log("开始处理玩家邮件上线", uin)
+    -- gg.log("开始处理玩家邮件上线", uin)
     
     -- 从云端加载邮件数据
     local mailBundle = MailMgr.LoadPlayerMailFromCloud(uin)

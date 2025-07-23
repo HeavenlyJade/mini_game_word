@@ -4,13 +4,12 @@
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local PlayerAchievement = require(ServerStorage.MSystems.Achievement.Achievement) ---@type PlayerAchievement
 local AchievementCloudDataMgr = require(ServerStorage.MSystems.Achievement.AchievementCloudDataMgr) ---@type AchievementCloudDataMgr
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 ---@class AchievementMgr
 local AchievementMgr = {
-    server_player_achievement_data = {}, ---@type table<number, PlayerAchievement> [playerId] = PlayerAchievement实例
+    server_player_achievement_data = {}, ---@type table<number, Achievement> [playerId] = Achievement
 }
 
 -- 玩家生命周期 --------------------------------------------------------
@@ -18,26 +17,21 @@ local AchievementMgr = {
 --- 玩家上线处理
 ---@param playerId number 玩家ID
 function AchievementMgr.OnPlayerJoin(playerId)
-    
+    local Achievement = require(ServerStorage.MSystems.Achievement.Achievement) ---@type Achievement
+    gg.log("玩家上线，初始化成就数据:", Achievement)
     -- 从云端加载数据
     local success, achievementData = AchievementCloudDataMgr.LoadPlayerAchievements(playerId)
     
     -- 创建玩家成就实例，直接传入成就数据
-    local playerAchievement = PlayerAchievement.New() ---@type PlayerAchievement
-    
-    -- 输出加载结果
-    if success and achievementData then
-        playerAchievement:OnInit(playerId, achievementData)
-    else
-        gg.log("初始化新玩家成就数据:", playerId)
-    end
+    gg.log("创建玩家成就实例", playerId, achievementData)
+    local achievement = Achievement.New(playerId, achievementData) ---@type Achievement
     
     -- 存储到管理器
-    AchievementMgr.server_player_achievement_data[playerId] = playerAchievement
+    AchievementMgr.server_player_achievement_data[playerId] = achievement
     
     -- 应用天赋效果（变量系统已在初始化时构建好）
     local player = MServerDataManager.getPlayerInfoByUin(playerId)
-    playerAchievement:ApplyAllTalentEffects(player)
+    achievement:ApplyAllTalentEffects(player)
 end
 
 

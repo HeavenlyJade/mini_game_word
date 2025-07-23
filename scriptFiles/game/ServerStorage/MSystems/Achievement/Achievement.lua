@@ -3,19 +3,19 @@
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
-local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ClassMgr    = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
 local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem) ---@type VariableSystem
-local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader) ---@type ConfigLoader
 
----@class PlayerAchievement 
+---@class Achievement 
 ---@field playerId number 玩家ID
 ---@field talentData table<string, TalentInfo> 天赋数据映射
 ---@field normalAchievements table<string, AchievementInfo> 普通成就数据
 ---@field talentVariableSystem VariableSystem 天赋变量系统
 ---@field lastUpdateTime number 最后更新时间
-local PlayerAchievement = ClassMgr.Class("PlayerAchievement")
+local Achievement = ClassMgr.Class("Achievement")
 
 ---@class TalentInfo
 ---@field currentLevel number 当前等级
@@ -28,7 +28,8 @@ local PlayerAchievement = ClassMgr.Class("PlayerAchievement")
 --- 初始化玩家成就聚合实例
 ---@param playerId number 玩家ID
 ---@param achievementData AchievementDataTable|nil 玩家成就数据
-function PlayerAchievement:OnInit(playerId, achievementData)
+function Achievement:OnInit(playerId, achievementData)
+    gg.log("初始化玩家成就聚合实例", playerId,achievementData)
     self.playerId = playerId
     self.talentData = {} -- 天赋数据映射
     self.normalAchievements = {} -- 普通成就数据
@@ -43,7 +44,6 @@ function PlayerAchievement:OnInit(playerId, achievementData)
     self.talentVariableData = self:_ConvertTalentDataToVariableFormat()
     
     -- 创建天赋变量系统，只存储系统变量
-    local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem)
     self.talentVariableSystem = VariableSystem.New("天赋", self.talentVariableData)
     
     -- 初始化奖励计算器
@@ -54,8 +54,7 @@ end
 --- 从成就数据恢复到内部数据结构
 ---@param achievementData AchievementDataTable 成就数据
 ---@private
-function PlayerAchievement:_RestoreFromAchievementData(achievementData)
-    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
+function Achievement:_RestoreFromAchievementData(achievementData)
     for achievementId, data in pairs(achievementData) do
         local achievementType = ConfigLoader.GetAchievement(achievementId)
         if achievementType then
@@ -79,10 +78,9 @@ end
 --- 将天赋数据转换为VariableSystem变量格式
 ---@return table<string, table> VariableSystem格式的变量数据
 ---@private
-function PlayerAchievement:_ConvertTalentDataToVariableFormat()
+function Achievement:_ConvertTalentDataToVariableFormat()
     local talentVariableData = {}    -- 天赋系统的变量数据
     local playerVariableData = {}    -- 玩家系统的变量数据
-    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
     
     -- 遍历所有天赋数据
     for talentId, talentInfo in pairs(self.talentData) do
@@ -150,7 +148,7 @@ end
 --- 将玩家变量数据应用到玩家的变量系统
 ---@param playerVariableData table 玩家变量数据
 ---@private
-function PlayerAchievement:_ApplyToPlayerVariableSystem(playerVariableData)
+function Achievement:_ApplyToPlayerVariableSystem(playerVariableData)
     -- 获取玩家实例
     local MServerDataManager = require(ServerStorage.Manager.MServerDataManager)
     local player = MServerDataManager.getPlayerInfoByUin(tonumber(self.playerId))
@@ -174,7 +172,7 @@ end
 --- 统计变量数量
 ---@param variableData table
 ---@return number
-function PlayerAchievement:_CountVariables(variableData)
+function Achievement:_CountVariables(variableData)
     local count = 0
     for _, v in pairs(variableData) do
         if v.sources then
@@ -191,7 +189,7 @@ end
 --- 获取天赋等级
 ---@param talentId string 天赋ID
 ---@return number 当前等级，未解锁返回0
-function PlayerAchievement:GetTalentLevel(talentId)
+function Achievement:GetTalentLevel(talentId)
     local talentInfo = self.talentData[talentId]
     return talentInfo and talentInfo.currentLevel or 0
 end
@@ -200,7 +198,7 @@ end
 ---@param talentId string 天赋ID
 ---@param level number 等级
 ---@param unlockTime number|nil 解锁时间戳
-function PlayerAchievement:SetTalentLevel(talentId, level, unlockTime)
+function Achievement:SetTalentLevel(talentId, level, unlockTime)
     if not self.talentData[talentId] then
         self.talentData[talentId] = {}
     end
@@ -208,14 +206,14 @@ function PlayerAchievement:SetTalentLevel(talentId, level, unlockTime)
     self.talentData[talentId].currentLevel = level
     self.talentData[talentId].unlockTime = unlockTime or os.time()
     
-    gg.log(string.format("玩家[%s]天赋[%s]设置为L%d", self.playerId, talentId, level))
+    gg.log(string.format("玩家[%s]天赋[%s]设置为L%d", tostring(self.playerId), tostring(talentId), level))
 end
 
 --- 检查天赋是否可以升级
 ---@param talentId string 天赋ID
 ---@param player MPlayer 玩家实例
 ---@return boolean 是否可以升级
-function PlayerAchievement:CanUpgradeTalent(talentId, player)
+function Achievement:CanUpgradeTalent(talentId, player)
     local talentConfig = ConfigLoader.GetAchievement(talentId) ---@type AchievementType
     
     if not talentConfig or not talentConfig:IsTalentAchievement() then
@@ -237,7 +235,7 @@ end
 ---@param talentId string 天赋ID
 ---@param player MPlayer 玩家实例
 ---@return boolean 是否升级成功
-function PlayerAchievement:UpgradeTalent(talentId, player)
+function Achievement:UpgradeTalent(talentId, player)
     if not self:CanUpgradeTalent(talentId, player) then
         gg.log(string.format("玩家[%s]天赋[%s]升级条件不满足", self.playerId, talentId))
         return false
@@ -271,7 +269,7 @@ end
 --- 重置指定天赋
 ---@param talentId string 天赋ID
 ---@param player MPlayer 玩家实例
-function PlayerAchievement:ResetTalent(talentId, player)
+function Achievement:ResetTalent(talentId, player)
     local oldLevel = self:GetTalentLevel(talentId)
     
     if oldLevel > 0 then
@@ -291,7 +289,7 @@ end
 
 --- 重置所有天赋
 ---@param player MPlayer 玩家实例
-function PlayerAchievement:ResetAllTalents(player)
+function Achievement:ResetAllTalents(player)
     gg.log(string.format("开始重置玩家[%s]的所有天赋", self.playerId))
     
     -- 移除所有天赋效果
@@ -320,7 +318,7 @@ end
 --- 应用单个天赋效果
 ---@param talentId string 天赋ID
 ---@param player MPlayer 玩家实例
-function PlayerAchievement:ApplyTalentEffect(talentId, player)
+function Achievement:ApplyTalentEffect(talentId, player)
     local talentInfo = self.talentData[talentId]
     if not talentInfo or talentInfo.currentLevel <= 0 then
         return
@@ -358,14 +356,14 @@ end
 
 --- 应用所有天赋效果
 ---@param player MPlayer|nil 玩家实例
-function PlayerAchievement:ApplyAllTalentEffects(player)
+function Achievement:ApplyAllTalentEffects(player)
     local count = 0
     for talentId, _ in pairs(self.talentData) do
         self:ApplyTalentEffect(talentId, player)
         count = count + 1
     end
     
-    gg.log(string.format("玩家[%s]应用了%d个天赋效果", self.playerId, count))
+    gg.log("玩家[%s]应用了%d个天赋效果", self.playerId, count)
 end
 
 --- 应用效果到天赋变量系统
@@ -374,7 +372,7 @@ end
 ---@param effectValue number 效果值
 ---@param player MPlayer 玩家实例
 ---@private
-function PlayerAchievement:_ApplyToTalentVariableSystem(talentId, effectConfig, effectValue, player)
+function Achievement:_ApplyToTalentVariableSystem(talentId, effectConfig, effectValue, player)
     if not self.talentVariableSystem then
         gg.log("天赋变量系统不存在:", self.playerId)
         return
@@ -408,7 +406,7 @@ end
 ---@param level number 要移除的等级
 ---@param player MPlayer 玩家实例
 ---@private
-function PlayerAchievement:_RemoveTalentEffect(talentId, level, player)
+function Achievement:_RemoveTalentEffect(talentId, level, player)
     if not self.talentVariableSystem or level <= 0 then
         return
     end
@@ -425,7 +423,7 @@ end
 --- 解锁普通成就
 ---@param achievementId string 成就ID
 ---@param unlockTime number|nil 解锁时间戳
-function PlayerAchievement:UnlockNormalAchievement(achievementId, unlockTime)
+function Achievement:UnlockNormalAchievement(achievementId, unlockTime)
     if self.normalAchievements[achievementId] then
         gg.log("成就已解锁:", achievementId)
         return false
@@ -443,7 +441,7 @@ end
 --- 检查普通成就是否已解锁
 ---@param achievementId string 成就ID
 ---@return boolean 是否已解锁
-function PlayerAchievement:IsNormalAchievementUnlocked(achievementId)
+function Achievement:IsNormalAchievementUnlocked(achievementId)
     local achievementInfo = self.normalAchievements[achievementId]
     return achievementInfo and achievementInfo.unlocked or false
 end
@@ -452,19 +450,19 @@ end
 
 --- 获取所有天赋数据
 ---@return table<string, TalentInfo>
-function PlayerAchievement:GetAllTalentData()
+function Achievement:GetAllTalentData()
     return self.talentData
 end
 
 --- 获取所有普通成就数据
 ---@return table<string, AchievementInfo>
-function PlayerAchievement:GetAllNormalAchievements()
+function Achievement:GetAllNormalAchievements()
     return self.normalAchievements
 end
 
 --- 获取天赋总数
 ---@return number
-function PlayerAchievement:GetTalentCount()
+function Achievement:GetTalentCount()
     local count = 0
     for _ in pairs(self.talentData) do
         count = count + 1
@@ -474,7 +472,7 @@ end
 
 --- 获取已解锁的普通成就总数
 ---@return number
-function PlayerAchievement:GetUnlockedNormalAchievementCount()
+function Achievement:GetUnlockedNormalAchievementCount()
     local count = 0
     for _, achievementInfo in pairs(self.normalAchievements) do
         if achievementInfo.unlocked then
@@ -488,7 +486,7 @@ end
 
 --- 获取保存数据格式
 ---@return table 保存数据
-function PlayerAchievement:GetSaveData()
+function Achievement:GetSaveData()
     local saveData = {}
     
     -- 保存天赋数据
@@ -516,7 +514,7 @@ end
 
 --- 从保存数据恢复（保持兼容性，但主要逻辑已移到OnInit）
 ---@param saveData AchievementDataTable 保存的数据
-function PlayerAchievement:RestoreFromSaveData(saveData)
+function Achievement:RestoreFromSaveData(saveData)
     self:_RestoreFromAchievementData(saveData)
     gg.log(string.format("玩家[%s]成就数据补充恢复完成", self.playerId))
 end
@@ -525,7 +523,7 @@ end
 
 --- 获取调试信息
 ---@return string 调试信息字符串
-function PlayerAchievement:GetDebugInfo()
+function Achievement:GetDebugInfo()
     local info = string.format("玩家[%s]成就数据:\n", self.playerId)
     info = info .. string.format("  天赋数量: %d\n", self:GetTalentCount())
     info = info .. string.format("  普通成就数量: %d\n", self:GetUnlockedNormalAchievementCount())
@@ -539,4 +537,4 @@ function PlayerAchievement:GetDebugInfo()
     return info
 end
 
-return PlayerAchievement
+return Achievement
