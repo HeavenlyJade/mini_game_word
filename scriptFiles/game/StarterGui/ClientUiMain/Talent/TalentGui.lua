@@ -110,7 +110,6 @@ function TalentGui:InitTalentList()
         return (a.sort or 0) < (b.sort or 0)
     end)
     for i, talent in ipairs(talentList) do
-        gg.log("天赋", i, talent)
         local cloneNode = self.talentDemoFrame.node:Clone()
         self:SetupTalentSlot(cloneNode, talent, 0)
         self.talentSlotList:AppendChild(cloneNode)
@@ -186,12 +185,14 @@ function TalentGui:RefreshTalentDisplay(talentId, newLevel)
     gg.log("刷新天赋显示:", talentId, "新等级:", newLevel)
     self.serverTalentData[talentId] = newLevel
     local talentNode = self.talentNodeMap[talentId]
+    gg.log("talentNode",talentNode)
     if not talentNode then
         gg.log("警告：找不到天赋UI节点:", talentId)
         return
     end
-    if talentNode["等级"] then
-        talentNode["等级"].Title = "Lv." .. newLevel
+    if talentNode["升级对比"] then
+        talentNode["升级对比"]["前"].Title = "Lv." .. newLevel
+        talentNode["升级对比"]["后"].Title = "Lv." .. newLevel+1
     elseif talentNode["等级文本"] then
         talentNode["等级文本"].Title = "Lv." .. newLevel
     end
@@ -316,10 +317,12 @@ end
 
 function TalentGui:OnTalentDataResponse(data)
     gg.log("收到天赋数据响应:", data)
-    if data.success and data.data and data.data.talents then
+    if data.data and data.data.talents then
+        gg.log("data.data.talents",data.data.talents)
         for talentId, talentInfo in pairs(data.data.talents) do
             self.serverTalentData[talentId] = talentInfo.currentLevel or 0
         end
+        gg.log("self.serverTalentData",self.serverTalentData)
         self:RefreshAllTalentDisplay()
     end
 end
