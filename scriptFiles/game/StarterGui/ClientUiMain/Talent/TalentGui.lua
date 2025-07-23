@@ -39,6 +39,7 @@ function TalentGui:OnInit(node, config)
     self.currencyMap = {} -- 新增：货币数据缓存
     self.talentNodeMap = {}     -- 天赋名称 -> UI节点映射
     self.serverTalentData = {}  -- 服务端同步的天赋等级数据
+    self.TalentCostsList = {}             -- 天赋名称 -> costList 映射
 
     -- 2. 事件注册
     self:RegisterEvents()
@@ -198,6 +199,15 @@ function TalentGui:RefreshTalentDisplay(talentId, newLevel)
     end
     local allAchievements = ConfigLoader.GetAllAchievements()
     local talentType = allAchievements[talentId]
+    local costs = talentType:GetUpgradeCosts(newLevel)
+    for i in ipairs(costs) do
+        local cost = costs[i]
+        local costname = cost.item
+        local costNode = self.TalentCostsList[talentId].childrens[costname]
+        if costNode and costNode.node then
+            costNode.node["消耗数量"].Title = tostring(cost.amount or 0)
+        end
+    end
     if talentType then
         self:UpdateUpgradeButtonState(talentType, newLevel)
     end
@@ -230,6 +240,10 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
                 costNode.node["消耗数量"].Title = tostring(cost.amount or 0)
             end
         end
+        local oldName = costNode.node.Name
+        costNode.node.Name = cost.item
+        costList.childrens[cost.item ] = costNode
+        costList.childrens[oldName] = nil
     end
     -- 升级按钮绑定
     local upgradeBtn = ViewButton.New(slotNode["升级"], self, "升级")
@@ -239,14 +253,19 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     if slotNode["等级"] then
         slotNode["等级"].Title = "Lv." .. currentLevel
     end
+
+    self.TalentCostsList[talentType.name] = costList  -- 存储costList到self.costs
+
     self:UpdateUpgradeButtonState(talentType, currentLevel)
 end
 
 -- 新增：检测消耗并刷新升级按钮状态
 function TalentGui:UpdateUpgradeButtonState(talentType, currentLevel)
     local upgradeBtn = self.upgradeBtnMap[talentType.name] ---@type ViewButton
+    gg.log("upgradeBtn",upgradeBtn)
     if not upgradeBtn then return end
     local costs = talentType:GetUpgradeCosts(currentLevel)
+    gg.log("costs",costs)
     local enough = true
     for _, cost in ipairs(costs) do
         local have = self.currencyMap and self.currencyMap[cost.item] or 0
