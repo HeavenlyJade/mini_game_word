@@ -98,8 +98,6 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     gg.log("处理升级天赋成就请求:", playerId, talentId)
     
     if not talentId or talentId == "" then
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
-            AchievementEventConfig.ERROR_CODES.INVALID_PARAMETERS)
         return
     end
     
@@ -107,8 +105,6 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     local player = MServerDataManager.getPlayerByUin(playerId)
     if not player then
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
-            AchievementEventConfig.ERROR_CODES.PLAYER_NOT_FOUND)
         return
     end
     
@@ -116,8 +112,6 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
     local talentConfig = ConfigLoader.GetAchievement(talentId)
     if not talentConfig or not talentConfig:IsTalentAchievement() then
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
-            AchievementEventConfig.ERROR_CODES.ACHIEVEMENT_NOT_FOUND)
         return
     end
     
@@ -126,8 +120,6 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     
     -- 检查是否已达最大等级
     if oldLevel >= talentConfig:GetMaxLevel() then
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
-            AchievementEventConfig.ERROR_CODES.TALENT_ALREADY_MAX_LEVEL)
         return
     end
     
@@ -136,12 +128,10 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
     if not BagMgr.HasItemsByCosts(player, costs) then
         gg.log("升级材料不足:", costs,oldLevel)
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
         return
     end
     if not BagMgr.RemoveItemsByCosts(player, costs) then
         gg.log("扣除材料失败:", costs)
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
         return
     end
     -- 同步背包变化到客户端
@@ -168,7 +158,6 @@ function AchievementEventManager.HandleUpgradeTalent(event)
         AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.UPGRADE_RESPONSE, responseData)
         
         -- 发送升级通知
-        AchievementEventManager.SendUpgradeNotification(uin, talentId, oldLevel, newLevel)
         
         gg.log("天赋升级成功:", playerId, talentId, oldLevel, "->", newLevel)
         
@@ -189,8 +178,8 @@ function AchievementEventManager.HandleGetTalentLevel(event)
     local playerId = uin
     
     if not talentId or talentId == "" then
-        AchievementEventManager.SendErrorResponse(uin, "AchievementResponse_GetTalentLevel",
-            AchievementEventConfig.ERROR_CODES.INVALID_PARAMETERS)
+        -- AchievementEventManager.SendErrorResponse(uin, "AchievementResponse_GetTalentLevel",
+        --     AchievementEventConfig.ERROR_CODES.INVALID_PARAMETERS)
         return
     end
     
@@ -204,27 +193,6 @@ function AchievementEventManager.HandleGetTalentLevel(event)
     AchievementEventManager.SendSuccessResponse(uin, "AchievementResponse_GetTalentLevel", responseData)
 end
 
--- 业务通知方法 --------------------------------------------------------
-
---- 发送天赋升级通知
----@param uin number 玩家UIN
----@param talentId string 天赋ID
----@param oldLevel number 旧等级
----@param newLevel number 新等级
-function AchievementEventManager.SendUpgradeNotification(uin, talentId, oldLevel, newLevel)
-    local notificationData = {
-        talentId = talentId,
-        oldLevel = oldLevel,
-        newLevel = newLevel,
-        upgradeTime = os.time()
-    }
-    
-    gg.network_channel:fireClient(uin, {
-        cmd = AchievementEventConfig.NOTIFY.TALENT_UPGRADED,
-        data = notificationData
-    })
-    gg.log("发送天赋升级通知:", uin, talentId, oldLevel, "->", newLevel)
-end
 
 --- 发送成就解锁通知
 ---@param uin number 玩家UIN
@@ -249,14 +217,9 @@ end
 ---@param eventName string 响应事件名
 ---@param data table 响应数据
 function AchievementEventManager.SendSuccessResponse(uin, eventName, data)
-    local response = {
-        success = true,
-        data = data,
-        errorCode = AchievementEventConfig.ERROR_CODES.SUCCESS
-    }
     gg.network_channel:fireClient(uin, {
         cmd = eventName,
-        data = response
+        data = data
     })
 end
 

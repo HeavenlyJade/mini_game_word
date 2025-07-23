@@ -37,16 +37,28 @@ function TalentGui:OnInit(node, config)
     self.selectedTalent = nil ---@type table
     self.upgradeBtnMap = {}  -- 新增：存放天赋名->升级按钮映射
     self.currencyMap = {} -- 新增：货币数据缓存
+    self.talentNodeMap = {}     -- 天赋名称 -> UI节点映射
+    self.serverTalentData = {}  -- 服务端同步的天赋等级数据
 
     -- 2. 事件注册
     self:RegisterEvents()
 
+    -- 3. 按钮点击事件注册
+    self:RegisterButtonEvents()
+
+    gg.log("TalentGui 天赋界面初始化完成")
+
+    -- 初始化天赋栏位
+    self:InitTalentList()
+end
+
+function TalentGui:RegisterEvents()
+    gg.log("注册天赋系统事件监听")
     -- 监听背包同步事件（货币变化）
     local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
         self:OnSyncInventoryItems(data)
     end)
-
     -- 引入成就事件配置
     local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent) ---@type AchievementEventConfig
     -- 监听天赋升级响应事件
@@ -61,18 +73,10 @@ function TalentGui:OnInit(node, config)
     ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.ERROR, function(data)
         self:OnTalentErrorResponse(data)
     end)
-
-    -- 3. 按钮点击事件注册
-    self:RegisterButtonEvents()
-
-    gg.log("TalentGui 天赋界面初始化完成")
-
-    -- 初始化天赋栏位
-    self:InitTalentList()
-end
-
-function TalentGui:RegisterEvents()
-    gg.log("注册天赋系统事件监听")
+    -- 监听天赋数据同步响应
+    ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.LIST_RESPONSE, function(data)
+        self:OnTalentDataResponse(data)
+    end)
 end
 
 function TalentGui:RegisterButtonEvents()
@@ -86,6 +90,7 @@ end
 
 function TalentGui:OnOpen()
     gg.log("TalentGui天赋界面打开")
+    self:RequestTalentData()
 end
 
 function TalentGui:OnClose()
@@ -116,26 +121,24 @@ end
 ---@param talentType AchievementType
 ---@param currentLevel number
 function TalentGui:OnClickUpgradeTalent(talentType, currentLevel)
-    gg.log("点击升级天赋：", talentType, "当前等级：", currentLevel,talentType.name)
-    if currentLevel >= talentType:GetMaxLevel() then
+    -- 获取服务端同步的真实等级
+    local realCurrentLevel = self.serverTalentData[talentType.name] or 0
+    gg.log("点击升级天赋：", talentType.name, "真实等级：", realCurrentLevel)
+    if realCurrentLevel >= talentType:GetMaxLevel() then
         gg.log("天赋已达最大等级")
         return
     end
-    local costs = talentType:GetUpgradeCosts(currentLevel)
+    local costs = talentType:GetUpgradeCosts(realCurrentLevel)
     gg.log("升级消耗", costs)
-
-    -- 检查本地货币缓存是否足够
     for _, cost in ipairs(costs) do
         local item = cost.item
         local amount = cost.amount or 0
         local have = self.currencyMap[item] or 0
         if have < amount then
             gg.log("材料不足：", item, "需要：", amount, "拥有：", have)
-            -- 可在此处弹窗提示
             return
         end
     end
-
     self:SendUpgradeTalentRequest(talentType.name)
 end
 
@@ -153,7 +156,7 @@ end
 
 function TalentGui:OnTalentUpgradeResponse(data)
     gg.log("收到天赋升级响应:", data)
-    if data.success then
+    if data and data.data then
         local responseData = data.data
         gg.log("天赋升级成功:", responseData.talentId, responseData.oldLevel, "->", responseData.newLevel)
         self:RefreshTalentDisplay(responseData.talentId, responseData.newLevel)
@@ -181,15 +184,23 @@ end
 
 function TalentGui:RefreshTalentDisplay(talentId, newLevel)
     gg.log("刷新天赋显示:", talentId, "新等级:", newLevel)
-    -- 这里需要根据你的UI结构来实现
-    -- 示例：
-    -- local talentNode = self:FindTalentNode(talentId)
-    -- if talentNode then
-    --     local levelText = talentNode:FindChild("等级文本")
-    --     if levelText then
-    --         levelText.Title = "Lv." .. newLevel
-    --     end
-    -- end
+    self.serverTalentData[talentId] = newLevel
+    local talentNode = self.talentNodeMap[talentId]
+    if not talentNode then
+        gg.log("警告：找不到天赋UI节点:", talentId)
+        return
+    end
+    if talentNode["等级"] then
+        talentNode["等级"].Title = "Lv." .. newLevel
+    elseif talentNode["等级文本"] then
+        talentNode["等级文本"].Title = "Lv." .. newLevel
+    end
+    local allAchievements = ConfigLoader.GetAllAchievements()
+    local talentType = allAchievements[talentId]
+    if talentType then
+        self:UpdateUpgradeButtonState(talentType, newLevel)
+    end
+    gg.log("天赋显示刷新完成:", talentId, "等级:", newLevel)
 end
 
 function TalentGui:RefreshAllUpgradeButtons()
@@ -197,7 +208,8 @@ function TalentGui:RefreshAllUpgradeButtons()
         local allAchievements = ConfigLoader.GetAllAchievements()
         local talentType = allAchievements[talentName]
         if talentType then
-            self:UpdateUpgradeButtonState(talentType, 0) -- 真实等级需从服务端同步
+            local currentLevel = self.serverTalentData[talentName] or 0
+            self:UpdateUpgradeButtonState(talentType, currentLevel)
         end
     end
 end
@@ -205,6 +217,8 @@ end
 function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     slotNode["说明"].Title = talentType.name or ""
     slotNode.Name = talentType.name
+    -- 建立天赋节点映射
+    self.talentNodeMap[talentType.name] = slotNode
     local costList = ViewList.New(slotNode["消耗栏位"], self,"消耗栏位")
     local costs = talentType:GetUpgradeCosts(currentLevel)
     costList:SetElementSize(#costs)
@@ -219,8 +233,11 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     -- 升级按钮绑定
     local upgradeBtn = ViewButton.New(slotNode["升级"], self, "升级")
     self.upgradeBtnMap[talentType.name] = upgradeBtn
-    gg.log("升级按钮绑定????",talentType.name)
     upgradeBtn.clickCb = function() self:OnClickUpgradeTalent(talentType, currentLevel) end
+    -- 等级显示
+    if slotNode["等级"] then
+        slotNode["等级"].Title = "Lv." .. currentLevel
+    end
     self:UpdateUpgradeButtonState(talentType, currentLevel)
 end
 
@@ -284,6 +301,32 @@ function TalentGui:OnSyncInventoryItems(data)
         if talentType then
             self:UpdateUpgradeButtonState(talentType, 0)
         end
+    end
+end
+
+function TalentGui:RequestTalentData()
+    local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent)
+    local requestData = {
+        cmd = AchievementEventConfig.REQUEST.GET_LIST,
+        args = {}
+    }
+    gg.log("请求天赋数据同步")
+    gg.network_channel:fireServer(requestData)
+end
+
+function TalentGui:OnTalentDataResponse(data)
+    gg.log("收到天赋数据响应:", data)
+    if data.success and data.data and data.data.talents then
+        for talentId, talentInfo in pairs(data.data.talents) do
+            self.serverTalentData[talentId] = talentInfo.currentLevel or 0
+        end
+        self:RefreshAllTalentDisplay()
+    end
+end
+
+function TalentGui:RefreshAllTalentDisplay()
+    for talentName, level in pairs(self.serverTalentData) do
+        self:RefreshTalentDisplay(talentName, level)
     end
 end
 
