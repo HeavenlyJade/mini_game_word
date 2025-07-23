@@ -145,8 +145,7 @@ function ViewButton:OnTouchOut(vector2)
     -- 判断抬起时是否还在按钮上（使用内置的悬浮状态）
     local isHover = self.isHover
     if isHover then
-        -- 触发点击事件
-        self:OnClick()
+ 
         -- 状态转换到悬浮
         self:_changeState(ButtonState.HOVER)
     else
@@ -259,18 +258,18 @@ function ViewButton:_BindNodeAndChild(child, isDeep, bindEvents)
         end
         if bindEvents then
             child.TouchBegin:Connect(function(node, isTouchBegin, vector2, number)
-                print("TouchBegin", self.path)
+                print("触屏开始", self.path)
                 self:OnTouchIn(vector2)
             end)
             child.TouchEnd:Connect(function(node, isTouchEnd, vector2, number)
-                print("TouchEnd", self.path)
+                print("触屏结束", self.path)
                 self:OnTouchOut(vector2)
             end)
             child.TouchMove:Connect(function(node, isTouchMove, vector2, number)
                 self:OnTouchMove(node, isTouchMove, vector2, number)
             end)
             child.Click:Connect(function(node, isClick, vector2, number)
-                print("click", self.path)
+                print("点击按钮", self.path)
                 self:OnClick(vector2)
             end)
         end
