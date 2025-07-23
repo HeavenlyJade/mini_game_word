@@ -18,6 +18,7 @@ local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@
 local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
+local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 
@@ -150,6 +151,7 @@ function MServerInitPlayer.player_enter_game(player)
     -- player_.inited = true
     ServerEventManager.Publish("PlayerInited", {player = player_})
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
+    AchievementMgr.OnPlayerJoin(uin_)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
     PetMgr.OnPlayerJoin(player_)

@@ -14,6 +14,7 @@ local MServerDataManager = {
     server_players_name_list = {},
     scene_node_handlers = {}, ---@type table<string, SceneNodeHandlerBase>
 
+    PetMgr = nil, ---@type PetMgr | nil
     MailMgr = nil, ---@type MailMgr | nil
     BagMgr = nil, ---@type BagMgr | nil
     GameModeManager = nil, ---@type GameModeManager | nil

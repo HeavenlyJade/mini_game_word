@@ -8,6 +8,14 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class AchievementCloudDataMgr
 local AchievementCloudDataMgr = {}
 
+---@class AchievementData 单个成就/天赋数据
+---@field achievementId string 成就/天赋ID标识符
+---@field unlockTime number 解锁时间戳
+---@field currentLevel number 当前等级（天赋为实际等级，普通成就固定为1）
+
+---@alias AchievementDataTable table<string, AchievementData> 玩家成就数据表，键为成就ID，值为成就详情
+---@
+---@
 --- 从云端加载玩家成就数据
 ---@param playerId number 玩家ID
 ---@return boolean, table|nil 是否成功，成就数据
@@ -31,7 +39,7 @@ end
 
 --- 保存玩家成就数据到云端
 ---@param playerId number 玩家ID
----@param saveData table 成就数据
+---@param saveData AchievementDataTable 成就数据
 ---@param force boolean|nil 是否强制保存
 ---@return boolean 是否成功
 function AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData, force)

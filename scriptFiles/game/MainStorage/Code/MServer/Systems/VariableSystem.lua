@@ -3,7 +3,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 
----@class VariableSystem:Class
+---@class VariableSystem
 ---@field dataCategory string 数据分类标识
 ---@field variables table<string, VariableData> 变量存储
 local VariableSystem = ClassMgr.Class("VariableSystem")

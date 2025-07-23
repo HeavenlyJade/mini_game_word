@@ -30,7 +30,8 @@ function _MPlayer:OnInit(info_)
     self.name = info_.nickname or info_.name or ""
     self.isPlayer = true
     ---@type VariableSystem
-    self.variableSystem = VariableSystem.New(self) -- 创建VariableSystem并自动加载variables
+    self.variableSystem = VariableSystem.New("玩家", info_.variables or {})
+
 
     -- 技能相关
     self.dict_btn_skill = nil -- 技能按钮映射

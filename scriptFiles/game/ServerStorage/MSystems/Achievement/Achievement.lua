@@ -6,9 +6,11 @@ local ServerStorage = game:GetService("ServerStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
+local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem) ---@type VariableSystem
+local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader) ---@type ConfigLoader
 
 ---@class PlayerAchievement 
----@field playerId string 玩家ID
+---@field playerId number 玩家ID
 ---@field talentData table<string, TalentInfo> 天赋数据映射
 ---@field normalAchievements table<string, AchievementInfo> 普通成就数据
 ---@field talentVariableSystem VariableSystem 天赋变量系统
@@ -24,21 +26,52 @@ local PlayerAchievement = ClassMgr.Class("PlayerAchievement")
 ---@field unlockTime number 解锁时间戳
 
 --- 初始化玩家成就聚合实例
----@param playerId string 玩家ID
-function PlayerAchievement:OnInit(playerId)
+---@param playerId number 玩家ID
+---@param achievementData AchievementDataTable|nil 玩家成就数据
+function PlayerAchievement:OnInit(playerId, achievementData)
     self.playerId = playerId
     self.talentData = {} -- 天赋数据映射
     self.normalAchievements = {} -- 普通成就数据
     self.lastUpdateTime = os.time()
     
-    -- 创建天赋变量系统
+    -- 如果有成就数据，先恢复到内部数据结构
+    if achievementData then
+        self:_RestoreFromAchievementData(achievementData)
+    end
+    
+    -- 创建天赋变量系统，传入成就数据用于构建变量
     local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem)
-    self.talentVariableSystem = VariableSystem.CreateForCategory("天赋", {})
+    self.talentVariableSystem = VariableSystem.New("天赋", achievementData or {})
     
     -- 初始化奖励计算器
     self._rewardCalculator = AchievementRewardCal.New()
     
     gg.log(string.format("初始化玩家[%s]成就聚合实例", playerId))
+end
+
+--- 从成就数据恢复到内部数据结构
+---@param achievementData AchievementDataTable 成就数据
+---@private
+function PlayerAchievement:_RestoreFromAchievementData(achievementData)
+    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
+    for achievementId, data in pairs(achievementData) do
+        local achievementType = ConfigLoader.GetAchievement(achievementId)
+        if achievementType then
+            if achievementType:IsTalentAchievement() then
+                -- 恢复天赋数据
+                self.talentData[achievementId] = {
+                    currentLevel = data.currentLevel or 1,
+                    unlockTime = data.unlockTime or os.time()
+                }
+            else
+                -- 恢复普通成就数据
+                self.normalAchievements[achievementId] = {
+                    unlocked = true,
+                    unlockTime = data.unlockTime or os.time()
+                }
+            end
+        end
+    end
 end
 
 -- 天赋管理方法 --------------------------------------------------------
@@ -71,8 +104,7 @@ end
 ---@param player MPlayer 玩家实例
 ---@return boolean 是否可以升级
 function PlayerAchievement:CanUpgradeTalent(talentId, player)
-    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
-    local talentConfig = ConfigLoader.GetAchievement(talentId)
+    local talentConfig = ConfigLoader.GetAchievement(talentId) ---@type AchievementType
     
     if not talentConfig or not talentConfig:IsTalentAchievement() then
         return false
@@ -182,7 +214,6 @@ function PlayerAchievement:ApplyTalentEffect(talentId, player)
         return
     end
     
-    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
     local talentConfig = ConfigLoader.GetAchievement(talentId)
     
     if not talentConfig or not talentConfig:IsTalentAchievement() then
@@ -371,28 +402,11 @@ function PlayerAchievement:GetSaveData()
     return saveData
 end
 
---- 从保存数据恢复（用于数据加载）
----@param saveData table 保存的数据
+--- 从保存数据恢复（保持兼容性，但主要逻辑已移到OnInit）
+---@param saveData AchievementDataTable 保存的数据
 function PlayerAchievement:RestoreFromSaveData(saveData)
-    local ConfigLoader = require(MainStorage.Code.Common.Config.ConfigLoader)
-    
-    for achievementId, data in pairs(saveData) do
-        local achievementType = ConfigLoader.GetAchievement(achievementId)
-        if achievementType then
-            if achievementType:IsTalentAchievement() then
-                -- 恢复天赋数据
-                self:SetTalentLevel(achievementId, data.currentLevel, data.unlockTime)
-            else
-                -- 恢复普通成就数据
-                self:UnlockNormalAchievement(achievementId, data.unlockTime)
-            end
-        else
-            gg.log("警告：成就配置不存在，跳过恢复:", achievementId)
-        end
-    end
-    
-    gg.log(string.format("玩家[%s]成就数据恢复完成，天赋:%d个，成就:%d个", 
-        self.playerId, self:GetTalentCount(), self:GetUnlockedNormalAchievementCount()))
+    self:_RestoreFromAchievementData(saveData)
+    gg.log(string.format("玩家[%s]成就数据补充恢复完成", self.playerId))
 end
 
 -- 调试和工具方法 --------------------------------------------------------

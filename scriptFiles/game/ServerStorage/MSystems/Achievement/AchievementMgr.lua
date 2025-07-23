@@ -22,14 +22,12 @@ function AchievementMgr.OnPlayerJoin(playerId)
     -- 从云端加载数据
     local success, achievementData = AchievementCloudDataMgr.LoadPlayerAchievements(playerId)
     
-    -- 创建玩家成就实例
+    -- 创建玩家成就实例，直接传入成就数据
     local playerAchievement = PlayerAchievement.New() ---@type PlayerAchievement
-    playerAchievement:OnInit(playerId)
     
-    -- 恢复数据
+    -- 输出加载结果
     if success and achievementData then
-        playerAchievement:RestoreFromSaveData(achievementData)
-        gg.log("加载玩家成就数据:", playerId)
+        playerAchievement:OnInit(playerId, achievementData)
     else
         gg.log("初始化新玩家成就数据:", playerId)
     end
@@ -37,7 +35,7 @@ function AchievementMgr.OnPlayerJoin(playerId)
     -- 存储到管理器
     AchievementMgr.server_player_achievement_data[playerId] = playerAchievement
     
-    -- 应用天赋效果（变量系统在PlayerAchievement内部管理）
+    -- 应用天赋效果（变量系统已在初始化时构建好）
     local player = MServerDataManager.getPlayerInfoByUin(playerId)
     playerAchievement:ApplyAllTalentEffects(player)
 end
