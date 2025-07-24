@@ -167,7 +167,7 @@ function Bag:Save()
         items = cleanItems
     }
 
-    gg.log("准备背包数据用于保存:", data)
+    -- gg.log("准备背包数据用于保存:", data)
     return data
 end
 

@@ -35,11 +35,11 @@ function PlayerActionHandler:ListenToPlayerEvents()
     gg.log("PlayerActionHandler: 成功获取本地玩家 Actor，开始监听事件...")
 
     -- 监听移动状态变化，并转发给当前模块
-    actor.MoveStateChange:Connect(function(before, after)
-        if self.activeModule and self.activeModule.OnMoveStateChange then
-            self.activeModule:OnMoveStateChange(before, after)
-        end
-    end)
+    -- actor.MoveStateChange:Connect(function(before, after)
+    --     if self.activeModule and self.activeModule.OnMoveStateChange then
+    --         self.activeModule:OnMoveStateChange(before, after)
+    --     end
+    -- end)
 
     -- 新增：监听飞行状态变化，并转发给当前模块
     -- actor.Flying:Connect(function(isFlying)

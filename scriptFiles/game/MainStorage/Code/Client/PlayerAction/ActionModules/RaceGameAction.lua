@@ -32,7 +32,7 @@ function RaceGameAction:OnStart(data)
         self:OnEnd() -- 启动失败也应通知管理器结束
         return
     end
-    gg.log("游戏启动",actor)
+    gg.log("游戏启动",actor,data)
     -- 1. 解析参数
     local jumpSpeed = data.jumpSpeed
     local moveSpeed = data.moveSpeed
@@ -43,30 +43,29 @@ function RaceGameAction:OnStart(data)
     self.originalJumpSpeed = actor.JumpBaseSpeed
     self.originalMoveSpeed = actor.Movespeed
     self.originalGravity = actor.Gravity -- 新增：保存原始重力
-
-    -- -- 3. 设置临时属性并执行动作
-    -- actor:Jump(true)  -- 先进入飞行状态
-
-    if gravity ~= nil then
-        actor.Gravity = gravity -- 应用新的重力值
-    end
-    
-    actor.JumpBaseSpeed = jumpSpeed
+    actor.Gravity =0  -- 应用新的重力值
+    gg.log("启动了客户的动画222",actor:GetCurMoveState() )
+    gg.log("启动了客户的动画222")
     actor.Movespeed = moveSpeed
+    actor.Animator:Play("Base Layer.fei", 0, 0)
 
     -- 4. 启动"持续前推"定时器，实现向前滑行效果
     self.pushTimer = ScheduledTask.AddInterval(1, "RaceGameAction_PushForward", function()
-        if actor and actor:GetCurMoveState() == Enum.BehaviorState.Fly then
+        -- if actor:GetCurMoveState() == Enum.BehaviorState.Fly then
             -- 使用 Move 指令让角色相对于相机稳定前移
-            actor:Move(Vector3.new(0, 0, 1), true)
-            actor.Animator:Play("Base Layer.fei", 0, 0)
-        end
+        gg.log("启动了客户的动画333",actor:GetCurMoveState() )
+        actor.Animator:Play("Base Layer.fei", 0, 0)
+        actor:Move(Vector3.new(0, 0, 1), true)
+        -- actor.Animator:Play("Base Layer.fei", 0, 0)
+
+        -- actor.Animator:Play("Base Layer.fei", 0, 0)w
+    
     end)
     
     -- -- 5. 1秒后停止跳跃并设置JumpBaseSpeed为0，进入滑翔状态
     -- self.stopJumpTimer = ScheduledTask.AddDelay(0.2, "RaceGameAction_StopJump", function()
     --     if actor then
-    --         actor:Jump(false)  -- 停止跳跃
+    --         -- actor:Jump(false)  -- 停止跳跃
     --         actor.JumpBaseSpeed = 10 -- 设置跳跃力为0，防止后续跳跃
     --     end
     -- end)
@@ -86,22 +85,12 @@ function RaceGameAction:OnStart(data)
 
 end
 
---- 当玩家移动状态改变时，由 PlayerActionHandler 调用
----@param before BehaviorState
----@param after BehaviorState
-function RaceGameAction:OnMoveStateChange(before, after)
-    -- 检测落地
-    if before == Enum.BehaviorState.Fly and (after == Enum.BehaviorState.Walk or after == Enum.BehaviorState.Stand) then
-        -- 立即结束模块，由 OnEnd() 统一处理所有清理和恢复逻辑
-        self:OnEnd()
-    end
-end
 
 --- 当模块结束时调用，负责所有清理和状态恢复工作
 function RaceGameAction:OnEnd()
     ---@type Actor
     local actor = gg.getClientLocalPlayer()
-    gg.log("游戏结束")
+    gg.log("客户的游戏结束")
     if self.isEnding then
         actor.Animator:Play("Base Layer.Idle", 0, 0)
 

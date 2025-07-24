@@ -164,8 +164,6 @@ function RaceGameMode:OnPlayerLanded(player)
     end
 end
 
---- 【移除】旧的比赛结束检测函数，该功能已被事件驱动的 OnPlayerLanded 取代
--- function RaceGameMode:CheckRaceEndCondition() ... end
 
 
 --- 开始比赛
@@ -183,7 +181,7 @@ function RaceGameMode:Start()
 
             -- 1. 先传送所有玩家到传送节点
             local teleportSuccess = self:TeleportAllPlayersToStartPosition()
-            
+            gg.log("玩家传送结束",teleportSuccess)
             if teleportSuccess then
                 -- 2. 给传送一点时间完成，然后发射玩家
                 self:AddDelay(0.5, function()

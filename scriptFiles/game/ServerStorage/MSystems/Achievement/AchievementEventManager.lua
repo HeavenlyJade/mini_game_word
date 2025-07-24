@@ -145,8 +145,7 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     
     if upgradeSuccess then
         local newLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
-        -- 升级后立即保存玩家成就数据
-        AchievementMgr.SavePlayerAchievements(playerId)
+        
         -- 构建响应数据
         local responseData = {
             talentId = talentId,
