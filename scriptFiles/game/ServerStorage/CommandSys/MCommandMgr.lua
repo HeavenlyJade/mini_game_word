@@ -6,6 +6,7 @@ local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@
 
 local MailCommand = require(ServerStorage.CommandSys.Commands.MmailCom) ---@type MailCommand
 local BagCommand = require(ServerStorage.CommandSys.Commands.MbagCom) ---@type BagCommand
+local PetCommand = require(ServerStorage.CommandSys.Commands.MPetCom) ---@type PetCommand
 -- local SkillCommands = require(ServerStorage.CommandSys.Commands.MskillCom)     ---@type SkillCommands
 local json = require(MainStorage.Code.Untils.json) ---@type json
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
@@ -20,6 +21,8 @@ CommandManager.handlers = {
     ["PlayerItem"] = BagCommand.main,
        -- 邮件相关命令
     ["mail"] = MailCommand.main,
+    -- 宠物相关命令
+    ["pet"] = PetCommand.main,
     -- 装载默认的配置技能
     -- ["skillConf"] = SkillCommands.main,
 
