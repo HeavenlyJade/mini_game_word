@@ -1,6 +1,7 @@
-
---- 宠物事件管理器
---- 负责处理所有宠物相关的客户端请求和服务器响应
+-- PetEventManager.lua
+-- 宠物事件管理器 - 重构版本
+-- 负责处理所有宠物相关的客户端请求和服务器响应
+-- 适配新的Pet管理器架构
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
@@ -48,7 +49,6 @@ function PetEventManager.RegisterEventHandlers()
     
     -- 重命名宠物
     ServerEventManager.Subscribe(PetEventManager.REQUEST.RENAME_PET, function(evt) PetEventManager.HandleRenamePet(evt) end)
-
 end
 
 --- 验证玩家
@@ -69,6 +69,18 @@ function PetEventManager.ValidatePlayer(evt)
     end
 
     return player
+end
+
+--- 验证宠物管理器
+---@param uin number 玩家UIN
+---@return Pet|nil 宠物管理器
+function PetEventManager.ValidatePetManager(uin)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        gg.log("宠物管理器不存在", uin)
+        return nil
+    end
+    return petManager
 end
 
 --- 处理获取宠物列表请求
@@ -170,8 +182,8 @@ function PetEventManager.HandleUpgradePetStar(evt)
     local success, errorMsg = PetMgr.UpgradePetStar(player.uin, slotIndex)
     
     if success then
-        -- 通知客户端更新
-        PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
+        -- 通知客户端更新（升星可能消耗了其他宠物，需要全量更新）
+        PetMgr.NotifyPetDataUpdate(player.uin)
         gg.log("宠物升星成功", player.uin, "槽位", slotIndex)
     else
         gg.log("宠物升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
@@ -217,7 +229,7 @@ function PetEventManager.HandleFeedPet(evt)
         return
     end
     
-    -- TODO: 实现喂养逻辑
+    -- 获取宠物实例
     local petInstance = PetMgr.GetPetInstance(player.uin, slotIndex)
     if petInstance then
         -- 这里可以添加喂养逻辑，比如增加心情值
@@ -259,6 +271,56 @@ function PetEventManager.HandleRenamePet(evt)
     end
 end
 
+--- 处理批量升级请求（新增功能）
+---@param evt table 事件数据
+function PetEventManager.HandleUpgradeAllPets(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+    
+    local upgradedCount = PetMgr.UpgradeAllPossiblePets(player.uin)
+    
+    if upgradedCount > 0 then
+        gg.log("批量升级宠物成功", player.uin, "升级次数", upgradedCount)
+        -- 发送响应事件到客户端
+        ServerEventManager.Notify(player.uin, "PetResponse_UpgradeAll", {
+            success = true,
+            upgradedCount = upgradedCount
+        })
+    else
+        gg.log("批量升级宠物：没有可升级的宠物", player.uin)
+        ServerEventManager.Notify(player.uin, "PetResponse_UpgradeAll", {
+            success = false,
+            errorMsg = "没有可升级的宠物"
+        })
+    end
+end
+
+--- 处理宠物统计查询请求（新增功能）
+---@param evt table 事件数据 {petName, minStar}
+function PetEventManager.HandleGetPetStats(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+    
+    local petName = evt.petName
+    local minStar = evt.minStar
+    
+    if not petName then
+        gg.log("宠物统计查询缺少参数", player.uin)
+        return
+    end
+    
+    local count = PetMgr.GetPetCountByType(player.uin, petName, minStar)
+    
+    -- 发送统计结果
+    ServerEventManager.Notify(player.uin, "PetResponse_Stats", {
+        petName = petName,
+        minStar = minStar,
+        count = count
+    })
+    
+    gg.log("宠物统计查询", player.uin, petName, "最小星级", minStar, "数量", count)
+end
+
 --- 通知客户端宠物列表更新
 ---@param uin number 玩家ID
 ---@param petList table 宠物列表
@@ -294,6 +356,30 @@ end
 function PetEventManager.NotifyPetRemoved(uin, slotIndex)
     ServerEventManager.Notify(uin, PetEventManager.NOTIFY.PET_REMOVED, {
         slotIndex = slotIndex
+    })
+end
+
+--- 通知客户端宠物升星成功（新增）
+---@param uin number 玩家ID
+---@param slotIndex number 槽位索引
+---@param newStarLevel number 新星级
+---@param consumedPets table 消耗的宠物信息
+function PetEventManager.NotifyPetStarUpgraded(uin, slotIndex, newStarLevel, consumedPets)
+    ServerEventManager.Notify(uin, "PetNotify_StarUpgraded", {
+        slotIndex = slotIndex,
+        newStarLevel = newStarLevel,
+        consumedPets = consumedPets or {}
+    })
+end
+
+--- 通知客户端错误信息
+---@param uin number 玩家ID
+---@param errorCode number 错误码
+---@param errorMsg string 错误信息
+function PetEventManager.NotifyError(uin, errorCode, errorMsg)
+    ServerEventManager.Notify(uin, PetEventManager.RESPONSE.ERROR, {
+        errorCode = errorCode,
+        errorMsg = errorMsg
     })
 end
 

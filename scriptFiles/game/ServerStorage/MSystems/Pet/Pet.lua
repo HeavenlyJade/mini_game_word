@@ -1,6 +1,6 @@
 -- Pet.lua
--- 宠物数据类
--- 负责整合宠物配置和玩家数据，提供宠物相关的所有计算和状态管理功能
+-- 玩家宠物管理器
+-- 负责管理单个玩家的所有宠物数据和业务逻辑
 
 local game = game
 local math = math
@@ -13,544 +13,527 @@ local ServerStorage = game:GetService('ServerStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+local PetInstance = require(ServerStorage.MSystems.Pet.PetInstance) ---@type PetInstance
 
----@class Pet:Class
----@field petData PetData 宠物数据引用（来自PetMgr）
----@field petType PetType 宠物配置数据
----@field slotIndex number 在背包中的槽位索引
----@field isDirty boolean 数据是否已修改
----@field attributeCache table<string, number> 属性计算缓存
----@field tempBuffs table<string, table> 临时效果列表
----@field onDirtyCallback function 脏数据回调函数
+---@class Pet:Class 玩家宠物管理器
+---@field uin number 玩家ID
+---@field petInstances table<number, PetInstance> 宠物实例列表 {slotIndex = PetInstance}
+---@field activePetSlot number 当前激活的宠物槽位 (0表示无激活)
+---@field maxSlots number 最大槽位数
 local Pet = ClassMgr.Class("Pet")
 
-function Pet:OnInit(petData, petType, slotIndex, onDirtyCallback)
-    self.petData = petData or {}
-    self.petType = petType
-    self.slotIndex = slotIndex or 0
-    self.isDirty = false
-    self.attributeCache = {}
-    self.tempBuffs = {}
-    self.onDirtyCallback = onDirtyCallback
+function Pet:OnInit(uin, playerPetData)
+    self.uin = uin or 0
+    self.petInstances = {}
+    self.activePetSlot = 0
+    self.maxSlots = 50
     
-    -- 初始化时刷新属性缓存
-    self:RefreshAttributeCache()
+    -- 从玩家宠物数据初始化
+    if playerPetData then
+        self:LoadFromData(playerPetData)
+    end
     
-    gg.log("Pet实例创建", self.petData.petName, "槽位", slotIndex)
+    gg.log("Pet管理器创建", uin, "宠物数量", self:GetPetCount())
 end
 
----标记数据已修改
-function Pet:MarkDirty()
-    if not self.isDirty then
-        self.isDirty = true
-        if self.onDirtyCallback then
-            self.onDirtyCallback(self.slotIndex)
+---从数据加载宠物实例
+---@param playerPetData PlayerPetData 玩家宠物数据
+function Pet:LoadFromData(playerPetData)
+    -- 设置激活槽位
+    self.activePetSlot = playerPetData.activePetSlot or 0
+    self.maxSlots = playerPetData.petSlots or 50
+    
+    -- 创建宠物实例
+    for slotIndex, petData in pairs(playerPetData.petList or {}) do
+        local petInstance = self:CreatePetInstance(petData, slotIndex)
+        if petInstance then
+            self.petInstances[slotIndex] = petInstance
         end
-        gg.log("宠物数据标记为脏", self.petData.petName, "槽位", self.slotIndex)
+    end
+    
+    gg.log("从数据加载宠物", self.uin, "槽位数", self.maxSlots, "宠物数", self:GetPetCount())
+end
+
+---创建宠物实例
+---@param petData PetData 宠物数据
+---@param slotIndex number 槽位索引
+---@return PetInstance|nil 宠物实例
+function Pet:CreatePetInstance(petData, slotIndex)
+    if not petData or not petData.petName then
+        gg.log("警告：宠物数据无效", slotIndex)
+        return nil
+    end
+    
+    -- 获取宠物配置
+    local petType = ConfigLoader.GetPet(petData.petName)
+    if not petType then
+        gg.log("警告：宠物配置不存在", petData.petName)
+        return nil
+    end
+    
+    return PetInstance.New(petData, petType, slotIndex)
+end
+
+---获取保存数据
+---@return PlayerPetData 玩家宠物数据
+function Pet:GetSaveData()
+    local playerPetData = {
+        activePetSlot = self.activePetSlot,
+        petList = {},
+        petSlots = self.maxSlots
+    }
+    
+    -- 提取所有宠物的数据
+    for slotIndex, petInstance in pairs(self.petInstances) do
+        playerPetData.petList[slotIndex] = petInstance.petData
+    end
+    
+    return playerPetData
+end
+
+---获取宠物数量
+---@return number 宠物数量
+function Pet:GetPetCount()
+    local count = 0
+    for _ in pairs(self.petInstances) do
+        count = count + 1
+    end
+    return count
+end
+
+---获取指定槽位的宠物实例
+---@param slotIndex number 槽位索引
+---@return PetInstance|nil 宠物实例
+function Pet:GetPetBySlot(slotIndex)
+    return self.petInstances[slotIndex]
+end
+
+---获取激活的宠物实例
+---@return PetInstance|nil 激活的宠物实例
+---@return number|nil 槽位索引
+function Pet:GetActivePet()
+    if self.activePetSlot == 0 then
+        return nil, nil
+    end
+    
+    local petInstance = self.petInstances[self.activePetSlot]
+    return petInstance, self.activePetSlot
+end
+
+---获取所有宠物信息
+---@return table 宠物列表信息
+function Pet:GetPlayerPetList()
+    local petList = {}
+    local activePetId = ""
+    
+    for slotIndex, petInstance in pairs(self.petInstances) do
+        petList[slotIndex] = petInstance:GetFullInfo()
+        if slotIndex == self.activePetSlot then
+            activePetId = petInstance:GetConfigName()
+        end
+    end
+    
+    return {
+        petList = petList,
+        activePetId = activePetId,
+        petSlots = self.maxSlots
+    }
+end
+
+---查找空闲槽位
+---@return number|nil 空闲槽位索引
+function Pet:FindEmptySlot()
+    for i = 1, self.maxSlots do
+        if not self.petInstances[i] then
+            return i
+        end
+    end
+    return nil
+end
+
+---添加宠物到指定槽位
+---@param petName string 宠物配置名称
+---@param slotIndex number|nil 槽位索引，nil表示自动分配
+---@return boolean 是否成功
+---@return string|nil 错误信息
+---@return number|nil 实际使用的槽位
+function Pet:AddPet(petName, slotIndex)
+    -- 检查宠物配置是否存在
+    local petType = ConfigLoader.GetPet(petName)
+    if not petType then
+        return false, "宠物配置不存在", nil
+    end
+    
+    -- 自动分配槽位
+    if not slotIndex then
+        slotIndex = self:FindEmptySlot()
+        if not slotIndex then
+            return false, "背包已满", nil
+        end
+    end
+    
+    -- 检查槽位是否有效
+    if slotIndex < 1 or slotIndex > self.maxSlots then
+        return false, "无效的槽位索引", nil
+    end
+    
+    -- 检查槽位是否被占用
+    if self.petInstances[slotIndex] then
+        return false, "槽位已被占用", nil
+    end
+    
+    -- 创建新的宠物数据
+    local newPetData = {
+        petName = petName,
+        customName = "",
+        level = petType.minLevel,
+        exp = 0,
+        starLevel = 1,
+        learnedSkills = {},
+        equipments = {},
+        isActive = false,
+        mood = 100
+    }
+    
+    -- 创建宠物实例并添加到槽位
+    local petInstance = self:CreatePetInstance(newPetData, slotIndex)
+    if petInstance then
+        self.petInstances[slotIndex] = petInstance
+        gg.log("添加宠物成功", self.uin, petName, "槽位", slotIndex)
+        return true, nil, slotIndex
+    else
+        return false, "创建宠物实例失败", nil
     end
 end
 
----获取宠物名称
----@return string 宠物名称
-function Pet:GetName()
-    return self.petData.customName ~= "" and self.petData.customName or (self.petType and self.petType.name or self.petData.petName)
-end
-
----获取宠物配置名称
----@return string 配置名称
-function Pet:GetConfigName()
-    return self.petData.petName
-end
-
----获取当前等级
----@return number 当前等级
-function Pet:GetLevel()
-    return self.petData.level or 1
-end
-
----获取当前经验值
----@return number 当前经验值
-function Pet:GetExp()
-    return self.petData.exp or 0
-end
-
----获取当前星级
----@return number 当前星级
-function Pet:GetStarLevel()
-    return self.petData.starLevel or 1
-end
-
----获取心情值
----@return number 心情值 (0-100)
-function Pet:GetMood()
-    return self.petData.mood or 100
-end
-
----是否为激活宠物
----@return boolean 是否激活
-function Pet:IsActive()
-    return self.petData.isActive or false
-end
-
----获取最终属性值
----@param attrName string 属性名称
----@return number 最终属性值
-function Pet:GetFinalAttribute(attrName)
-    -- 先从缓存获取
-    if self.attributeCache[attrName] then
-        return self.attributeCache[attrName]
+---移除指定槽位的宠物
+---@param slotIndex number 槽位索引
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function Pet:RemovePet(slotIndex)
+    local petInstance = self.petInstances[slotIndex]
+    if not petInstance then
+        return false, "槽位为空"
     end
     
-    -- 计算最终属性
-    local finalValue = self:CalculateAttribute(attrName)
-    
-    -- 缓存结果
-    self.attributeCache[attrName] = finalValue
-    
-    return finalValue
-end
-
----计算指定属性的最终数值
----@param attrName string 属性名称
----@return number 计算后的属性值
-function Pet:CalculateAttribute(attrName)
-    if not self.petType then
-        gg.log("警告：宠物配置不存在", self.petData.petName)
-        return 0
+    -- 如果是激活宠物，取消激活
+    if self.activePetSlot == slotIndex then
+        self.activePetSlot = 0
     end
     
-    local finalValue = 0
+    -- 移除宠物实例
+    self.petInstances[slotIndex] = nil
     
-    -- 1. 基础属性
-    local baseValue = self.petType:GetBaseAttribute(attrName)
-    finalValue = finalValue + baseValue
-    
-    -- 2. 等级成长
-    local growthValue = self:CalculateGrowthAttribute(attrName)
-    finalValue = finalValue + growthValue
-    
-    -- 3. 星级加成
-    local starValue = self:CalculateStarAttribute(attrName)
-    finalValue = finalValue + starValue
-    
-    -- 4. 装备加成
-    local equipValue = self:CalculateEquipmentAttribute(attrName)
-    finalValue = finalValue + equipValue
-    
-    -- 5. 临时buff加成
-    local buffValue = self:CalculateBuffAttribute(attrName)
-    finalValue = finalValue + buffValue
-    
-    return math.max(0, math.floor(finalValue))
+    gg.log("移除宠物成功", self.uin, petInstance:GetConfigName(), "槽位", slotIndex)
+    return true, nil
 end
 
----计算等级成长属性
----@param attrName string 属性名称
----@return number 成长属性值
-function Pet:CalculateGrowthAttribute(attrName)
-    if not self.petType then return 0 end
-    
-    local formula = self.petType:GetGrowthFormula(attrName)
-    if not formula or formula == "" then
-        return 0
+---设置激活宠物
+---@param slotIndex number 槽位索引（0表示取消激活）
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function Pet:SetActivePet(slotIndex)
+    -- 取消激活
+    if slotIndex == 0 then
+        -- 将之前的激活宠物设为非激活状态
+        if self.activePetSlot ~= 0 then
+            local oldActivePet = self.petInstances[self.activePetSlot]
+            if oldActivePet then
+                oldActivePet:SetActive(false)
+            end
+        end
+        self.activePetSlot = 0
+        gg.log("取消激活宠物", self.uin)
+        return true, nil
     end
     
-    -- 简单的公式解析，支持 LVL*系数 格式
-    local level = self:GetLevel()
+    -- 检查槽位是否有效
+    if slotIndex < 1 or slotIndex > self.maxSlots then
+        return false, "无效的槽位索引"
+    end
     
-    -- 替换LVL为实际等级值
-    local expression = string.gsub(formula, "LVL", tostring(level))
+    -- 检查宠物是否存在
+    local newActivePet = self.petInstances[slotIndex]
+    if not newActivePet then
+        return false, "槽位为空"
+    end
     
-    -- 简单的数学表达式计算（仅支持基本运算）
-    local result = self:EvaluateExpression(expression)
+    -- 取消之前的激活宠物
+    if self.activePetSlot ~= 0 then
+        local oldActivePet = self.petInstances[self.activePetSlot]
+        if oldActivePet then
+            oldActivePet:SetActive(false)
+        end
+    end
     
-    return result or 0
+    -- 设置新的激活宠物
+    self.activePetSlot = slotIndex
+    newActivePet:SetActive(true)
+    
+    gg.log("设置激活宠物", self.uin, newActivePet:GetConfigName(), "槽位", slotIndex)
+    return true, nil
 end
 
----计算星级加成属性
+---宠物升级
+---@param slotIndex number 槽位索引
+---@param targetLevel number|nil 目标等级，nil表示升1级
+---@return boolean 是否成功
+---@return string|nil 错误信息
+---@return boolean|nil 是否真的升级了
+function Pet:LevelUpPet(slotIndex, targetLevel)
+    local petInstance = self.petInstances[slotIndex]
+    if not petInstance then
+        return false, "宠物不存在", false
+    end
+    
+    if targetLevel then
+        -- 直接设置到目标等级
+        local success = petInstance:SetLevel(targetLevel)
+        return success, success and nil or "设置等级失败", success
+    else
+        -- 升1级
+        if petInstance:CanLevelUp() then
+            petInstance:DoLevelUp()
+            return true, nil, true
+        else
+            return true, nil, false -- 成功但没升级
+        end
+    end
+end
+
+---宠物获得经验
+---@param slotIndex number 槽位索引
+---@param expAmount number 经验值
+---@return boolean 是否成功
+---@return string|nil 错误信息
+---@return boolean|nil 是否升级了
+function Pet:AddPetExp(slotIndex, expAmount)
+    local petInstance = self.petInstances[slotIndex]
+    if not petInstance then
+        return false, "宠物不存在", false
+    end
+    
+    local leveledUp = petInstance:AddExp(expAmount)
+    return true, nil, leveledUp
+end
+
+---查找符合条件的宠物
+---@param petName string 宠物名称
+---@param requiredStar number 要求星级
+---@param excludeSlot number|nil 排除的槽位
+---@return table<number> 符合条件的槽位列表
+function Pet:FindPetsByCondition(petName, requiredStar, excludeSlot)
+    local candidates = {}
+    
+    for slotIndex, petInstance in pairs(self.petInstances) do
+        if slotIndex ~= excludeSlot and
+           petInstance:GetConfigName() == petName and
+           petInstance:GetStarLevel() >= requiredStar then
+            table.insert(candidates, slotIndex)
+        end
+    end
+    
+    return candidates
+end
+
+---消耗指定宠物
+---@param petName string 宠物名称
+---@param count number 需要数量
+---@param requiredStar number 要求星级
+---@param excludeSlot number|nil 排除的槽位（如正在升星的宠物）
+---@return boolean 是否成功消耗
+function Pet:ConsumePets(petName, count, requiredStar, excludeSlot)
+    -- 找到符合条件的宠物
+    local candidates = self:FindPetsByCondition(petName, requiredStar, excludeSlot)
+    
+    if #candidates < count then
+        gg.log("宠物材料不足", self.uin, petName, "需要", count, "找到", #candidates)
+        return false
+    end
+    
+    -- 消耗宠物（删除实例）
+    for i = 1, count do
+        local slotToRemove = candidates[i]
+        self:RemovePet(slotToRemove)
+        gg.log("消耗宠物", self.uin, petName, "槽位", slotToRemove)
+    end
+    
+    return true
+end
+
+---宠物升星
+---@param slotIndex number 要升星的宠物槽位
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function Pet:UpgradePetStar(slotIndex)
+    local petInstance = self.petInstances[slotIndex]
+    if not petInstance then
+        return false, "宠物不存在"
+    end
+    
+    local petType = petInstance.petType
+    if not petType then
+        return false, "宠物配置不存在"
+    end
+    
+    local currentStar = petInstance:GetStarLevel()
+    local upgradeCost = petType:GetStarUpgradeCost(currentStar + 1)
+    if not upgradeCost then
+        return false, "已达到最大星级或缺少升星配置"
+    end
+    
+    -- 检查并消耗材料
+    for _, material in ipairs(upgradeCost["消耗材料"] or {}) do
+        if material["消耗类型"] == "宠物" then
+            local petName = material["消耗宠物"]
+            local needCount = material["需要数量"] or 1
+            local needStar = material["宠物星级"] or 1
+            
+            -- 检查材料是否充足（排除当前升星的宠物）
+            local candidates = self:FindPetsByCondition(petName, needStar, slotIndex)
+            if #candidates < needCount then
+                return false, string.format("宠物材料不足：需要%d个%d星%s", needCount, needStar, petName)
+            end
+            
+            -- 消耗材料
+            local success = self:ConsumePets(petName, needCount, needStar, slotIndex)
+            if not success then
+                return false, "消耗宠物材料失败"
+            end
+        elseif material["消耗类型"] == "物品" then
+            -- TODO: 实现物品消耗逻辑
+            gg.log("升星需要物品材料", material["材料物品"], material["需要数量"])
+        end
+    end
+    
+    -- 执行升星
+    local success, errorMsg = petInstance:DoUpgradeStar()
+    if success then
+        gg.log("宠物升星成功", self.uin, petInstance:GetConfigName(), "新星级", petInstance:GetStarLevel())
+    end
+    
+    return success, errorMsg
+end
+
+---宠物学习技能
+---@param slotIndex number 槽位索引
+---@param skillId string 技能ID
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function Pet:LearnPetSkill(slotIndex, skillId)
+    local petInstance = self.petInstances[slotIndex]
+    if not petInstance then
+        return false, "宠物不存在"
+    end
+    
+    return petInstance:LearnSkill(skillId)
+end
+
+---获取宠物的最终属性
+---@param slotIndex number 槽位索引
 ---@param attrName string 属性名称
----@return number 星级加成值
-function Pet:CalculateStarAttribute(attrName)
-    if not self.petType then return 0 end
+---@return number|nil 属性值
+function Pet:GetPetFinalAttribute(slotIndex, attrName)
+    local petInstance = self.petInstances[slotIndex]
+    if not petInstance then
+        return nil
+    end
     
-    local starLevel = self:GetStarLevel()
-    local effects = self.petType:GetCarryingEffectsByStarLevel(starLevel)
+    return petInstance:GetFinalAttribute(attrName)
+end
+
+---检查宠物是否可以升级
+---@param slotIndex number 槽位索引
+---@return boolean 是否可以升级
+function Pet:CanPetLevelUp(slotIndex)
+    local petInstance = self.petInstances[slotIndex]
+    if not petInstance then
+        return false
+    end
     
-    local totalBonus = 0
-    for _, effect in ipairs(effects) do
-        if effect["触发条件列表"] then
-            for _, condition in ipairs(effect["触发条件列表"]) do
-                if condition["变量名称"] and string.find(condition["变量名称"], attrName) then
-                    totalBonus = totalBonus + (condition["效果数值"] or 0)
-                end
+    return petInstance:CanLevelUp()
+end
+
+---检查宠物是否可以升星
+---@param slotIndex number 槽位索引
+---@return boolean 是否可以升星
+---@return string|nil 错误信息
+function Pet:CanPetUpgradeStar(slotIndex)
+    local petInstance = self.petInstances[slotIndex]
+    if not petInstance then
+        return false, "宠物不存在"
+    end
+    
+    local petType = petInstance.petType
+    if not petType then
+        return false, "宠物配置不存在"
+    end
+    
+    local currentStar = petInstance:GetStarLevel()
+    local upgradeCost = petType:GetStarUpgradeCost(currentStar + 1)
+    if not upgradeCost then
+        return false, "已达到最大星级"
+    end
+    
+    -- 检查材料是否充足
+    for _, material in ipairs(upgradeCost["消耗材料"] or {}) do
+        if material["消耗类型"] == "宠物" then
+            local petName = material["消耗宠物"]
+            local needCount = material["需要数量"] or 1
+            local needStar = material["宠物星级"] or 1
+            
+            local candidates = self:FindPetsByCondition(petName, needStar, slotIndex)
+            if #candidates < needCount then
+                return false, string.format("宠物材料不足：需要%d个%d星%s", needCount, needStar, petName)
             end
         end
     end
     
-    return totalBonus
-end
-
----计算装备加成属性
----@param attrName string 属性名称
----@return number 装备加成值
-function Pet:CalculateEquipmentAttribute(attrName)
-    -- TODO: 实现装备属性加成计算
-    -- 需要根据装备配置表计算装备提供的属性加成
-    return 0
-end
-
----计算临时buff加成属性
----@param attrName string 属性名称
----@return number buff加成值
-function Pet:CalculateBuffAttribute(attrName)
-    local totalBonus = 0
-    for buffId, buffData in pairs(self.tempBuffs) do
-        if buffData.attributes and buffData.attributes[attrName] then
-            totalBonus = totalBonus + buffData.attributes[attrName]
-        end
-    end
-    return totalBonus
-end
-
----简单的数学表达式求值
----@param expression string 数学表达式
----@return number|nil 计算结果
-function Pet:EvaluateExpression(expression)
-    -- 安全的数学表达式求值（仅支持基本运算）
-    local safeExpression = string.gsub(expression, "[^0-9+%-*/().%s]", "")
-    
-    local success, result = pcall(function()
-        return load("return " .. safeExpression)()
-    end)
-    
-    if success and type(result) == "number" then
-        return result
-    end
-    
-    gg.log("表达式计算失败", expression)
-    return 0
-end
-
----刷新属性缓存
-function Pet:RefreshAttributeCache()
-    self.attributeCache = {}
-    gg.log("刷新宠物属性缓存", self.petData.petName)
-end
-
----获取升级所需经验
----@return number 升级所需经验值
-function Pet:GetNextLevelExp()
-    if not self.petType then return 0 end
-    
-    local currentLevel = self:GetLevel()
-    if currentLevel >= self.petType.maxLevel then
-        return 0 -- 已满级
-    end
-    
-    -- 简单的经验公式：level * 100
-    return currentLevel * 100
-end
-
----是否可以升级
----@return boolean 是否可以升级
-function Pet:CanLevelUp()
-    if not self.petType then return false end
-    
-    local currentLevel = self:GetLevel()
-    local currentExp = self:GetExp()
-    local requiredExp = self:GetNextLevelExp()
-    
-    return currentLevel < self.petType.maxLevel and currentExp >= requiredExp
-end
-
----是否达到最大等级
----@return boolean 是否满级
-function Pet:IsMaxLevel()
-    if not self.petType then return true end
-    return self:GetLevel() >= self.petType.maxLevel
-end
-
----增加经验值
----@param amount number 经验值数量
----@return boolean 是否升级了
-function Pet:AddExp(amount)
-    if not amount or amount <= 0 then return false end
-    
-    local oldLevel = self:GetLevel()
-    self.petData.exp = (self.petData.exp or 0) + amount
-    
-    -- 检查升级
-    local leveledUp = false
-    while self:CanLevelUp() do
-        local requiredExp = self:GetNextLevelExp()
-        self.petData.exp = self.petData.exp - requiredExp
-        self.petData.level = (self.petData.level or 1) + 1
-        leveledUp = true
-        
-        gg.log("宠物升级", self.petData.petName, "新等级", self.petData.level)
-    end
-    
-    if leveledUp then
-        self:RefreshAttributeCache()
-    end
-    
-    self:MarkDirty()
-    
-    return leveledUp
-end
-
----设置等级
----@param newLevel number 新等级
----@return boolean 是否设置成功
-function Pet:SetLevel(newLevel)
-    if not self.petType then return false end
-    
-    if newLevel < 1 or newLevel > self.petType.maxLevel then
-        gg.log("等级设置超出范围", newLevel, "最大等级", self.petType.maxLevel)
-        return false
-    end
-    
-    self.petData.level = newLevel
-    self.petData.exp = 0 -- 重置经验值
-    
-    self:RefreshAttributeCache()
-    self:MarkDirty()
-    
-    gg.log("宠物等级设置", self.petData.petName, "新等级", newLevel)
-    return true
-end
-
----是否可以升星
----@return boolean 是否可以升星
----@return string|nil 错误信息
-function Pet:CanUpgradeStar()
-    if not self.petType then
-        return false, "宠物配置不存在"
-    end
-    
-    local currentStar = self:GetStarLevel()
-    local maxStar = #self.petType.starUpgradeCosts + 1 -- 配置数组长度+1为最大星级
-    
-    if currentStar >= maxStar then
-        return false, "已达到最大星级"
-    end
-    
-    -- 检查升星材料（需要与背包系统集成）
-    local upgradeCost = self.petType:GetStarUpgradeCost(currentStar + 1)
-    if not upgradeCost then
-        return false, "缺少升星配置"
-    end
-    
-    -- TODO: 检查材料是否足够
-    
     return true, nil
 end
 
----升星
----@return boolean 是否升星成功
----@return string|nil 错误信息
-function Pet:UpgradeStar()
-    local canUpgrade, errorMsg = self:CanUpgradeStar()
-    if not canUpgrade then
-        return false, errorMsg
-    end
-    
-    -- TODO: 消耗材料
-    
-    self.petData.starLevel = (self.petData.starLevel or 1) + 1
-    
-    self:RefreshAttributeCache()
-    self:MarkDirty()
-    
-    gg.log("宠物升星成功", self.petData.petName, "新星级", self.petData.starLevel)
-    return true, nil
-end
-
----是否已学会指定技能
----@param skillId string 技能ID
----@return boolean 是否已学会
-function Pet:HasSkill(skillId)
-    if not self.petData.learnedSkills then
-        return false
-    end
-    return self.petData.learnedSkills[skillId] == true
-end
-
----学习技能
----@param skillId string 技能ID
----@return boolean 是否学习成功
----@return string|nil 错误信息
-function Pet:LearnSkill(skillId)
-    if not skillId or skillId == "" then
-        return false, "技能ID无效"
-    end
-    
-    if self:HasSkill(skillId) then
-        return false, "已经学会该技能"
-    end
-    
-    -- TODO: 检查学习条件（等级、前置技能等）
-    
-    if not self.petData.learnedSkills then
-        self.petData.learnedSkills = {}
-    end
-    
-    self.petData.learnedSkills[skillId] = true
-    
-    self:MarkDirty()
-    
-    gg.log("宠物学会技能", self.petData.petName, "技能", skillId)
-    return true, nil
-end
-
----装备物品
----@param slot number 装备槽位
----@param itemId string 物品ID
----@return boolean 是否装备成功
----@return string|nil 错误信息
-function Pet:EquipItem(slot, itemId)
-    if not slot or slot <= 0 then
-        return false, "装备槽位无效"
-    end
-    
-    if not self.petData.equipments then
-        self.petData.equipments = {}
-    end
-    
-    local oldItemId = self.petData.equipments[slot]
-    self.petData.equipments[slot] = itemId
-    
-    self:RefreshAttributeCache()
-    self:MarkDirty()
-    
-    gg.log("宠物装备物品", self.petData.petName, "槽位", slot, "物品", itemId, "替换", oldItemId)
-    return true, nil
-end
-
----卸下装备
----@param slot number 装备槽位
----@return string|nil 被卸下的物品ID
-function Pet:UnequipItem(slot)
-    if not self.petData.equipments then
-        return nil
-    end
-    
-    local itemId = self.petData.equipments[slot]
-    if itemId then
-        self.petData.equipments[slot] = nil
-        
-        self:RefreshAttributeCache()
-        self:MarkDirty()
-        
-        gg.log("宠物卸下装备", self.petData.petName, "槽位", slot, "物品", itemId)
-    end
-    
-    return itemId
-end
-
----设置心情值
----@param mood number 心情值 (0-100)
-function Pet:SetMood(mood)
-    mood = math.max(0, math.min(100, mood))
-    self.petData.mood = mood
-    
-    self:MarkDirty()
-    
-    gg.log("宠物心情值设置", self.petData.petName, "心情", mood)
-end
-
----设置激活状态
----@param active boolean 是否激活
-function Pet:SetActive(active)
-    self.petData.isActive = active
-    
-    self:MarkDirty()
-    
-    gg.log("宠物激活状态", self.petData.petName, "激活", active)
-end
-
----设置自定义名称
----@param customName string 自定义名称
-function Pet:SetCustomName(customName)
-    self.petData.customName = customName or ""
-    
-    self:MarkDirty()
-    
-    gg.log("宠物自定义名称", self.petData.petName, "新名称", customName)
-end
-
----添加临时buff
----@param buffId string buff ID
----@param duration number 持续时间（秒）
----@param attributes table 属性加成 {攻击 = 10, 防御 = 5}
-function Pet:AddBuff(buffId, duration, attributes)
-    if not buffId then return end
-    
-    self.tempBuffs[buffId] = {
-        duration = duration,
-        attributes = attributes or {},
-        startTime = os.time()
-    }
-    
-    self:RefreshAttributeCache()
-    
-    gg.log("宠物添加buff", self.petData.petName, "buff", buffId, "持续", duration)
-end
-
----移除临时buff
----@param buffId string buff ID
-function Pet:RemoveBuff(buffId)
-    if self.tempBuffs[buffId] then
-        self.tempBuffs[buffId] = nil
-        self:RefreshAttributeCache()
-        
-        gg.log("宠物移除buff", self.petData.petName, "buff", buffId)
+---更新所有宠物的临时buff
+function Pet:UpdateAllPetBuffs()
+    for _, petInstance in pairs(self.petInstances) do
+        petInstance:UpdateTempBuffs()
     end
 end
 
----更新临时buff（清理过期的buff）
-function Pet:UpdateBuffs()
-    local currentTime = os.time()
-    local removed = false
+---获取指定类型的宠物数量
+---@param petName string 宠物名称
+---@param minStar number|nil 最小星级要求
+---@return number 宠物数量
+function Pet:GetPetCountByType(petName, minStar)
+    local count = 0
+    minStar = minStar or 1
     
-    for buffId, buffData in pairs(self.tempBuffs) do
-        if buffData.startTime + buffData.duration <= currentTime then
-            self.tempBuffs[buffId] = nil
-            removed = true
-            gg.log("宠物buff过期", self.petData.petName, "buff", buffId)
+    for _, petInstance in pairs(self.petInstances) do
+        if petInstance:GetConfigName() == petName and 
+           petInstance:GetStarLevel() >= minStar then
+            count = count + 1
         end
     end
     
-    if removed then
-        self:RefreshAttributeCache()
-    end
+    return count
 end
 
----获取宠物完整信息（用于客户端同步）
----@return table 宠物信息
-function Pet:GetFullInfo()
-    -- 更新buff状态
-    self:UpdateBuffs()
+---批量操作：一键升级所有可升级宠物
+---@return number 升级的宠物数量
+function Pet:UpgradeAllPossiblePets()
+    local upgradedCount = 0
     
-    return {
-        petName = self.petData.petName,
-        customName = self.petData.customName,
-        level = self:GetLevel(),
-        exp = self:GetExp(),
-        starLevel = self:GetStarLevel(),
-        mood = self:GetMood(),
-        isActive = self:IsActive(),
-        learnedSkills = self.petData.learnedSkills or {},
-        equipments = self.petData.equipments or {},
-        slotIndex = self.slotIndex,
-        -- 计算后的属性
-        finalAttributes = {
-            ["攻击"] = self:GetFinalAttribute("攻击"),
-            ["防御"] = self:GetFinalAttribute("防御"),
-            ["生命"] = self:GetFinalAttribute("生命"),
-            ["速度"] = self:GetFinalAttribute("速度")
-        }
-    }
+    for slotIndex, petInstance in pairs(self.petInstances) do
+        while petInstance:CanLevelUp() do
+            petInstance:DoLevelUp()
+            upgradedCount = upgradedCount + 1
+        end
+    end
+    
+    if upgradedCount > 0 then
+        gg.log("批量升级宠物", self.uin, "升级次数", upgradedCount)
+    end
+    
+    return upgradedCount
 end
 
 return Pet
