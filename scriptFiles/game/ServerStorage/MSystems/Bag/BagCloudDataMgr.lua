@@ -80,7 +80,7 @@ function BagCloudDataMgr.SavePlayerBag(uin, bag, force_)
         if bagData then
             cloudService:SetTableAsync('inv' .. uin, bagData, function(ret_)
                 if ret_ then
-                    gg.log("背包数据保存成功", uin)
+                    -- gg.log("背包数据保存成功", uin)
                 else
                     gg.log("背包数据保存失败", uin)
                 end

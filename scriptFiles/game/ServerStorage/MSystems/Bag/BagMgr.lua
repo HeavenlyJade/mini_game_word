@@ -25,6 +25,7 @@ function SaveAllPlayerBags()
             BagCloudDataMgr.SavePlayerBag(uin, bag, false)
             count = count + 1
         end
+
     end
     -- gg.log("定时保存背包数据完成，保存了", count, "个玩家的背包")
 end
@@ -381,3 +382,4 @@ function BagMgr.HasItemsByCosts(player, costs)
 end
 
 return BagMgr
+

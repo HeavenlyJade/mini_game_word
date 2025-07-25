@@ -11,7 +11,8 @@ local ServerStorage = game:GetService('ServerStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
-local BaseCompanion = require(ServerStorage.MSystems.Pet.BaseCompanion) ---@type BaseCompanion
+local BaseCompanion = require(ServerStorage.MSystems.Pet.Compainion.BaseCompanion) ---@type BaseCompanion
+
 
 ---@class Partner:BaseCompanion 伙伴管理器
 local Partner = ClassMgr.Class("Partner", BaseCompanion)

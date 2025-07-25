@@ -21,8 +21,32 @@ local PartnerMgr = {
     server_player_partners = {}, ---@type table<number, Partner>
     
     -- 定时保存间隔（秒）
-    SAVE_INTERVAL = 30
+    SAVE_INTERVAL = 60
 }
+
+function SaveAllPlayerPARTNER_()
+    local count = 0
+    for uin, partnerManager in pairs(PartnerMgr.server_player_partners) do
+        if partnerManager then
+            -- 提取数据并保存到云端
+            local playerPartnerData = partnerManager:GetSaveData()
+            if playerPartnerData then
+                CloudPartnerDataAccessor:SavePlayerPartnerData(uin, playerPartnerData)
+            end
+        end
+    end
+    -- gg.log("定时保存伙伴数据完成，保存了", count, "个玩家的伙伴")
+end
+
+local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+saveTimer.Name = 'PARTNER_SAVE_ALL'
+saveTimer.Delay = 60
+saveTimer.Loop = true
+saveTimer.Interval = 60
+saveTimer.Callback = SaveAllPlayerPARTNER_  
+saveTimer:Start()
+
 
 ---玩家上线处理
 ---@param player MPlayer 玩家对象
@@ -66,7 +90,23 @@ end
 ---@param uin number 玩家ID
 ---@return Partner|nil 伙伴管理器实例
 function PartnerMgr.GetPlayerPartner(uin)
-    return PartnerMgr.server_player_partners[uin]
+    local partnerManager = PartnerMgr.server_player_partners[uin]
+    if not partnerManager then
+        gg.log("伙伴系统：在缓存中未找到玩家", uin, "的伙伴管理器，尝试动态加载。")
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin)
+        if player then
+            PartnerMgr.OnPlayerJoin(player)
+            partnerManager = PartnerMgr.server_player_partners[uin]
+        end
+
+        if partnerManager then
+            gg.log("伙伴系统：为玩家", uin, "动态加载伙伴管理器成功。")
+        else
+            gg.log("伙伴系统：为玩家", uin, "动态加载伙伴管理器失败。")
+        end
+    end
+    return partnerManager
 end
 
 ---设置激活伙伴
@@ -393,22 +433,7 @@ function PartnerMgr.GetPartnerCountByType(uin, partnerName, minStar)
     return partnerManager:GetPartnerCountByType(partnerName, minStar)
 end
 
----定时更新所有在线玩家的伙伴buff
-function PartnerMgr.UpdateAllPlayerPartnerBuffs()
-    for uin, partnerManager in pairs(PartnerMgr.server_player_partners) do
-        partnerManager:UpdateAllPartnerBuffs()
-    end
-end
 
----定时保存所有在线玩家的伙伴数据
-function PartnerMgr.SaveAllPlayerData()
-    for uin, partnerManager in pairs(PartnerMgr.server_player_partners) do
-        local playerPartnerData = partnerManager:GetSaveData()
-        if playerPartnerData then
-            CloudPartnerDataAccessor:SavePlayerPartnerData(uin, playerPartnerData)
-        end
-    end
-    gg.log("PartnerMgr.SaveAllPlayerData: 批量保存所有玩家伙伴数据")
-end
+
 
 return PartnerMgr

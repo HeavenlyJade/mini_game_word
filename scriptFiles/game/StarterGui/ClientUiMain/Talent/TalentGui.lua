@@ -86,11 +86,9 @@ function TalentGui:RegisterButtonEvents()
         gg.log("天赋界面已关闭")
     end
 
-    gg.log("天赋界面按钮事件注册完成")
 end
 
 function TalentGui:OnOpen()
-    gg.log("TalentGui天赋界面打开")
     self:RequestTalentData()
 end
 

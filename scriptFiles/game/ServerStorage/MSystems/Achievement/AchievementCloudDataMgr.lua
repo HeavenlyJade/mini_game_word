@@ -63,7 +63,7 @@ function AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData, forc
     
     cloudService:SetTableAsync(key, cloudData, function(success)
         if success then
-            gg.log("成功保存玩家成就数据:", playerId)
+            -- gg.log("成功保存玩家成就数据:", playerId)
         else
             gg.log("保存玩家成就数据失败:", playerId)
         end

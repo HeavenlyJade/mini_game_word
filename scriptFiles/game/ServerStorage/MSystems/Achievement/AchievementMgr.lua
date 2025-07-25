@@ -136,7 +136,7 @@ local function SaveAllPlayerAchievements()
         AchievementMgr.SavePlayerAchievements(playerId)
         count = count + 1
     end
-    gg.log("定时保存成就数据完成，保存了", count, "个玩家的数据")
+    -- gg.log("定时保存成就数据完成，保存了", count, "个玩家的数据")
 end
 
 -- 定时器

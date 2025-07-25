@@ -8,7 +8,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local PetEventConfig = require(MainStorage.Code.Event.EventPet) ---@type PetEventConfig
-local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
+local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
+
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 ---@class PetEventManager
