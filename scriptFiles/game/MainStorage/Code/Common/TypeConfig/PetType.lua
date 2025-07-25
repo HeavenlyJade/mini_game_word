@@ -13,7 +13,6 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 ---@field elementType string 元素类型
 ---@field baseAttributes table 基础属性列表
 ---@field growthRates table 成长率列表
----@field levelEffects table 等级效果列表
 ---@field starUpgradeEffects table 升星效果列表
 ---@field starUpgradeCosts table 升星消耗列表
 ---@field carryingEffects table 携带效果列表
@@ -45,10 +44,8 @@ function PetType:OnInit(data)
     -- 属性和成长系统
     self.baseAttributes = data["基础属性列表"] or {}
     self.growthRates = data["成长率列表"] or {}
-    self.levelEffects = data["等级效果列表"] or {}
     
     -- 星级系统
-    self.starUpgradeEffects = data["升星效果列表"] or {}
     self.starUpgradeCosts = data["升星消耗列表"] or {}
     
     -- 功能系统

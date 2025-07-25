@@ -53,7 +53,6 @@ function RaceGameAction:OnStart(data)
     self.pushTimer = ScheduledTask.AddInterval(1, "RaceGameAction_PushForward", function()
         -- if actor:GetCurMoveState() == Enum.BehaviorState.Fly then
             -- 使用 Move 指令让角色相对于相机稳定前移
-        gg.log("启动了客户的动画333",actor:GetCurMoveState() )
         actor.Animator:Play("Base Layer.fei", 0, 0)
         actor:Move(Vector3.new(0, 0, 1), true)
         -- actor.Animator:Play("Base Layer.fei", 0, 0)
