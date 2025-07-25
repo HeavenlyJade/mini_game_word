@@ -10,16 +10,15 @@ local ipairs = ipairs
 
 local MainStorage = game:GetService('MainStorage')
 local ServerStorage = game:GetService('ServerStorage')
-local RunService = game:GetService('RunService')
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
-local CloudPetDataAccessor = require(ServerStorage.MSystems.Pet.PetCloudDataMgr) ---@type CloudPetDataAccessor
-local Pet = require(ServerStorage.MSystems.Pet.Pet) ---@type Pet
+local CloudPetDataAccessor = require(ServerStorage.MSystems.Pet.CloudData.PetCloudDataMgr) ---@type CloudPetDataAccessor
+local Pet = require(ServerStorage.MSystems.Pet.Compainion.Pet) ---@type Pet
 
 ---@class PetMgr
 local PetMgr = {
     -- 在线玩家宠物管理器缓存 {uin = Pet管理器实例}
-    server_player_pets = {},
+    server_player_pets = {}, ---@type table<number, Pet>
     
     -- 定时保存间隔（秒）
     SAVE_INTERVAL = 30
@@ -172,7 +171,7 @@ end
 
 ---获取激活的宠物
 ---@param uin number 玩家ID
----@return PetInstance|nil 激活的宠物实例
+---@return CompanionInstance|nil 激活的宠物实例
 ---@return number|nil 槽位索引
 function PetMgr.GetActivePet(uin)
     local petManager = PetMgr.GetPlayerPet(uin)
@@ -186,7 +185,7 @@ end
 ---获取指定槽位的宠物实例
 ---@param uin number 玩家ID
 ---@param slotIndex number 槽位索引
----@return PetInstance|nil 宠物实例
+---@return CompanionInstance|nil 宠物实例
 function PetMgr.GetPetInstance(uin, slotIndex)
     local petManager = PetMgr.GetPlayerPet(uin)
     if not petManager then
@@ -408,25 +407,6 @@ function PetMgr.SaveAllPlayerData()
     gg.log("PetMgr.SaveAllPlayerData: 批量保存所有玩家宠物数据")
 end
 
----系统初始化
-function PetMgr.Init()
-    gg.log("PetMgr系统初始化")
-    
-    -- 启动定时任务
-    RunService.Heartbeat:Connect(function()
-        -- 每30秒更新一次buff状态
-        local currentTime = os.time()
-        if not PetMgr.lastBuffUpdateTime or currentTime - PetMgr.lastBuffUpdateTime >= 30 then
-            PetMgr.UpdateAllPlayerPetBuffs()
-            PetMgr.lastBuffUpdateTime = currentTime
-        end
-        
-        -- 每5分钟保存一次数据
-        if not PetMgr.lastSaveTime or currentTime - PetMgr.lastSaveTime >= 300 then
-            PetMgr.SaveAllPlayerData()
-            PetMgr.lastSaveTime = currentTime
-        end
-    end)
-end
+
 
 return PetMgr

@@ -17,7 +17,8 @@ local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventMan
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
+local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
+local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
 local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
@@ -146,7 +147,8 @@ function MServerInitPlayer.player_enter_game(player)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
     PetMgr.OnPlayerJoin(player_)
-    gg.log("玩家", uin_, "登录完成，邮件、背包、宠物和天赋数据已加载")
+    PartnerMgr.OnPlayerJoin(player_)
+    gg.log("玩家", uin_, "登录完成，邮件、背包、宠物、伙伴和天赋数据已加载")
     MServerInitPlayer.syncPlayerDataToClient(player_)
 
     
@@ -179,11 +181,22 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     local petManager = PetMgr.GetPlayerPet(uin)
     if petManager then
         local petListData = petManager:GetPlayerPetList()
-        local PetEventManager = require(ServerStorage.MSystems.Pet.PetEventManager) ---@type PetEventManager
+        local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
         PetEventManager.NotifyPetListUpdate(uin, petListData.petList)
         gg.log("已主动同步宠物数据到客户端:", uin, "宠物数量:", petManager:GetPetCount())
     else
         gg.log("警告: 玩家", uin, "的宠物数据不存在，跳过宠物数据同步")
+    end
+
+    -- 【新增】同步伙伴数据
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if partnerManager then
+        local partnerListData = partnerManager:GetPlayerPartnerList()
+        local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
+        PartnerEventManager.NotifyPartnerListUpdate(uin, partnerListData.partnerList)
+        gg.log("已主动同步伙伴数据到客户端:", uin, "伙伴数量:", partnerManager:GetPartnerCount())
+    else
+        gg.log("警告: 玩家", uin, "的伙伴数据不存在，跳过伙伴数据同步")
     end
     
     -- 获取变量数据
@@ -257,6 +270,7 @@ function MServerInitPlayer.player_leave_game(player)
         MailMgr.OnPlayerLeave(uin_)
         BagMgr.OnPlayerLeave(uin_)
         PetMgr.OnPlayerLeave(uin_)
+        PartnerMgr.OnPlayerLeave(uin_)
         AchievementMgr.OnPlayerLeave(uin_)
         -- 其他管理器（如技能、任务等）的离线处理也可以在这里添加
         mplayer:leaveGame() -- 保存玩家基础数据

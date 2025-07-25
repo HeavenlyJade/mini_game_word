@@ -1,6 +1,6 @@
--- PetInstance.lua
--- 单个宠物实例类
--- 负责单个宠物的数据封装、属性计算和状态管理
+-- CompanionInstance.lua
+-- 通用伙伴实例类（宠物/伙伴通用）
+-- 负责单个伙伴的数据封装、属性计算和状态管理
 
 local game = game
 local math = math
@@ -14,82 +14,124 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 
----@class PetInstance:Class
----@field petData PetData 宠物数据
----@field petType PetType 宠物配置数据
+---@class CompanionInstance:Class
+---@field companionData table 伙伴数据（PetData 或 PartnerData）
+---@field companionTypeConfig table 伙伴配置数据（PetType 或 PartnerType）
+---@field companionType string 伙伴类型（"宠物" 或 "伙伴"）
 ---@field slotIndex number 在背包中的槽位索引
 ---@field attributeCache table<string, number> 属性计算缓存
 ---@field tempBuffs table<string, table> 临时效果列表
-local PetInstance = ClassMgr.Class("PetInstance")
+local CompanionInstance = ClassMgr.Class("CompanionInstance")
 
-function PetInstance:OnInit(petData, petType, slotIndex)
-    self.petData = petData or {}
-    self.petType = petType
+function CompanionInstance:OnInit(companionData, companionType, slotIndex)
+    self.companionData = companionData or {}
+    self.companionType = companionType 
     self.slotIndex = slotIndex or 0
     self.attributeCache = {}
     self.tempBuffs = {}
     
+    -- 根据伙伴类型加载配置
+    self:LoadCompanionConfig()
+    
     -- 初始化时刷新属性缓存
     self:RefreshAttributeCache()
     
-    gg.log("PetInstance实例创建", self.petData.petName, "槽位", slotIndex)
 end
 
-
-
----获取宠物名称
----@return string 宠物名称
-function PetInstance:GetName()
-    return self.petData.customName ~= "" and self.petData.customName or (self.petType and self.petType.name or self.petData.petName)
+---根据伙伴类型加载配置
+function CompanionInstance:LoadCompanionConfig()
+    local configName = self:GetConfigName()
+    if not configName or configName == "" then
+        gg.log("警告：伙伴配置名称为空", self.companionType, self.slotIndex)
+        return
+    end
+    
+    if self.companionType == "宠物" then
+        self.companionTypeConfig = ConfigLoader.GetPet(configName)
+    elseif self.companionType == "伙伴" then
+        self.companionTypeConfig = ConfigLoader.GetPartner(configName)
+    end
+    
+    if not self.companionTypeConfig then
+        gg.log("警告：找不到伙伴配置", self.companionType, configName)
+    end
 end
 
----获取宠物配置名称
+---获取伙伴类型
+---@return string 伙伴类型
+function CompanionInstance:GetCompanionType()
+    return self.companionType
+end
+
+---获取伙伴显示名称
+---@return string 伙伴名称
+function CompanionInstance:GetName()
+    local customName = self.companionData.customName or ""
+    if customName ~= "" then
+        return customName
+    end
+    
+    if self.companionTypeConfig and self.companionTypeConfig.name then
+        return self.companionTypeConfig.name
+    end
+    
+    return self:GetConfigName()
+end
+
+---获取伙伴配置名称
 ---@return string 配置名称
-function PetInstance:GetConfigName()
-    return self.petData.petName
+function CompanionInstance:GetConfigName()
+    if self.companionType == "宠物" then
+        return self.companionData.petName or ""
+    elseif self.companionType == "伙伴" then
+        return self.companionData.partnerName or ""
+    end
+    return ""
 end
 
 ---获取当前等级
 ---@return number 当前等级
-function PetInstance:GetLevel()
-    return self.petData.level or 1
+function CompanionInstance:GetLevel()
+    return self.companionData.level or 1
 end
 
 ---获取当前经验值
 ---@return number 当前经验值
-function PetInstance:GetExp()
-    return self.petData.exp or 0
+function CompanionInstance:GetExp()
+    return self.companionData.exp or 0
 end
 
 ---获取当前星级
 ---@return number 当前星级
-function PetInstance:GetStarLevel()
-    return self.petData.starLevel or 1
+function CompanionInstance:GetStarLevel()
+    return self.companionData.starLevel or 1
 end
 
 ---获取心情值
 ---@return number 心情值 (0-100)
-function PetInstance:GetMood()
-    return self.petData.mood or 100
+function CompanionInstance:GetMood()
+    return self.companionData.mood or 100
 end
 
----是否为激活宠物
+---是否为激活伙伴
 ---@return boolean 是否激活
-function PetInstance:IsActive()
-    return self.petData.isActive or false
+function CompanionInstance:IsActive()
+    return self.companionData.isActive or false
 end
 
 ---获取完整信息
----@return table 宠物完整信息
-function PetInstance:GetFullInfo()
+---@return table 伙伴完整信息
+function CompanionInstance:GetFullInfo()
+    local configName = self:GetConfigName()
     return {
-        petName = self:GetConfigName(),
-        customName = self.petData.customName or "",
+        companionName = configName,
+        companionType = self.companionType,
+        customName = self.companionData.customName or "",
         level = self:GetLevel(),
         exp = self:GetExp(),
         starLevel = self:GetStarLevel(),
-        learnedSkills = self.petData.learnedSkills or {},
-        equipments = self.petData.equipments or {},
+        learnedSkills = self.companionData.learnedSkills or {},
+        equipments = self.companionData.equipments or {},
         isActive = self:IsActive(),
         mood = self:GetMood(),
         slotIndex = self.slotIndex,
@@ -100,10 +142,10 @@ end
 
 ---获取所有最终属性
 ---@return table<string, number> 所有最终属性
-function PetInstance:GetAllFinalAttributes()
+function CompanionInstance:GetAllFinalAttributes()
     local attributes = {}
-    if self.petType and self.petType.baseAttributes then
-        for _, attr in ipairs(self.petType.baseAttributes) do
+    if self.companionTypeConfig and self.companionTypeConfig.baseAttributes then
+        for _, attr in ipairs(self.companionTypeConfig.baseAttributes) do
             local attrName = attr["属性名称"]
             if attrName then
                 attributes[attrName] = self:GetFinalAttribute(attrName)
@@ -116,7 +158,7 @@ end
 ---获取最终属性值
 ---@param attrName string 属性名称
 ---@return number 最终属性值
-function PetInstance:GetFinalAttribute(attrName)
+function CompanionInstance:GetFinalAttribute(attrName)
     -- 先从缓存获取
     if self.attributeCache[attrName] then
         return self.attributeCache[attrName]
@@ -134,16 +176,16 @@ end
 ---计算指定属性的最终数值
 ---@param attrName string 属性名称
 ---@return number 计算后的属性值
-function PetInstance:CalculateAttribute(attrName)
-    if not self.petType then
-        gg.log("警告：宠物配置不存在", self.petData.petName)
+function CompanionInstance:CalculateAttribute(attrName)
+    if not self.companionTypeConfig then
+        gg.log("警告：伙伴配置不存在", self.companionType, self:GetConfigName())
         return 0
     end
     
     local finalValue = 0
     
     -- 1. 基础属性
-    local baseValue = self.petType:GetBaseAttribute(attrName)
+    local baseValue = self.companionTypeConfig:GetBaseAttribute(attrName)
     finalValue = finalValue + baseValue
     
     -- 2. 等级成长
@@ -168,10 +210,10 @@ end
 ---计算等级成长属性
 ---@param attrName string 属性名称
 ---@return number 成长属性值
-function PetInstance:CalculateGrowthAttribute(attrName)
-    if not self.petType then return 0 end
+function CompanionInstance:CalculateGrowthAttribute(attrName)
+    if not self.companionTypeConfig then return 0 end
     
-    local formula = self.petType:GetGrowthFormula(attrName)
+    local formula = self.companionTypeConfig:GetGrowthFormula(attrName)
     if not formula or formula == "" then
         return 0
     end
@@ -191,11 +233,11 @@ end
 ---计算星级加成属性
 ---@param attrName string 属性名称
 ---@return number 星级加成值
-function PetInstance:CalculateStarAttribute(attrName)
-    if not self.petType then return 0 end
+function CompanionInstance:CalculateStarAttribute(attrName)
+    if not self.companionTypeConfig then return 0 end
     
     local starLevel = self:GetStarLevel()
-    local effects = self.petType:GetCarryingEffectsByStarLevel(starLevel)
+    local effects = self.companionTypeConfig:GetCarryingEffectsByStarLevel(starLevel)
     
     local totalBonus = 0
     for _, effect in ipairs(effects) do
@@ -214,7 +256,7 @@ end
 ---计算装备加成属性
 ---@param attrName string 属性名称
 ---@return number 装备加成值
-function PetInstance:CalculateEquipmentAttribute(attrName)
+function CompanionInstance:CalculateEquipmentAttribute(attrName)
     -- TODO: 实现装备属性加成计算
     -- 需要根据装备配置表计算装备提供的属性加成
     return 0
@@ -223,7 +265,7 @@ end
 ---计算临时buff加成属性
 ---@param attrName string 属性名称
 ---@return number buff加成值
-function PetInstance:CalculateBuffAttribute(attrName)
+function CompanionInstance:CalculateBuffAttribute(attrName)
     local totalBonus = 0
     for buffId, buffData in pairs(self.tempBuffs) do
         if buffData.attributes and buffData.attributes[attrName] then
@@ -236,7 +278,7 @@ end
 ---简单的数学表达式求值
 ---@param expression string 数学表达式
 ---@return number|nil 计算结果
-function PetInstance:EvaluateExpression(expression)
+function CompanionInstance:EvaluateExpression(expression)
     -- 简单的四则运算解析
     -- 仅支持基本格式：数字*数字、数字+数字等
     local patterns = {
@@ -267,16 +309,16 @@ function PetInstance:EvaluateExpression(expression)
 end
 
 ---刷新属性缓存
-function PetInstance:RefreshAttributeCache()
+function CompanionInstance:RefreshAttributeCache()
     self.attributeCache = {}
-    gg.log("宠物属性缓存已刷新", self.petData.petName)
+    gg.log("伙伴属性缓存已刷新", self.companionType, self:GetConfigName())
 end
 
 ---获取升级所需经验
 ---@return number 升级所需经验
-function PetInstance:GetRequiredExpForNextLevel()
+function CompanionInstance:GetRequiredExpForNextLevel()
     local currentLevel = self:GetLevel()
-    if not self.petType or currentLevel >= self.petType.maxLevel then
+    if not self.companionTypeConfig or currentLevel >= self.companionTypeConfig.maxLevel then
         return 0
     end
     
@@ -286,20 +328,20 @@ end
 
 ---是否可以升级
 ---@return boolean 是否可以升级
-function PetInstance:CanLevelUp()
-    if not self.petType then return false end
+function CompanionInstance:CanLevelUp()
+    if not self.companionTypeConfig then return false end
     
     local currentLevel = self:GetLevel()
     local currentExp = self:GetExp()
     local requiredExp = self:GetRequiredExpForNextLevel()
     
-    return currentLevel < self.petType.maxLevel and currentExp >= requiredExp
+    return currentLevel < self.companionTypeConfig.maxLevel and currentExp >= requiredExp
 end
 
 ---添加经验
 ---@param expAmount number 经验值
 ---@return boolean 是否升级了
-function PetInstance:AddExp(expAmount)
+function CompanionInstance:AddExp(expAmount)
     if not expAmount or expAmount <= 0 then
         return false
     end
@@ -308,7 +350,7 @@ function PetInstance:AddExp(expAmount)
     local currentExp = self:GetExp()
     local newExp = currentExp + expAmount
     
-    self.petData.exp = newExp
+    self.companionData.exp = newExp
     
     -- 检查是否升级
     while self:CanLevelUp() do
@@ -316,69 +358,68 @@ function PetInstance:AddExp(expAmount)
         leveledUp = true
     end
     
-    
-    gg.log("宠物获得经验", self.petData.petName, "经验", expAmount, "当前经验", self.petData.exp, "是否升级", leveledUp)
+    gg.log("伙伴获得经验", self.companionType, self:GetConfigName(), "经验", expAmount, "当前经验", self.companionData.exp, "是否升级", leveledUp)
     return leveledUp
 end
 
 ---执行升级
-function PetInstance:DoLevelUp()
+function CompanionInstance:DoLevelUp()
     local requiredExp = self:GetRequiredExpForNextLevel()
-    self.petData.level = (self.petData.level or 1) + 1
-    self.petData.exp = (self.petData.exp or 0) - requiredExp
+    self.companionData.level = (self.companionData.level or 1) + 1
+    self.companionData.exp = (self.companionData.exp or 0) - requiredExp
     
     self:RefreshAttributeCache()
     
-    gg.log("宠物升级", self.petData.petName, "新等级", self.petData.level)
+    gg.log("伙伴升级", self.companionType, self:GetConfigName(), "新等级", self.companionData.level)
 end
 
 ---设置等级
 ---@param newLevel number 新等级
 ---@return boolean 是否设置成功
-function PetInstance:SetLevel(newLevel)
-    if not self.petType then return false end
+function CompanionInstance:SetLevel(newLevel)
+    if not self.companionTypeConfig then return false end
     
-    if newLevel < 1 or newLevel > self.petType.maxLevel then
-        gg.log("等级设置超出范围", newLevel, "最大等级", self.petType.maxLevel)
+    if newLevel < 1 or newLevel > self.companionTypeConfig.maxLevel then
+        gg.log("等级设置超出范围", newLevel, "最大等级", self.companionTypeConfig.maxLevel)
         return false
     end
     
-    self.petData.level = newLevel
-    self.petData.exp = 0 -- 重置经验值
+    self.companionData.level = newLevel
+    self.companionData.exp = 0 -- 重置经验值
     
     self:RefreshAttributeCache()
     
-    gg.log("宠物等级设置", self.petData.petName, "新等级", newLevel)
+    gg.log("伙伴等级设置", self.companionType, self:GetConfigName(), "新等级", newLevel)
     return true
 end
 
 ---执行升星
 ---@return boolean 是否升星成功
 ---@return string|nil 错误信息
-function PetInstance:DoUpgradeStar()
-    self.petData.starLevel = (self.petData.starLevel or 1) + 1
+function CompanionInstance:DoUpgradeStar()
+    self.companionData.starLevel = (self.companionData.starLevel or 1) + 1
     
     self:RefreshAttributeCache()
     
-    gg.log("宠物升星成功", self.petData.petName, "新星级", self.petData.starLevel)
+    gg.log("伙伴升星成功", self.companionType, self:GetConfigName(), "新星级", self.companionData.starLevel)
     return true, nil
 end
 
 ---是否已学会指定技能
 ---@param skillId string 技能ID
 ---@return boolean 是否已学会
-function PetInstance:HasSkill(skillId)
-    if not self.petData.learnedSkills then
+function CompanionInstance:HasSkill(skillId)
+    if not self.companionData.learnedSkills then
         return false
     end
-    return self.petData.learnedSkills[skillId] == true
+    return self.companionData.learnedSkills[skillId] == true
 end
 
 ---学习技能
 ---@param skillId string 技能ID
 ---@return boolean 是否学习成功
 ---@return string|nil 错误信息
-function PetInstance:LearnSkill(skillId)
+function CompanionInstance:LearnSkill(skillId)
     if not skillId or skillId == "" then
         return false, "技能ID无效"
     end
@@ -389,14 +430,13 @@ function PetInstance:LearnSkill(skillId)
     
     -- TODO: 检查学习条件（等级、前置技能等）
     
-    if not self.petData.learnedSkills then
-        self.petData.learnedSkills = {}
+    if not self.companionData.learnedSkills then
+        self.companionData.learnedSkills = {}
     end
     
-    self.petData.learnedSkills[skillId] = true
+    self.companionData.learnedSkills[skillId] = true
     
-    
-    gg.log("宠物学会技能", self.petData.petName, "技能", skillId)
+    gg.log("伙伴学会技能", self.companionType, self:GetConfigName(), "技能", skillId)
     return true, nil
 end
 
@@ -405,39 +445,39 @@ end
 ---@param itemId string 物品ID
 ---@return boolean 是否装备成功
 ---@return string|nil 错误信息
-function PetInstance:EquipItem(slot, itemId)
+function CompanionInstance:EquipItem(slot, itemId)
     if not slot or slot <= 0 then
         return false, "装备槽位无效"
     end
     
-    if not self.petData.equipments then
-        self.petData.equipments = {}
+    if not self.companionData.equipments then
+        self.companionData.equipments = {}
     end
     
-    local oldItemId = self.petData.equipments[slot]
-    self.petData.equipments[slot] = itemId
+    local oldItemId = self.companionData.equipments[slot]
+    self.companionData.equipments[slot] = itemId
     
     self:RefreshAttributeCache()
     
-    gg.log("宠物装备物品", self.petData.petName, "槽位", slot, "物品", itemId, "替换", oldItemId)
+    gg.log("伙伴装备物品", self.companionType, self:GetConfigName(), "槽位", slot, "物品", itemId, "替换", oldItemId)
     return true, nil
 end
 
 ---卸下装备
 ---@param slot number 装备槽位
 ---@return string|nil 被卸下的物品ID
-function PetInstance:UnequipItem(slot)
-    if not self.petData.equipments then
+function CompanionInstance:UnequipItem(slot)
+    if not self.companionData.equipments then
         return nil
     end
     
-    local itemId = self.petData.equipments[slot]
+    local itemId = self.companionData.equipments[slot]
     if itemId then
-        self.petData.equipments[slot] = nil
+        self.companionData.equipments[slot] = nil
         
         self:RefreshAttributeCache()
         
-        gg.log("宠物卸下装备", self.petData.petName, "槽位", slot, "物品", itemId)
+        gg.log("伙伴卸下装备", self.companionType, self:GetConfigName(), "槽位", slot, "物品", itemId)
     end
     
     return itemId
@@ -445,37 +485,34 @@ end
 
 ---设置心情值
 ---@param mood number 心情值 (0-100)
-function PetInstance:SetMood(mood)
+function CompanionInstance:SetMood(mood)
     mood = math.max(0, math.min(100, mood))
-    self.petData.mood = mood
+    self.companionData.mood = mood
     
-    
-    gg.log("宠物心情值设置", self.petData.petName, "心情", mood)
+    gg.log("伙伴心情值设置", self.companionType, self:GetConfigName(), "心情", mood)
 end
 
 ---设置激活状态
 ---@param active boolean 是否激活
-function PetInstance:SetActive(active)
-    self.petData.isActive = active
+function CompanionInstance:SetActive(active)
+    self.companionData.isActive = active
     
-    
-    gg.log("宠物激活状态", self.petData.petName, "激活", active)
+    gg.log("伙伴激活状态", self.companionType, self:GetConfigName(), "激活", active)
 end
 
 ---设置自定义名称
 ---@param customName string 自定义名称
-function PetInstance:SetCustomName(customName)
-    self.petData.customName = customName or ""
+function CompanionInstance:SetCustomName(customName)
+    self.companionData.customName = customName or ""
     
-    
-    gg.log("宠物自定义名称", self.petData.petName, "新名称", customName)
+    gg.log("伙伴自定义名称", self.companionType, self:GetConfigName(), "新名称", customName)
 end
 
 ---添加临时buff
 ---@param buffId string buff ID
 ---@param duration number 持续时间（秒）
 ---@param attributes table<string, number> 属性加成
-function PetInstance:AddTempBuff(buffId, duration, attributes)
+function CompanionInstance:AddTempBuff(buffId, duration, attributes)
     self.tempBuffs[buffId] = {
         duration = duration,
         startTime = os.time(),
@@ -484,22 +521,22 @@ function PetInstance:AddTempBuff(buffId, duration, attributes)
     
     self:RefreshAttributeCache()
     
-    gg.log("宠物添加临时buff", self.petData.petName, "buff", buffId, "持续时间", duration)
+    gg.log("伙伴添加临时buff", self.companionType, self:GetConfigName(), "buff", buffId, "持续时间", duration)
 end
 
 ---移除临时buff
 ---@param buffId string buff ID
-function PetInstance:RemoveTempBuff(buffId)
+function CompanionInstance:RemoveTempBuff(buffId)
     if self.tempBuffs[buffId] then
         self.tempBuffs[buffId] = nil
         self:RefreshAttributeCache()
         
-        gg.log("宠物移除临时buff", self.petData.petName, "buff", buffId)
+        gg.log("伙伴移除临时buff", self.companionType, self:GetConfigName(), "buff", buffId)
     end
 end
 
 ---更新临时buff（移除过期的）
-function PetInstance:UpdateTempBuffs()
+function CompanionInstance:UpdateTempBuffs()
     local currentTime = os.time()
     local needRefresh = false
     
@@ -507,7 +544,7 @@ function PetInstance:UpdateTempBuffs()
         if currentTime >= buffData.startTime + buffData.duration then
             self.tempBuffs[buffId] = nil
             needRefresh = true
-            gg.log("宠物buff过期", self.petData.petName, "buff", buffId)
+            gg.log("伙伴buff过期", self.companionType, self:GetConfigName(), "buff", buffId)
         end
     end
     
@@ -516,4 +553,4 @@ function PetInstance:UpdateTempBuffs()
     end
 end
 
-return PetInstance
+return CompanionInstance
