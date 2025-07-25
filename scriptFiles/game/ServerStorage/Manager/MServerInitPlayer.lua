@@ -155,7 +155,6 @@ function MServerInitPlayer.player_enter_game(player)
 end
 
 -- 向客户端同步玩家数据
--- 向客户端同步玩家数据
 function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
     local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig

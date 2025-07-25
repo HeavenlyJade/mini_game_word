@@ -243,12 +243,15 @@ end
 
 ---清空所有子元素
 function ViewList:ClearChildren()
-    for _, child in ipairs(self.childrens) do
+    -- 【修正】使用 ipairs 遍历数组部分，而不是用 ipairs 遍历字典
+    for _, child in ipairs(self.childrensList) do
         if child.node  then
             child.node:Destroy()
         end
     end
     self.childrens = {}
+    -- 【修正】同时清空数组
+    self.childrensList = {}
 end
 
 return ViewList

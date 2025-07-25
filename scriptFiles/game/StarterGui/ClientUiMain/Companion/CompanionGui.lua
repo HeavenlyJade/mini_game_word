@@ -26,7 +26,6 @@ function CompanionGui:OnInit(node, config)
 
     -- 伙伴显示栏
     self.displayBar = self:Get("伙伴界面/伙伴显示栏", ViewComponent) ---@type ViewComponent
-    self.attributeIntro = self:Get("伙伴界面/伙伴显示栏/属性介绍", ViewComponent) ---@type ViewComponent
     self.upgradeButton = self:Get("伙伴界面/伙伴显示栏/升星", ViewButton) ---@type ViewButton
     self.equipButton = self:Get("伙伴界面/伙伴显示栏/装备", ViewButton) ---@type ViewButton
     self.unequipButton = self:Get("伙伴界面/伙伴显示栏/卸下", ViewButton) ---@type ViewButton
@@ -34,15 +33,21 @@ function CompanionGui:OnInit(node, config)
 
     -- 星级UI
     self.starUI = self:Get("伙伴界面/伙伴显示栏/星级UI", ViewComponent) ---@type ViewComponent
-    self.starLevel = self:Get("伙伴界面/伙伴显示栏/星级UI/星级", ViewComponent) ---@type ViewComponent
+    self.starList = self:Get("伙伴界面/伙伴显示栏/星级UI/星级", ViewList) ---@type ViewList
     self.nameLabel = self:Get("伙伴界面/伙伴显示栏/名字", ViewComponent) ---@type ViewComponent
+
+    -- 【新增】属性介绍UI
+    self.attributeIntroComp = self:Get("伙伴界面/伙伴显示栏/属性介绍", ViewComponent) ---@type ViewComponent
+    self.attributeList = self:Get("伙伴界面/伙伴显示栏/属性介绍/属性栏位", ViewList) ---@type ViewList
+    self.attributeTemplate = self:Get("伙伴界面/伙伴显示栏/属性介绍/属性栏位/属性栏", ViewComponent) ---@type ViewComponent
+    if self.attributeTemplate and self.attributeTemplate.node then
+        self.attributeTemplate.node.Visible = false -- 隐藏模板
+    end
 
     -- 伙伴栏位列表
     self.companionSlotList = self:Get("伙伴界面/伙伴栏位", ViewList) ---@type ViewList
-    self.slot1 = self:Get("伙伴界面/伙伴栏位/翅膀_1", ViewComponent) ---@type ViewComponent
-    self.slotBackground = self:Get("伙伴界面/伙伴栏位/翅膀_1/背景", ViewComponent) ---@type ViewComponent
-    self.icon = self:Get("伙伴界面/伙伴栏位/翅膀_1/背景/图标", ViewComponent) ---@type ViewComponent
-    self.priceSection = self:Get("伙伴界面/伙伴栏位/翅膀_1/背景/价格", ViewComponent) ---@type ViewComponent
+    -- 伙伴槽位模板 -- 【修正】根据UI节点图，模板节点是'伙伴_1'
+    self.slot1 = self:Get("伙伴界面/模板界面/伙伴_1", ViewComponent) ---@type ViewComponent
 
     -- 数据存储
     self.companionData = {} ---@type table 服务端同步的伙伴数据
@@ -198,8 +203,8 @@ function CompanionGui:OnCompanionUpdateNotify(data)
         
         -- 如果激活状态改变，更新激活伙伴ID
         if data.companionInfo.isActive then
-            self.activeCompanionId = data.companionInfo.partnerName
-        elseif self.activeCompanionId == data.companionInfo.partnerName then
+            self.activeCompanionId = data.companionInfo.companionName
+        elseif self.activeCompanionId == data.companionInfo.companionName then
             self.activeCompanionId = ""
         end
         
@@ -220,8 +225,9 @@ function CompanionGui:OnCompanionObtainedNotify(data)
         
         -- 如果界面已打开，立即刷新显示
         if self:IsOpen() then
-            self:CreateCompanionSlotItem(slotIndex, {id = slotIndex, data = data.companionInfo})
-            gg.log("新伙伴已添加到界面显示:", data.companionInfo.partnerName)
+            -- 【修正】修复传递给 CreateCompanionSlotItem 的参数
+            self:CreateCompanionSlotItem(slotIndex, data.companionInfo)
+            gg.log("新伙伴已添加到界面显示:", data.companionInfo.companionName)
         end
     end
 end
@@ -256,7 +262,7 @@ function CompanionGui:OnClickUpgradeStar()
     gg.log("点击升星按钮:", "槽位", slotIndex, "当前星级", currentStarLevel)
     
     -- 检查是否已达最高星级
-    local companionConfig = self:GetCompanionConfig(self.selectedCompanion.partnerName)
+    local companionConfig = self:GetCompanionConfig(self.selectedCompanion.companionName)
     if companionConfig and currentStarLevel >= (companionConfig.maxStarLevel or 5) then
         gg.log("伙伴已达最高星级")
         return
@@ -328,14 +334,23 @@ function CompanionGui:RefreshCompanionList()
     -- 清空现有按钮映射
     self.companionSlotButtons = {}
     
-    -- 清空列表
-    if self.companionSlotList then
-        self.companionSlotList:Clear()
-    end
+    self.companionSlotList:ClearChildren()
     
-    -- 重新构建伙伴列表
-    for slotIndex, companionInfo in pairs(self.companionData) do
-        self:CreateCompanionSlotItem(slotIndex, companionInfo)
+    -- 【修正】将伙伴数据排序后创建，确保显示顺序正确
+    -- 1. 将伙伴数据从字典转为数组
+    local companionList = {}
+    for _, companionInfo in pairs(self.companionData) do
+        table.insert(companionList, companionInfo)
+    end
+
+    -- 2. 按 slotIndex 从小到大排序
+    table.sort(companionList, function(a, b)
+        return (a.slotIndex or 0) < (b.slotIndex or 0)
+    end)
+
+    -- 3. 遍历排序后的列表来创建UI
+    for _, companionInfo in ipairs(companionList) do
+        self:CreateCompanionSlotItem(companionInfo.slotIndex, companionInfo)
     end
     
     gg.log("伙伴列表刷新完成，共", self:GetCompanionCount(), "个伙伴")
@@ -347,11 +362,12 @@ function CompanionGui:CreateCompanionSlotItem(slotIndex, companionInfo)
         gg.log("警告：伙伴槽位模板不存在")
         return
     end
-    
+    gg.log("创建伙伴槽位项", slotIndex, companionInfo)
     -- 克隆槽位模板
     local slotNode = self.slot1.node:Clone()
     slotNode.Visible = true
-    slotNode.Name = "伙伴槽位_" .. slotIndex
+    -- 【修正】使用伙伴名和槽位索引生成唯一节点名称, 修正字段为 companionName
+    slotNode.Name = companionInfo.companionName .. "_" .. slotIndex
     
     -- 添加到列表
     self.companionSlotList:AppendChild(slotNode)
@@ -379,7 +395,7 @@ function CompanionGui:SetupCompanionSlotDisplay(slotNode, slotIndex, companionIn
     -- 设置图标
     local iconNode = backgroundNode:FindFirstChild("图标")
     if iconNode then
-        local companionConfig = self:GetCompanionConfig(companionInfo.partnerName)
+        local companionConfig = self:GetCompanionConfig(companionInfo.companionName)
         if companionConfig and companionConfig.icon then
             iconNode.Image = companionConfig.icon
         end
@@ -391,11 +407,10 @@ function CompanionGui:SetupCompanionSlotDisplay(slotNode, slotIndex, companionIn
     -- 设置激活状态显示
     self:UpdateActiveState(slotNode, companionInfo.isActive or false)
     
-    -- 设置价格/等级信息
-    local priceNode = backgroundNode:FindFirstChild("价格")
-    if priceNode then
-        priceNode.Title = "Lv." .. (companionInfo.level or 1)
-    end
+    -- local priceNode = backgroundNode:FindFirstChild("价格")
+    -- if priceNode then
+    --     priceNode.Title = "Lv." .. (companionInfo.level or 1)
+    -- end
 end
 
 --- 更新星级显示
@@ -419,7 +434,9 @@ function CompanionGui:RefreshCompanionSlotDisplay(slotIndex)
     if not companionInfo then return end
     
     -- 查找对应的槽位节点
-    local slotNode = self.companionSlotList.node:FindFirstChild("伙伴槽位_" .. slotIndex)
+    -- 【修正】使用新的命名规则查找节点
+    local nodeName = companionInfo.companionName .. "_" .. slotIndex
+    local slotNode = self.companionSlotList.node:FindFirstChild(nodeName)
     if slotNode then
         self:SetupCompanionSlotDisplay(slotNode, slotIndex, companionInfo)
     end
@@ -427,12 +444,12 @@ end
 
 --- 伙伴槽位点击事件
 function CompanionGui:OnCompanionSlotClick(slotIndex, companionInfo)
-    gg.log("点击伙伴槽位:", slotIndex, companionInfo.partnerName)
+    gg.log("点击伙伴槽位:", slotIndex, companionInfo.companionName)
     
     -- 设置选中伙伴
     self.selectedCompanion = {
         slotIndex = slotIndex,
-        partnerName = companionInfo.partnerName,
+        companionName = companionInfo.companionName,
         level = companionInfo.level,
         starLevel = companionInfo.starLevel,
         isActive = companionInfo.isActive
@@ -451,17 +468,48 @@ function CompanionGui:RefreshSelectedCompanionDisplay()
     end
     
     local companion = self.selectedCompanion
-    gg.log("刷新选中伙伴显示:", companion.partnerName)
+    gg.log("刷新选中伙伴显示:", companion.companionName)
     
     -- 更新名字显示
     if self.nameLabel then
-        local displayName = companion.customName or companion.partnerName
+        local displayName = companion.customName or companion.companionName
+        -- 【修正】文本节点的属性是 Title，不是 UITextLabel
         self.nameLabel.node.Title = displayName
     end
     
     -- 更新星级显示
-    if self.starLevel then
-        self.starLevel.node.Title = string.rep("★", companion.starLevel or 1)
+    if self.starList then
+        local currentStarLevel = companion.starLevel or 0
+        for i, starViewComp in ipairs(self.starList.childrensList or {}) do
+            local starNode = starViewComp.node
+            if starNode then
+                -- 从自定义属性中读取亮星和暗星的图标资源ID
+                local litIcon = starNode:GetAttribute("存在")
+                local unlitIcon = starNode:GetAttribute("不存在")
+
+                if i <= currentStarLevel then
+                    -- 设置为亮星
+                    if litIcon and litIcon ~= "" then
+                        -- 【修正】增加安全检查，防止对非 Image 节点设置 Image 属性
+                        if rawget(starNode, "Image") then
+                            starNode.Image = litIcon
+                        else
+                            gg.log("警告: 节点 " .. starNode.Name .. " (类型: " .. starNode.ClassName .. ") 没有 Image 属性。")
+                        end
+                    end
+                else
+                    -- 设置为暗星
+                    if unlitIcon and unlitIcon ~= "" then
+                        -- 【修正】增加安全检查，防止对非 Image 节点设置 Image 属性
+                        if rawget(starNode, "Image") then
+                            starNode.Image = unlitIcon
+                        else
+                            gg.log("警告: 节点 " .. starNode.Name .. " (类型: " .. starNode.ClassName .. ") 没有 Image 属性。")
+                        end
+                    end
+                end
+            end
+        end
     end
     
     -- 更新属性介绍
@@ -473,26 +521,41 @@ end
 
 --- 更新属性显示
 function CompanionGui:UpdateAttributeDisplay(companion)
-    if not self.attributeIntro then return end
+    if not self.attributeList then return end
     
-    local companionConfig = self:GetCompanionConfig(companion.partnerName)
-    if not companionConfig then return end
-    
-    -- 构建属性文本
-    local attributeText = string.format("等级: %d\n星级: %d\n", 
-        companion.level or 1, 
-        companion.starLevel or 1
-    )
-    
-    -- 添加基础属性信息
-    if companionConfig.baseAttack then
-        attributeText = attributeText .. string.format("攻击力: %d\n", companionConfig.baseAttack)
-    end
-    if companionConfig.baseDefense then
-        attributeText = attributeText .. string.format("防御力: %d\n", companionConfig.baseDefense)
+    local companionConfig = self:GetCompanionConfig(companion.companionName)
+    if not companionConfig then 
+        self.attributeList:ClearChildren()
+        return 
     end
     
-    self.attributeIntro.node.Title = attributeText
+    -- TODO: 待实现 - 从配置中读取属性列表并计算数值
+    -- 以下为示例，假设 companionConfig.attributes 是一个属性列表
+    -- e.g., { {id = "Attack", name = "攻击"}, {id = "Defense", name = "防御"} }
+    local attributes = companionConfig.attributes or {
+        {name = "攻击力"},
+        {name = "防御力"},
+        {name = "生命值"}
+    }
+    
+    self.attributeList:SetElementSize(#attributes)
+    
+    for i, attrInfo in ipairs(attributes) do
+        local item = self.attributeList:GetChild(i)
+        if item and item.node then
+            local currentAttrText = item.node["当前属性"]
+            local nextAttrText = item.node["升星属性"]
+
+            -- TODO: 待实现 - 真实的属性值计算
+            local currentValue = "100" -- companion:GetAttributeValue(attrInfo.id, companion.starLevel)
+            local nextValue = "+20" -- companion:GetAttributeValue(attrInfo.id, companion.starLevel + 1)
+            
+            if currentAttrText and rawget(currentAttrText, "Title") then
+                currentAttrText.Title = attrInfo.name .. "：" .. currentValue
+            end
+            
+        end
+    end
 end
 
 --- 更新按钮状态
@@ -501,7 +564,7 @@ function CompanionGui:UpdateButtonStates(companion)
     
     -- 升星按钮状态
     if self.upgradeButton then
-        local companionConfig = self:GetCompanionConfig(companion.partnerName)
+        local companionConfig = self:GetCompanionConfig(companion.companionName)
         local maxStarLevel = companionConfig and companionConfig.maxStarLevel or 5
         local canUpgrade = (companion.starLevel or 1) < maxStarLevel
         
@@ -524,11 +587,25 @@ function CompanionGui:HideCompanionDetail()
     if self.nameLabel then
         self.nameLabel.node.Title = "未选择伙伴"
     end
-    if self.starLevel then
-        self.starLevel.node.Title = ""
+    if self.starList then
+        for i, starViewComp in ipairs(self.starList.childrensList or {}) do
+            local starNode = starViewComp.node
+            if starNode then
+                -- 全部设为暗星
+                local unlitIcon = starNode:GetAttribute("不存在")
+                if unlitIcon and unlitIcon ~= "" then
+                    -- 【修正】增加安全检查，防止对非 Image 节点设置 Image 属性
+                    if rawget(starNode, "Image") then
+                        starNode.Image = unlitIcon
+                    else
+                        gg.log("警告: 节点 " .. starNode.Name .. " (类型: " .. starNode.ClassName .. ") 没有 Image 属性。")
+                    end
+                end
+            end
+        end
     end
-    if self.attributeIntro then
-        self.attributeIntro.node.Title = "请选择一个伙伴查看详情"
+    if self.attributeList then
+        self.attributeList:ClearChildren()
     end
     
     -- 隐藏操作按钮
@@ -548,15 +625,15 @@ end
 -- =================================
 
 --- 获取伙伴配置
-function CompanionGui:GetCompanionConfig(partnerName)
-    if not partnerName then return nil end
+function CompanionGui:GetCompanionConfig(companionName)
+    if not companionName then return nil end
     
     -- 使用缓存避免重复加载
-    if not self.companionConfigs[partnerName] then
-        self.companionConfigs[partnerName] = ConfigLoader.GetPartner(partnerName)
+    if not self.companionConfigs[companionName] then
+        self.companionConfigs[companionName] = ConfigLoader.GetPartner(companionName)
     end
     
-    return self.companionConfigs[partnerName]
+    return self.companionConfigs[companionName]
 end
 
 --- 获取伙伴数量
