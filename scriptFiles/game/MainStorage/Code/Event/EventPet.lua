@@ -23,7 +23,10 @@ PetEventConfig.RESPONSE = {
     PET_STAR_UPGRADED = "PetStarUpgraded",     -- 宠物升星结果
     PET_SKILL_LEARNED = "PetSkillLearned",     -- 宠物学习技能结果
     PET_FED = "PetFed",                        -- 宠物喂养结果
-    PET_RENAMED = "PetRenamed"                 -- 宠物重命名结果
+    PET_RENAMED = "PetRenamed",                -- 宠物重命名结果
+    PET_STATS = "PetStats",                    -- 宠物统计结果
+    PET_BATCH_UPGRADE = "PetBatchUpgrade",     -- 批量升级结果
+    ERROR = "PetError"                         -- 错误响应
 }
 
 -- 服务器通知事件

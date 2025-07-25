@@ -62,9 +62,9 @@ end
 function CloudMailDataAccessor:LoadGlobalMail()
     local success, data = cloudService:GetTableOrEmpty("mail_global")
 
-    gg.log("--- 开始加载全服邮件 ---")
-    gg.log("加载状态:", success)
-    gg.log("加载到的原始数据:", data)
+    -- gg.log("--- 开始加载全服邮件 ---")
+    -- gg.log("加载状态:", success)
+    -- gg.log("加载到的原始数据:", data)
 
     -- 辅助函数：计算table中的元素数量
     local function table_count(t)

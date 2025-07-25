@@ -127,7 +127,7 @@ function MailEventManager.RegisterNetworkHandlers()
         MailEventManager.HandleDeleteReadMails(event)
     end, 100)
     
-    gg.log("邮件网络事件处理器注册完成")
+    -- gg.log("邮件网络事件处理器注册完成")
 end
 
 -- 处理获取邮件列表请求

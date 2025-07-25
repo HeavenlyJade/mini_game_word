@@ -282,13 +282,15 @@ function PetEventManager.HandleUpgradeAllPets(evt)
     if upgradedCount > 0 then
         gg.log("批量升级宠物成功", player.uin, "升级次数", upgradedCount)
         -- 发送响应事件到客户端
-        ServerEventManager.Notify(player.uin, "PetResponse_UpgradeAll", {
+        gg.network_channel:fireClient(player.uin, {
+            cmd = PetEventManager.RESPONSE.PET_BATCH_UPGRADE,
             success = true,
             upgradedCount = upgradedCount
         })
     else
         gg.log("批量升级宠物：没有可升级的宠物", player.uin)
-        ServerEventManager.Notify(player.uin, "PetResponse_UpgradeAll", {
+        gg.network_channel:fireClient(player.uin, {
+            cmd = PetEventManager.RESPONSE.PET_BATCH_UPGRADE,
             success = false,
             errorMsg = "没有可升级的宠物"
         })
@@ -312,7 +314,8 @@ function PetEventManager.HandleGetPetStats(evt)
     local count = PetMgr.GetPetCountByType(player.uin, petName, minStar)
     
     -- 发送统计结果
-    ServerEventManager.Notify(player.uin, "PetResponse_Stats", {
+    gg.network_channel:fireClient(player.uin, {
+        cmd = PetEventManager.RESPONSE.PET_STATS,
         petName = petName,
         minStar = minStar,
         count = count
@@ -325,7 +328,8 @@ end
 ---@param uin number 玩家ID
 ---@param petList table 宠物列表
 function PetEventManager.NotifyPetListUpdate(uin, petList)
-    ServerEventManager.Notify(uin, PetEventManager.NOTIFY.PET_LIST_UPDATE, {
+    gg.network_channel:fireClient(uin, {
+        cmd = PetEventManager.NOTIFY.PET_LIST_UPDATE,
         petList = petList
     })
 end
@@ -334,7 +338,8 @@ end
 ---@param uin number 玩家ID
 ---@param petInfo table 宠物信息
 function PetEventManager.NotifyPetUpdate(uin, petInfo)
-    ServerEventManager.Notify(uin, PetEventManager.NOTIFY.PET_UPDATE, {
+    gg.network_channel:fireClient(uin, {
+        cmd = PetEventManager.NOTIFY.PET_UPDATE,
         petInfo = petInfo
     })
 end
@@ -344,7 +349,8 @@ end
 ---@param slotIndex number 槽位索引
 ---@param petInfo table 宠物信息
 function PetEventManager.NotifyPetObtained(uin, slotIndex, petInfo)
-    ServerEventManager.Notify(uin, PetEventManager.NOTIFY.PET_OBTAINED, {
+    gg.network_channel:fireClient(uin, {
+        cmd = PetEventManager.NOTIFY.PET_OBTAINED,
         slotIndex = slotIndex,
         petInfo = petInfo
     })
@@ -354,7 +360,8 @@ end
 ---@param uin number 玩家ID
 ---@param slotIndex number 槽位索引
 function PetEventManager.NotifyPetRemoved(uin, slotIndex)
-    ServerEventManager.Notify(uin, PetEventManager.NOTIFY.PET_REMOVED, {
+    gg.network_channel:fireClient(uin, {
+        cmd = PetEventManager.NOTIFY.PET_REMOVED,
         slotIndex = slotIndex
     })
 end
@@ -365,7 +372,8 @@ end
 ---@param newStarLevel number 新星级
 ---@param consumedPets table 消耗的宠物信息
 function PetEventManager.NotifyPetStarUpgraded(uin, slotIndex, newStarLevel, consumedPets)
-    ServerEventManager.Notify(uin, "PetNotify_StarUpgraded", {
+    gg.network_channel:fireClient(uin, {
+        cmd = PetEventManager.RESPONSE.PET_STAR_UPGRADED,
         slotIndex = slotIndex,
         newStarLevel = newStarLevel,
         consumedPets = consumedPets or {}
@@ -377,7 +385,8 @@ end
 ---@param errorCode number 错误码
 ---@param errorMsg string 错误信息
 function PetEventManager.NotifyError(uin, errorCode, errorMsg)
-    ServerEventManager.Notify(uin, PetEventManager.RESPONSE.ERROR, {
+    gg.network_channel:fireClient(uin, {
+        cmd = PetEventManager.RESPONSE.ERROR,
         errorCode = errorCode,
         errorMsg = errorMsg
     })

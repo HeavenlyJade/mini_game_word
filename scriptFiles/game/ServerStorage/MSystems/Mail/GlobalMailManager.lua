@@ -28,7 +28,7 @@ function GlobalMailManager:OnInit()
     
     -- 加载全服邮件到缓存
     self.global_mail_cache = CloudMailDataAccessor:LoadGlobalMail()
-    gg.log("全局邮件管理器初始化完成")
+    -- gg.log("全局邮件管理器初始化完成")
     return self
 end
 

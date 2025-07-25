@@ -146,7 +146,7 @@ function MServerInitPlayer.player_enter_game(player)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
     PetMgr.OnPlayerJoin(player_)
-    gg.log("玩家", uin_, "登录完成，邮件和宠物数据已加载")
+    gg.log("玩家", uin_, "登录完成，邮件、背包、宠物和天赋数据已加载")
     MServerInitPlayer.syncPlayerDataToClient(player_)
 
     
@@ -163,7 +163,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
 
     local uin = mplayer.uin
     
-    -- 获取背包数据 - 修改这里
+            -- 获取背包数据 - 修改这里
 
     local bag = BagMgr.GetPlayerBag(uin)
     if bag then
@@ -173,6 +173,17 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
         gg.log("已使用 Bag:SyncToClient() 同步背包数据到客户端:", uin)
     else
         gg.log("警告: 玩家", uin, "的背包数据不存在，跳过背包同步")
+    end
+    
+    -- 【新增】同步宠物数据
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if petManager then
+        local petListData = petManager:GetPlayerPetList()
+        local PetEventManager = require(ServerStorage.MSystems.Pet.PetEventManager) ---@type PetEventManager
+        PetEventManager.NotifyPetListUpdate(uin, petListData.petList)
+        gg.log("已主动同步宠物数据到客户端:", uin, "宠物数量:", petManager:GetPetCount())
+    else
+        gg.log("警告: 玩家", uin, "的宠物数据不存在，跳过宠物数据同步")
     end
     
     -- 获取变量数据
@@ -246,6 +257,7 @@ function MServerInitPlayer.player_leave_game(player)
         MailMgr.OnPlayerLeave(uin_)
         BagMgr.OnPlayerLeave(uin_)
         PetMgr.OnPlayerLeave(uin_)
+        AchievementMgr.OnPlayerLeave(uin_)
         -- 其他管理器（如技能、任务等）的离线处理也可以在这里添加
         mplayer:leaveGame() -- 保存玩家基础数据
         serverDataMgr.removePlayer(uin_, player.Name)

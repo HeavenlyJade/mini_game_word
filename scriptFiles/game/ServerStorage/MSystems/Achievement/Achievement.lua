@@ -50,7 +50,7 @@ function Achievement:OnInit(playerId, achievementData)
     self._rewardCalculator = AchievementRewardCal.New()
     self.talentVariableData = self:_ConvertTalentDataToVariableFormat()
 
-    gg.log("初始化玩家成就聚合实例", playerId,achievementData,self._rewardCalculator)
+    -- gg.log("初始化玩家成就聚合实例", playerId,achievementData,self._rewardCalculator)
 
 end
 
