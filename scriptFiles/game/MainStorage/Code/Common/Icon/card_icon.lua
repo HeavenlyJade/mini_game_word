@@ -54,6 +54,13 @@ CardIcon.qualityBaseMapboxClickIcon = {
     ["SSR"] = "sandboxId://textures/ui/主界面UI/快捷栏/橙卡_1.png",
     ["UR"] = "sandboxId://textures/ui/主界面UI/快捷栏/彩卡_1.png",
 }
+CardIcon.qualityBackGroundIcon = {
+    ["N"] = "sandboxId://FlyUi/迷你界面/商城UI/绿色品质底图.png",
+    ["R"] = "sandboxId://FlyUi/迷你界面/商城UI/蓝色品质底图.png",
+    ["SR"] = "ssandboxId://FlyUi/迷你界面/商城UI/紫色品质底图.png",
+    ["SSR"] = "sandboxId://FlyUi/迷你界面/商城UI/橙色品质底图.png",
+    ["UR"] = "sandboxId://FlyUi/迷你界面/商城UI/彩色品质底图.png",
+}
 -- 品质优先级配置
 CardIcon.qualityPriority = {
     ["UR"] = 5,

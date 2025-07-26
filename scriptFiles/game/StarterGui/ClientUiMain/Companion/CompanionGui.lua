@@ -7,6 +7,7 @@ local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local PartnerEventConfig = require(MainStorage.Code.Event.EventPartner) ---@type PartnerEventConfig
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+local CardIcon = require(MainStorage.Code.Common.Icon.card_icon) ---@type CardIcon
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 local uiConfig = {
@@ -392,10 +393,19 @@ function CompanionGui:SetupCompanionSlotDisplay(slotNode, slotIndex, companionIn
     local backgroundNode = slotNode["背景"]
     if not backgroundNode then return end
     
+    local partnerConfig = self:GetPartnerConfig(companionInfo.companionName) --@type PartnerType
+
+    -- 【新增】根据伙伴品质设置背景图
+    if partnerConfig and partnerConfig.rarity then
+        local qualityBg = CardIcon.qualityBackGroundIcon[partnerConfig.rarity]
+        if qualityBg then
+            backgroundNode.Icon = qualityBg
+        end
+    end
+
     -- 设置图标
     local iconNode = backgroundNode["图标"]
     if iconNode then
-        local partnerConfig = self:GetPartnerConfig(companionInfo.companionName) --@type PartnerType
         if partnerConfig and partnerConfig.avatarResource then
             iconNode.Icon = partnerConfig.avatarResource
         end
