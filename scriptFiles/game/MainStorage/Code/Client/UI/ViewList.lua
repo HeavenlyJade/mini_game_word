@@ -70,7 +70,7 @@ end
 
 function ViewList:HideChildrenFrom(index)
     if #self.childrensList > index then
-        for i = index + 1, #self.childrens do
+        for i = index + 1, #self.childrensList do
             self.childrensList[i]:SetVisible(false)
         end
     end

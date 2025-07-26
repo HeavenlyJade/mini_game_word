@@ -20,9 +20,9 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 ---@field evolutionRequirement table 进化条件
 ---@field evolutionResult string 进化后形态
 ---@field obtainMethods table 获取方式
----@field modelResource string 模型资源
----@field avatarResource string 头像资源
----@field soundResource string 音效资源
+---@field modelResource string| nil 模型资源
+---@field avatarResource string| nil 头像资源
+---@field soundResource string| nil 音效资源
 ---@field specialTags table 特殊标签
 ---@field New fun(data:table):PetType
 local PetType = ClassMgr.Class("PetType")
@@ -60,9 +60,9 @@ function PetType:OnInit(data)
     self.obtainMethods = data["获取方式"] or {}
     
     -- 资源配置
-    self.modelResource = data["模型资源"] or ""
-    self.avatarResource = data["头像资源"] or ""
-    self.soundResource = data["音效资源"] or ""
+    self.modelResource = data["模型资源"] or nil
+    self.avatarResource = data["头像资源"] or nil
+    self.soundResource = data["音效资源"] or nil
     
     -- 特殊标记
     self.specialTags = data["特殊标签"] or {}
