@@ -192,8 +192,8 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     if partnerManager then
         local partnerListData = partnerManager:GetPlayerPartnerList()
         local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
-        PartnerEventManager.NotifyPartnerListUpdate(uin, partnerListData.partnerList)
-        gg.log("已主动同步伙伴数据到客户端:", uin, "伙伴数量:", partnerManager:GetPartnerCount())
+        PartnerEventManager.NotifyPartnerListUpdate(uin, partnerListData)
+        gg.log("已主动同步伙伴数据到客户端:", uin, "伙伴数量:",partnerListData)
     else
         gg.log("警告: 玩家", uin, "的伙伴数据不存在，跳过伙伴数据同步")
     end

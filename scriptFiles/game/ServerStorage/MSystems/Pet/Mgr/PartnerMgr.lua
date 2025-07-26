@@ -14,6 +14,7 @@ local RunService = game:GetService('RunService')
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local CloudPartnerDataAccessor = require(ServerStorage.MSystems.Pet.CloudData.PartnerCloudDataMgr) ---@type CloudPetDataAccessor
 local Partner = require(ServerStorage.MSystems.Pet.Compainion.Partner) ---@type Partner
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 
 ---@class PartnerMgr
 local PartnerMgr = {
@@ -119,8 +120,57 @@ function PartnerMgr.SetActivePartner(uin, slotIndex)
     if not partnerManager then
         return false, "玩家数据不存在"
     end
+
+    local success, errorMsg = partnerManager:SetActivePartner(slotIndex)
+
+    if success then
+        gg.log("伙伴激活状态设置成功", uin, slotIndex)
+        -- 在这里添加更新模型的逻辑
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin) ---@type MPlayer
+        if not player or not player.actor then
+            gg.log("错误：找不到玩家Actor，无法更新伙伴模型", uin)
+            return success, errorMsg
+        end
+
+        local partnerNode = player.actor:FindFirstChild("Partner1")
+        if not partnerNode then
+            gg.log("警告：在玩家Actor下未找到名为'Partner1'的节点", uin)
+            return success, errorMsg
+        end
+        
+        if slotIndex > 0 then
+            -- 装备伙伴
+            local activePartner = partnerManager:GetActivePartner()
+            if activePartner then
+                local partnerConfigName = activePartner:GetConfigName()
+                if not partnerConfigName then
+                    gg.log("错误：无法获取伙伴配置名称，隐藏节点", uin)
+                    partnerNode.Visible = false
+                    return success, errorMsg
+                end
+
+                local partnerConfig = ConfigLoader.GetPartner(partnerConfigName) ---@type PetType
+                if partnerConfig and partnerConfig.modelResource and partnerConfig.modelResource ~= "" then
+                    partnerNode.ModelId = partnerConfig.modelResource
+                    partnerNode.Visible = true
+                    gg.log("成功更新玩家伙伴模型并显示节点", uin, partnerConfig.modelResource)
+                else
+                    gg.log("警告：伙伴没有配置模型资源或配置不存在，隐藏节点", uin, partnerConfigName)
+                    partnerNode.Visible = false
+                end
+            else
+                -- 安全起见，如果找不到激活的伙伴实例，也隐藏节点
+                partnerNode.Visible = false
+            end
+        else
+            -- 卸下伙伴
+            partnerNode.Visible = false
+            gg.log("成功卸下伙伴并隐藏节点", uin)
+        end
+    end
     
-    return partnerManager:SetActivePartner(slotIndex)
+    return success, errorMsg
 end
 
 ---伙伴升级
@@ -321,8 +371,6 @@ function PartnerMgr.AddPartner(player, partnerName, slotIndex)
     local success, errorMsg, actualSlot = PartnerMgr.AddPartnerToSlot(player.uin, partnerName, slotIndex)
     if success then
         gg.log("PartnerMgr.AddPartner: 成功给玩家", player.uin, "添加伙伴", partnerName, "槽位", actualSlot)
-        -- 通知客户端更新
-        PartnerMgr.NotifyPartnerDataUpdate(player.uin, actualSlot)
     else
         gg.log("PartnerMgr.AddPartner: 给玩家", player.uin, "添加伙伴失败", partnerName, "错误", errorMsg)
     end
@@ -345,33 +393,6 @@ function PartnerMgr.AddPartnerByUin(uin, partnerName, slotIndex)
     end
     
     return PartnerMgr.AddPartner(player, partnerName, slotIndex)
-end
-
----通知客户端伙伴数据更新
----@param uin number 玩家ID
----@param slotIndex number|nil 具体槽位，nil表示全部更新
-function PartnerMgr.NotifyPartnerDataUpdate(uin, slotIndex)
-    -- TODO: 需要 PartnerEventManager
-    -- local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
-    
-    if slotIndex then
-        -- 单个伙伴更新
-        local partnerManager = PartnerMgr.GetPlayerPartner(uin)
-        if partnerManager then
-            local partnerInstance = partnerManager:GetPartnerBySlot(slotIndex)
-            if partnerInstance then
-                -- PartnerEventManager.NotifyPartnerUpdate(uin, partnerInstance:GetFullInfo())
-                gg.log("通知客户端伙伴更新(stub)", uin, slotIndex)
-            end
-        end
-    else
-        -- 全部伙伴更新
-        local result, errorMsg = PartnerMgr.GetPlayerPartnerList(uin)
-        if result then
-            -- PartnerEventManager.NotifyPartnerListUpdate(uin, result.partnerList)
-            gg.log("通知客户端伙伴列表更新(stub)", uin)
-        end
-    end
 end
 
 ---强制同步玩家伙伴数据到客户端
@@ -411,10 +432,6 @@ function PartnerMgr.UpgradeAllPossiblePartners(uin)
     end
     
     local upgradedCount = partnerManager:UpgradeAllPossiblePartners()
-    if upgradedCount > 0 then
-        -- 通知客户端更新
-        PartnerMgr.NotifyPartnerDataUpdate(uin)
-    end
     
     return upgradedCount
 end

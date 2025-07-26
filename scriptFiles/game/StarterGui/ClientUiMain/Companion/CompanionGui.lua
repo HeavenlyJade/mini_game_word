@@ -331,29 +331,54 @@ end
 --- 刷新伙伴列表
 function CompanionGui:RefreshCompanionList()
     gg.log("刷新伙伴列表显示")
-    
+
     -- 清空现有按钮映射
     self.companionSlotButtons = {}
-    
+
     self.companionSlotList:ClearChildren()
-    
-    -- 【修正】将伙伴数据排序后创建，确保显示顺序正确
-    -- 1. 将伙伴数据从字典转为数组
+
+    -- 1. 将伙伴数据从字典转为包含排序信息的数组
     local companionList = {}
     for _, companionInfo in pairs(self.companionData) do
-        table.insert(companionList, companionInfo)
+        local config = self:GetPartnerConfig(companionInfo.companionName)
+        table.insert(companionList, {
+            info = companionInfo,
+            rarity = config and config.rarity or 0,
+        })
     end
 
-    -- 2. 按 slotIndex 从小到大排序
+    -- 2. 按新的排序规则排序：1.装备 > 2.品质 > 3.星级
     table.sort(companionList, function(a, b)
-        return (a.slotIndex or 0) < (b.slotIndex or 0)
+        local aInfo = a.info
+        local bInfo = b.info
+
+        -- 规则1: 装备状态 (装备的在前)
+        if aInfo.isActive ~= bInfo.isActive then
+            return aInfo.isActive -- a为true时排在前面
+        end
+
+        -- 规则2: 品质 (高品质在前)
+        if a.rarity ~= b.rarity then
+            return a.rarity > b.rarity
+        end
+
+        -- 规则3: 星级 (高星级在前)
+        local aStars = aInfo.starLevel or 0
+        local bStars = bInfo.starLevel or 0
+        if aStars ~= bStars then
+            return aStars > bStars
+        end
+        
+        -- 规则4: 如果都相同, 按槽位ID排序 (保持稳定)
+        return (aInfo.slotIndex or 0) < (bInfo.slotIndex or 0)
     end)
 
     -- 3. 遍历排序后的列表来创建UI
-    for _, companionInfo in ipairs(companionList) do
+    for _, item in ipairs(companionList) do
+        local companionInfo = item.info
         self:CreateCompanionSlotItem(companionInfo.slotIndex, companionInfo)
     end
-    
+
     gg.log("伙伴列表刷新完成，共", self:GetCompanionCount(), "个伙伴")
 end
 
