@@ -12,19 +12,19 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local BaseCompanion = require(ServerStorage.MSystems.Pet.Compainion.BaseCompanion) ---@type BaseCompanion
+local PetEventConfig = require(MainStorage.Code.Event.EventPet) ---@type PetEventConfig
 
 
 ---@class Partner:BaseCompanion 伙伴管理器
 local Partner = ClassMgr.Class("Partner", BaseCompanion)
 
 function Partner:OnInit(uin, playerPartnerData)
-    -- 调用父类初始化
-    BaseCompanion.OnInit(self, uin, "伙伴", 30)
+    -- 【重构】从配置加载装备栏，并调用父类初始化
+    local equipSlotIds = PetEventConfig.EQUIP_CONFIG.PARTNER_SLOTS
+    BaseCompanion.OnInit(self, uin, "伙伴", equipSlotIds)
     
     -- 从伙伴数据初始化
-   
     self:LoadFromPartnerData(playerPartnerData)
-    
     
     gg.log("Partner管理器创建", uin, "伙伴数量", self:GetCompanionCount())
 end
@@ -62,9 +62,10 @@ end
 ---@return PlayerPartnerData 伙伴保存数据
 function Partner:GetSaveData()
     local playerPartnerData = {
-        activePartnerSlot = self.activeCompanionSlot,
+        activeSlots = self.activeCompanionSlots, -- 【修改】保存新的激活数据结构
         partnerList = {},
-        partnerSlots = self.maxSlots
+        partnerSlots = self.maxSlots, -- 保留背包容量字段
+        unlockedEquipSlots = self.unlockedEquipSlots -- 【新增】保存已解锁栏位数
     }
     
     -- 提取所有伙伴的数据
@@ -82,10 +83,16 @@ end
 ---从伙伴数据加载
 ---@param playerPartnerData PlayerPartnerData 伙伴数据
 function Partner:LoadFromPartnerData(playerPartnerData)
-    -- 设置激活槽位和最大槽位
-    self.activeCompanionSlot = playerPartnerData.activePartnerSlot or 0
-    self.maxSlots = playerPartnerData.partnerSlots or 30
+    if not playerPartnerData then return end
+
+    -- 【重构】加载新的激活数据结构
+    self.activeCompanionSlots = playerPartnerData.activeSlots or {}
+    self.maxSlots = playerPartnerData.partnerSlots or 30 -- 兼容旧数据
     
+    -- 【新增】加载已解锁的装备栏数量，确保不超过系统配置的最大值
+    local maxEquipped = #self.equipSlotIds
+    self.unlockedEquipSlots = math.min(playerPartnerData.unlockedEquipSlots or 1, maxEquipped)
+
     -- 创建伙伴实例
     for slotIndex, partnerData in pairs(playerPartnerData.partnerList or {}) do
         local companionInstance = self:CreateCompanionInstance(partnerData, slotIndex)
@@ -94,20 +101,13 @@ function Partner:LoadFromPartnerData(playerPartnerData)
         end
     end
     
-    gg.log("从伙伴数据加载", self.uin, "激活槽位", self.activeCompanionSlot, "伙伴数", self:GetCompanionCount())
+    gg.log("从伙伴数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "伙伴数", self:GetCompanionCount())
 end
 
 ---获取伙伴列表信息
 ---@return table 伙伴列表信息
 function Partner:GetPlayerPartnerList()
-    local companionList = self:GetCompanionList()
-    
-    -- 转换为伙伴格式
-    return {
-        partnerList = companionList.companionList,
-        activePartnerId = companionList.activeCompanionId,
-        partnerSlots = companionList.companionSlots
-    }
+    return self:GetCompanionList()
 end
 
 -- =================================
@@ -121,12 +121,9 @@ function Partner:GetPartnerBySlot(slotIndex)
     return self:GetCompanionBySlot(slotIndex)
 end
 
----获取激活的伙伴
----@return CompanionInstance|nil 激活的伙伴实例
----@return number|nil 槽位索引
-function Partner:GetActivePartner()
-    return self:GetActiveCompanion()
-end
+---【移除】该方法已被基类中的GetActiveCompanions替代
+-- function Partner:GetActivePartner() ... end
+
 
 ---添加伙伴
 ---@param partnerName string 伙伴名称
@@ -146,12 +143,24 @@ function Partner:RemovePartner(slotIndex)
     return self:RemoveCompanion(slotIndex)
 end
 
----设置激活伙伴
----@param slotIndex number 槽位索引（0表示取消激活）
----@return boolean 是否成功
----@return string|nil 错误信息
+---【重构】设置激活伙伴接口 -> 装备/卸下
+---@param companionSlotId number 伙伴背包槽位
+---@param equipSlotId string 目标装备栏ID
+---@return boolean, string|nil
+function Partner:EquipPartner(companionSlotId, equipSlotId)
+    return self:EquipCompanion(companionSlotId, equipSlotId)
+end
+
+---@param equipSlotId string 目标装备栏ID
+---@return boolean
+function Partner:UnequipPartner(equipSlotId)
+    return self:UnequipCompanion(equipSlotId)
+end
+
+---【废弃】旧的单一激活接口
 function Partner:SetActivePartner(slotIndex)
-    return self:SetActiveCompanion(slotIndex)
+    gg.log("警告: SetActivePartner 是一个废弃的接口，请使用 EquipPartner 或 UnequipPartner。")
+    return false, "接口已废弃"
 end
 
 ---伙伴升级
@@ -257,6 +266,9 @@ end
 function Partner:GetPartnerCount()
     return self:GetCompanionCount()
 end
+
+---【移除】该方法已被基类中的 GetActiveItemBonuses 取代
+-- function Partner:GetActiveItemBonuses() ... end
 
 -- =================================
 -- 伙伴专用扩展方法

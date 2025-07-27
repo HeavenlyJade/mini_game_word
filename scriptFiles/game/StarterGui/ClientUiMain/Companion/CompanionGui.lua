@@ -54,7 +54,8 @@ function CompanionGui:OnInit(node, config)
     self.companionData = {} ---@type table 服务端同步的伙伴数据
     self.selectedCompanion = nil ---@type table 当前选中的伙伴
     self.companionSlotButtons = {} ---@type table 伙伴槽位按钮映射
-    self.activeCompanionId = "" ---@type string 当前激活的伙伴ID
+    self.activeSlots = {} ---@type table<string, number> 当前激活的伙伴槽位映射
+    self.equipSlotIds = {} ---@type table<string> 所有可用的装备栏ID
     self.partnerConfigs = {} ---@type table 伙伴配置缓存
 
     -- 2. 事件注册
@@ -158,11 +159,12 @@ end
 --- 处理伙伴列表响应
 function CompanionGui:OnCompanionListResponse(data)
     gg.log("收到伙伴数据响应:", data)
-    if data and data.partnerList then
-        self.companionData = data.partnerList
-        self.activeCompanionId = data.activePartnerId or ""
+    if data and data.companionList then
+        self.companionData = data.companionList
+        self.activeSlots = data.activeSlots or {}
+        self.equipSlotIds = data.equipSlotIds or {}
         
-        gg.log("伙伴数据同步完成", "激活伙伴:", self.activeCompanionId)
+        gg.log("伙伴数据同步完成, 激活槽位:", self.activeSlots)
         
         -- 刷新界面显示
         self:RefreshCompanionList()
@@ -202,15 +204,13 @@ function CompanionGui:OnCompanionUpdateNotify(data)
         local slotIndex = data.companionSlot
         self.companionData[slotIndex] = data.companionInfo
         
-        -- 如果激活状态改变，更新激活伙伴ID
-        if data.companionInfo.isActive then
-            self.activeCompanionId = data.companionInfo.companionName
-        elseif self.activeCompanionId == data.companionInfo.companionName then
-            self.activeCompanionId = ""
+        -- 【重构】直接同步整个激活列表
+        if data.activeSlots then
+            self.activeSlots = data.activeSlots
         end
         
         -- 刷新显示
-        self:RefreshCompanionSlotDisplay(slotIndex)
+        self:RefreshCompanionList() -- 全量刷新以保证排序和激活状态正确
         if self.selectedCompanion and self.selectedCompanion.slotIndex == slotIndex then
             self:RefreshSelectedCompanionDisplay()
         end
@@ -279,12 +279,20 @@ function CompanionGui:OnClickEquipCompanion()
         gg.log("未选中伙伴，无法装备")
         return
     end
+
+    local companionSlotId = self.selectedCompanion.slotIndex
+    local equipSlotId = self:FindNextAvailableEquipSlot()
+
+    if not equipSlotId then
+        gg.log("没有可用的装备栏")
+        -- TODO: 向玩家显示提示
+        return
+    end
     
-    local slotIndex = self.selectedCompanion.slotIndex
-    gg.log("点击装备按钮:", "槽位", slotIndex)
+    gg.log("点击装备按钮:", "背包槽位", companionSlotId, "目标装备栏", equipSlotId)
     
-    -- 发送设置激活伙伴请求
-    self:SendSetActiveCompanionRequest(slotIndex)
+    -- 发送装备请求
+    self:SendEquipCompanionRequest(companionSlotId, equipSlotId)
 end
 
 --- 卸下按钮点击
@@ -294,10 +302,18 @@ function CompanionGui:OnClickUnequipCompanion()
         return
     end
     
-    gg.log("点击卸下按钮")
+    local companionSlotId = self.selectedCompanion.slotIndex
+    local equipSlotId = self:GetEquipSlotByCompanionSlot(companionSlotId)
+
+    if not equipSlotId then
+        gg.log("错误：该伙伴并未装备，但卸下按钮可见")
+        return
+    end
+
+    gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
     
-    -- 发送取消激活请求（槽位为0表示取消激活）
-    self:SendSetActiveCompanionRequest(0)
+    -- 发送卸下请求
+    self:SendUnequipCompanionRequest(equipSlotId)
 end
 
 -- =================================
@@ -314,15 +330,30 @@ function CompanionGui:SendUpgradeStarRequest(slotIndex)
     gg.network_channel:fireServer(requestData)
 end
 
---- 发送设置激活伙伴请求
-function CompanionGui:SendSetActiveCompanionRequest(slotIndex)
+--- 【重构】发送装备/卸下请求
+function CompanionGui:SendEquipCompanionRequest(companionSlotId, equipSlotId)
     local requestData = {
-        cmd = PartnerEventConfig.REQUEST.SET_ACTIVE_PARTNER,
-        args = { slotIndex = slotIndex }  -- 修改：统一使用 slotIndex
+        cmd = PartnerEventConfig.REQUEST.EQUIP_PARTNER,
+        args = { 
+            companionSlotId = companionSlotId,
+            equipSlotId = equipSlotId
+        }
     }
-    gg.log("发送设置激活伙伴请求:", slotIndex)
+    gg.log("发送装备伙伴请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
+
+function CompanionGui:SendUnequipCompanionRequest(equipSlotId)
+    local requestData = {
+        cmd = PartnerEventConfig.REQUEST.UNEQUIP_PARTNER,
+        args = { 
+            equipSlotId = equipSlotId
+        }
+    }
+    gg.log("发送卸下伙伴请求:", requestData.args)
+    gg.network_channel:fireServer(requestData)
+end
+
 
 -- =================================
 -- UI刷新方法
@@ -404,8 +435,9 @@ function CompanionGui:SetupCompanionSlotDisplay(slotNode, slotIndex, companionIn
     -- 设置星级显示
     self:UpdateStarDisplay(slotNode, companionInfo.starLevel or 1)
     
-    -- 设置激活状态显示
-    self:UpdateActiveState(slotNode, companionInfo.isActive or false)
+    -- 【重构】根据新的激活数据结构更新显示
+    local isEquipped = self:IsCompanionEquipped(slotIndex)
+    self:UpdateActiveState(slotNode, isEquipped)
     
 end
 
@@ -442,13 +474,15 @@ end
 function CompanionGui:OnCompanionSlotClick(slotIndex, companionInfo)
     gg.log("点击伙伴槽位:", slotIndex, companionInfo.companionName)
     
+    local isEquipped = self:IsCompanionEquipped(slotIndex)
+
     -- 设置选中伙伴
     self.selectedCompanion = {
         slotIndex = slotIndex,
         companionName = companionInfo.companionName,
         level = companionInfo.level,
         starLevel = companionInfo.starLevel,
-        isActive = companionInfo.isActive
+        isEquipped = isEquipped -- 【修改】使用 isEquipped 替代 isActive
     }
     
     -- 刷新选中伙伴的详细显示
@@ -570,7 +604,7 @@ function CompanionGui:UpdateAttributeItem(attributeNode, variableName, currentEf
 
     -- 设置当前属性
     if currentAttrText and currentEffectData then
-        currentAttrText.Title = partnerConfig:FormatEffectDescription(variableName, currentEffectData.value)
+        currentAttrText.Title = partnerConfig:FormatEffectDescription(variableName, currentEffectData.value, currentEffectData.isPercentage)
     end
 
     -- 设置升星属性
@@ -578,7 +612,7 @@ function CompanionGui:UpdateAttributeItem(attributeNode, variableName, currentEf
         if isMaxStar then
             nextAttrText.Title = "升星属性: 已满级"
         elseif nextEffectData then
-            nextAttrText.Title = partnerConfig:FormatEffectDescription(variableName, nextEffectData.value)
+            nextAttrText.Title = partnerConfig:FormatEffectDescription(variableName, nextEffectData.value, nextEffectData.isPercentage)
         else
             -- 正常情况下不应出现，作为保险
             nextAttrText.Title = "升星属性: N/A"
@@ -602,13 +636,19 @@ function CompanionGui:UpdateButtonStates(companion)
         self.upgradeButton:SetTouchEnable(canUpgrade, nil)
     end
     
-    -- 装备/卸下按钮状态
-    local isActive = companion.isActive
+    -- 【重构】装备/卸下按钮状态
+    local isEquipped = companion.isEquipped
+    local hasEmptySlot = self:FindNextAvailableEquipSlot() ~= nil
+
     if self.equipButton then
-        self.equipButton:SetVisible(not isActive)
+        -- 仅在“未装备”且“有空位”时显示并启用装备按钮
+        local canEquip = not isEquipped and hasEmptySlot
+        self.equipButton:SetVisible(canEquip)
+        self.equipButton:SetTouchEnable(canEquip, nil)
     end
     if self.unequipButton then
-        self.unequipButton:SetVisible(isActive)
+        -- 仅在“已装备”时显示卸下按钮
+        self.unequipButton:SetVisible(isEquipped)
     end
 end
 
@@ -668,8 +708,8 @@ function CompanionGui:GetSortedCompanionList()
         local bInfo = b.info
 
         -- 规则1: 装备状态 (装备的在前)
-        if aInfo.isActive ~= bInfo.isActive then
-            return aInfo.isActive -- a为true时排在前面
+        if aInfo.isEquipped ~= bInfo.isEquipped then
+            return aInfo.isEquipped
         end
 
         -- 规则2: 品质 (高品质在前)
@@ -690,6 +730,42 @@ function CompanionGui:GetSortedCompanionList()
     
     return companionList
 end
+
+--- 【新增】检查伙伴是否已装备
+---@param companionSlotId number
+---@return boolean
+function CompanionGui:IsCompanionEquipped(companionSlotId)
+    for _, equippedId in pairs(self.activeSlots) do
+        if equippedId == companionSlotId then
+            return true
+        end
+    end
+    return false
+end
+
+--- 【新增】根据伙伴背包槽位ID查找其所在的装备栏ID
+---@param companionSlotId number
+---@return string|nil
+function CompanionGui:GetEquipSlotByCompanionSlot(companionSlotId)
+    for equipId, compId in pairs(self.activeSlots) do
+        if compId == companionSlotId then
+            return equipId
+        end
+    end
+    return nil
+end
+
+--- 【新增】查找下一个可用的装备栏ID
+---@return string|nil
+function CompanionGui:FindNextAvailableEquipSlot()
+    for _, equipId in ipairs(self.equipSlotIds) do
+        if not self.activeSlots[equipId] then
+            return equipId
+        end
+    end
+    return nil
+end
+
 
 --- 获取伙伴配置
 function CompanionGui:GetPartnerConfig(partnerName)

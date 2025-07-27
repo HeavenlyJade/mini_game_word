@@ -21,9 +21,10 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 ---@field mood number 心情值 (0-100)
 
 ---@class PlayerPartnerData
----@field activePartnerSlot number 当前激活的伙伴槽位 (0表示无激活)
+---@field activeSlots table<string, number> 激活的伙伴槽位映射 {[装备栏ID] = 背包槽位ID}
 ---@field partnerList table<number, PartnerData> 伙伴数据列表 {slotIndex = partnerData} 对应背包槽位的伙伴
 ---@field partnerSlots number 伙伴背包槽位数量
+---@field unlockedEquipSlots number 玩家当前可携带(已解锁)的伙伴栏位数量
 
 ---@class CloudPartnerDataAccessor
 local CloudPartnerDataAccessor = {}
@@ -39,9 +40,10 @@ function CloudPartnerDataAccessor:LoadPlayerPartnerData(uin)
     else
         -- 创建默认伙伴数据
         return {
-            activePartnerSlot = 0,
+            activeSlots = {},
             partnerList = {},
             partnerSlots = 30,
+            unlockedEquipSlots = 1, -- 默认解锁1个栏位
         }
     end
 end

@@ -12,14 +12,16 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local BaseCompanion = require(ServerStorage.MSystems.Pet.Compainion.BaseCompanion) ---@type BaseCompanion
-
+local PetEventConfig = require(MainStorage.Code.Event.EventPet) ---@type PetEventConfig
 
 ---@class Pet:BaseCompanion 宠物管理器
 local Pet = ClassMgr.Class("Pet", BaseCompanion)
 
 function Pet:OnInit(uin, playerPetData)
-    -- 调用父类初始化
-    BaseCompanion.OnInit(self, uin, "宠物", 50)
+    -- 【重构】从配置加载装备栏，并调用父类初始化
+    local equipSlotIds = PetEventConfig.EQUIP_CONFIG.PET_SLOTS
+    BaseCompanion.OnInit(self, uin, "宠物", equipSlotIds)
+    
     self:LoadFromPetData(playerPetData)
     gg.log("Pet管理器创建", uin, "宠物数量", self:GetCompanionCount())
 end
@@ -57,9 +59,10 @@ end
 ---@return PlayerPetData 宠物保存数据
 function Pet:GetSaveData()
     local playerPetData = {
-        activePetSlot = self.activeCompanionSlot,
+        activeSlots = self.activeCompanionSlots, -- 【修改】保存新的激活数据结构
         petList = {},
-        petSlots = self.maxSlots
+        petSlots = self.maxSlots, -- 保留背包容量字段，以备将来使用
+        unlockedEquipSlots = self.unlockedEquipSlots -- 【新增】保存已解锁栏位数
     }
     
     -- 提取所有宠物的数据
@@ -77,9 +80,15 @@ end
 ---从宠物数据加载
 ---@param playerPetData PlayerPetData 宠物数据
 function Pet:LoadFromPetData(playerPetData)
-    -- 设置激活槽位和最大槽位
-    self.activeCompanionSlot = playerPetData.activePetSlot or 0
-    self.maxSlots = playerPetData.petSlots or 50
+    if not playerPetData then return end
+    
+    -- 【重构】加载新的激活数据结构
+    self.activeCompanionSlots = playerPetData.activeSlots or {}
+    self.maxSlots = playerPetData.petSlots or 50 -- 兼容旧数据
+
+    -- 【新增】加载已解锁的装备栏数量，确保不超过系统配置的最大值
+    local maxEquipped = #self.equipSlotIds
+    self.unlockedEquipSlots = math.min(playerPetData.unlockedEquipSlots or 1, maxEquipped)
     
     -- 创建宠物实例
     for slotIndex, petData in pairs(playerPetData.petList or {}) do
@@ -89,20 +98,13 @@ function Pet:LoadFromPetData(playerPetData)
         end
     end
     
-    gg.log("从宠物数据加载", self.uin, "激活槽位", self.activeCompanionSlot, "宠物数", self:GetCompanionCount())
+    gg.log("从宠物数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "宠物数", self:GetCompanionCount())
 end
 
 ---获取宠物列表信息（兼容原接口）
 ---@return table 宠物列表信息
 function Pet:GetPlayerPetList()
-    local companionList = self:GetCompanionList()
-    
-    -- 转换为原有的宠物格式
-    return {
-        petList = companionList.companionList,
-        activePetId = companionList.activeCompanionId,
-        petSlots = companionList.companionSlots
-    }
+    return self:GetCompanionList()
 end
 
 -- =================================
@@ -116,12 +118,8 @@ function Pet:GetPetBySlot(slotIndex)
     return self:GetCompanionBySlot(slotIndex)
 end
 
----获取激活的宠物（兼容接口）
----@return CompanionInstance|nil 激活的宠物实例
----@return number|nil 槽位索引
-function Pet:GetActivePet()
-    return self:GetActiveCompanion()
-end
+---【移除】该方法已被基类中的GetActiveCompanions替代
+-- function Pet:GetActivePet() ... end
 
 ---添加宠物（兼容接口）
 ---@param petName string 宠物名称
@@ -141,12 +139,24 @@ function Pet:RemovePet(slotIndex)
     return self:RemoveCompanion(slotIndex)
 end
 
----设置激活宠物（兼容接口）
----@param slotIndex number 槽位索引（0表示取消激活）
----@return boolean 是否成功
----@return string|nil 错误信息
+---【重构】设置激活宠物接口 -> 装备/卸下
+---@param companionSlotId number 伙伴背包槽位
+---@param equipSlotId string 目标装备栏ID
+---@return boolean, string|nil
+function Pet:EquipPet(companionSlotId, equipSlotId)
+    return self:EquipCompanion(companionSlotId, equipSlotId)
+end
+
+---@param equipSlotId string 目标装备栏ID
+---@return boolean
+function Pet:UnequipPet(equipSlotId)
+    return self:UnequipCompanion(equipSlotId)
+end
+
+---【废弃】旧的单一激活接口
 function Pet:SetActivePet(slotIndex)
-    return self:SetActiveCompanion(slotIndex)
+    gg.log("警告: SetActivePet 是一个废弃的接口，请使用 EquipPet 或 UnequipPet。")
+    return false, "接口已废弃"
 end
 
 ---宠物升级（兼容接口）
@@ -252,6 +262,9 @@ end
 function Pet:GetPetCount()
     return self:GetCompanionCount()
 end
+
+---【移除】该方法已被基类中的 GetActiveItemBonuses 取代
+-- function Pet:GetActiveItemBonuses() ... end
 
 -- =================================
 -- 宠物专用扩展方法

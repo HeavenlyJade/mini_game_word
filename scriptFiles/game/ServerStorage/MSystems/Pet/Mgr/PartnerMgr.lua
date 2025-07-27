@@ -67,7 +67,7 @@ function PartnerMgr.OnPlayerJoin(player)
     local partnerManager = Partner.New(uin, playerPartnerData)
     PartnerMgr.server_player_partners[uin] = partnerManager
     
-    gg.log("玩家伙伴管理器加载完成", uin, "伙伴数量", partnerManager:GetPartnerCount())
+    gg.log("玩家伙伴管理器加载完成", uin, "伙伴数量数据",playerPartnerData)
 end
 
 ---玩家离线处理
@@ -450,7 +450,43 @@ function PartnerMgr.GetPartnerCountByType(uin, partnerName, minStar)
     return partnerManager:GetPartnerCountByType(partnerName, minStar)
 end
 
+---【新增】装备伙伴接口
+---@param uin number 玩家ID
+---@param companionSlotId number 要装备的伙伴背包槽位ID
+---@param equipSlotId string 目标装备栏ID
+---@return boolean, string|nil
+function PartnerMgr.EquipPartner(uin, companionSlotId, equipSlotId)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if not partnerManager then
+        return false, "玩家伙伴数据不存在"
+    end
+    return partnerManager:EquipPartner(companionSlotId, equipSlotId)
+end
 
+---【新增】卸下伙伴接口
+---@param uin number 玩家ID
+---@param equipSlotId string 目标装备栏ID
+---@return boolean, string|nil
+function PartnerMgr.UnequipPartner(uin, equipSlotId)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if not partnerManager then
+        return false, "玩家伙伴数据不存在"
+    end
+    return partnerManager:UnequipPartner(equipSlotId)
+end
+
+--- 获取当前激活伙伴的物品加成
+---@param uin number 玩家ID
+---@return table<string, number> 激活伙伴的物品加成
+function PartnerMgr.GetActiveItemBonuses(uin)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if not partnerManager then
+        gg.log("[PartnerMgr] GetActiveItemBonuses: 找不到玩家的伙伴管理器", uin)
+        return {}
+    end
+    
+    return partnerManager:GetActiveItemBonuses()
+end
 
 
 return PartnerMgr

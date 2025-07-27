@@ -2,6 +2,12 @@
 ---@class PetEventConfig
 local PetEventConfig = {}
 
+-- 【新】装备系统配置
+PetEventConfig.EQUIP_CONFIG = {
+    PARTNER_SLOTS = { "Partner1", "Partner2", "Partner3", "Partner4" },
+    PET_SLOTS = { "Pet1", "Pet2", "Pet3", "Pet4", "Pet5", "Pet6", "Pet7", "Pet8", "Pet9" }
+}
+
 -- 客户端请求事件
 PetEventConfig.REQUEST = {
     GET_PET_LIST = "GetPetList",               -- 获取宠物列表

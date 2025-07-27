@@ -7,6 +7,7 @@ local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
+local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
 -- 【已移除】不再需要直接引用 ServerEventManager
 
 ---@class RaceGameMode: GameModeBase
@@ -295,13 +296,35 @@ function RaceGameMode:_calculateAndDistributeRewards()
                 
                 gg.log(string.format("信息: [RaceGameMode] 开始为玩家 %s (第%d名) 计算奖励...", playerData.playerName, playerData.rank))
                 
-                -- 1. 计算并分发基础奖励
+                -- 1. 计算原始奖励
                 local baseRewards = self.levelType:CalculateBaseRewards(playerData)
-                if baseRewards and next(baseRewards) then
+                local rankRewardsArray = self.levelType:GetRankRewards(playerData.rank)
+
+                -- 2. 计算玩家所有物品加成
+                local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
+                
+                -- 3. 应用加成到基础奖励
+                local finalBaseRewards = BonusManager.ApplyBonusesToRewards(baseRewards, bonuses)
+                
+                -- 4. 应用加成到排名奖励
+                local rankRewardsDict = {}
+                if rankRewardsArray and #rankRewardsArray > 0 then
+                    for _, rewardItem in ipairs(rankRewardsArray) do
+                        local itemName = rewardItem["物品"]
+                        local amount = rewardItem["数量"]
+                        if itemName and amount then
+                            rankRewardsDict[itemName] = (rankRewardsDict[itemName] or 0) + amount
+                        end
+                    end
+                end
+                local finalRankRewards = BonusManager.ApplyBonusesToRewards(rankRewardsDict, bonuses)
+
+                -- 5. 发放最终奖励
+                -- a. 发放基础奖励
+                if finalBaseRewards and next(finalBaseRewards) then
                     gg.log(" -> 开始发放基础奖励...")
-                    for itemName, amount in pairs(baseRewards) do
+                    for itemName, amount in pairs(finalBaseRewards) do
                         if amount > 0 then
-                            gg.log(string.format("    - 基础奖励: %s x%d", itemName, amount))
                             self:_giveItemToPlayer(player, itemName, amount)
                         end
                     end
@@ -309,20 +332,18 @@ function RaceGameMode:_calculateAndDistributeRewards()
                     gg.log(" -> 无基础奖励可发放。")
                 end
                 
-                -- 2. 获取并分发排名奖励
-                local rankRewards = self.levelType:GetRankRewards(playerData.rank)
-                if rankRewards and #rankRewards > 0 then
+                -- b. 发放排名奖励
+                if finalRankRewards and next(finalRankRewards) then
                     gg.log(" -> 开始发放排名奖励...")
-                    for _, rewardItem in ipairs(rankRewards) do
-                        local itemName = rewardItem["物品"]
-                        local amount = rewardItem["数量"]
-                        if itemName and amount and amount > 0 then
-                            gg.log(string.format("    - 排名奖励: %s x%d", itemName, amount))
+                    for itemName, amount in pairs(finalRankRewards) do
+                        if amount > 0 then
                             self:_giveItemToPlayer(player, itemName, amount)
                         end
                     end
                 else
-                    gg.log(string.format(" -> 玩家 %s (第%d名) 无排名奖励可发放。", playerData.playerName, playerData.rank))
+                    if not (rankRewardsArray and #rankRewardsArray > 0) then
+                        gg.log(string.format(" -> 玩家 %s (第%d名) 无排名奖励可发放。", playerData.playerName, playerData.rank))
+                    end
                 end
             else
                 gg.log(string.format("警告: [RaceGameMode] 未找到 UIN %d 对应的玩家实例，无法发放奖励。", uin))

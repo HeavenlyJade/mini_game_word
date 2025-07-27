@@ -553,4 +553,46 @@ function CompanionInstance:UpdateTempBuffs()
     end
 end
 
+--- 获取物品加成效果
+---@return table<string, table> 物品加成 {[物品目标] = {fixed = number, percentage = number}}
+function CompanionInstance:GetItemBonuses()
+    local starLevel = self:GetStarLevel()
+    if not self.companionTypeConfig or not self.companionTypeConfig.CalculateCarryingEffectsByStarLevel then
+        return {}
+    end
+    
+    local allEffects = self.companionTypeConfig:CalculateCarryingEffectsByStarLevel(starLevel)
+    
+    -- 【日志1】打印从类型配置中收到的所有计算后的效果
+    gg.log(string.format("[CompanionInstance] GetItemBonuses for %s (Slot %d, Star %d) - Received effects:", self:GetName(), self.slotIndex, starLevel))
+    gg.log(allEffects)
+    
+    local itemBonuses = {}
+    
+    for variableName, effectData in pairs(allEffects) do
+        -- 筛选出物品加成类型
+        if effectData.bonusType == "物品" and effectData.itemTarget then
+            local bonusValue = effectData.value or 0
+            local itemName = effectData.itemTarget
+
+            if not itemBonuses[itemName] then
+                itemBonuses[itemName] = { fixed = 0, percentage = 0 }
+            end
+
+            -- 【修复】根据 isPercentage 标志将加成分配到不同字段
+            if effectData.isPercentage then
+                itemBonuses[itemName].percentage = (itemBonuses[itemName].percentage or 0) + (bonusValue * 100)
+            else
+                itemBonuses[itemName].fixed = (itemBonuses[itemName].fixed or 0) + bonusValue
+            end
+        end
+    end
+    
+    -- 【日志2】打印最终筛选出的、准备返回给上层的物品加成
+    gg.log(string.format("[CompanionInstance] GetItemBonuses for %s (Slot %d) - Final item bonuses:", self:GetName(), self.slotIndex))
+    gg.log(itemBonuses)
+    
+    return itemBonuses
+end
+
 return CompanionInstance

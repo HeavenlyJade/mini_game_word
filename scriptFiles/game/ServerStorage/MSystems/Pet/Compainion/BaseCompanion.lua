@@ -18,19 +18,21 @@ local CompanionInstance = require(ServerStorage.MSystems.Pet.CompanionInstance) 
 ---@class BaseCompanion:Class 伙伴管理器基类
 ---@field uin number 玩家ID
 ---@field companionInstances table<number, CompanionInstance> 伙伴实例列表 {slotIndex = CompanionInstance}
----@field activeCompanionSlot number 当前激活的伙伴槽位 (0表示无激活)
----@field maxSlots number 最大槽位数
+---@field activeCompanionSlots table<string, number> 激活的伙伴槽位映射 {[装备栏ID] = 背包槽位ID}
+---@field equipSlotIds table<string> 所有可用的装备栏ID
+---@field unlockedEquipSlots number 玩家当前已解锁的装备栏数量
 ---@field companionType string 伙伴类型（"宠物" 或 "伙伴"）
 local BaseCompanion = ClassMgr.Class("BaseCompanion")
 
-function BaseCompanion:OnInit(uin, companionType, maxSlots)
+function BaseCompanion:OnInit(uin, companionType, equipSlotIds)
     self.uin = uin or 0
     self.companionInstances = {}
-    self.activeCompanionSlot = 0
-    self.maxSlots = maxSlots or 50
+    self.activeCompanionSlots = {}
+    self.equipSlotIds = equipSlotIds or {} -- 从子类传入配置的栏位ID
+    self.unlockedEquipSlots = 1 -- 默认值，将在LoadData时被覆盖
     self.companionType = companionType or "未知"
     
-    gg.log("BaseCompanion基类初始化", uin, "类型", companionType, "最大槽位", maxSlots)
+    gg.log("BaseCompanion基类初始化", uin, "类型", self.companionType, "可用装备栏", table.concat(self.equipSlotIds, ", "))
 end
 
 -- =================================
@@ -92,35 +94,60 @@ function BaseCompanion:GetCompanionBySlot(slotIndex)
     return self.companionInstances[slotIndex]
 end
 
----获取激活的伙伴实例
----@return CompanionInstance|nil 激活的伙伴实例
----@return number|nil 槽位索引
-function BaseCompanion:GetActiveCompanion()
-    if self.activeCompanionSlot == 0 then
-        return nil, nil
+---【重构】获取所有激活的伙伴实例
+---@return table<CompanionInstance> 激活的伙伴实例列表
+function BaseCompanion:GetActiveCompanions()
+    local activeCompanions = {}
+    for equipSlotId, companionSlotId in pairs(self.activeCompanionSlots) do
+        if companionSlotId and companionSlotId > 0 then
+            local instance = self:GetCompanionBySlot(companionSlotId)
+            if instance then
+                table.insert(activeCompanions, instance)
+            end
+        end
+    end
+    return activeCompanions
+end
+
+---【新增】获取所有激活伙伴的物品加成
+---@return table<string, table> 物品加成 {[物品目标] = {fixed = number, percentage = number}}
+function BaseCompanion:GetActiveItemBonuses()
+    local totalBonuses = {}
+    local BonusManager = require(ServerStorage.BonusManager.BonusManager) -- 懒加载以避免循环依赖
+    
+    local activeCompanions = self:GetActiveCompanions()
+    for _, companionInstance in ipairs(activeCompanions) do
+        local singleBonus = companionInstance:GetItemBonuses()
+        BonusManager.MergeBonuses(totalBonuses, singleBonus)
     end
     
-    local companionInstance = self.companionInstances[self.activeCompanionSlot]
-    return companionInstance, self.activeCompanionSlot
+    return totalBonuses
 end
+
 
 ---获取所有伙伴信息
 ---@return table 伙伴列表信息
 function BaseCompanion:GetCompanionList()
     local companionList = {}
-    local activeCompanionId = ""
     
     for slotIndex, companionInstance in pairs(self.companionInstances) do
         companionList[slotIndex] = companionInstance:GetFullInfo()
-        if slotIndex == self.activeCompanionSlot then
-            activeCompanionId = companionInstance:GetConfigName()
-        end
     end
     
+    -- 【新增】计算当前玩家实际可用的装备栏
+    local availableEquipSlots = {}
+    for i = 1, self.unlockedEquipSlots do
+        if self.equipSlotIds[i] then
+            table.insert(availableEquipSlots, self.equipSlotIds[i])
+        end
+    end
+
     return {
         companionList = companionList,
-        activeCompanionId = activeCompanionId,
-        companionSlots = self.maxSlots,
+        activeSlots = self.activeCompanionSlots, -- 【修改】返回新的激活数据结构
+        equipSlotIds = availableEquipSlots, -- 【修改】只返回玩家当前可用的装备栏
+        unlockedEquipSlots = self.unlockedEquipSlots, -- 【新增】返回已解锁栏位数
+        maxEquipSlots = #self.equipSlotIds, -- 【新增】返回系统最大栏位数
         companionType = self.companionType
     }
 end
@@ -191,9 +218,11 @@ function BaseCompanion:RemoveCompanion(slotIndex)
         return false, "槽位为空"
     end
     
-    -- 如果是激活伙伴，取消激活
-    if self.activeCompanionSlot == slotIndex then
-        self.activeCompanionSlot = 0
+    -- 【重构】如果被移除的伙伴正在装备中，则将其从所有装备栏卸下
+    for equipSlotId, equippedCompanionSlotId in pairs(self.activeCompanionSlots) do
+        if equippedCompanionSlotId == slotIndex then
+            self:UnequipCompanion(equipSlotId)
+        end
     end
     
     -- 移除伙伴实例
@@ -203,51 +232,73 @@ function BaseCompanion:RemoveCompanion(slotIndex)
     return true, nil
 end
 
----设置激活伙伴
----@param slotIndex number 槽位索引（0表示取消激活）
+---【重构】装备伙伴到指定装备栏
+---@param companionSlotId number 要装备的伙伴背包槽位ID
+---@param equipSlotId string 目标装备栏ID (如 "Partner1")
 ---@return boolean 是否成功
 ---@return string|nil 错误信息
-function BaseCompanion:SetActiveCompanion(slotIndex)
-    -- 取消激活
-    if slotIndex == 0 then
-        -- 将之前的激活伙伴设为非激活状态
-        if self.activeCompanionSlot ~= 0 then
-            local oldActiveCompanion = self.companionInstances[self.activeCompanionSlot]
-            if oldActiveCompanion then
-                oldActiveCompanion:SetActive(false)
-            end
-        end
-        self.activeCompanionSlot = 0
-        gg.log("取消激活伙伴", self.uin, self.companionType)
-        return true, nil
-    end
-    
-    -- 检查槽位是否有效
-    if slotIndex < 1 or slotIndex > self.maxSlots then
-        return false, "无效的槽位索引"
-    end
-    
-    -- 检查伙伴是否存在
-    local newActiveCompanion = self.companionInstances[slotIndex]
-    if not newActiveCompanion then
-        return false, "槽位为空"
-    end
-    
-    -- 取消之前的激活伙伴
-    if self.activeCompanionSlot ~= 0 then
-        local oldActiveCompanion = self.companionInstances[self.activeCompanionSlot]
-        if oldActiveCompanion then
-            oldActiveCompanion:SetActive(false)
+function BaseCompanion:EquipCompanion(companionSlotId, equipSlotId)
+    -- 1. 验证装备栏ID是否在玩家当前可用的栏位中
+    local isUnlockEquipSlot = false
+    for i = 1, self.unlockedEquipSlots do
+        if self.equipSlotIds[i] == equipSlotId then
+            isUnlockEquipSlot = true
+            break
         end
     end
-    
-    -- 设置新的激活伙伴
-    self.activeCompanionSlot = slotIndex
-    newActiveCompanion:SetActive(true)
-    
-    gg.log("设置激活伙伴", self.uin, self.companionType, newActiveCompanion:GetConfigName(), "槽位", slotIndex)
+    if not isUnlockEquipSlot then
+        return false, "该装备栏尚未解锁: " .. tostring(equipSlotId)
+    end
+
+    -- 2. 验证要装备的伙伴是否存在
+    local companionToEquip = self:GetCompanionBySlot(companionSlotId)
+    if not companionToEquip then
+        return false, "背包槽位 " .. tostring(companionSlotId) .. " 上没有伙伴"
+    end
+
+    -- 3. 如果该伙伴已装备在其他栏位，先从旧栏位卸下
+    for oldEquipSlot, equippedCid in pairs(self.activeCompanionSlots) do
+        if equippedCid == companionSlotId then
+            self:UnequipCompanion(oldEquipSlot)
+            break
+        end
+    end
+
+    -- 4. 如果目标装备栏已有其他伙伴，先卸下旧的
+    local oldCompanionSlotId = self.activeCompanionSlots[equipSlotId]
+    if oldCompanionSlotId and oldCompanionSlotId > 0 then
+        local oldCompanionInstance = self:GetCompanionBySlot(oldCompanionSlotId)
+        if oldCompanionInstance then
+            oldCompanionInstance:SetActive(false)
+        end
+    end
+
+    -- 5. 执行装备
+    self.activeCompanionSlots[equipSlotId] = companionSlotId
+    companionToEquip:SetActive(true)
+
+    gg.log(string.format("装备伙伴成功: 玩家 %d, 类型 %s, 背包槽位 %d -> 装备栏 %s", self.uin, self.companionType, companionSlotId, equipSlotId))
     return true, nil
 end
+
+---【新增】从指定装备栏卸下伙伴
+---@param equipSlotId string 目标装备栏ID
+---@return boolean
+function BaseCompanion:UnequipCompanion(equipSlotId)
+    local companionSlotId = self.activeCompanionSlots[equipSlotId]
+
+    if companionSlotId and companionSlotId > 0 then
+        local companionInstance = self:GetCompanionBySlot(companionSlotId)
+        if companionInstance then
+            companionInstance:SetActive(false)
+        end
+        self.activeCompanionSlots[equipSlotId] = nil
+        gg.log(string.format("卸下伙伴成功: 玩家 %d, 类型 %s, 从装备栏 %s (原背包槽位 %d)", self.uin, self.companionType, equipSlotId, companionSlotId))
+        return true
+    end
+    return false
+end
+
 
 ---伙伴升级
 ---@param slotIndex number 槽位索引

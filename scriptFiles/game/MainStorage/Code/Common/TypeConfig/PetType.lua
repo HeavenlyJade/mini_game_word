@@ -113,7 +113,7 @@ end
 
 --- 计算携带效果的显示数值
 ---@param starLevel number 星级
----@return table<string, table> 计算后的效果列表，格式：{变量名称: {描述: string, 数值: number}}
+---@return table<string, table> 计算后的效果列表，格式：{变量名称: {描述: string, 数值: number, isPercentage: boolean}}
 function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
     local calculatedEffects = {}
     
@@ -130,16 +130,25 @@ function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
         local variableType = effect["变量类型"] or ""
         local variableName = effect["变量名称"] or ""
         local effectValue = effect["效果数值"] or ""
+        local bonusType = effect["加成类型"]
+        local itemTarget = effect["物品目标"]
         
         if variableName ~= "" and effectValue ~= "" then
             -- 使用RewardCalc计算公式
             local calculatedValue = calculator:CalculateEffectValue(effectValue, starLevel, 1, self)
              
             if calculatedValue then
+                -- 【修复】添加 isPercentage 标志位
+                local isPercentage = string.find(variableName, "百分比") ~= nil
+                
                 calculatedEffects[variableName] = {
-                    description = self:FormatEffectDescription(variableName, calculatedValue),
-                    value = calculatedValue,
-                    originalFormula = effectValue
+                    -- 【修复】传递 isPercentage 标志给格式化函数
+                    description = self:FormatEffectDescription(variableName, calculatedValue, isPercentage),
+                    value = calculatedValue, -- 存储原始计算值
+                    isPercentage = isPercentage, -- 新增标志位
+                    originalFormula = effectValue,
+                    bonusType = bonusType,
+                    itemTarget = itemTarget
                 }
             end
         end
@@ -151,17 +160,17 @@ end
 --- 格式化效果描述
 ---@param variableName string 变量名称
 ---@param value number 计算后的数值
+---@param isPercentage boolean 是否为百分比
 ---@return string 格式化后的描述
-function PetType:FormatEffectDescription(variableName, value)
-    -- 根据变量名称生成友好的显示文本
-    if string.find(variableName, "金币获取") then
-        return string.format("金币获取加成: +%.0f%%", value * 100)
-    elseif string.find(variableName, "训练加成") then
-        return string.format("训练效果加成: +%.0f%%", value * 100)
-    elseif string.find(variableName, "经验获取") then
-        return string.format("经验获取加成: +%.0f%%", value * 100)
+function PetType:FormatEffectDescription(variableName, value, isPercentage)
+    local cleanName = variableName:gsub("加成_百分比_", ""):gsub("属性_固定值_", ""):gsub("_", " ")
+
+    if isPercentage then
+        -- 【修复】对于百分比，将原始值(如16.5)乘以100用于显示
+        return string.format("%s: +%.0f%%", cleanName, value * 100)
     else
-        return string.format("%s: +%.0f%%", variableName, value * 100)
+        -- 【修复】对于固定值，直接显示
+        return string.format("%s: +%.0f", cleanName, value)
     end
 end
 

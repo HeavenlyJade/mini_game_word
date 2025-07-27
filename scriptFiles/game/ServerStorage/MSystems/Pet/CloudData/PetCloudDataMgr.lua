@@ -21,9 +21,10 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 ---@field mood number 心情值 (0-100)
 
 ---@class PlayerPetData
----@field activePetId string 当前激活的宠物ID
+---@field activeSlots table<string, number> 激活的宠物槽位映射 {[装备栏ID] = 背包槽位ID}
 ---@field petList table<number, PetData> 宠物数据列表 {slotIndex = petData} 对应背包槽位的宠物
 ---@field petSlots number 宠物背包槽位数量
+---@field unlockedEquipSlots number 玩家当前可携带(已解锁)的宠物栏位数量
 
 
 ---@class CloudPetDataAccessor
@@ -40,9 +41,10 @@ function CloudPetDataAccessor:LoadPlayerPetData(uin)
     else
         -- 创建默认宠物数据
         return {
-            activePetId = "",
+            activeSlots = {},
             petList = {},
             petSlots = 50,
+            unlockedEquipSlots = 1, -- 默认解锁1个栏位
        
         }
     end

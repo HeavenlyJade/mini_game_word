@@ -28,9 +28,11 @@ function PartnerEventManager.RegisterEventHandlers()
     -- 获取伙伴列表
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.GET_PARTNER_LIST, function(evt) PartnerEventManager.HandleGetPartnerList(evt) end)
     
-    -- 设置激活伙伴
-    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.SET_ACTIVE_PARTNER, function(evt) PartnerEventManager.HandleSetActivePartner(evt) end)
-    
+    -- 【重构】装备/卸下伙伴
+    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.EQUIP_PARTNER, function(evt) PartnerEventManager.HandleEquipPartner(evt) end)
+    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.UNEQUIP_PARTNER, function(evt) PartnerEventManager.HandleUnequipPartner(evt) end)
+
+
     -- 伙伴升级
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.LEVEL_UP_PARTNER, function(evt) PartnerEventManager.HandleLevelUpPartner(evt) end)
     
@@ -74,7 +76,7 @@ function PartnerEventManager.HandleGetPartnerList(evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
     
-    local result, errorMsg = PartnerMgr.GetPlayerPartnerList(player.uin)
+    local result = PartnerMgr.GetPlayerPartnerList(player.uin)
     if result then
         PartnerEventManager.NotifyPartnerListUpdate(player.uin, result)
     else
@@ -82,29 +84,55 @@ function PartnerEventManager.HandleGetPartnerList(evt)
     end
 end
 
---- 处理设置激活伙伴请求
----@param evt table 事件数据 {slotIndex}
-function PartnerEventManager.HandleSetActivePartner(evt)
-    gg.log("设置激活伙伴", evt)
+--- 【重构】处理装备伙伴请求
+---@param evt table 事件数据 {args = {companionSlotId, equipSlotId}}
+function PartnerEventManager.HandleEquipPartner(evt)
+    gg.log("处理装备伙伴请求", evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
 
-    local slotIndex = evt.args.slotIndex  -- 修改：统一使用 slotIndex
-    local success, errorMsg = PartnerMgr.SetActivePartner(player.uin, slotIndex)
+    local companionSlotId = evt.args.companionSlotId
+    local equipSlotId = evt.args.equipSlotId
+
+    local success, errorMsg = PartnerMgr.EquipPartner(player.uin, companionSlotId, equipSlotId)
     
     if success then
-        -- 操作成功后，获取最新的完整伙伴列表数据
-        local updatedData, errorMsg = PartnerMgr.GetPlayerPartnerList(player.uin)
+        local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
         if updatedData then
-            -- 使用事件管理器自己的通知函数来发送完整的列表更新
             PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
-            gg.log("设置激活伙伴成功，并已通知客户端更新列表", player.uin, "槽位", slotIndex)
-        else
-            gg.log("设置激活伙伴成功，但获取最新列表失败", player.uin, errorMsg)
         end
     else
-        gg.log("设置激活伙伴失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        gg.log("装备伙伴失败", player.uin, errorMsg)
+        -- TODO: 发送错误信息给客户端
     end
+end
+
+--- 【新增】处理卸下伙伴请求
+---@param evt table 事件数据 {args = {equipSlotId}}
+function PartnerEventManager.HandleUnequipPartner(evt)
+    gg.log("处理卸下伙伴请求", evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local equipSlotId = evt.args.equipSlotId
+
+    local success, errorMsg = PartnerMgr.UnequipPartner(player.uin, equipSlotId)
+    
+    if success then
+        local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
+        if updatedData then
+            PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
+        end
+    else
+        gg.log("卸下伙伴失败", player.uin, errorMsg)
+        -- TODO: 发送错误信息给客户端
+    end
+end
+
+
+--- 【废弃】处理设置激活伙伴请求
+function PartnerEventManager.HandleSetActivePartner(evt)
+    gg.log("警告: 收到已废弃的SetActivePartner请求", evt)
 end
 
 --- 处理伙伴升级请求
@@ -248,12 +276,14 @@ end
 
 --- 通知客户端伙伴列表更新
 ---@param uin number 玩家ID
----@param partnerData table 完整的伙伴数据，包含 partnerList 和 activePartnerId
+---@param partnerData table 完整的伙伴数据
 function PartnerEventManager.NotifyPartnerListUpdate(uin, partnerData)
+    gg.log("通知客户端伙伴列表更新", uin, partnerData)
     gg.network_channel:fireClient(uin, {
         cmd = PartnerEventManager.NOTIFY.PARTNER_LIST_UPDATE,
-        partnerList = partnerData.partnerList,
-        activePartnerId = partnerData.activePartnerId
+        companionList = partnerData.companionList, -- 【修改】使用新字段名
+        activeSlots = partnerData.activeSlots,       -- 【修改】使用新字段名
+        equipSlotIds = partnerData.equipSlotIds      -- 【新增】发送可用装备栏
     })
 end
 

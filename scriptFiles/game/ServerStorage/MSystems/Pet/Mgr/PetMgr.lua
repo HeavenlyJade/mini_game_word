@@ -389,6 +389,19 @@ function PetMgr.GetPetCountByType(uin, petName, minStar)
     return petManager:GetPetCountByType(petName, minStar)
 end
 
+--- 获取当前激活宠物的物品加成
+---@param uin number 玩家ID
+---@return table<string, number> 激活宠物的物品加成
+function PetMgr.GetActiveItemBonuses(uin)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        gg.log("[PetMgr] GetActiveItemBonuses: 找不到玩家的宠物管理器", uin)
+        return {}
+    end
+    
+    return petManager:GetActiveItemBonuses()
+end
+
 ---定时更新所有在线玩家的宠物buff
 function PetMgr.UpdateAllPlayerPetBuffs()
     for uin, petManager in pairs(PetMgr.server_player_pets) do

@@ -5,7 +5,8 @@
 local PartnerEventConfig = {
     REQUEST = {
         GET_PARTNER_LIST = "Partner:GetList",
-        SET_ACTIVE_PARTNER = "Partner:SetActive",
+        EQUIP_PARTNER = "Partner:Equip", -- 【新增】装备伙伴
+        UNEQUIP_PARTNER = "Partner:Unequip", -- 【新增】卸下伙伴
         LEVEL_UP_PARTNER = "Partner:LevelUp",
         ADD_PARTNER_EXP = "Partner:AddExp",
         UPGRADE_PARTNER_STAR = "Partner:UpgradeStar",
