@@ -2,6 +2,7 @@
 
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class PetType:Class
 ---@field name string 宠物名称
@@ -47,9 +48,10 @@ function PetType:OnInit(data)
     
     -- 星级系统
     self.starUpgradeCosts = data["升星消耗列表"] or {}
+    self.maxStarLevel = data["最大星级"] or 5 -- 修复：重新添加最大星级初始化
     
     -- 功能系统
-    self.carryingEffects = data["携带效果列表"] or {}
+    self.carryingEffects = data["携带效果"] or {}
     self.skillList = data["技能列表"] or {}
     
     -- 进化系统
@@ -108,5 +110,62 @@ function PetType:GetStarUpgradeCost(targetStarLevel)
     end
     return nil
 end
+
+--- 计算携带效果的显示数值
+---@param starLevel number 星级
+---@return table<string, table> 计算后的效果列表，格式：{变量名称: {描述: string, 数值: number}}
+function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
+    local calculatedEffects = {}
+    
+    -- 获取宠物公式计算器
+    local RewardManager = require(game.MainStorage.Code.GameReward.RewardManager)
+    local calculator = RewardManager.GetCalculator("宠物公式")
+    
+    if not calculator then
+        gg.log("错误: 无法获取宠物公式计算器")
+        return calculatedEffects
+    end
+    
+    for _, effect in ipairs(self.carryingEffects) do
+        local variableType = effect["变量类型"] or ""
+        local variableName = effect["变量名称"] or ""
+        local effectValue = effect["效果数值"] or ""
+        
+        if variableName ~= "" and effectValue ~= "" then
+            -- 使用RewardCalc计算公式
+            local calculatedValue = calculator:CalculateEffectValue(effectValue, starLevel, 1, self)
+             
+            if calculatedValue then
+                calculatedEffects[variableName] = {
+                    description = self:FormatEffectDescription(variableName, calculatedValue),
+                    value = calculatedValue,
+                    originalFormula = effectValue
+                }
+            end
+        end
+    end
+    
+    return calculatedEffects
+end
+
+--- 格式化效果描述
+---@param variableName string 变量名称
+---@param value number 计算后的数值
+---@return string 格式化后的描述
+function PetType:FormatEffectDescription(variableName, value)
+    -- 根据变量名称生成友好的显示文本
+    if string.find(variableName, "金币获取") then
+        return string.format("金币获取加成: +%.0f%%", value * 100)
+    elseif string.find(variableName, "训练加成") then
+        return string.format("训练效果加成: +%.0f%%", value * 100)
+    elseif string.find(variableName, "经验获取") then
+        return string.format("经验获取加成: +%.0f%%", value * 100)
+    else
+        return string.format("%s: +%.0f%%", variableName, value * 100)
+    end
+end
+
+-- 移除不再使用的旧方法
+-- function PetType:EvaluateExpression(expression) ... end
 
 return PetType

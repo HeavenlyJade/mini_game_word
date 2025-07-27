@@ -89,7 +89,7 @@ function PartnerEventManager.HandleSetActivePartner(evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
 
-    local slotIndex = evt.args.companionSlot
+    local slotIndex = evt.args.slotIndex  -- 修改：统一使用 slotIndex
     local success, errorMsg = PartnerMgr.SetActivePartner(player.uin, slotIndex)
     
     if success then
@@ -113,8 +113,8 @@ function PartnerEventManager.HandleLevelUpPartner(evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
 
-    local slotIndex = evt.slotIndex
-    local targetLevel = evt.targetLevel
+    local slotIndex = evt.args.slotIndex      -- 修改：从args中获取
+    local targetLevel = evt.args.targetLevel  -- 修改：从args中获取
     
     if not slotIndex then
         gg.log("伙伴升级缺少槽位参数", player.uin)
@@ -169,7 +169,7 @@ function PartnerEventManager.HandleUpgradePartnerStar(evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
 
-    local slotIndex = evt.args.slotIndex
+    local slotIndex = evt.args.slotIndex  -- 确认：使用 slotIndex
     
     if not slotIndex then
         gg.log("伙伴升星缺少槽位参数", player.uin)

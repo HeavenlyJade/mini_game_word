@@ -166,7 +166,7 @@ function CompanionGui:OnCompanionListResponse(data)
         
         -- 刷新界面显示
         self:RefreshCompanionList()
-        self:RefreshSelectedCompanionDisplay()
+        self:SelectDefaultCompanion()
     else
         gg.log("伙伴数据响应格式错误")
     end
@@ -308,7 +308,7 @@ end
 function CompanionGui:SendUpgradeStarRequest(slotIndex)
     local requestData = {
         cmd = PartnerEventConfig.REQUEST.UPGRADE_PARTNER_STAR,
-        args = { companionSlot = slotIndex }
+        args = { slotIndex = slotIndex }  -- 修改：统一使用 slotIndex
     }
     gg.log("发送伙伴升星请求:", slotIndex)
     gg.network_channel:fireServer(requestData)
@@ -318,7 +318,7 @@ end
 function CompanionGui:SendSetActiveCompanionRequest(slotIndex)
     local requestData = {
         cmd = PartnerEventConfig.REQUEST.SET_ACTIVE_PARTNER,
-        args = { companionSlot = slotIndex }
+        args = { slotIndex = slotIndex }  -- 修改：统一使用 slotIndex
     }
     gg.log("发送设置激活伙伴请求:", slotIndex)
     gg.network_channel:fireServer(requestData)
@@ -331,54 +331,20 @@ end
 --- 刷新伙伴列表
 function CompanionGui:RefreshCompanionList()
     gg.log("刷新伙伴列表显示")
-
+    
     -- 清空现有按钮映射
     self.companionSlotButtons = {}
-
+    
     self.companionSlotList:ClearChildren()
-
-    -- 1. 将伙伴数据从字典转为包含排序信息的数组
-    local companionList = {}
-    for _, companionInfo in pairs(self.companionData) do
-        local config = self:GetPartnerConfig(companionInfo.companionName)
-        table.insert(companionList, {
-            info = companionInfo,
-            rarity = config and config.rarity or 0,
-        })
-    end
-
-    -- 2. 按新的排序规则排序：1.装备 > 2.品质 > 3.星级
-    table.sort(companionList, function(a, b)
-        local aInfo = a.info
-        local bInfo = b.info
-
-        -- 规则1: 装备状态 (装备的在前)
-        if aInfo.isActive ~= bInfo.isActive then
-            return aInfo.isActive -- a为true时排在前面
-        end
-
-        -- 规则2: 品质 (高品质在前)
-        if a.rarity ~= b.rarity then
-            return a.rarity > b.rarity
-        end
-
-        -- 规则3: 星级 (高星级在前)
-        local aStars = aInfo.starLevel or 0
-        local bStars = bInfo.starLevel or 0
-        if aStars ~= bStars then
-            return aStars > bStars
-        end
-        
-        -- 规则4: 如果都相同, 按槽位ID排序 (保持稳定)
-        return (aInfo.slotIndex or 0) < (bInfo.slotIndex or 0)
-    end)
+    
+    local companionList = self:GetSortedCompanionList()
 
     -- 3. 遍历排序后的列表来创建UI
     for _, item in ipairs(companionList) do
         local companionInfo = item.info
         self:CreateCompanionSlotItem(companionInfo.slotIndex, companionInfo)
     end
-
+    
     gg.log("伙伴列表刷新完成，共", self:GetCompanionCount(), "个伙伴")
 end
 
@@ -534,56 +500,90 @@ function CompanionGui:RefreshSelectedCompanionDisplay()
     end
     
     -- 更新属性介绍
-    self:UpdateAttributeDisplay(companion)
+    gg.log("更新属性介绍", partnerConfig, companion.starLevel)
+    self:UpdateAttributeDisplay(partnerConfig, companion.starLevel)
     
     -- 更新按钮状态
     self:UpdateButtonStates(companion)
 end
 
---- 更新属性显示
-function CompanionGui:UpdateAttributeDisplay(companion)
+--- 更新属性介绍显示
+---@param partnerConfig PetType 伙伴配置
+---@param starLevel number 当前星级
+function CompanionGui:UpdateAttributeDisplay(partnerConfig, starLevel)
     if not self.attributeList then return end
-    
-    local partnerConfig = self:GetPartnerConfig(companion.companionName)
-    
-    -- 如果没有配置，则视为空属性列表
-    local attributes = {}
-    if partnerConfig and partnerConfig.attributes then
-        attributes = partnerConfig.attributes
-    elseif partnerConfig then -- 兼容旧的示例数据
-        attributes = partnerConfig.attributes or {
-            {name = "攻击力"},
-            {name = "防御力"},
-            {name = "生命值"}
-        }
+
+    if not partnerConfig then
+        self.attributeList:HideChildrenFrom(0)
+        return
     end
+    
+    local currentStar = starLevel
+    local maxStar = partnerConfig.maxStarLevel
+    
+    local currentEffects = partnerConfig:CalculateCarryingEffectsByStarLevel(currentStar)
+    local nextEffects = {}
+    if currentStar < maxStar then
+        nextEffects = partnerConfig:CalculateCarryingEffectsByStarLevel(currentStar + 1)
+    end
+    gg.log("currentEffects",currentEffects)
+    gg.log("nextEffects",nextEffects)
+    -- 收集并排序以保证顺序稳定
+    local effectsToShow = {}
+    for name, data in pairs(currentEffects) do
+        table.insert(effectsToShow, {name = name, data = data})
+    end
+    table.sort(effectsToShow, function(a, b) return a.name < b.name end)
 
-    local numAttributes = #attributes
+    local numEffects = #effectsToShow
+    self.attributeList:SetElementSize(numEffects) -- 确保有足够的UI元素
 
-    -- 确保列表有足够多的元素
-    self.attributeList:SetElementSize(numAttributes)
-
-    -- 填充或更新每个元素的内容
-    for i, attrInfo in ipairs(attributes) do
-        local item = self.attributeList:GetChild(i)
-        if item and item.node then
-            item:SetVisible(true) -- 确保它是可见的
-            local currentAttrText = item.node["当前属性"]
-            local nextAttrText = item.node["升星属性"]
-
-            -- TODO: 待实现 - 真实的属性值计算
-            local currentValue = "100" -- companion:GetAttributeValue(attrInfo.id, companion.starLevel)
-            local nextValue = "+20" -- companion:GetAttributeValue(attrInfo.id, companion.starLevel + 1)
-            
-            if currentAttrText then
-                currentAttrText.Title = attrInfo.name .. "：" .. currentValue
-            end
-            
+    for i = 1, numEffects do
+        local effectInfo = effectsToShow[i]
+        local attributeItem = self.attributeList:GetChild(i)
+        if attributeItem then
+            local variableName = effectInfo.name
+            local currentEffectData = effectInfo.data
+            local nextEffectData = nextEffects[variableName]
+            self:UpdateAttributeItem(attributeItem.node, variableName, currentEffectData, nextEffectData, partnerConfig, currentStar >= maxStar)
         end
     end
 
-    -- 隐藏掉多余的、未被使用的列表项
-    self.attributeList:HideChildrenFrom(numAttributes)
+    self.attributeList:HideChildrenFrom(numEffects)
+end
+
+--- 更新单个属性项的显示
+---@param attributeNode SandboxNode 要更新的节点
+---@param variableName string 效果变量名
+---@param currentEffectData table 当前星级效果数据
+---@param nextEffectData table|nil 下一星级效果数据
+---@param partnerConfig PetType 伙伴配置
+---@param isMaxStar boolean 是否已是最高星级
+function CompanionGui:UpdateAttributeItem(attributeNode, variableName, currentEffectData, nextEffectData, partnerConfig, isMaxStar)
+    if not attributeNode then return end
+
+    attributeNode.Name = "属性项_" .. variableName -- 更新名称以便调试
+
+    -- 根据UI截图，查找对应的文本节点
+    local currentAttrText = attributeNode:FindFirstChild("当前属性")
+    local nextAttrText = attributeNode:FindFirstChild("升星属性")
+
+    -- 设置当前属性
+    if currentAttrText and currentEffectData then
+        currentAttrText.Title = partnerConfig:FormatEffectDescription(variableName, currentEffectData.value)
+    end
+
+    -- 设置升星属性
+    if nextAttrText then
+        if isMaxStar then
+            nextAttrText.Title = "升星属性: 已满级"
+        elseif nextEffectData then
+            nextAttrText.Title = partnerConfig:FormatEffectDescription(variableName, nextEffectData.value)
+        else
+            -- 正常情况下不应出现，作为保险
+            nextAttrText.Title = "升星属性: N/A"
+        end
+    end
 end
 
 --- 更新按钮状态
@@ -649,6 +649,48 @@ end
 -- 工具方法
 -- =================================
 
+--- 获取排序后的伙伴列表
+---@return table
+function CompanionGui:GetSortedCompanionList()
+    -- 1. 将伙伴数据从字典转为包含排序信息的数组
+    local companionList = {}
+    for _, companionInfo in pairs(self.companionData) do
+        local config = self:GetPartnerConfig(companionInfo.companionName)
+        table.insert(companionList, {
+            info = companionInfo,
+            rarity = config and config.rarity or 0,
+        })
+    end
+
+    -- 2. 按新的排序规则排序：1.装备 > 2.品质 > 3.星级
+    table.sort(companionList, function(a, b)
+        local aInfo = a.info
+        local bInfo = b.info
+
+        -- 规则1: 装备状态 (装备的在前)
+        if aInfo.isActive ~= bInfo.isActive then
+            return aInfo.isActive -- a为true时排在前面
+        end
+
+        -- 规则2: 品质 (高品质在前)
+        if a.rarity ~= b.rarity then
+            return a.rarity > b.rarity
+        end
+
+        -- 规则3: 星级 (高星级在前)
+        local aStars = aInfo.starLevel or 0
+        local bStars = bInfo.starLevel or 0
+        if aStars ~= bStars then
+            return aStars > bStars
+        end
+        
+        -- 规则4: 如果都相同, 按槽位ID排序 (保持稳定)
+        return (aInfo.slotIndex or 0) < (bInfo.slotIndex or 0)
+    end)
+    
+    return companionList
+end
+
 --- 获取伙伴配置
 function CompanionGui:GetPartnerConfig(partnerName)
     if not partnerName then return nil end
@@ -668,6 +710,23 @@ function CompanionGui:GetCompanionCount()
         count = count + 1
     end
     return count
+end
+
+--- 默认选择第一个伙伴
+function CompanionGui:SelectDefaultCompanion()
+    gg.log("尝试默认选择第一个伙伴")
+    
+    local sortedList = self:GetSortedCompanionList()
+    
+    if #sortedList > 0 then
+        local firstCompanion = sortedList[1].info
+        gg.log("默认选择伙伴:", firstCompanion.companionName)
+        self:OnCompanionSlotClick(firstCompanion.slotIndex, firstCompanion)
+    else
+        gg.log("没有伙伴可供选择，清空详情")
+        self.selectedCompanion = nil
+        self:RefreshSelectedCompanionDisplay()
+    end
 end
 
 return CompanionGui.New(script.Parent, uiConfig)

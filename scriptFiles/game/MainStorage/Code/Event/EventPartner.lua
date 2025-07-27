@@ -1,6 +1,7 @@
 -- EventPartner.lua
 -- 定义伙伴系统相关的客户端-服务器事件名称
 
+---@class PartnerEventConfig
 local PartnerEventConfig = {
     REQUEST = {
         GET_PARTNER_LIST = "Partner:GetList",
