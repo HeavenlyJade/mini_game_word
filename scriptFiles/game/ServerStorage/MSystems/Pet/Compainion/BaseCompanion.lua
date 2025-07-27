@@ -303,11 +303,12 @@ function BaseCompanion:FindCompanionsByCondition(companionName, requiredStar, ex
     for slotIndex, companionInstance in pairs(self.companionInstances) do
         if slotIndex ~= excludeSlot and
            companionInstance:GetConfigName() == companionName and
-           companionInstance:GetStarLevel() >= requiredStar then
+           companionInstance:GetStarLevel() == requiredStar then
             table.insert(candidates, slotIndex)
         end
     end
     
+    -- 由于现在只查找特定星级，不再需要按星级排序
     return candidates
 end
 
@@ -360,20 +361,28 @@ function BaseCompanion:UpgradeCompanionStar(slotIndex)
     -- 检查并消耗材料
     for _, material in ipairs(upgradeCost["消耗材料"] or {}) do
         if material["消耗类型"] == "宠物" or material["消耗类型"] == "伙伴" then
-            local companionName = material["消耗宠物"] or material["消耗伙伴"]
+            local companionName = material["消耗名称"]
             local needCount = material["需要数量"] or 1
-            local needStar = material["宠物星级"] or material["伙伴星级"] or 1
-            
-            -- 检查材料是否充足（排除当前升星的伙伴）
-            local candidates = self:FindCompanionsByCondition(companionName, needStar, slotIndex)
-            if #candidates < needCount then
-                return false, string.format("伙伴材料不足：需要%d个%d星%s", needCount, needStar, companionName)
+            local needStar = material["消耗星级"] or 1
+
+            -- 【修复】判断本体是否可以作为材料之一
+            local actualNeedCount = needCount
+            if companionInstance:GetConfigName() == companionName and companionInstance:GetStarLevel() >= needStar then
+                actualNeedCount = needCount - 1
             end
-            
-            -- 消耗材料
-            local success = self:ConsumeCompanions(companionName, needCount, needStar, slotIndex)
-            if not success then
-                return false, "消耗伙伴材料失败"
+
+            if actualNeedCount > 0 then
+                -- 检查材料是否充足（排除当前升星的伙伴）
+                local candidates = self:FindCompanionsByCondition(companionName, needStar, slotIndex)
+                if #candidates < actualNeedCount then
+                    return false, string.format("伙伴材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
+                end
+                
+                -- 消耗材料
+                local success = self:ConsumeCompanions(companionName, actualNeedCount, needStar, slotIndex)
+                if not success then
+                    return false, "消耗伙伴材料失败"
+                end
             end
         elseif material["消耗类型"] == "物品" then
             -- TODO: 实现物品消耗逻辑
@@ -453,13 +462,21 @@ function BaseCompanion:CanCompanionUpgradeStar(slotIndex)
     -- 检查材料是否充足
     for _, material in ipairs(upgradeCost["消耗材料"] or {}) do
         if material["消耗类型"] == "宠物" or material["消耗类型"] == "伙伴" then
-            local companionName = material["消耗宠物"] or material["消耗伙伴"]
+            local companionName = material["消耗名称"]
             local needCount = material["需要数量"] or 1
-            local needStar = material["宠物星级"] or material["伙伴星级"] or 1
-            
-            local candidates = self:FindCompanionsByCondition(companionName, needStar, slotIndex)
-            if #candidates < needCount then
-                return false, string.format("伙伴材料不足：需要%d个%d星%s", needCount, needStar, companionName)
+            local needStar = material["消耗星级"] or 1
+
+            -- 【修复】判断本体是否可以作为材料之一
+            local actualNeedCount = needCount
+            if companionInstance:GetConfigName() == companionName and companionInstance:GetStarLevel() >= needStar then
+                actualNeedCount = needCount - 1
+            end
+
+            if actualNeedCount > 0 then
+                local candidates = self:FindCompanionsByCondition(companionName, needStar, slotIndex)
+                if #candidates < actualNeedCount then
+                    return false, string.format("伙伴材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
+                end
             end
         end
     end

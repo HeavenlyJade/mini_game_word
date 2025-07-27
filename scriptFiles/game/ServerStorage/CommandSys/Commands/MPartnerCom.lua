@@ -5,12 +5,25 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
+local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
 
 ---@class PartnerCommand
 local PartnerCommand = {}
 
 -- 子命令处理器
 PartnerCommand.handlers = {}
+
+--- 私有方法：同步伙伴数据到客户端
+---@param player MPlayer
+function PartnerCommand._syncToClient(player)
+    local updatedData, errorMsg = PartnerMgr.GetPlayerPartnerList(player.uin)
+    if updatedData then
+        PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
+        gg.log("伙伴数据已通过指令同步到客户端", player.uin)
+    else
+        gg.log("伙伴数据同步失败，无法获取最新列表", player.uin, errorMsg)
+    end
+end
 
 --- 新增伙伴
 ---@param params table
@@ -29,6 +42,7 @@ function PartnerCommand.handlers.add(params, player)
         local msg = string.format("成功给玩家 %s 添加伙伴: %s 到槽位 %d", player.name, partnerName, actualSlot)
         player:SendHoverText(msg)
         gg.log(msg)
+        PartnerCommand._syncToClient(player) -- 【修复】同步数据到客户端
         return true
     else
         local msg = string.format("给玩家 %s 添加伙伴失败: %s", player.name, errorMsg)
@@ -63,6 +77,7 @@ function PartnerCommand.handlers.remove(params, player)
         local msg = string.format("成功移除玩家 %s 在槽位 %d 的伙伴: %s", player.name, slotIndex, partnerName)
         player:SendHoverText(msg)
         gg.log(msg)
+        PartnerCommand._syncToClient(player) -- 【修复】同步数据到客户端
         return true
     else
         local msg = string.format("移除玩家 %s 的伙伴失败: %s", player.name, errorMsg)
@@ -140,6 +155,7 @@ function PartnerCommand.handlers.set(params, player)
              player:SendHoverText("伙伴已达到目标星级")
         end
     end
+    PartnerCommand._syncToClient(player) -- 【修复】在所有操作后统一同步数据
     return true
 end
 
