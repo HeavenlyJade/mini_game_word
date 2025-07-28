@@ -30,7 +30,11 @@ function PetEventManager.RegisterEventHandlers()
     -- 获取宠物列表
     ServerEventManager.Subscribe(PetEventManager.REQUEST.GET_PET_LIST, function(evt) PetEventManager.HandleGetPetList(evt) end)
     
-    -- 设置激活宠物
+    -- 【新增】装备/卸下宠物
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.EQUIP_PET, function(evt) PetEventManager.HandleEquipPet(evt) end)
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.UNEQUIP_PET, function(evt) PetEventManager.HandleUnequipPet(evt) end)
+
+    -- 设置激活宠物 (保留旧接口的兼容性或用于特殊逻辑)
     ServerEventManager.Subscribe(PetEventManager.REQUEST.SET_ACTIVE_PET, function(evt) PetEventManager.HandleSetActivePet(evt) end)
     
     -- 宠物升级
@@ -50,6 +54,10 @@ function PetEventManager.RegisterEventHandlers()
     
     -- 重命名宠物
     ServerEventManager.Subscribe(PetEventManager.REQUEST.RENAME_PET, function(evt) PetEventManager.HandleRenamePet(evt) end)
+    
+    -- 【新增】删除/锁定宠物
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.DELETE_PET, function(evt) PetEventManager.HandleDeletePet(evt) end)
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.TOGGLE_PET_LOCK, function(evt) PetEventManager.HandleTogglePetLock(evt) end)
 end
 
 --- 验证玩家
@@ -71,6 +79,111 @@ function PetEventManager.ValidatePlayer(evt)
 
     return player
 end
+
+--- 【新增】处理装备宠物请求
+---@param evt table 事件数据 { companionSlotId: number, equipSlotId: string }
+function PetEventManager.HandleEquipPet(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local companionSlotId = args.companionSlotId
+    local equipSlotId = args.equipSlotId
+
+    if not companionSlotId or not equipSlotId then
+        gg.log("装备宠物缺少参数", player.uin)
+        PetEventManager.NotifyError(player.uin, -1, "装备宠物缺少参数")
+        return
+    end
+
+    local success, errorMsg = PetMgr.EquipPet(player.uin, companionSlotId, equipSlotId)
+    
+    if success then
+        gg.log("装备宠物成功", player.uin, "宠物槽位", companionSlotId, "装备栏", equipSlotId)
+        -- 成功后，管理器内部会自动通知客户端更新
+    else
+        gg.log("装备宠物失败", player.uin, "错误", errorMsg)
+        PetEventManager.NotifyError(player.uin, -1, errorMsg)
+    end
+end
+
+--- 【新增】处理卸下宠物请求
+---@param evt table 事件数据 { equipSlotId: string }
+function PetEventManager.HandleUnequipPet(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local equipSlotId = args.equipSlotId
+
+    if not equipSlotId then
+        gg.log("卸下宠物缺少参数", player.uin)
+        PetEventManager.NotifyError(player.uin, -1, "卸下宠物缺少参数")
+        return
+    end
+
+    local success, errorMsg = PetMgr.UnequipPet(player.uin, equipSlotId)
+    
+    if success then
+        gg.log("卸下宠物成功", player.uin, "装备栏", equipSlotId)
+        -- 成功后，管理器内部会自动通知客户端更新
+    else
+        gg.log("卸下宠物失败", player.uin, "错误", errorMsg)
+        PetEventManager.NotifyError(player.uin, -1, errorMsg)
+    end
+end
+
+
+--- 【新增】处理删除宠物请求
+---@param evt table 事件数据 { slotIndex: number }
+function PetEventManager.HandleDeletePet(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local slotIndex = args.slotIndex
+
+    if not slotIndex then
+        gg.log("删除宠物缺少参数", player.uin)
+        return
+    end
+
+    local success, errorMsg = PetMgr.DeletePet(player.uin, slotIndex)
+
+    if success then
+        gg.log("删除宠物成功", player.uin, "槽位", slotIndex)
+        -- 成功后，管理器内部会发送通知
+    else
+        gg.log("删除宠物失败", player.uin, "错误", errorMsg)
+        PetEventManager.NotifyError(player.uin, -1, errorMsg)
+    end
+end
+
+--- 【新增】处理切换宠物锁定状态请求
+---@param evt table 事件数据 { slotIndex: number }
+function PetEventManager.HandleTogglePetLock(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local slotIndex = args.slotIndex
+
+    if not slotIndex then
+        gg.log("切换宠物锁定状态缺少参数", player.uin)
+        return
+    end
+    
+    local success, errorMsg, isLocked = PetMgr.TogglePetLock(player.uin, slotIndex)
+
+    if success then
+        gg.log("切换宠物锁定状态成功", player.uin, "槽位", slotIndex, "当前状态", isLocked)
+        -- 成功后，管理器内部会发送通知
+    else
+        gg.log("切换宠物锁定状态失败", player.uin, "错误", errorMsg)
+        PetEventManager.NotifyError(player.uin, -1, errorMsg)
+    end
+end
+
 
 --- 验证宠物管理器
 ---@param uin number 玩家UIN

@@ -313,6 +313,44 @@ function PetMgr.UnequipPet(uin, equipSlotId)
     return success, errorMsg
 end
 
+---【新增】删除宠物
+---@param uin number 玩家ID
+---@param slotIndex number 槽位索引
+---@return boolean, string|nil
+function PetMgr.DeletePet(uin, slotIndex)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        return false, "玩家宠物数据不存在"
+    end
+    
+    local success, errorMsg = petManager:DeletePet(slotIndex)
+
+    if success then
+        local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
+        PetEventManager.NotifyPetRemoved(uin, slotIndex)
+    end
+    
+    return success, errorMsg
+end
+
+---【新增】切换宠物锁定状态
+---@param uin number 玩家ID
+---@param slotIndex number 槽位索引
+---@return boolean, string|nil, boolean|nil
+function PetMgr.TogglePetLock(uin, slotIndex)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        return false, "玩家宠物数据不存在", nil
+    end
+
+    local success, errorMsg, isLocked = petManager:TogglePetLock(slotIndex)
+    
+    if success then
+        PetMgr.NotifyPetDataUpdate(uin, slotIndex)
+    end
+    
+    return success, errorMsg, isLocked
+end
 
 ---【新增】更新玩家所有已装备宠物的模型和动画
 ---@param player MPlayer 玩家对象

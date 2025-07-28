@@ -113,6 +113,12 @@ function CompanionInstance:GetMood()
     return self.companionData.mood or 100
 end
 
+--- 【新增】是否已锁定
+---@return boolean
+function CompanionInstance:IsLocked()
+    return self.companionData.isLocked or false
+end
+
 ---是否为激活伙伴
 ---@return boolean 是否激活
 function CompanionInstance:IsActive()
@@ -135,6 +141,7 @@ function CompanionInstance:GetFullInfo()
         isActive = self:IsActive(),
         mood = self:GetMood(),
         slotIndex = self.slotIndex,
+        isLocked = self:IsLocked(), -- 【新增】
         -- 计算后的属性
         finalAttributes = self:GetAllFinalAttributes()
     }
@@ -490,6 +497,13 @@ function CompanionInstance:SetMood(mood)
     self.companionData.mood = mood
     
     gg.log("伙伴心情值设置", self.companionType, self:GetConfigName(), "心情", mood)
+end
+
+--- 【新增】设置锁定状态
+---@param locked boolean
+function CompanionInstance:SetLocked(locked)
+    self.companionData.isLocked = locked
+    gg.log("伙伴锁定状态设置", self.companionType, self:GetConfigName(), "锁定", locked)
 end
 
 ---设置激活状态

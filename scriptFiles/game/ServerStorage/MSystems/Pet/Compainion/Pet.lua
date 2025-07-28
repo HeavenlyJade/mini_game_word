@@ -51,7 +51,8 @@ function Pet:CreateCompanionData(companionName, companionTypeConfig)
         learnedSkills = {},
         equipments = {},
         isActive = false,
-        mood = 100
+        mood = 100,
+        isLocked = false -- 【新增】
     }
 end
 
@@ -137,6 +138,20 @@ end
 ---@return string|nil 错误信息
 function Pet:RemovePet(slotIndex)
     return self:RemoveCompanion(slotIndex)
+end
+
+---【新增】删除宠物（兼容接口）
+---@param slotIndex number
+---@return boolean, string|nil
+function Pet:DeletePet(slotIndex)
+    return self:DeleteCompanion(slotIndex)
+end
+
+---【新增】切换宠物锁定状态（兼容接口）
+---@param slotIndex number
+---@return boolean, string|nil, boolean|nil
+function Pet:TogglePetLock(slotIndex)
+    return self:ToggleCompanionLock(slotIndex)
 end
 
 ---【重构】设置激活宠物接口 -> 装备/卸下

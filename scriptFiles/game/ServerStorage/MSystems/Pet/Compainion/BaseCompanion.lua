@@ -54,6 +54,44 @@ function BaseCompanion:CreateCompanionData(companionName, companionTypeConfig)
     error("子类必须实现CreateCompanionData方法")
 end
 
+---【新增】删除伙伴
+---@param slotIndex number 槽位索引
+---@return boolean, string|nil
+function BaseCompanion:DeleteCompanion(slotIndex)
+    local companionInstance = self:GetCompanionBySlot(slotIndex)
+    if not companionInstance then
+        return false, "该槽位上没有伙伴"
+    end
+
+    if companionInstance:IsLocked() then
+        return false, "伙伴已锁定，无法删除"
+    end
+
+    if companionInstance:IsActive() then
+        return false, "伙伴正在装备中，无法删除"
+    end
+    
+    self.companionInstances[slotIndex] = nil
+    gg.log("删除伙伴成功", self.uin, self.companionType, slotIndex)
+    return true, nil
+end
+
+---【新增】切换伙伴锁定状态
+---@param slotIndex number 槽位索引
+---@return boolean, string|nil, boolean|nil
+function BaseCompanion:ToggleCompanionLock(slotIndex)
+    local companionInstance = self:GetCompanionBySlot(slotIndex)
+    if not companionInstance then
+        return false, "该槽位上没有伙伴", nil
+    end
+
+    local currentStatus = companionInstance:IsLocked()
+    companionInstance:SetLocked(not currentStatus)
+    
+    return true, nil, not currentStatus
+end
+
+
 ---获取保存数据（子类必须实现）
 ---@return table 保存数据
 function BaseCompanion:GetSaveData()

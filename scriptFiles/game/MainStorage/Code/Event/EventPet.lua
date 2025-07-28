@@ -11,13 +11,17 @@ PetEventConfig.EQUIP_CONFIG = {
 -- 客户端请求事件
 PetEventConfig.REQUEST = {
     GET_PET_LIST = "GetPetList",               -- 获取宠物列表
+    EQUIP_PET = "EquipPet",                    -- 【新增】装备宠物
+    UNEQUIP_PET = "UnequipPet",                -- 【新增】卸下宠物
     SET_ACTIVE_PET = "SetActivePet",           -- 设置激活宠物
     LEVEL_UP_PET = "LevelUpPet",               -- 宠物升级
     ADD_PET_EXP = "AddPetExp",                 -- 宠物获得经验
     UPGRADE_PET_STAR = "UpgradePetStar",       -- 宠物升星
     LEARN_PET_SKILL = "LearnPetSkill",         -- 宠物学习技能
     FEED_PET = "FeedPet",                      -- 喂养宠物
-    RENAME_PET = "RenamePet"                   -- 重命名宠物
+    RENAME_PET = "RenamePet",                   -- 重命名宠物
+    DELETE_PET = "DeletePet",                  -- 【新增】删除宠物
+    TOGGLE_PET_LOCK = "TogglePetLock"          -- 【新增】切换宠物锁定状态
 }
 
 -- 服务器响应事件

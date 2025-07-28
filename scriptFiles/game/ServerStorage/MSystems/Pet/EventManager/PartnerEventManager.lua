@@ -278,7 +278,7 @@ end
 ---@param uin number 玩家ID
 ---@param partnerData table 完整的伙伴数据
 function PartnerEventManager.NotifyPartnerListUpdate(uin, partnerData)
-    gg.log("通知客户端伙伴列表更新", uin, partnerData)
+    -- gg.log("通知客户端伙伴列表更新", uin, partnerData)
     gg.network_channel:fireClient(uin, {
         cmd = PartnerEventManager.NOTIFY.PARTNER_LIST_UPDATE,
         companionList = partnerData.companionList, -- 【修改】使用新字段名

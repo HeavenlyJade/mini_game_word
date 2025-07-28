@@ -54,7 +54,8 @@ function Partner:CreateCompanionData(companionName, companionTypeConfig)
         learnedSkills = {},
         equipments = {},
         isActive = false,
-        mood = 100
+        mood = 100,
+        isLocked = false -- 【新增】
     }
 end
 
@@ -141,6 +142,20 @@ end
 ---@return string|nil 错误信息
 function Partner:RemovePartner(slotIndex)
     return self:RemoveCompanion(slotIndex)
+end
+
+---【新增】删除伙伴（兼容接口）
+---@param slotIndex number
+---@return boolean, string|nil
+function Partner:DeletePartner(slotIndex)
+    return self:DeleteCompanion(slotIndex)
+end
+
+---【新增】切换伙伴锁定状态（兼容接口）
+---@param slotIndex number
+---@return boolean, string|nil, boolean|nil
+function Partner:TogglePartnerLock(slotIndex)
+    return self:ToggleCompanionLock(slotIndex)
 end
 
 ---【重构】设置激活伙伴接口 -> 装备/卸下
