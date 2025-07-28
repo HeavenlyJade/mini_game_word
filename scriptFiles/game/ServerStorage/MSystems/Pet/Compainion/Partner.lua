@@ -22,10 +22,10 @@ function Partner:OnInit(uin, playerPartnerData)
     -- 【重构】从配置加载装备栏，并调用父类初始化
     local equipSlotIds = PetEventConfig.EQUIP_CONFIG.PARTNER_SLOTS
     BaseCompanion.OnInit(self, uin, "伙伴", equipSlotIds)
-    
+
     -- 从伙伴数据初始化
     self:LoadFromPartnerData(playerPartnerData)
-    
+
     gg.log("Partner管理器创建", uin, "伙伴数量", self:GetCompanionCount())
 end
 
@@ -68,12 +68,12 @@ function Partner:GetSaveData()
         partnerSlots = self.maxSlots, -- 保留背包容量字段
         unlockedEquipSlots = self.unlockedEquipSlots -- 【新增】保存已解锁栏位数
     }
-    
+
     -- 提取所有伙伴的数据
     for slotIndex, companionInstance in pairs(self.companionInstances) do
         playerPartnerData.partnerList[slotIndex] = companionInstance.companionData
     end
-    
+
     return playerPartnerData
 end
 
@@ -89,7 +89,7 @@ function Partner:LoadFromPartnerData(playerPartnerData)
     -- 【重构】加载新的激活数据结构
     self.activeCompanionSlots = playerPartnerData.activeSlots or {}
     self.maxSlots = playerPartnerData.partnerSlots or 30 -- 兼容旧数据
-    
+
     -- 【新增】加载已解锁的装备栏数量，确保不超过系统配置的最大值
     local maxEquipped = #self.equipSlotIds
     self.unlockedEquipSlots = math.min(playerPartnerData.unlockedEquipSlots or 1, maxEquipped)
@@ -101,7 +101,7 @@ function Partner:LoadFromPartnerData(playerPartnerData)
             self.companionInstances[slotIndex] = companionInstance
         end
     end
-    
+
     gg.log("从伙伴数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "伙伴数", self:GetCompanionCount())
 end
 
@@ -321,13 +321,13 @@ end
 function Partner:GetUpgradeMaterialStats(targetPartnerName, requiredStar, excludeSlot)
     local candidates = self:FindCompanionsByCondition(targetPartnerName, requiredStar, excludeSlot)
     local starStats = {}
-    
+
     for _, slotIndex in ipairs(candidates) do
         local companionInstance = self.companionInstances[slotIndex]
         local starLevel = companionInstance:GetStarLevel()
         starStats[starLevel] = (starStats[starLevel] or 0) + 1
     end
-    
+
     return {
         totalCount = #candidates,
         starDistribution = starStats,
@@ -345,7 +345,7 @@ function Partner:GetTotalCombatPower()
         local star = companionInstance:GetStarLevel()
         local attackPower = companionInstance:GetFinalAttribute("攻击") or 0
         local defensePower = companionInstance:GetFinalAttribute("防御") or 0
-        
+
         local companionPower = (attackPower + defensePower) * level * star
         totalPower = totalPower + companionPower
     end
@@ -357,7 +357,7 @@ end
 ---@return table<number> 推荐的槽位列表
 function Partner:GetRecommendedBattlePartners(maxCount)
     maxCount = maxCount or 3
-    
+
     -- 按战斗力排序
     local partnerPowers = {}
     for slotIndex, companionInstance in pairs(self.companionInstances) do
@@ -365,20 +365,20 @@ function Partner:GetRecommendedBattlePartners(maxCount)
         local star = companionInstance:GetStarLevel()
         local attackPower = companionInstance:GetFinalAttribute("攻击") or 0
         local defensePower = companionInstance:GetFinalAttribute("防御") or 0
-        
+
         local power = (attackPower + defensePower) * level * star
         table.insert(partnerPowers, {slotIndex = slotIndex, power = power})
     end
-    
+
     -- 排序（战斗力从高到低）
     table.sort(partnerPowers, function(a, b) return a.power > b.power end)
-    
+
     -- 取前maxCount个
     local recommended = {}
     for i = 1, math.min(maxCount, #partnerPowers) do
         table.insert(recommended, partnerPowers[i].slotIndex)
     end
-    
+
     return recommended
 end
 
@@ -400,24 +400,24 @@ function Partner:GetMoodStatistics()
         lowMoodCount = 0,  -- 心情低于50的数量
         highMoodCount = 0  -- 心情高于80的数量
     }
-    
+
     local totalMood = 0
     for _, companionInstance in pairs(self.companionInstances) do
         local mood = companionInstance:GetMood()
         totalMood = totalMood + mood
         moodStats.totalCount = moodStats.totalCount + 1
-        
+
         if mood < 50 then
             moodStats.lowMoodCount = moodStats.lowMoodCount + 1
         elseif mood > 80 then
             moodStats.highMoodCount = moodStats.highMoodCount + 1
         end
     end
-    
+
     if moodStats.totalCount > 0 then
         moodStats.averageMood = totalMood / moodStats.totalCount
     end
-    
+
     return moodStats
 end
 

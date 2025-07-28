@@ -29,36 +29,35 @@ end
 function PetEventManager.RegisterEventHandlers()
     -- 获取宠物列表
     ServerEventManager.Subscribe(PetEventManager.REQUEST.GET_PET_LIST, function(evt) PetEventManager.HandleGetPetList(evt) end)
-    
+
     -- 【新增】装备/卸下宠物
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.EQUIP_PET, function(evt) PetEventManager.HandleEquipPet(evt) end)
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.UNEQUIP_PET, function(evt) PetEventManager.HandleUnequipPet(evt) end)
 
     -- 设置激活宠物 (保留旧接口的兼容性或用于特殊逻辑)
     ServerEventManager.Subscribe(PetEventManager.REQUEST.SET_ACTIVE_PET, function(evt) PetEventManager.HandleSetActivePet(evt) end)
-    
+
     -- 宠物升级
     ServerEventManager.Subscribe(PetEventManager.REQUEST.LEVEL_UP_PET, function(evt) PetEventManager.HandleLevelUpPet(evt) end)
-    
+
     -- 宠物获得经验
     ServerEventManager.Subscribe(PetEventManager.REQUEST.ADD_PET_EXP, function(evt) PetEventManager.HandleAddPetExp(evt) end)
-    
+
     -- 宠物升星
     ServerEventManager.Subscribe(PetEventManager.REQUEST.UPGRADE_PET_STAR, function(evt) PetEventManager.HandleUpgradePetStar(evt) end)
-    
+
     -- 宠物学习技能
     ServerEventManager.Subscribe(PetEventManager.REQUEST.LEARN_PET_SKILL, function(evt) PetEventManager.HandleLearnPetSkill(evt) end)
-    
+
     -- 喂养宠物
     ServerEventManager.Subscribe(PetEventManager.REQUEST.FEED_PET, function(evt) PetEventManager.HandleFeedPet(evt) end)
-    
+
     -- 重命名宠物
     ServerEventManager.Subscribe(PetEventManager.REQUEST.RENAME_PET, function(evt) PetEventManager.HandleRenamePet(evt) end)
-    
+
     -- 【新增】删除/锁定宠物
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.DELETE_PET, function(evt) PetEventManager.HandleDeletePet(evt) end)
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.TOGGLE_PET_LOCK, function(evt) PetEventManager.HandleTogglePetLock(evt) end)
-    
     -- 【新增】一键升星
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.UPGRADE_ALL_PETS, function(evt) PetEventManager.HandleUpgradeAllPets(evt) end)
 end
@@ -100,7 +99,7 @@ function PetEventManager.HandleEquipPet(evt)
     end
 
     local success, errorMsg = PetMgr.EquipPet(player.uin, companionSlotId, equipSlotId)
-    
+
     if success then
         gg.log("装备宠物成功", player.uin, "宠物槽位", companionSlotId, "装备栏", equipSlotId)
         -- 成功后，管理器内部会自动通知客户端更新
@@ -126,7 +125,7 @@ function PetEventManager.HandleUnequipPet(evt)
     end
 
     local success, errorMsg = PetMgr.UnequipPet(player.uin, equipSlotId)
-    
+
     if success then
         gg.log("卸下宠物成功", player.uin, "装备栏", equipSlotId)
         -- 成功后，管理器内部会自动通知客户端更新
@@ -175,7 +174,7 @@ function PetEventManager.HandleTogglePetLock(evt)
         gg.log("切换宠物锁定状态缺少参数", player.uin)
         return
     end
-    
+
     local success, errorMsg, isLocked = PetMgr.TogglePetLock(player.uin, slotIndex)
 
     if success then
@@ -225,7 +224,7 @@ function PetEventManager.HandleGetPetList(evt)
     gg.log("获取宠物列表", evt)
     local player = PetEventManager.ValidatePlayer(evt)
     if not player then return end
-    
+
     local result, errorMsg = PetMgr.GetPlayerPetList(player.uin)
     if result then
         PetEventManager.NotifyPetListUpdate(player.uin, result.petList)
@@ -242,7 +241,7 @@ function PetEventManager.HandleSetActivePet(evt)
 
     local slotIndex = evt.slotIndex or 0
     local success, errorMsg = PetMgr.SetActivePet(player.uin, slotIndex)
-    
+
     if success then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin)
@@ -260,14 +259,14 @@ function PetEventManager.HandleLevelUpPet(evt)
 
     local slotIndex = evt.slotIndex
     local targetLevel = evt.targetLevel
-    
+
     if not slotIndex then
         gg.log("宠物升级缺少槽位参数", player.uin)
         return
     end
-    
+
     local success, errorMsg, leveledUp = PetMgr.LevelUpPet(player.uin, slotIndex, targetLevel)
-    
+
     if success then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
@@ -285,14 +284,14 @@ function PetEventManager.HandleAddPetExp(evt)
 
     local slotIndex = evt.slotIndex
     local expAmount = evt.expAmount
-    
+
     if not slotIndex or not expAmount then
         gg.log("宠物获得经验缺少参数", player.uin, "槽位", slotIndex, "经验", expAmount)
         return
     end
-    
+
     local success, errorMsg, leveledUp = PetMgr.AddPetExp(player.uin, slotIndex, expAmount)
-    
+
     if success then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
@@ -310,14 +309,14 @@ function PetEventManager.HandleUpgradePetStar(evt)
 
     local args = evt.args or {}
     local slotIndex = args.slotIndex
-    
+
     if not slotIndex then
         gg.log("宠物升星缺少槽位参数", player.uin)
         return
     end
-    
+
     local success, errorMsg = PetMgr.UpgradePetStar(player.uin, slotIndex)
-    
+
     if success then
         -- 通知客户端更新（升星可能消耗了其他宠物，需要全量更新）
         PetMgr.NotifyPetDataUpdate(player.uin)
@@ -335,14 +334,14 @@ function PetEventManager.HandleLearnPetSkill(evt)
 
     local slotIndex = evt.slotIndex
     local skillId = evt.skillId
-    
+
     if not slotIndex or not skillId then
         gg.log("宠物学习技能缺少参数", player.uin, "槽位", slotIndex, "技能", skillId)
         return
     end
-    
+
     local success, errorMsg = PetMgr.LearnPetSkill(player.uin, slotIndex, skillId)
-    
+
     if success then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
@@ -360,12 +359,12 @@ function PetEventManager.HandleFeedPet(evt)
 
     local slotIndex = evt.slotIndex
     local foodType = evt.foodType
-    
+
     if not slotIndex or not foodType then
         gg.log("喂养宠物缺少参数", player.uin, "槽位", slotIndex, "食物类型", foodType)
         return
     end
-    
+
     -- 获取宠物实例
     local petInstance = PetMgr.GetPetInstance(player.uin, slotIndex)
     if petInstance then
@@ -373,7 +372,7 @@ function PetEventManager.HandleFeedPet(evt)
         local currentMood = petInstance:GetMood()
         local newMood = math.min(100, currentMood + 10) -- 简单的心情增加逻辑
         petInstance:SetMood(newMood)
-        
+
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
         gg.log("喂养宠物成功", player.uin, "槽位", slotIndex, "食物类型", foodType, "新心情", newMood)
@@ -390,16 +389,16 @@ function PetEventManager.HandleRenamePet(evt)
 
     local slotIndex = evt.slotIndex
     local newName = evt.newName
-    
+
     if not slotIndex or not newName then
         gg.log("重命名宠物缺少参数", player.uin, "槽位", slotIndex, "新名称", newName)
         return
     end
-    
+
     local petInstance = PetMgr.GetPetInstance(player.uin, slotIndex)
     if petInstance then
         petInstance:SetCustomName(newName)
-        
+
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
         gg.log("重命名宠物成功", player.uin, "槽位", slotIndex, "新名称", newName)
@@ -413,9 +412,9 @@ end
 function PetEventManager.HandleUpgradeAllPets(evt)
     local player = PetEventManager.ValidatePlayer(evt)
     if not player then return end
-    
+
     local upgradedCount = PetMgr.UpgradeAllPossiblePets(player.uin)
-    
+
     if upgradedCount > 0 then
         gg.log("批量升级宠物成功", player.uin, "升级次数", upgradedCount)
         -- 发送响应事件到客户端
@@ -439,17 +438,17 @@ end
 function PetEventManager.HandleGetPetStats(evt)
     local player = PetEventManager.ValidatePlayer(evt)
     if not player then return end
-    
+
     local petName = evt.petName
     local minStar = evt.minStar
-    
+
     if not petName then
         gg.log("宠物统计查询缺少参数", player.uin)
         return
     end
-    
+
     local count = PetMgr.GetPetCountByType(player.uin, petName, minStar)
-    
+
     -- 发送统计结果
     gg.network_channel:fireClient(player.uin, {
         cmd = PetEventManager.RESPONSE.PET_STATS,
@@ -457,7 +456,7 @@ function PetEventManager.HandleGetPetStats(evt)
         minStar = minStar,
         count = count
     })
-    
+
     gg.log("宠物统计查询", player.uin, petName, "最小星级", minStar, "数量", count)
 end
 

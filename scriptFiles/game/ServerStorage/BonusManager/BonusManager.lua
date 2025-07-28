@@ -22,17 +22,17 @@ function BonusManager.CalculatePlayerItemBonuses(player)
         gg.log("错误: [BonusManager] 玩家实例为空")
         return {}
     end
-    
+
     local totalBonuses = {}
-    
+
     -- 1. 获取宠物加成
     local petBonuses = BonusManager.GetPetItemBonuses(player)
     BonusManager.MergeBonuses(totalBonuses, petBonuses)
-    
+
     -- 2. 获取伙伴加成
     local partnerBonuses = BonusManager.GetPartnerItemBonuses(player)
     BonusManager.MergeBonuses(totalBonuses, partnerBonuses)
-    
+
     -- 3. 记录加成信息
     local bonusCount = 0
     for itemName, bonusData in pairs(totalBonuses) do
@@ -45,18 +45,18 @@ function BonusManager.CalculatePlayerItemBonuses(player)
             if bonusData.fixed and bonusData.fixed > 0 then
                 table.insert(logParts, string.format("固定值 +%d", bonusData.fixed))
             end
-            
-            gg.log(string.format("[BonusManager] 玩家 %s 的 %s 加成: %s", 
+
+            gg.log(string.format("[BonusManager] 玩家 %s 的 %s 加成: %s",
                    player.name or "未知", itemName, table.concat(logParts, ", ")))
             bonusCount = bonusCount + 1
         end
     end
-    
+
     if bonusCount > 0 then
-        gg.log(string.format("[BonusManager] 玩家 %s 共享受 %d 种物品加成", 
+        gg.log(string.format("[BonusManager] 玩家 %s 共享受 %d 种物品加成",
                player.name or "未知", bonusCount))
     end
-    
+
     return totalBonuses
 end
 
@@ -68,20 +68,20 @@ function BonusManager.ApplyBonusesToRewards(rewards, bonuses)
     if not rewards or not bonuses then
         return rewards or {}
     end
-    
+
     local finalRewards = {}
-    
+
     for itemName, amount in pairs(rewards) do
         local bonusData = bonuses[itemName] or { fixed = 0, percentage = 0 }
-        
+
         -- 1. 应用百分比加成（乘法）
         local amountAfterPercentage = math.floor(amount * (1 + (bonusData.percentage or 0) / 100))
-        
+
         -- 2. 应用固定值加成（加法）
         local finalAmount = amountAfterPercentage + (bonusData.fixed or 0)
-        
+
         finalRewards[itemName] = finalAmount
-        
+
         if (bonusData.percentage or 0) > 0 or (bonusData.fixed or 0) > 0 then
             local logMsg = string.format("[BonusManager] 奖励加成: %s %d -> %d (百分比:%.1f%%, 固定值:%d)",
                    itemName, amount, finalAmount, bonusData.percentage or 0, bonusData.fixed or 0)
@@ -90,7 +90,7 @@ function BonusManager.ApplyBonusesToRewards(rewards, bonuses)
             finalRewards[itemName] = amount
         end
     end
-    
+
     return finalRewards
 end
 
@@ -103,13 +103,13 @@ function BonusManager.GetPetItemBonuses(player)
     if not player or not player.uin then
         return {}
     end
-    
+
     local bonuses = PetMgr.GetActiveItemBonuses(player.uin)
-    
+
     if bonuses and next(bonuses) then
         gg.log(string.format("[BonusManager] 获取到玩家 %s 的宠物加成", player.name or "未知"))
     end
-    
+
     return bonuses or {}
 end
 
@@ -120,13 +120,13 @@ function BonusManager.GetPartnerItemBonuses(player)
     if not player or not player.uin then
         return {}
     end
-    
+
     local bonuses = PartnerMgr.GetActiveItemBonuses(player.uin)
-    
+
     if bonuses and next(bonuses) then
         gg.log(string.format("[BonusManager] 获取到玩家 %s 的伙伴加成", player.name or "未知"))
     end
-    
+
     return bonuses or {}
 end
 
@@ -139,12 +139,12 @@ function BonusManager.MergeBonuses(target, source)
     if not source then
         return
     end
-    
+
     for itemName, bonusData in pairs(source) do
         if not target[itemName] then
             target[itemName] = { fixed = 0, percentage = 0 }
         end
-        
+
         if type(bonusData.fixed) == "number" and bonusData.fixed > 0 then
             target[itemName].fixed = (target[itemName].fixed or 0) + bonusData.fixed
         end
@@ -162,12 +162,12 @@ function BonusManager.ValidatePlayer(player)
         gg.log("错误: [BonusManager] 玩家实例为空")
         return false
     end
-    
+
     if not player.uin then
         gg.log("错误: [BonusManager] 玩家UIN无效")
         return false
     end
-    
+
     return true
 end
 
@@ -179,23 +179,23 @@ function BonusManager.LogBonusApplication(player, originalRewards, finalRewards)
     if not originalRewards or not finalRewards then
         return
     end
-    
+
     local changedItems = 0
     for itemName, originalAmount in pairs(originalRewards) do
         local finalAmount = finalRewards[itemName]
         if finalAmount and finalAmount ~= originalAmount then
             local bonusPercent = ((finalAmount - originalAmount) / originalAmount) * 100
-            gg.log(string.format("[BonusManager] %s %s奖励: %d -> %d (+%.1f%%)", 
+            gg.log(string.format("[BonusManager] %s %s奖励: %d -> %d (+%.1f%%)",
                    player.name or "未知", itemName, originalAmount, finalAmount, bonusPercent))
             changedItems = changedItems + 1
         end
     end
-    
+
     if changedItems > 0 then
-        gg.log(string.format("[BonusManager] 玩家 %s 共有 %d 种物品奖励受到加成影响", 
+        gg.log(string.format("[BonusManager] 玩家 %s 共有 %d 种物品奖励受到加成影响",
                player.name or "未知", changedItems))
     else
-        gg.log(string.format("[BonusManager] 玩家 %s 本次无物品奖励受到加成影响", 
+        gg.log(string.format("[BonusManager] 玩家 %s 本次无物品奖励受到加成影响",
                player.name or "未知"))
     end
 end

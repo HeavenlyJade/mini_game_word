@@ -41,9 +41,9 @@ function RaceGameMode:OnInit(instanceId, modeName, levelType)
     self.state = RaceState.WAITING
     self.participants = {} -- 存放所有参赛玩家的table, 使用数组形式
     self.levelType = levelType -- 存储完整的LevelType实例
-    
+
     -- 调试信息：显示比赛模式初始化结果
-    gg.log(string.format("RaceGameMode 初始化 - 实例ID: %s, 关卡: %s", 
+    gg.log(string.format("RaceGameMode 初始化 - 实例ID: %s, 关卡: %s",
            instanceId, levelType and levelType.name or "无关卡配置"))
     self.finishedPlayers = {} -- 【新增】初始化已完成玩家的记录表
     self.flightData = {} -- 实时飞行数据 (uin -> FlightPlayerData)
@@ -111,7 +111,7 @@ function RaceGameMode:LaunchPlayer(player)
     -- 【规范化】从配置中读取事件名称和参数，避免硬编码
     local eventName = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER
     local launchParams = EventPlayerConfig.GetActionParams(eventName)
-    
+
     -- 获取关卡配置的比赛时长
     local raceTime = self.levelType.raceTime or 60
 
@@ -120,7 +120,7 @@ function RaceGameMode:LaunchPlayer(player)
     eventData.gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME
     eventData.gravity = 0
     eventData.recoveryDelay = raceTime  -- 传送关卡配置的比赛时长作为客户端的恢复延迟
-    
+
     -- 【新增】获取并添加重生点位置
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
@@ -129,7 +129,7 @@ function RaceGameMode:LaunchPlayer(player)
     else
         gg.log("警告: [RaceGameMode] 无法为比赛实例 " .. self.instanceId .. " 找到有效的重生点位置。")
     end
-    
+
     -- 【核心改造】通过网络通道向指定客户端发送事件
     if gg.network_channel then
         gg.network_channel:fireClient(player.uin, eventData)
@@ -151,7 +151,7 @@ function RaceGameMode:OnPlayerLanded(player)
 
     -- 记录该玩家已完成
     self.finishedPlayers[player.uin] = true
-    
+
     -- 标记玩家为已完成状态（用于停止距离计算）
     self:_markPlayerFinished(player.uin)
 
@@ -165,7 +165,7 @@ function RaceGameMode:OnPlayerLanded(player)
     -- 获取玩家当前排名信息
     local flightData = self:GetPlayerFlightData(player.uin)
     local rankInfo = flightData and string.format("第%d名，飞行距离%.1f米", flightData.rank, flightData.flightDistance) or "排名计算中"
-    
+
     player:SendHoverText(string.format("已落地！%s 等待其他玩家...", rankInfo))
 
     -- 使用正确的计数值检查是否所有人都已完成
@@ -182,7 +182,7 @@ function RaceGameMode:Start()
 
     -- 从LevelType实例获取玩法规则
     local prepareTime = self.levelType.prepareTime or 10
-    
+
     -- 准备阶段
     self:AddDelay(prepareTime, function()
         if self.state == RaceState.WAITING then
@@ -222,25 +222,25 @@ function RaceGameMode:End()
     -- 懒加载 GameModeManager 和 ServerDataManager 以避免循环依赖
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
-    
+
     gg.log("比赛结束！")
 
     -- 停止实时飞行距离追踪
     self:_stopFlightDistanceTracking()
-    
+
     -- 最终排名确认（基于实际飞行距离）
     self:_updateRankings()
-    
+
     -- 结算基础奖励和排名奖励
     self:_calculateAndDistributeRewards()
-    
+
     -- 打印基础的结算信息，并通知玩家（按真实排名顺序）
     for _, uin in ipairs(self.rankings) do
         local flightData = self.flightData[uin]
         if flightData then
-            local rankText = string.format("第 %d 名: %s (%.1f米)", 
+            local rankText = string.format("第 %d 名: %s (%.1f米)",
                                           flightData.rank, flightData.name, flightData.flightDistance)
-            
+
             -- 找到对应的玩家实例发送消息
             for _, player in ipairs(self.participants) do
                 if player.uin == uin then
@@ -265,7 +265,7 @@ function RaceGameMode:End()
                 end
             end
         end
-        
+
         -- 确保停止所有定时任务
         self:_stopFlightDistanceTracking()
     end)
@@ -282,15 +282,15 @@ function RaceGameMode:_calculateAndDistributeRewards()
         gg.log("错误: [RaceGameMode] 关卡实例(levelType)为空，无法发放奖励。")
         return
     end
-    
+
     gg.log(string.format("信息: [RaceGameMode] 开始计算奖励，参与玩家数: %d", #self.participants))
-    
+
     -- 按照真实排名顺序处理奖励
     for _, uin in ipairs(self.rankings) do
         local flightData = self.flightData[uin]
         if flightData then
             local player = self:GetPlayerByUin(uin)
-            
+
             if player then
                 -- 准备要传递给 LevelType 计算方法的数据
                 local playerData = {
@@ -299,19 +299,19 @@ function RaceGameMode:_calculateAndDistributeRewards()
                     playerName = flightData.name,
                     uin = flightData.uin
                 }
-                
+
                 gg.log(string.format("信息: [RaceGameMode] 开始为玩家 %s (第%d名) 计算奖励...", playerData.playerName, playerData.rank))
-                
+
                 -- 1. 计算原始奖励
                 local baseRewards = self.levelType:CalculateBaseRewards(playerData)
                 local rankRewardsArray = self.levelType:GetRankRewards(playerData.rank)
 
                 -- 2. 计算玩家所有物品加成
                 local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
-                
+
                 -- 3. 应用加成到基础奖励
                 local finalBaseRewards = BonusManager.ApplyBonusesToRewards(baseRewards, bonuses)
-                
+
                 -- 4. 应用加成到排名奖励
                 local rankRewardsDict = {}
                 if rankRewardsArray and #rankRewardsArray > 0 then
@@ -337,7 +337,7 @@ function RaceGameMode:_calculateAndDistributeRewards()
                 else
                     gg.log(" -> 无基础奖励可发放。")
                 end
-                
+
                 -- b. 发放排名奖励
                 if finalRankRewards and next(finalRankRewards) then
                     gg.log(" -> 开始发放排名奖励...")
@@ -364,17 +364,17 @@ end
 ---@param amount number 物品数量
 function RaceGameMode:_giveItemToPlayer(player, itemName, amount)
     if not player or not itemName or amount <= 0 then
-        gg.log(string.format("RaceGameMode: 发放物品失败，参数无效 - player: %s, itemName: %s, amount: %s", 
+        gg.log(string.format("RaceGameMode: 发放物品失败，参数无效 - player: %s, itemName: %s, amount: %s",
                tostring(player), tostring(itemName), tostring(amount)))
         return
     end
-    
+
     gg.log(string.format("RaceGameMode: 尝试给玩家 %s 发放物品 %s x%d", player.name or "未知", itemName, amount))
-    
+
     -- 这里集成背包系统来发放物品
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)  ---@type MServerDataManager
     local BagMgr = serverDataMgr.BagMgr ---@type BagMgr
-    
+
     if BagMgr then
         local success = BagMgr.AddItem(player, itemName, amount)
         if success then
@@ -396,7 +396,7 @@ function RaceGameMode:_startFlightDistanceTracking()
     if self.distanceTimer then
         self:RemoveTimer(self.distanceTimer)
     end
-    
+
     -- 每0.5秒更新一次飞行距离和排名
     self.distanceTimer = self:AddInterval(0.5, function()
         self:_updateFlightDistances()
@@ -418,22 +418,22 @@ function RaceGameMode:_updateFlightDistances()
     if self.state ~= RaceState.RACING then
         return
     end
-    
+
     for _, player in ipairs(self.participants) do
         if player and player.actor and self.flightData[player.uin] then
             local flightData = self.flightData[player.uin]
-            
+
             -- 只处理未完成的玩家
             if not flightData.isFinished then
                 -- 获取当前位置
                 local currentPos = player.actor.Position
                 if currentPos then
                     flightData.currentPosition = currentPos
-                    
+
                     -- 计算从起始位置到当前位置的距离
                     local startPos = flightData.startPosition
                     local distance = self:_calculateDistance(currentPos, startPos)
-                    
+
                     -- 更新飞行距离（只增不减，取最大值）
                     if distance then
                         flightData.flightDistance = math.max(flightData.flightDistance, distance)
@@ -451,12 +451,12 @@ function RaceGameMode:_updateRankings()
     for uin, flightData in pairs(self.flightData) do
         table.insert(playerList, flightData)
     end
-    
+
     -- 按飞行距离降序排序（距离越远排名越高）
     table.sort(playerList, function(a, b)
         return a.flightDistance > b.flightDistance
     end)
-    
+
     -- 更新排名和rankings列表
     self.rankings = {}
     for i, flightData in ipairs(playerList) do
@@ -506,12 +506,12 @@ function RaceGameMode:_calculateDistance(pos1, pos2)
     if not pos1 or not pos2 then
         return nil
     end
-    
+
     -- 【更新】使用 VectorUtils 模块的距离计算函数
     local success, distance = pcall(function()
         return VectorUtils.Vec.Distance3(pos1, pos2)
     end)
-    
+
     if success and type(distance) == "number" then
         return distance
     else

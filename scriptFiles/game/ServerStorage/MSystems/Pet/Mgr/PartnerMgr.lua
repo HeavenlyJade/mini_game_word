@@ -20,7 +20,7 @@ local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type Conf
 local PartnerMgr = {
     -- 在线玩家伙伴管理器缓存 {uin = Partner管理器实例}
     server_player_partners = {}, ---@type table<number, Partner>
-    
+
     -- 定时保存间隔（秒）
     SAVE_INTERVAL = 60
 }
@@ -45,7 +45,7 @@ saveTimer.Name = 'PARTNER_SAVE_ALL'
 saveTimer.Delay = 60
 saveTimer.Loop = true
 saveTimer.Interval = 60
-saveTimer.Callback = SaveAllPlayerPARTNER_  
+saveTimer.Callback = SaveAllPlayerPARTNER_
 saveTimer:Start()
 
 
@@ -56,17 +56,17 @@ function PartnerMgr.OnPlayerJoin(player)
         gg.log("伙伴系统：玩家上线处理失败：玩家对象无效")
         return
     end
-    
+
     local uin = player.uin
     gg.log("开始处理玩家伙伴上线", uin)
-    
+
     -- 从云端加载玩家伙伴数据
     local playerPartnerData = CloudPartnerDataAccessor:LoadPlayerPartnerData(uin)
-    
+
     -- 创建Partner管理器实例并缓存
     local partnerManager = Partner.New(uin, playerPartnerData)
     PartnerMgr.server_player_partners[uin] = partnerManager
-    
+
     gg.log("玩家伙伴管理器加载完成", uin, "伙伴数量数据",playerPartnerData)
 end
 
@@ -80,7 +80,7 @@ function PartnerMgr.OnPlayerLeave(uin)
         if playerPartnerData then
             CloudPartnerDataAccessor:SavePlayerPartnerData(uin, playerPartnerData)
         end
-        
+
         -- 清理内存缓存
         PartnerMgr.server_player_partners[uin] = nil
         gg.log("玩家伙伴数据已保存并清理", uin)
@@ -138,7 +138,7 @@ function PartnerMgr.SetActivePartner(uin, slotIndex)
             gg.log("警告：在玩家Actor下未找到名为'Partner1'的节点", uin)
             return success, errorMsg
         end
-        
+
         if slotIndex > 0 then
             -- 装备伙伴
             local activePartner = partnerManager:GetActivePartner()
@@ -169,7 +169,7 @@ function PartnerMgr.SetActivePartner(uin, slotIndex)
             gg.log("成功卸下伙伴并隐藏节点", uin)
         end
     end
-    
+
     return success, errorMsg
 end
 
@@ -185,7 +185,7 @@ function PartnerMgr.LevelUpPartner(uin, slotIndex, targetLevel)
     if not partnerManager then
         return false, "玩家数据不存在", false
     end
-    
+
     return partnerManager:LevelUpPartner(slotIndex, targetLevel)
 end
 
@@ -201,7 +201,7 @@ function PartnerMgr.AddPartnerExp(uin, slotIndex, expAmount)
     if not partnerManager then
         return false, "玩家数据不存在", false
     end
-    
+
     return partnerManager:AddPartnerExp(slotIndex, expAmount)
 end
 
@@ -215,7 +215,7 @@ function PartnerMgr.UpgradePartnerStar(uin, slotIndex)
     if not partnerManager then
         return false, "玩家数据不存在"
     end
-    
+
     return partnerManager:UpgradePartnerStar(slotIndex)
 end
 
@@ -230,7 +230,7 @@ function PartnerMgr.LearnPartnerSkill(uin, slotIndex, skillId)
     if not partnerManager then
         return false, "玩家数据不存在"
     end
-    
+
     return partnerManager:LearnPartnerSkill(slotIndex, skillId)
 end
 
@@ -243,7 +243,7 @@ function PartnerMgr.GetPlayerPartnerList(uin)
     if not partnerManager then
         return nil, "玩家数据不存在"
     end
-    
+
     return partnerManager:GetPlayerPartnerList(), nil
 end
 
@@ -255,7 +255,7 @@ function PartnerMgr.GetPartnerCount(uin)
     if not partnerManager then
         return 0
     end
-    
+
     return partnerManager:GetPartnerCount()
 end
 
@@ -268,7 +268,7 @@ function PartnerMgr.GetActivePartner(uin)
     if not partnerManager then
         return nil, nil
     end
-    
+
     return partnerManager:GetActivePartner()
 end
 
@@ -281,7 +281,7 @@ function PartnerMgr.GetPartnerInstance(uin, slotIndex)
     if not partnerManager then
         return nil
     end
-    
+
     return partnerManager:GetPartnerBySlot(slotIndex)
 end
 
@@ -297,7 +297,7 @@ function PartnerMgr.AddPartnerToSlot(uin, partnerName, slotIndex)
     if not partnerManager then
         return false, "玩家数据不存在", nil
     end
-    
+
     return partnerManager:AddPartner(partnerName, slotIndex)
 end
 
@@ -311,7 +311,7 @@ function PartnerMgr.RemovePartnerFromSlot(uin, slotIndex)
     if not partnerManager then
         return false, "玩家数据不存在"
     end
-    
+
     return partnerManager:RemovePartner(slotIndex)
 end
 
@@ -325,7 +325,7 @@ function PartnerMgr.GetPartnerFinalAttribute(uin, slotIndex, attrName)
     if not partnerManager then
         return nil
     end
-    
+
     return partnerManager:GetPartnerFinalAttribute(slotIndex, attrName)
 end
 
@@ -338,7 +338,7 @@ function PartnerMgr.CanPartnerLevelUp(uin, slotIndex)
     if not partnerManager then
         return false
     end
-    
+
     return partnerManager:CanPartnerLevelUp(slotIndex)
 end
 
@@ -352,7 +352,7 @@ function PartnerMgr.CanPartnerUpgradeStar(uin, slotIndex)
     if not partnerManager then
         return false, "玩家数据不存在"
     end
-    
+
     return partnerManager:CanPartnerUpgradeStar(slotIndex)
 end
 
@@ -367,14 +367,14 @@ function PartnerMgr.AddPartner(player, partnerName, slotIndex)
         gg.log("PartnerMgr.AddPartner: 玩家对象无效")
         return false, nil
     end
-    
+
     local success, errorMsg, actualSlot = PartnerMgr.AddPartnerToSlot(player.uin, partnerName, slotIndex)
     if success then
         gg.log("PartnerMgr.AddPartner: 成功给玩家", player.uin, "添加伙伴", partnerName, "槽位", actualSlot)
     else
         gg.log("PartnerMgr.AddPartner: 给玩家", player.uin, "添加伙伴失败", partnerName, "错误", errorMsg)
     end
-    
+
     return success, actualSlot
 end
 
@@ -391,7 +391,7 @@ function PartnerMgr.AddPartnerByUin(uin, partnerName, slotIndex)
         gg.log("PartnerMgr.AddPartnerByUin: 玩家不存在", uin)
         return false, nil
     end
-    
+
     return PartnerMgr.AddPartner(player, partnerName, slotIndex)
 end
 
@@ -430,9 +430,9 @@ function PartnerMgr.UpgradeAllPossiblePartners(uin)
     if not partnerManager then
         return 0
     end
-    
+
     local upgradedCount = partnerManager:UpgradeAllPossiblePartners()
-    
+
     return upgradedCount
 end
 
@@ -446,7 +446,7 @@ function PartnerMgr.GetPartnerCountByType(uin, partnerName, minStar)
     if not partnerManager then
         return 0
     end
-    
+
     return partnerManager:GetPartnerCountByType(partnerName, minStar)
 end
 
@@ -496,11 +496,11 @@ function PartnerMgr.UpdateAllEquippedPartnerModels(player)
                     if partnerConfig and partnerConfig.modelResource and partnerConfig.modelResource ~= "" then
                         partnerNode.ModelId = partnerConfig.modelResource
                         partnerNode.Visible = true
-                        
+
                         -- 【新增】更新动画控制器
                         local animatorNode = partnerNode:FindFirstChild("Animator")
                         if animatorNode then
-                            animatorNode.ControllerAsset = partnerConfig.animationResource 
+                            animatorNode.ControllerAsset = partnerConfig.animationResource
                             gg.log("更新伙伴动画控制器成功:", uin, equipSlotId, partnerConfig.animationResource)
                         end
 
@@ -532,7 +532,7 @@ function PartnerMgr.EquipPartner(uin, companionSlotId, equipSlotId)
     if not partnerManager then
         return false, "玩家伙伴数据不存在"
     end
-    
+
     local success, errorMsg = partnerManager:EquipPartner(companionSlotId, equipSlotId)
 
     if success then
@@ -544,7 +544,7 @@ function PartnerMgr.EquipPartner(uin, companionSlotId, equipSlotId)
             PartnerMgr.UpdateAllEquippedPartnerModels(player)
         end
     end
-    
+
     return success, errorMsg
 end
 
@@ -557,7 +557,7 @@ function PartnerMgr.UnequipPartner(uin, equipSlotId)
     if not partnerManager then
         return false, "玩家伙伴数据不存在"
     end
-    
+
     local success, errorMsg = partnerManager:UnequipPartner(equipSlotId)
 
     if success then
@@ -569,7 +569,7 @@ function PartnerMgr.UnequipPartner(uin, equipSlotId)
             PartnerMgr.UpdateAllEquippedPartnerModels(player)
         end
     end
-    
+
     return success, errorMsg
 end
 
@@ -582,7 +582,7 @@ function PartnerMgr.GetActiveItemBonuses(uin)
         gg.log("[PartnerMgr] GetActiveItemBonuses: 找不到玩家的伙伴管理器", uin)
         return {}
     end
-    
+
     return partnerManager:GetActiveItemBonuses()
 end
 

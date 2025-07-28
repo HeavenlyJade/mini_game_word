@@ -73,32 +73,32 @@ end
 
 function CompanionGui:RegisterEvents()
     gg.log("注册伙伴系统事件监听")
-    
+
     -- 监听伙伴列表响应
     ClientEventManager.Subscribe(PartnerEventConfig.NOTIFY.PARTNER_LIST_UPDATE, function(data)
         self:OnCompanionListResponse(data)
     end)
-    
+
     -- 监听伙伴升星响应
     ClientEventManager.Subscribe(PartnerEventConfig.RESPONSE.PARTNER_STAR_UPGRADED, function(data)
         self:OnUpgradeStarResponse(data)
     end)
-    
+
     -- 监听伙伴装备响应
     ClientEventManager.Subscribe(PartnerEventConfig.NOTIFY.PARTNER_UPDATE, function(data)
         self:OnCompanionUpdateNotify(data)
     end)
-    
+
     -- 监听新获得伙伴通知
     ClientEventManager.Subscribe(PartnerEventConfig.NOTIFY.PARTNER_OBTAINED, function(data)
         self:OnCompanionObtainedNotify(data)
     end)
-    
+
     -- 监听伙伴移除通知
     ClientEventManager.Subscribe(PartnerEventConfig.NOTIFY.PARTNER_REMOVED, function(data)
         self:OnCompanionRemovedNotify(data)
     end)
-    
+
     -- 监听错误响应
     ClientEventManager.Subscribe(PartnerEventConfig.RESPONSE.ERROR, function(data)
         self:OnCompanionErrorResponse(data)
@@ -163,9 +163,9 @@ function CompanionGui:OnCompanionListResponse(data)
         self.companionData = data.companionList
         self.activeSlots = data.activeSlots or {}
         self.equipSlotIds = data.equipSlotIds or {}
-        
+
         gg.log("伙伴数据同步完成, 激活槽位:", self.activeSlots)
-        
+
         -- 刷新界面显示
         self:RefreshCompanionList()
         self:SelectDefaultCompanion()
@@ -180,12 +180,12 @@ function CompanionGui:OnUpgradeStarResponse(data)
     if data.success and data.companionSlot then
         local slotIndex = data.companionSlot
         local newStarLevel = data.newStarLevel
-        
+
         -- 更新本地数据
         if self.companionData[slotIndex] then
             self.companionData[slotIndex].starLevel = newStarLevel
             gg.log("伙伴升星成功:", slotIndex, "新星级:", newStarLevel)
-            
+
             -- 刷新显示
             self:RefreshCompanionSlotDisplay(slotIndex)
             if self.selectedCompanion and self.selectedCompanion.slotIndex == slotIndex then
@@ -203,12 +203,12 @@ function CompanionGui:OnCompanionUpdateNotify(data)
     if data.companionSlot and data.companionInfo then
         local slotIndex = data.companionSlot
         self.companionData[slotIndex] = data.companionInfo
-        
+
         -- 【重构】直接同步整个激活列表
         if data.activeSlots then
             self.activeSlots = data.activeSlots
         end
-        
+
         -- 刷新显示
         self:RefreshCompanionList() -- 全量刷新以保证排序和激活状态正确
         if self.selectedCompanion and self.selectedCompanion.slotIndex == slotIndex then
@@ -223,7 +223,7 @@ function CompanionGui:OnCompanionObtainedNotify(data)
     if data.companionSlot and data.companionInfo then
         local slotIndex = data.companionSlot
         self.companionData[slotIndex] = data.companionInfo
-        
+
         -- 如果界面已打开，立即刷新显示
         if self:IsOpen() then
             -- 【修正】修复传递给 CreateCompanionSlotItem 的参数
@@ -256,19 +256,19 @@ function CompanionGui:OnClickUpgradeStar()
         gg.log("未选中伙伴，无法升星")
         return
     end
-    
+
     local slotIndex = self.selectedCompanion.slotIndex
     local currentStarLevel = self.selectedCompanion.starLevel or 1
-    
+
     gg.log("点击升星按钮:", "槽位", slotIndex, "当前星级", currentStarLevel)
-    
+
     -- 检查是否已达最高星级
     local partnerConfig = self:GetPartnerConfig(self.selectedCompanion.companionName)
     if partnerConfig and currentStarLevel >= (partnerConfig.maxStarLevel or 5) then
         gg.log("伙伴已达最高星级")
         return
     end
-    
+
     -- 发送升星请求
     self:SendUpgradeStarRequest(slotIndex)
 end
@@ -288,9 +288,9 @@ function CompanionGui:OnClickEquipCompanion()
         -- TODO: 向玩家显示提示
         return
     end
-    
+
     gg.log("点击装备按钮:", "背包槽位", companionSlotId, "目标装备栏", equipSlotId)
-    
+
     -- 发送装备请求
     self:SendEquipCompanionRequest(companionSlotId, equipSlotId)
 end
@@ -301,7 +301,7 @@ function CompanionGui:OnClickUnequipCompanion()
         gg.log("未选中伙伴，无法卸下")
         return
     end
-    
+
     local companionSlotId = self.selectedCompanion.slotIndex
     local equipSlotId = self:GetEquipSlotByCompanionSlot(companionSlotId)
 
@@ -311,7 +311,7 @@ function CompanionGui:OnClickUnequipCompanion()
     end
 
     gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
-    
+
     -- 发送卸下请求
     self:SendUnequipCompanionRequest(equipSlotId)
 end
@@ -334,7 +334,7 @@ end
 function CompanionGui:SendEquipCompanionRequest(companionSlotId, equipSlotId)
     local requestData = {
         cmd = PartnerEventConfig.REQUEST.EQUIP_PARTNER,
-        args = { 
+        args = {
             companionSlotId = companionSlotId,
             equipSlotId = equipSlotId
         }
@@ -346,7 +346,7 @@ end
 function CompanionGui:SendUnequipCompanionRequest(equipSlotId)
     local requestData = {
         cmd = PartnerEventConfig.REQUEST.UNEQUIP_PARTNER,
-        args = { 
+        args = {
             equipSlotId = equipSlotId
         }
     }
@@ -362,12 +362,12 @@ end
 --- 刷新伙伴列表
 function CompanionGui:RefreshCompanionList()
     gg.log("刷新伙伴列表显示")
-    
+
     -- 清空现有按钮映射
     self.companionSlotButtons = {}
-    
+
     self.companionSlotList:ClearChildren()
-    
+
     local companionList = self:GetSortedCompanionList()
 
     -- 3. 遍历排序后的列表来创建UI
@@ -375,7 +375,7 @@ function CompanionGui:RefreshCompanionList()
         local companionInfo = item.info
         self:CreateCompanionSlotItem(companionInfo.slotIndex, companionInfo)
     end
-    
+
     gg.log("伙伴列表刷新完成，共", self:GetCompanionCount(), "个伙伴")
 end
 
@@ -391,19 +391,19 @@ function CompanionGui:CreateCompanionSlotItem(slotIndex, companionInfo)
     slotNode.Visible = true
     -- 【修正】使用伙伴名和槽位索引生成唯一节点名称, 修正字段为 companionName
     slotNode.Name = companionInfo.companionName .. "_" .. slotIndex
-    
+
     -- 添加到列表
     self.companionSlotList:AppendChild(slotNode)
-    
+
     -- 设置槽位显示
     self:SetupCompanionSlotDisplay(slotNode, slotIndex, companionInfo)
-    
+
     -- 创建按钮组件并绑定点击事件
     local slotButton = ViewButton.New(slotNode,self)
     slotButton.clickCb = function()
         self:OnCompanionSlotClick(slotIndex, companionInfo)
     end
-    
+
     -- 保存按钮引用
     self.companionSlotButtons[slotIndex] = slotButton
 end
@@ -411,10 +411,10 @@ end
 --- 设置伙伴槽位显示
 function CompanionGui:SetupCompanionSlotDisplay(slotNode, slotIndex, companionInfo)
     if not slotNode then return end
-    
+
     local backgroundNode = slotNode["背景"]
     if not backgroundNode then return end
-    
+
     local partnerConfig = self:GetPartnerConfig(companionInfo.companionName) --@type PartnerType
 
     -- 【新增】根据伙伴品质设置背景图
@@ -434,11 +434,11 @@ function CompanionGui:SetupCompanionSlotDisplay(slotNode, slotIndex, companionIn
     end
     -- 设置星级显示
     self:UpdateStarDisplay(slotNode, companionInfo.starLevel or 1)
-    
+
     -- 【重构】根据新的激活数据结构更新显示
     local isEquipped = self:IsCompanionEquipped(slotIndex)
     self:UpdateActiveState(slotNode, isEquipped)
-    
+
 end
 
 --- 更新星级显示
@@ -460,7 +460,7 @@ end
 function CompanionGui:RefreshCompanionSlotDisplay(slotIndex)
     local companionInfo = self.companionData[slotIndex]
     if not companionInfo then return end
-    
+
     -- 查找对应的槽位节点
     -- 【修正】使用新的命名规则查找节点
     local nodeName = companionInfo.companionName .. "_" .. slotIndex
@@ -473,7 +473,7 @@ end
 --- 伙伴槽位点击事件
 function CompanionGui:OnCompanionSlotClick(slotIndex, companionInfo)
     gg.log("点击伙伴槽位:", slotIndex, companionInfo.companionName)
-    
+
     local isEquipped = self:IsCompanionEquipped(slotIndex)
 
     -- 设置选中伙伴
@@ -484,7 +484,7 @@ function CompanionGui:OnCompanionSlotClick(slotIndex, companionInfo)
         starLevel = companionInfo.starLevel,
         isEquipped = isEquipped -- 【修改】使用 isEquipped 替代 isActive
     }
-    
+
     -- 刷新选中伙伴的详细显示
     self:RefreshSelectedCompanionDisplay()
 end
@@ -496,7 +496,7 @@ function CompanionGui:RefreshSelectedCompanionDisplay()
         self:HideCompanionDetail()
         return
     end
-    
+
     local companion = self.selectedCompanion
     gg.log("刷新选中伙伴显示:", companion.companionName)
 
@@ -505,14 +505,14 @@ function CompanionGui:RefreshSelectedCompanionDisplay()
     if self.companionUI and partnerConfig and partnerConfig.avatarResource then
         self.companionUI.node.Icon = partnerConfig.avatarResource
     end
-    
+
     -- 更新名字显示
     if self.nameLabel then
         local displayName = companion.customName or companion.companionName
         -- 【修正】文本节点的属性是 Title，不是 UITextLabel
         self.nameLabel.node.Title = displayName
     end
-    
+
     -- 更新星级显示
     if self.starList then
         local currentStarLevel = companion.starLevel or 0
@@ -525,18 +525,18 @@ function CompanionGui:RefreshSelectedCompanionDisplay()
 
                 if i <= currentStarLevel then
                     -- 设置为亮星
-                    starNode.Icon = litIcon        
+                    starNode.Icon = litIcon
                 else
                     starNode.Icon = unlitIcon
                 end
             end
         end
     end
-    
+
     -- 更新属性介绍
     gg.log("更新属性介绍", partnerConfig, companion.starLevel)
     self:UpdateAttributeDisplay(partnerConfig, companion.starLevel)
-    
+
     -- 更新按钮状态
     self:UpdateButtonStates(companion)
 end
@@ -551,10 +551,10 @@ function CompanionGui:UpdateAttributeDisplay(partnerConfig, starLevel)
         self.attributeList:HideChildrenFrom(0)
         return
     end
-    
+
     local currentStar = starLevel
     local maxStar = partnerConfig.maxStarLevel
-    
+
     local currentEffects = partnerConfig:CalculateCarryingEffectsByStarLevel(currentStar)
     local nextEffects = {}
     if currentStar < maxStar then
@@ -623,7 +623,7 @@ end
 --- 更新按钮状态
 function CompanionGui:UpdateButtonStates(companion)
     if not companion then return end
-    
+
     -- 升星按钮状态
     if self.upgradeButton then
         -- 【新增】确保升星按钮可见
@@ -631,11 +631,11 @@ function CompanionGui:UpdateButtonStates(companion)
         local partnerConfig = self:GetPartnerConfig(companion.companionName)
         local maxStarLevel = partnerConfig and partnerConfig.maxStarLevel or 5
         local canUpgrade = (companion.starLevel or 1) < maxStarLevel
-        
+
         self.upgradeButton:SetGray(not canUpgrade)
         self.upgradeButton:SetTouchEnable(canUpgrade, nil)
     end
-    
+
     -- 【重构】装备/卸下按钮状态
     local isEquipped = companion.isEquipped
     local hasEmptySlot = self:FindNextAvailableEquipSlot() ~= nil
@@ -672,7 +672,7 @@ function CompanionGui:HideCompanionDetail()
     -- if self.attributeList then
     --     self.attributeList:ClearChildren()
     -- end
-    
+
     -- 隐藏操作按钮
     if self.upgradeButton then
         self.upgradeButton:SetVisible(false)
@@ -728,11 +728,11 @@ function CompanionGui:GetSortedCompanionList()
         if aStars ~= bStars then
             return aStars > bStars
         end
-        
+
         -- 规则4: 如果都相同, 按槽位ID排序 (保持稳定)
         return (aInfo.slotIndex or 0) < (bInfo.slotIndex or 0)
     end)
-    
+
     return companionList
 end
 
@@ -775,12 +775,12 @@ end
 --- 获取伙伴配置
 function CompanionGui:GetPartnerConfig(partnerName)
     if not partnerName then return nil end
-    
+
     -- 使用缓存避免重复加载
     if not self.partnerConfigs[partnerName] then
         self.partnerConfigs[partnerName] = ConfigLoader.GetPartner(partnerName)
     end
-    
+
     return self.partnerConfigs[partnerName]
 end
 
@@ -796,9 +796,9 @@ end
 --- 默认选择第一个伙伴
 function CompanionGui:SelectDefaultCompanion()
     gg.log("尝试默认选择第一个伙伴")
-    
+
     local sortedList = self:GetSortedCompanionList()
-    
+
     if #sortedList > 0 then
         local firstCompanion = sortedList[1].info
         gg.log("默认选择伙伴:", firstCompanion.companionName)

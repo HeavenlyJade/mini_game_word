@@ -86,27 +86,27 @@ end
 
 function PetGui:RegisterEvents()
     gg.log("注册宠物系统事件监听")
-    
+
     -- 监听宠物列表响应
     ClientEventManager.Subscribe(PetEventConfig.NOTIFY.PET_LIST_UPDATE, function(data)
         self:OnPetListResponse(data)
     end)
-    
+
     -- 监听宠物升星响应
     ClientEventManager.Subscribe(PetEventConfig.RESPONSE.PET_STAR_UPGRADED, function(data)
         self:OnUpgradeStarResponse(data)
     end)
-    
+
     -- 监听宠物装备/卸下等更新
     ClientEventManager.Subscribe(PetEventConfig.NOTIFY.PET_UPDATE, function(data)
         self:OnPetUpdateNotify(data)
     end)
-    
+
     -- 监听新获得宠物通知
     ClientEventManager.Subscribe(PetEventConfig.NOTIFY.PET_OBTAINED, function(data)
         self:OnPetObtainedNotify(data)
     end)
-    
+
     -- 监听错误响应
     ClientEventManager.Subscribe(PetEventConfig.RESPONSE.ERROR, function(data)
         self:OnPetErrorResponse(data)
@@ -216,12 +216,12 @@ function PetGui:OnUpgradeStarResponse(data)
     if data.success and data.petSlot then
         local slotIndex = data.petSlot
         local newStarLevel = data.newStarLevel
-        
+
         -- 更新本地数据
         if self.petData[slotIndex] then
             self.petData[slotIndex].starLevel = newStarLevel
             gg.log("宠物升星成功:", slotIndex, "新星级:", newStarLevel)
-            
+
             -- 刷新显示
             self:RefreshPetSlotDisplay(slotIndex)
             if self.selectedPet and self.selectedPet.slotIndex == slotIndex then
@@ -239,11 +239,11 @@ function PetGui:OnPetUpdateNotify(data)
     if data.petSlot and data.petInfo then
         local slotIndex = data.petSlot
         self.petData[slotIndex] = data.petInfo
-        
+
         if data.activeSlots then
             self.activeSlots = data.activeSlots
         end
-        
+
         -- 刷新显示
         self:RefreshPetList() -- 全量刷新以保证排序和激活状态正确
         if self.selectedPet and self.selectedPet.slotIndex == slotIndex then
@@ -259,7 +259,7 @@ function PetGui:OnPetObtainedNotify(data)
     if data.petSlot and data.petInfo then
         local slotIndex = data.petSlot
         self.petData[slotIndex] = data.petInfo
-        
+
         if self:IsOpen() then
             self:CreatePetSlotItem(slotIndex, data.petInfo)
             gg.log("新宠物已添加到界面显示:", data.petInfo.companionName)
@@ -291,18 +291,18 @@ function PetGui:OnClickUpgradeStar()
         gg.log("未选中宠物，无法升星")
         return
     end
-    
+
     local slotIndex = self.selectedPet.slotIndex
     local currentStarLevel = self.selectedPet.starLevel or 1
-    
+
     gg.log("点击升星按钮:", "槽位", slotIndex, "当前星级", currentStarLevel)
-    
+
     local petConfig = self:GetPetConfig(self.selectedPet.companionName)
     if petConfig and currentStarLevel >= (petConfig.maxStarLevel or 5) then
         gg.log("宠物已达最高星级")
         return
     end
-    
+
     self:SendUpgradeStarRequest(slotIndex)
 end
 
@@ -320,7 +320,7 @@ function PetGui:OnClickEquipPet()
         gg.log("没有可用的装备栏")
         return
     end
-    
+
     gg.log("点击装备按钮:", "背包槽位", petSlotId, "目标装备栏", equipSlotId)
     self:SendEquipPetRequest(petSlotId, equipSlotId)
 end
@@ -331,7 +331,7 @@ function PetGui:OnClickUnequipPet()
         gg.log("未选中宠物，无法卸下")
         return
     end
-    
+
     local petSlotId = self.selectedPet.slotIndex
     local equipSlotId = self:GetEquipSlotByPetSlot(petSlotId)
 
@@ -407,7 +407,7 @@ end
 function PetGui:SendEquipPetRequest(petSlotId, equipSlotId)
     local requestData = {
         cmd = PetEventConfig.REQUEST.EQUIP_PET,
-        args = { 
+        args = {
             companionSlotId = petSlotId,
             equipSlotId = equipSlotId
         }
@@ -419,7 +419,7 @@ end
 function PetGui:SendUnequipPetRequest(equipSlotId)
     local requestData = {
         cmd = PetEventConfig.REQUEST.UNEQUIP_PET,
-        args = { 
+        args = {
             equipSlotId = equipSlotId
         }
     }
@@ -475,17 +475,17 @@ end
 --- 刷新宠物列表
 function PetGui:RefreshPetList()
     gg.log("刷新宠物列表显示")
-    
+
     self.petSlotButtons = {}
     self.petSlotList:ClearChildren()
-    
+
     local petList = self:GetSortedPetList()
 
     for _, item in ipairs(petList) do
         local petInfo = item.info
         self:CreatePetSlotItem(petInfo.slotIndex, petInfo)
     end
-    
+
     self.petCountLabel.node.Title = "宠物数量: " .. self:GetPetCount()
     gg.log("宠物列表刷新完成")
 end
@@ -497,30 +497,30 @@ function PetGui:CreatePetSlotItem(slotIndex, companionInfo)
         return
     end
     gg.log("创建宠物槽位项", slotIndex, companionInfo)
-    
+
     local slotNode = self.slotTemplate.node:Clone()
     slotNode.Visible = true
     slotNode.Name = companionInfo.companionName .. "_" .. slotIndex
-    
+
     self.petSlotList:AppendChild(slotNode)
-    
+
     self:SetupPetSlotDisplay(slotNode, slotIndex, companionInfo)
-    
+
     local slotButton = ViewButton.New(slotNode, self)
     slotButton.clickCb = function()
         self:OnPetSlotClick(slotIndex, companionInfo)
     end
-    
+
     self.petSlotButtons[slotIndex] = slotButton
 end
 
 --- 设置宠物槽位显示
 function PetGui:SetupPetSlotDisplay(slotNode, slotIndex, petInfo)
     if not slotNode then return end
-    
+
     local backgroundNode = slotNode["背景"]
     if not backgroundNode then return end
-    
+
     local petConfig = self:GetPetConfig(petInfo.companionName) ---@type PetType
 
     if petConfig and petConfig.rarity then
@@ -536,7 +536,7 @@ function PetGui:SetupPetSlotDisplay(slotNode, slotIndex, petInfo)
     end
 
     self:UpdateStarDisplayInSlot(slotNode, petInfo.starLevel or 1)
-    
+
     local isEquipped = self:IsPetEquipped(slotIndex)
     self:UpdateActiveState(slotNode, isEquipped)
 
@@ -566,7 +566,7 @@ end
 function PetGui:RefreshPetSlotDisplay(slotIndex)
     local petInfo = self.petData[slotIndex]
     if not petInfo then return end
-    
+
     local nodeName = petInfo.companionName .. "_" .. slotIndex
     local slotNode = self.petSlotList.node:FindFirstChild(nodeName)
     if slotNode then
@@ -577,7 +577,7 @@ end
 --- 宠物槽位点击事件
 function PetGui:OnPetSlotClick(slotIndex, petInfo)
     gg.log("点击宠物槽位:", slotIndex, petInfo.companionName)
-    
+
     local isEquipped = self:IsPetEquipped(slotIndex)
 
     self.selectedPet = {
@@ -588,7 +588,7 @@ function PetGui:OnPetSlotClick(slotIndex, petInfo)
         isEquipped = isEquipped,
         isLocked = petInfo.isLocked or false -- 【新增】
     }
-    
+
     self:RefreshSelectedPetDisplay()
 end
 
@@ -598,7 +598,7 @@ function PetGui:RefreshSelectedPetDisplay()
         self:HidePetDetail()
         return
     end
-    
+
     local pet = self.selectedPet
     gg.log("刷新选中宠物显示:", pet.petName)
 
@@ -606,12 +606,12 @@ function PetGui:RefreshSelectedPetDisplay()
     if self.petUI and petConfig and petConfig.avatarResource then
         self.petUI.node.Icon = petConfig.avatarResource
     end
-    
+
     if self.nameLabel then
         local displayName = pet.customName or pet.petName
         self.nameLabel.node.Title = displayName
     end
-    
+
     if self.starList then
         local currentStarLevel = pet.starLevel or 0
         for i, starViewComp in ipairs(self.starList.childrensList or {}) do
@@ -631,7 +631,7 @@ function PetGui:RefreshSelectedPetDisplay()
             end
         end
     end
-    
+
     self:UpdateAttributeDisplay(petConfig, pet.starLevel)
     self:UpdateButtonStates(pet)
 end
@@ -642,10 +642,10 @@ function PetGui:UpdateAttributeDisplay(petConfig, starLevel)
         if self.attributeList then self.attributeList:HideChildrenFrom(0) end
         return
     end
-    
+
     local currentStar = starLevel or 0
     local maxStar = petConfig.maxStarLevel or 5
-    
+
     local currentEffects = petConfig:CalculateCarryingEffectsByStarLevel(currentStar)
     local nextEffects = {}
     if currentStar < maxStar then
@@ -700,7 +700,7 @@ end
 --- 更新按钮状态
 function PetGui:UpdateButtonStates(pet)
     if not pet then return end
-    
+
     if self.upgradeButton then
         self.upgradeButton:SetVisible(true)
         local petConfig = self:GetPetConfig(pet.petName)
@@ -709,7 +709,7 @@ function PetGui:UpdateButtonStates(pet)
         self.upgradeButton:SetGray(not canUpgrade)
         self.upgradeButton:SetTouchEnable(canUpgrade, nil)
     end
-    
+
     local isEquipped = pet.isEquipped
     local hasEmptySlot = self:FindNextAvailableEquipSlot() ~= nil
 
@@ -756,7 +756,7 @@ function PetGui:HidePetDetail()
         end
     end
     if self.attributeList then self.attributeList:HideChildrenFrom(0) end
-    
+
     if self.upgradeButton then self.upgradeButton:SetVisible(false) end
     if self.equipButton then self.equipButton:SetVisible(false) end
     if self.unequipButton then self.unequipButton:SetVisible(false) end
@@ -805,11 +805,11 @@ function PetGui:GetSortedPetList()
         if aStars ~= bStars then
             return aStars > bStars
         end
-        
+
         -- 规则4: 如果都相同, 按槽位ID排序 (保持稳定)
         return (aInfo.slotIndex or 0) < (bInfo.slotIndex or 0)
     end)
-    
+
     return petList
 end
 
@@ -842,11 +842,11 @@ end
 --- 获取宠物配置
 function PetGui:GetPetConfig(petName)
     if not petName then return nil end
-    
+
     if not self.petConfigs[petName] then
         self.petConfigs[petName] = ConfigLoader.GetPet(petName)
     end
-    
+
     return self.petConfigs[petName]
 end
 
@@ -862,9 +862,9 @@ end
 --- 默认选择第一个宠物
 function PetGui:SelectDefaultPet()
     gg.log("尝试默认选择第一个宠物")
-    
+
     local sortedList = self:GetSortedPetList()
-    
+
     if #sortedList > 0 then
         local firstPet = sortedList[1].info
         gg.log("默认选择宠物:", firstPet.companionName)

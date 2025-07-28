@@ -6,7 +6,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class PetType:Class
 ---@field name string 宠物名称
----@field description string 宠物描述  
+---@field description string 宠物描述
 ---@field petType string 宠物类型
 ---@field rarity string 稀有度
 ---@field minLevel number 初始等级
@@ -34,39 +34,39 @@ function PetType:OnInit(data)
     self.description = data["宠物描述"] or ""
     self.petType = data["宠物类型"] or "宠物"
     self.rarity = data["稀有度"] or "N"
-    
+
     -- 等级系统
     self.minLevel = data["初始等级"] or 1
     self.maxLevel = data["最大等级"] or 100
-    
+
     -- 元素属性
     self.elementType = data["元素类型"] or "无"
-    
+
     -- 属性和成长系统
     self.baseAttributes = data["基础属性列表"] or {}
     self.growthRates = data["成长率列表"] or {}
-    
+
     -- 星级系统
     self.starUpgradeCosts = data["升星消耗列表"] or {}
     self.maxStarLevel = data["最大星级"] or 5 -- 修复：重新添加最大星级初始化
-    
+
     -- 功能系统
     self.carryingEffects = data["携带效果"] or {}
     self.skillList = data["技能列表"] or {}
-    
+
     -- 进化系统
     self.evolutionRequirement = data["进化条件"] or {}
     self.evolutionResult = data["进化后形态"] or ""
-    
+
     -- 获取方式
     self.obtainMethods = data["获取方式"] or {}
-    
+
     -- 资源配置
     self.modelResource = data["模型资源"] or nil
     self.avatarResource = data["头像资源"] or nil
     self.soundResource = data["音效资源"] or nil
     self.animationResource = data["动画资源"] or nil
-    
+
     -- 特殊标记
     self.specialTags = data["特殊标签"] or {}
 end
@@ -117,31 +117,31 @@ end
 ---@return table<string, table> 计算后的效果列表，格式：{变量名称: {描述: string, 数值: number, isPercentage: boolean}}
 function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
     local calculatedEffects = {}
-    
+
     -- 获取宠物公式计算器
     local RewardManager = require(game.MainStorage.Code.GameReward.RewardManager)
     local calculator = RewardManager.GetCalculator("宠物公式")
-    
+
     if not calculator then
         gg.log("错误: 无法获取宠物公式计算器")
         return calculatedEffects
     end
-    
+
     for _, effect in ipairs(self.carryingEffects) do
         local variableType = effect["变量类型"] or ""
         local variableName = effect["变量名称"] or ""
         local effectValue = effect["效果数值"] or ""
         local bonusType = effect["加成类型"]
         local itemTarget = effect["物品目标"]
-        
+
         if variableName ~= "" and effectValue ~= "" then
             -- 使用RewardCalc计算公式
             local calculatedValue = calculator:CalculateEffectValue(effectValue, starLevel, 1, self)
-             
+
             if calculatedValue then
                 -- 【修复】添加 isPercentage 标志位
                 local isPercentage = string.find(variableName, "百分比") ~= nil
-                
+
                 calculatedEffects[variableName] = {
                     -- 【修复】传递 isPercentage 标志给格式化函数
                     description = self:FormatEffectDescription(variableName, calculatedValue, isPercentage),
@@ -154,7 +154,7 @@ function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
             end
         end
     end
-    
+
     return calculatedEffects
 end
 

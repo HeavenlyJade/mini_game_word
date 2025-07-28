@@ -48,4 +48,4 @@ PetEventConfig.NOTIFY = {
     PET_REMOVED = "PetRemoved"                 -- 宠物移除通知
 }
 
-return PetEventConfig 
+return PetEventConfig

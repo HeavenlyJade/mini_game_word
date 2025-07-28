@@ -60,9 +60,9 @@ function RaceGameAction:OnStart(data)
         -- actor.Animator:Play("Base Layer.fei", 0, 0)
 
         -- actor.Animator:Play("Base Layer.fei", 0, 0)w
-    
+
     end)
-    
+
     -- -- 5. 1秒后停止跳跃并设置JumpBaseSpeed为0，进入滑翔状态
     -- self.stopJumpTimer = ScheduledTask.AddDelay(0.2, "RaceGameAction_StopJump", function()
     --     if actor then
@@ -70,12 +70,12 @@ function RaceGameAction:OnStart(data)
     --         actor.JumpBaseSpeed = 10 -- 设置跳跃力为0，防止后续跳跃
     --     end
     -- end)
-    
+
     -- 6. 启动"恢复状态"的延迟调用（主要的比赛时长控制）
     self.recoveryTimer = ScheduledTask.AddDelay(recoveryDelay, "RaceGameAction_Recovery", function()
         self:OnEnd()
     end)
-    
+
 
     local forceGravityDelay = math.min(recoveryDelay ,70) -- 80%的时间后或45秒后恢复重力
     self.forceGravityTimer = ScheduledTask.AddDelay(forceGravityDelay, "RaceGameAction_ForceGravity", function()
@@ -106,7 +106,7 @@ function RaceGameAction:OnEnd()
         -- 恢复属性
         actor.JumpBaseSpeed = self.originalJumpSpeed
         actor.Movespeed = self.originalMoveSpeed
-        actor.Gravity = self.originalGravity 
+        actor.Gravity = self.originalGravity
 
         -- 【核心改造】执行本地传送
         if self.respawnPosition then
@@ -122,7 +122,7 @@ function RaceGameAction:OnEnd()
     if gg.network_channel then
         local eventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
         local currentState = actor and actor:GetCurMoveState() or "Unknown"
-        gg.network_channel:fireServer({ 
+        gg.network_channel:fireServer({
             cmd = eventName,
             isLanded = (currentState ~= Enum.BehaviorState.Fly), -- 是否真的落地
             finalState = tostring(currentState) -- 最终状态

@@ -109,7 +109,7 @@ function MServerInitPlayer.player_enter_game(player)
 
     -- 玩家信息初始化（MPlayer会自动调用initPlayerData初始化背包和邮件）
     ---@type MPlayer
-    local player_ = MPlayer.New({ 
+    local player_ = MPlayer.New({
         position = Vector3.New(600, 400, -3400),      --(617,292,-3419)
         uin = uin_,
         nickname = player.Nickname,
@@ -118,7 +118,7 @@ function MServerInitPlayer.player_enter_game(player)
         exp = cloud_player_data_.exp,
         variables = cloud_player_data_.vars or {}
     })
-    
+
     -- 读取任务数据
     cloudDataMgr.ReadGameTaskData(player_)
 
@@ -130,7 +130,7 @@ function MServerInitPlayer.player_enter_game(player)
 
     player_:setGameActor(player_actor_)     --player
     player_actor_.CollideGroupID = 4
-    
+
     -- player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
 
     -- player_:initSkillData()                 --- 加载玩家技能
@@ -149,7 +149,7 @@ function MServerInitPlayer.player_enter_game(player)
     PetMgr.OnPlayerJoin(player_)
     PartnerMgr.OnPlayerJoin(player_)
     gg.log("玩家", uin_, "登录完成，邮件、背包、宠物、伙伴和天赋数据已加载")
-    
+
     -- 【重构】玩家上线时，调用伙伴管理器来更新模型显示
     PartnerMgr.UpdateAllEquippedPartnerModels(player_)
     -- 【新增】玩家上线时，调用宠物管理器来更新模型显示
@@ -157,7 +157,7 @@ function MServerInitPlayer.player_enter_game(player)
 
     MServerInitPlayer.syncPlayerDataToClient(player_)
 
-    
+
 end
 
 -- 向客户端同步玩家数据
@@ -169,7 +169,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
 
 
     local uin = mplayer.uin
-    
+
             -- 获取背包数据 - 修改这里
 
     local bag = BagMgr.GetPlayerBag(uin)
@@ -181,7 +181,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     else
         gg.log("警告: 玩家", uin, "的背包数据不存在，跳过背包同步")
     end
-    
+
     -- 【新增】同步宠物数据
     local petManager = PetMgr.GetPlayerPet(uin)
     if petManager then
@@ -202,36 +202,36 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     else
         gg.log("警告: 玩家", uin, "的伙伴数据不存在，跳过伙伴数据同步")
     end
-    
+
     -- 获取变量数据
     local variableData = mplayer.variables or {}
     -- 获取任务数据
     local questData = mplayer.questData or {}
-    
-    gg.network_channel:fireClient(uin, { 
-        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, 
+
+    gg.network_channel:fireClient(uin, {
+        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
         variableData = variableData,
     })
-    
-    gg.network_channel:fireClient(uin, { 
-        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_QUEST, 
+
+    gg.network_channel:fireClient(uin, {
+        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_QUEST,
         questData = questData,
     })
-    
+
         -- 【新增】同步天赋成就数据
         local playerAchievement = AchievementMgr.server_player_achievement_data[uin]
         if playerAchievement then
             -- 构建天赋响应数据
             local talentData = playerAchievement:GetAllTalentData()
             local normalAchievements = playerAchievement:GetAllNormalAchievements()
-            
+
             local achievementResponseData = {
                 talents = {},
                 normalAchievements = {},
                 totalTalentCount = playerAchievement:GetTalentCount(),
                 totalNormalCount = playerAchievement:GetUnlockedNormalAchievementCount()
             }
-            
+
             -- 构建天赋列表
             for talentId, talentInfo in pairs(talentData) do
                 achievementResponseData.talents[talentId] = {
@@ -240,7 +240,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
                     unlockTime = talentInfo.unlockTime
                 }
             end
-            
+
             -- 构建普通成就列表
             for achievementId, achievementInfo in pairs(normalAchievements) do
                 achievementResponseData.normalAchievements[achievementId] = {
@@ -249,18 +249,18 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
                     unlockTime = achievementInfo.unlockTime
                 }
             end
-            
-     
+
+
             gg.network_channel:fireClient(uin, {
                 cmd = AchievementEventConfig.RESPONSE.LIST_RESPONSE,
                 data = achievementResponseData
             })
-            
+
             gg.log("已主动同步天赋成就数据到客户端:", uin, "天赋数量:", achievementResponseData.totalTalentCount, "普通成就数量:", achievementResponseData.totalNormalCount)
         else
             gg.log("警告: 玩家", uin, "的天赋成就数据不存在，跳过天赋数据同步")
         end
-        
+
     gg.log("已向客户端", uin, "同步完整玩家数据")
 end
 -- 玩家离开游戏
@@ -292,4 +292,4 @@ function MServerInitPlayer.getInitFinished()
     return initFinished
 end
 
-return MServerInitPlayer 
+return MServerInitPlayer

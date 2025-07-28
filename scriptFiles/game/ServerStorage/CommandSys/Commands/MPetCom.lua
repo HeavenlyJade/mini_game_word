@@ -241,4 +241,4 @@ function PetCommand.main(params, player)
     end
 end
 
-return PetCommand 
+return PetCommand

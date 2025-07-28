@@ -19,7 +19,7 @@ local Pet = require(ServerStorage.MSystems.Pet.Compainion.Pet) ---@type Pet
 local PetMgr = {
     -- 在线玩家宠物管理器缓存 {uin = Pet管理器实例}
     server_player_pets = {}, ---@type table<number, Pet>
-    
+
     -- 定时保存间隔（秒）
     SAVE_INTERVAL = 30
 }
@@ -31,17 +31,17 @@ function PetMgr.OnPlayerJoin(player)
         gg.log("玩家上线处理失败：玩家对象无效")
         return
     end
-    
+
     local uin = player.uin
     gg.log("开始处理玩家宠物上线", uin)
-    
+
     -- 从云端加载玩家宠物数据
     local playerPetData = CloudPetDataAccessor:LoadPlayerPetData(uin)
-    
+
     -- 创建Pet管理器实例并缓存
     local petManager = Pet.New(uin, playerPetData)
     PetMgr.server_player_pets[uin] = petManager
-    
+
     gg.log("玩家宠物管理器加载完成", uin, "宠物数量", petManager:GetPetCount())
 end
 
@@ -55,7 +55,7 @@ function PetMgr.OnPlayerLeave(uin)
         if playerPetData then
             CloudPetDataAccessor:SavePlayerPetData(uin, playerPetData)
         end
-        
+
         -- 清理内存缓存
         PetMgr.server_player_pets[uin] = nil
         gg.log("玩家宠物数据已保存并清理", uin)
@@ -95,7 +95,7 @@ function PetMgr.SetActivePet(uin, slotIndex)
     if not petManager then
         return false, "玩家数据不存在"
     end
-    
+
     return petManager:SetActivePet(slotIndex)
 end
 
@@ -111,7 +111,7 @@ function PetMgr.LevelUpPet(uin, slotIndex, targetLevel)
     if not petManager then
         return false, "玩家数据不存在", false
     end
-    
+
     return petManager:LevelUpPet(slotIndex, targetLevel)
 end
 
@@ -127,7 +127,7 @@ function PetMgr.AddPetExp(uin, slotIndex, expAmount)
     if not petManager then
         return false, "玩家数据不存在", false
     end
-    
+
     return petManager:AddPetExp(slotIndex, expAmount)
 end
 
@@ -141,7 +141,7 @@ function PetMgr.UpgradePetStar(uin, slotIndex)
     if not petManager then
         return false, "玩家数据不存在"
     end
-    
+
     return petManager:UpgradePetStar(slotIndex)
 end
 
@@ -156,7 +156,7 @@ function PetMgr.LearnPetSkill(uin, slotIndex, skillId)
     if not petManager then
         return false, "玩家数据不存在"
     end
-    
+
     return petManager:LearnPetSkill(slotIndex, skillId)
 end
 
@@ -169,7 +169,7 @@ function PetMgr.GetPlayerPetList(uin)
     if not petManager then
         return nil, "玩家数据不存在"
     end
-    
+
     return petManager:GetPlayerPetList(), nil
 end
 
@@ -181,7 +181,7 @@ function PetMgr.GetPetCount(uin)
     if not petManager then
         return 0
     end
-    
+
     return petManager:GetPetCount()
 end
 
@@ -194,7 +194,7 @@ function PetMgr.GetActivePet(uin)
     if not petManager then
         return nil, nil
     end
-    
+
     return petManager:GetActivePet()
 end
 
@@ -207,7 +207,7 @@ function PetMgr.GetPetInstance(uin, slotIndex)
     if not petManager then
         return nil
     end
-    
+
     return petManager:GetPetBySlot(slotIndex)
 end
 
@@ -223,7 +223,7 @@ function PetMgr.AddPetToSlot(uin, petName, slotIndex)
     if not petManager then
         return false, "玩家数据不存在", nil
     end
-    
+
     return petManager:AddPet(petName, slotIndex)
 end
 
@@ -237,7 +237,7 @@ function PetMgr.RemovePetFromSlot(uin, slotIndex)
     if not petManager then
         return false, "玩家数据不存在"
     end
-    
+
     return petManager:RemovePet(slotIndex)
 end
 
@@ -251,7 +251,7 @@ function PetMgr.GetPetFinalAttribute(uin, slotIndex, attrName)
     if not petManager then
         return nil
     end
-    
+
     return petManager:GetPetFinalAttribute(slotIndex, attrName)
 end
 
@@ -264,7 +264,7 @@ function PetMgr.CanPetLevelUp(uin, slotIndex)
     if not petManager then
         return false
     end
-    
+
     return petManager:CanPetLevelUp(slotIndex)
 end
 
@@ -278,7 +278,7 @@ function PetMgr.CanPetUpgradeStar(uin, slotIndex)
     if not petManager then
         return false, "玩家数据不存在"
     end
-    
+
     return petManager:CanPetUpgradeStar(slotIndex)
 end
 
@@ -292,7 +292,7 @@ function PetMgr.EquipPet(uin, companionSlotId, equipSlotId)
     if not petManager then
         return false, "玩家宠物数据不存在"
     end
-    
+
     local success, errorMsg = petManager:EquipPet(companionSlotId, equipSlotId)
 
     if success then
@@ -304,7 +304,7 @@ function PetMgr.EquipPet(uin, companionSlotId, equipSlotId)
         -- 【修复】通知客户端数据更新
         PetMgr.NotifyPetDataUpdate(uin)
     end
-    
+
     return success, errorMsg
 end
 
@@ -317,7 +317,7 @@ function PetMgr.UnequipPet(uin, equipSlotId)
     if not petManager then
         return false, "玩家宠物数据不存在"
     end
-    
+
     local success, errorMsg = petManager:UnequipPet(equipSlotId)
 
     if success then
@@ -329,7 +329,7 @@ function PetMgr.UnequipPet(uin, equipSlotId)
         -- 【修复】通知客户端数据更新
         PetMgr.NotifyPetDataUpdate(uin)
     end
-    
+
     return success, errorMsg
 end
 
@@ -342,14 +342,14 @@ function PetMgr.DeletePet(uin, slotIndex)
     if not petManager then
         return false, "玩家宠物数据不存在"
     end
-    
+
     local success, errorMsg = petManager:DeletePet(slotIndex)
 
     if success then
         -- 【修复】不再发送专用的移除通知，而是发送全量更新通知，以避免客户端的竞态条件问题
         PetMgr.NotifyPetDataUpdate(uin)
     end
-    
+
     return success, errorMsg
 end
 
@@ -364,11 +364,11 @@ function PetMgr.TogglePetLock(uin, slotIndex)
     end
 
     local success, errorMsg, isLocked = petManager:TogglePetLock(slotIndex)
-    
+
     if success then
         PetMgr.NotifyPetDataUpdate(uin, slotIndex)
     end
-    
+
     return success, errorMsg, isLocked
 end
 
@@ -422,7 +422,7 @@ function PetMgr.UpdateAllEquippedPetModels(player)
                     if petConfig and petConfig.modelResource and petConfig.modelResource ~= "" then
                         petNode.ModelId = petConfig.modelResource
                         petNode.Visible = true
-                        
+
                         local animatorNode = petNode:FindFirstChild("Animator")
                         if animatorNode then
                             animatorNode.ControllerAsset = petConfig.animationResource or ""
@@ -452,7 +452,7 @@ function PetMgr.AddPet(player, petName, slotIndex)
         gg.log("PetMgr.AddPet: 玩家对象无效")
         return false, nil
     end
-    
+
     local success, errorMsg, actualSlot = PetMgr.AddPetToSlot(player.uin, petName, slotIndex)
     if success then
         gg.log("PetMgr.AddPet: 成功给玩家", player.uin, "添加宠物", petName, "槽位", actualSlot)
@@ -461,7 +461,7 @@ function PetMgr.AddPet(player, petName, slotIndex)
     else
         gg.log("PetMgr.AddPet: 给玩家", player.uin, "添加宠物失败", petName, "错误", errorMsg)
     end
-    
+
     return success, actualSlot
 end
 
@@ -478,7 +478,7 @@ function PetMgr.AddPetByUin(uin, petName, slotIndex)
         gg.log("PetMgr.AddPetByUin: 玩家不存在", uin)
         return false, nil
     end
-    
+
     return PetMgr.AddPet(player, petName, slotIndex)
 end
 
@@ -487,7 +487,7 @@ end
 ---@param slotIndex number|nil 具体槽位，nil表示全部更新
 function PetMgr.NotifyPetDataUpdate(uin, slotIndex)
     local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
-    
+
     if slotIndex then
         -- 单个宠物更新
         local petManager = PetMgr.GetPlayerPet(uin)
@@ -540,13 +540,13 @@ function PetMgr.UpgradeAllPossiblePets(uin)
     if not petManager then
         return 0
     end
-    
+
     local upgradedCount = petManager:UpgradeAllPossiblePets()
     if upgradedCount > 0 then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(uin)
     end
-    
+
     return upgradedCount
 end
 
@@ -560,7 +560,7 @@ function PetMgr.GetPetCountByType(uin, petName, minStar)
     if not petManager then
         return 0
     end
-    
+
     return petManager:GetPetCountByType(petName, minStar)
 end
 
@@ -573,7 +573,7 @@ function PetMgr.GetActiveItemBonuses(uin)
         gg.log("[PetMgr] GetActiveItemBonuses: 找不到玩家的宠物管理器", uin)
         return {}
     end
-    
+
     return petManager:GetActiveItemBonuses()
 end
 

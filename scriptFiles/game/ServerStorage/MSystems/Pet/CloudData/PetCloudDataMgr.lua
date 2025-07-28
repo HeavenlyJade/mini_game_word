@@ -45,7 +45,7 @@ function CloudPetDataAccessor:LoadPlayerPetData(uin)
             petList = {},
             petSlots = 50,
             unlockedEquipSlots = 3, -- 默认解锁1个栏位
-       
+
         }
     end
 end

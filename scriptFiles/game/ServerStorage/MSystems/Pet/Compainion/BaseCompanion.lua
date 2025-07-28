@@ -31,7 +31,7 @@ function BaseCompanion:OnInit(uin, companionType, equipSlotIds)
     self.equipSlotIds = equipSlotIds or {} -- 从子类传入配置的栏位ID
     self.unlockedEquipSlots = 1 -- 默认值，将在LoadData时被覆盖
     self.companionType = companionType or "未知"
-    
+
     gg.log("BaseCompanion基类初始化", uin, "类型", self.companionType, "可用装备栏", table.concat(self.equipSlotIds, ", "))
 end
 
@@ -70,7 +70,7 @@ function BaseCompanion:DeleteCompanion(slotIndex)
     if companionInstance:IsActive() then
         return false, "伙伴正在装备中，无法删除"
     end
-    
+
     self.companionInstances[slotIndex] = nil
     gg.log("删除伙伴成功", self.uin, self.companionType, slotIndex)
     return true, nil
@@ -87,7 +87,7 @@ function BaseCompanion:ToggleCompanionLock(slotIndex)
 
     local currentStatus = companionInstance:IsLocked()
     companionInstance:SetLocked(not currentStatus)
-    
+
     return true, nil, not currentStatus
 end
 
@@ -111,7 +111,7 @@ function BaseCompanion:CreateCompanionInstance(companionData, slotIndex)
         gg.log("警告：伙伴数据无效", self.companionType, slotIndex)
         return nil
     end
-    
+
     return CompanionInstance.New(companionData, self.companionType, slotIndex)
 end
 
@@ -152,13 +152,13 @@ end
 function BaseCompanion:GetActiveItemBonuses()
     local totalBonuses = {}
     local BonusManager = require(ServerStorage.BonusManager.BonusManager) -- 懒加载以避免循环依赖
-    
+
     local activeCompanions = self:GetActiveCompanions()
     for _, companionInstance in ipairs(activeCompanions) do
         local singleBonus = companionInstance:GetItemBonuses()
         BonusManager.MergeBonuses(totalBonuses, singleBonus)
     end
-    
+
     return totalBonuses
 end
 
@@ -167,11 +167,11 @@ end
 ---@return table 伙伴列表信息
 function BaseCompanion:GetCompanionList()
     local companionList = {}
-    
+
     for slotIndex, companionInstance in pairs(self.companionInstances) do
         companionList[slotIndex] = companionInstance:GetFullInfo()
     end
-    
+
     -- 【新增】计算当前玩家实际可用的装备栏
     local availableEquipSlots = {}
     for i = 1, self.unlockedEquipSlots do
@@ -213,7 +213,7 @@ function BaseCompanion:AddCompanion(companionName, slotIndex)
     if not companionTypeConfig then
         return false, "伙伴配置不存在", nil
     end
-    
+
     -- 自动分配槽位
     if not slotIndex then
         slotIndex = self:FindEmptySlot()
@@ -221,20 +221,20 @@ function BaseCompanion:AddCompanion(companionName, slotIndex)
             return false, "背包已满", nil
         end
     end
-    
+
     -- 检查槽位是否有效
     if slotIndex < 1 or slotIndex > self.maxSlots then
         return false, "无效的槽位索引", nil
     end
-    
+
     -- 检查槽位是否被占用
     if self.companionInstances[slotIndex] then
         return false, "槽位已被占用", nil
     end
-    
+
     -- 创建新的伙伴数据
     local newCompanionData = self:CreateCompanionData(companionName, companionTypeConfig)
-    
+
     -- 创建伙伴实例并添加到槽位
     local companionInstance = self:CreateCompanionInstance(newCompanionData, slotIndex)
     if companionInstance then
@@ -255,17 +255,17 @@ function BaseCompanion:RemoveCompanion(slotIndex)
     if not companionInstance then
         return false, "槽位为空"
     end
-    
+
     -- 【重构】如果被移除的伙伴正在装备中，则将其从所有装备栏卸下
     for equipSlotId, equippedCompanionSlotId in pairs(self.activeCompanionSlots) do
         if equippedCompanionSlotId == slotIndex then
             self:UnequipCompanion(equipSlotId)
         end
     end
-    
+
     -- 移除伙伴实例
     self.companionInstances[slotIndex] = nil
-    
+
     gg.log("移除伙伴成功", self.uin, self.companionType, companionInstance:GetConfigName(), "槽位", slotIndex)
     return true, nil
 end
@@ -349,7 +349,7 @@ function BaseCompanion:LevelUpCompanion(slotIndex, targetLevel)
     if not companionInstance then
         return false, "伙伴不存在", false
     end
-    
+
     if targetLevel then
         -- 直接设置到目标等级
         local success = companionInstance:SetLevel(targetLevel)
@@ -376,7 +376,7 @@ function BaseCompanion:AddCompanionExp(slotIndex, expAmount)
     if not companionInstance then
         return false, "伙伴不存在", false
     end
-    
+
     local leveledUp = companionInstance:AddExp(expAmount)
     return true, nil, leveledUp
 end
@@ -388,7 +388,7 @@ end
 ---@return table<number> 符合条件的槽位列表
 function BaseCompanion:FindCompanionsByCondition(companionName, requiredStar, excludeSlot)
     local candidates = {}
-    
+
     for slotIndex, companionInstance in pairs(self.companionInstances) do
         if slotIndex ~= excludeSlot and
            companionInstance:GetConfigName() == companionName and
@@ -396,7 +396,7 @@ function BaseCompanion:FindCompanionsByCondition(companionName, requiredStar, ex
             table.insert(candidates, slotIndex)
         end
     end
-    
+
     -- 由于现在只查找特定星级，不再需要按星级排序
     return candidates
 end
@@ -410,19 +410,19 @@ end
 function BaseCompanion:ConsumeCompanions(companionName, count, requiredStar, excludeSlot)
     -- 找到符合条件的伙伴
     local candidates = self:FindCompanionsByCondition(companionName, requiredStar, excludeSlot)
-    
+
     if #candidates < count then
         gg.log("伙伴材料不足", self.uin, self.companionType, companionName, "需要", count, "找到", #candidates)
         return false
     end
-    
+
     -- 消耗伙伴（删除实例）
     for i = 1, count do
         local slotToRemove = candidates[i]
         self:RemoveCompanion(slotToRemove)
         gg.log("消耗伙伴", self.uin, self.companionType, companionName, "槽位", slotToRemove)
     end
-    
+
     return true
 end
 
@@ -435,18 +435,18 @@ function BaseCompanion:UpgradeCompanionStar(slotIndex)
     if not companionInstance then
         return false, "伙伴不存在"
     end
-    
+
     local companionTypeConfig = companionInstance.companionTypeConfig
     if not companionTypeConfig then
         return false, "伙伴配置不存在"
     end
-    
+
     local currentStar = companionInstance:GetStarLevel()
     local upgradeCost = companionTypeConfig:GetStarUpgradeCost(currentStar + 1)
     if not upgradeCost then
         return false, "已达到最大星级或缺少升星配置"
     end
-    
+
     -- 检查并消耗材料
     for _, material in ipairs(upgradeCost["消耗材料"] or {}) do
         if material["消耗类型"] == "宠物" or material["消耗类型"] == "伙伴" then
@@ -466,7 +466,7 @@ function BaseCompanion:UpgradeCompanionStar(slotIndex)
                 if #candidates < actualNeedCount then
                     return false, string.format("伙伴材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
                 end
-                
+
                 -- 消耗材料
                 local success = self:ConsumeCompanions(companionName, actualNeedCount, needStar, slotIndex)
                 if not success then
@@ -478,13 +478,13 @@ function BaseCompanion:UpgradeCompanionStar(slotIndex)
             gg.log("升星需要物品材料", material["材料物品"], material["需要数量"])
         end
     end
-    
+
     -- 执行升星
     local success, errorMsg = companionInstance:DoUpgradeStar()
     if success then
         gg.log("伙伴升星成功", self.uin, self.companionType, companionInstance:GetConfigName(), "新星级", companionInstance:GetStarLevel())
     end
-    
+
     return success, errorMsg
 end
 
@@ -498,7 +498,7 @@ function BaseCompanion:LearnCompanionSkill(slotIndex, skillId)
     if not companionInstance then
         return false, "伙伴不存在"
     end
-    
+
     return companionInstance:LearnSkill(skillId)
 end
 
@@ -511,7 +511,7 @@ function BaseCompanion:GetCompanionFinalAttribute(slotIndex, attrName)
     if not companionInstance then
         return nil
     end
-    
+
     return companionInstance:GetFinalAttribute(attrName)
 end
 
@@ -523,7 +523,7 @@ function BaseCompanion:CanCompanionLevelUp(slotIndex)
     if not companionInstance then
         return false
     end
-    
+
     return companionInstance:CanLevelUp()
 end
 
@@ -536,18 +536,18 @@ function BaseCompanion:CanCompanionUpgradeStar(slotIndex)
     if not companionInstance then
         return false, "伙伴不存在"
     end
-    
+
     local companionTypeConfig = companionInstance.companionTypeConfig
     if not companionTypeConfig then
         return false, "伙伴配置不存在"
     end
-    
+
     local currentStar = companionInstance:GetStarLevel()
     local upgradeCost = companionTypeConfig:GetStarUpgradeCost(currentStar + 1)
     if not upgradeCost then
         return false, "已达到最大星级"
     end
-    
+
     -- 检查材料是否充足
     for _, material in ipairs(upgradeCost["消耗材料"] or {}) do
         if material["消耗类型"] == "宠物" or material["消耗类型"] == "伙伴" then
@@ -569,7 +569,7 @@ function BaseCompanion:CanCompanionUpgradeStar(slotIndex)
             end
         end
     end
-    
+
     return true, nil
 end
 
@@ -587,14 +587,14 @@ end
 function BaseCompanion:GetCompanionCountByType(companionName, minStar)
     local count = 0
     minStar = minStar or 1
-    
+
     for _, companionInstance in pairs(self.companionInstances) do
-        if companionInstance:GetConfigName() == companionName and 
+        if companionInstance:GetConfigName() == companionName and
            companionInstance:GetStarLevel() >= minStar then
             count = count + 1
         end
     end
-    
+
     return count
 end
 

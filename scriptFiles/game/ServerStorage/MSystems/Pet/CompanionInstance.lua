@@ -25,17 +25,17 @@ local CompanionInstance = ClassMgr.Class("CompanionInstance")
 
 function CompanionInstance:OnInit(companionData, companionType, slotIndex)
     self.companionData = companionData or {}
-    self.companionType = companionType 
+    self.companionType = companionType
     self.slotIndex = slotIndex or 0
     self.attributeCache = {}
     self.tempBuffs = {}
-    
+
     -- 根据伙伴类型加载配置
     self:LoadCompanionConfig()
-    
+
     -- 初始化时刷新属性缓存
     self:RefreshAttributeCache()
-    
+
 end
 
 ---根据伙伴类型加载配置
@@ -45,13 +45,13 @@ function CompanionInstance:LoadCompanionConfig()
         gg.log("警告：伙伴配置名称为空", self.companionType, self.slotIndex)
         return
     end
-    
+
     if self.companionType == "宠物" then
         self.companionTypeConfig = ConfigLoader.GetPet(configName)
     elseif self.companionType == "伙伴" then
         self.companionTypeConfig = ConfigLoader.GetPartner(configName)
     end
-    
+
     if not self.companionTypeConfig then
         gg.log("警告：找不到伙伴配置", self.companionType, configName)
     end
@@ -70,11 +70,11 @@ function CompanionInstance:GetName()
     if customName ~= "" then
         return customName
     end
-    
+
     if self.companionTypeConfig and self.companionTypeConfig.name then
         return self.companionTypeConfig.name
     end
-    
+
     return self:GetConfigName()
 end
 
@@ -170,13 +170,13 @@ function CompanionInstance:GetFinalAttribute(attrName)
     if self.attributeCache[attrName] then
         return self.attributeCache[attrName]
     end
-    
+
     -- 计算最终属性
     local finalValue = self:CalculateAttribute(attrName)
-    
+
     -- 缓存结果
     self.attributeCache[attrName] = finalValue
-    
+
     return finalValue
 end
 
@@ -188,29 +188,29 @@ function CompanionInstance:CalculateAttribute(attrName)
         gg.log("警告：伙伴配置不存在", self.companionType, self:GetConfigName())
         return 0
     end
-    
+
     local finalValue = 0
-    
+
     -- 1. 基础属性
     local baseValue = self.companionTypeConfig:GetBaseAttribute(attrName)
     finalValue = finalValue + baseValue
-    
+
     -- 2. 等级成长
     local growthValue = self:CalculateGrowthAttribute(attrName)
     finalValue = finalValue + growthValue
-    
+
     -- 3. 星级加成
     local starValue = self:CalculateStarAttribute(attrName)
     finalValue = finalValue + starValue
-    
+
     -- 4. 装备加成
     local equipValue = self:CalculateEquipmentAttribute(attrName)
     finalValue = finalValue + equipValue
-    
+
     -- 5. 临时buff加成
     local buffValue = self:CalculateBuffAttribute(attrName)
     finalValue = finalValue + buffValue
-    
+
     return math.max(0, math.floor(finalValue))
 end
 
@@ -219,21 +219,21 @@ end
 ---@return number 成长属性值
 function CompanionInstance:CalculateGrowthAttribute(attrName)
     if not self.companionTypeConfig then return 0 end
-    
+
     local formula = self.companionTypeConfig:GetGrowthFormula(attrName)
     if not formula or formula == "" then
         return 0
     end
-    
+
     -- 简单的公式解析，支持 LVL*系数 格式
     local level = self:GetLevel()
-    
+
     -- 替换LVL为实际等级值
     local expression = string.gsub(formula, "LVL", tostring(level))
-    
+
     -- 简单的数学表达式计算（仅支持基本运算）
     local result = self:EvaluateExpression(expression)
-    
+
     return result or 0
 end
 
@@ -242,10 +242,10 @@ end
 ---@return number 星级加成值
 function CompanionInstance:CalculateStarAttribute(attrName)
     if not self.companionTypeConfig then return 0 end
-    
+
     local starLevel = self:GetStarLevel()
     local effects = self.companionTypeConfig:GetCarryingEffectsByStarLevel(starLevel)
-    
+
     local totalBonus = 0
     for _, effect in ipairs(effects) do
         if effect["触发条件列表"] then
@@ -256,7 +256,7 @@ function CompanionInstance:CalculateStarAttribute(attrName)
             end
         end
     end
-    
+
     return totalBonus
 end
 
@@ -294,7 +294,7 @@ function CompanionInstance:EvaluateExpression(expression)
         "(%d+)%+(%d+)",
         "(%d+)%-(%d+)"
     }
-    
+
     for _, pattern in ipairs(patterns) do
         local a, b = string.match(expression, pattern)
         if a and b then
@@ -310,7 +310,7 @@ function CompanionInstance:EvaluateExpression(expression)
             end
         end
     end
-    
+
     -- 如果是纯数字
     return tonumber(expression)
 end
@@ -328,7 +328,7 @@ function CompanionInstance:GetRequiredExpForNextLevel()
     if not self.companionTypeConfig or currentLevel >= self.companionTypeConfig.maxLevel then
         return 0
     end
-    
+
     -- 简单的经验计算公式
     return currentLevel * 100 + 200
 end
@@ -337,11 +337,11 @@ end
 ---@return boolean 是否可以升级
 function CompanionInstance:CanLevelUp()
     if not self.companionTypeConfig then return false end
-    
+
     local currentLevel = self:GetLevel()
     local currentExp = self:GetExp()
     local requiredExp = self:GetRequiredExpForNextLevel()
-    
+
     return currentLevel < self.companionTypeConfig.maxLevel and currentExp >= requiredExp
 end
 
@@ -352,19 +352,19 @@ function CompanionInstance:AddExp(expAmount)
     if not expAmount or expAmount <= 0 then
         return false
     end
-    
+
     local leveledUp = false
     local currentExp = self:GetExp()
     local newExp = currentExp + expAmount
-    
+
     self.companionData.exp = newExp
-    
+
     -- 检查是否升级
     while self:CanLevelUp() do
         self:DoLevelUp()
         leveledUp = true
     end
-    
+
     gg.log("伙伴获得经验", self.companionType, self:GetConfigName(), "经验", expAmount, "当前经验", self.companionData.exp, "是否升级", leveledUp)
     return leveledUp
 end
@@ -374,9 +374,9 @@ function CompanionInstance:DoLevelUp()
     local requiredExp = self:GetRequiredExpForNextLevel()
     self.companionData.level = (self.companionData.level or 1) + 1
     self.companionData.exp = (self.companionData.exp or 0) - requiredExp
-    
+
     self:RefreshAttributeCache()
-    
+
     gg.log("伙伴升级", self.companionType, self:GetConfigName(), "新等级", self.companionData.level)
 end
 
@@ -385,17 +385,17 @@ end
 ---@return boolean 是否设置成功
 function CompanionInstance:SetLevel(newLevel)
     if not self.companionTypeConfig then return false end
-    
+
     if newLevel < 1 or newLevel > self.companionTypeConfig.maxLevel then
         gg.log("等级设置超出范围", newLevel, "最大等级", self.companionTypeConfig.maxLevel)
         return false
     end
-    
+
     self.companionData.level = newLevel
     self.companionData.exp = 0 -- 重置经验值
-    
+
     self:RefreshAttributeCache()
-    
+
     gg.log("伙伴等级设置", self.companionType, self:GetConfigName(), "新等级", newLevel)
     return true
 end
@@ -405,9 +405,9 @@ end
 ---@return string|nil 错误信息
 function CompanionInstance:DoUpgradeStar()
     self.companionData.starLevel = (self.companionData.starLevel or 1) + 1
-    
+
     self:RefreshAttributeCache()
-    
+
     gg.log("伙伴升星成功", self.companionType, self:GetConfigName(), "新星级", self.companionData.starLevel)
     return true, nil
 end
@@ -430,19 +430,19 @@ function CompanionInstance:LearnSkill(skillId)
     if not skillId or skillId == "" then
         return false, "技能ID无效"
     end
-    
+
     if self:HasSkill(skillId) then
         return false, "已经学会该技能"
     end
-    
+
     -- TODO: 检查学习条件（等级、前置技能等）
-    
+
     if not self.companionData.learnedSkills then
         self.companionData.learnedSkills = {}
     end
-    
+
     self.companionData.learnedSkills[skillId] = true
-    
+
     gg.log("伙伴学会技能", self.companionType, self:GetConfigName(), "技能", skillId)
     return true, nil
 end
@@ -456,16 +456,16 @@ function CompanionInstance:EquipItem(slot, itemId)
     if not slot or slot <= 0 then
         return false, "装备槽位无效"
     end
-    
+
     if not self.companionData.equipments then
         self.companionData.equipments = {}
     end
-    
+
     local oldItemId = self.companionData.equipments[slot]
     self.companionData.equipments[slot] = itemId
-    
+
     self:RefreshAttributeCache()
-    
+
     gg.log("伙伴装备物品", self.companionType, self:GetConfigName(), "槽位", slot, "物品", itemId, "替换", oldItemId)
     return true, nil
 end
@@ -477,16 +477,16 @@ function CompanionInstance:UnequipItem(slot)
     if not self.companionData.equipments then
         return nil
     end
-    
+
     local itemId = self.companionData.equipments[slot]
     if itemId then
         self.companionData.equipments[slot] = nil
-        
+
         self:RefreshAttributeCache()
-        
+
         gg.log("伙伴卸下装备", self.companionType, self:GetConfigName(), "槽位", slot, "物品", itemId)
     end
-    
+
     return itemId
 end
 
@@ -495,7 +495,7 @@ end
 function CompanionInstance:SetMood(mood)
     mood = math.max(0, math.min(100, mood))
     self.companionData.mood = mood
-    
+
     gg.log("伙伴心情值设置", self.companionType, self:GetConfigName(), "心情", mood)
 end
 
@@ -510,7 +510,7 @@ end
 ---@param active boolean 是否激活
 function CompanionInstance:SetActive(active)
     self.companionData.isActive = active
-    
+
     gg.log("伙伴激活状态", self.companionType, self:GetConfigName(), "激活", active)
 end
 
@@ -518,7 +518,7 @@ end
 ---@param customName string 自定义名称
 function CompanionInstance:SetCustomName(customName)
     self.companionData.customName = customName or ""
-    
+
     gg.log("伙伴自定义名称", self.companionType, self:GetConfigName(), "新名称", customName)
 end
 
@@ -532,9 +532,9 @@ function CompanionInstance:AddTempBuff(buffId, duration, attributes)
         startTime = os.time(),
         attributes = attributes or {}
     }
-    
+
     self:RefreshAttributeCache()
-    
+
     gg.log("伙伴添加临时buff", self.companionType, self:GetConfigName(), "buff", buffId, "持续时间", duration)
 end
 
@@ -544,7 +544,7 @@ function CompanionInstance:RemoveTempBuff(buffId)
     if self.tempBuffs[buffId] then
         self.tempBuffs[buffId] = nil
         self:RefreshAttributeCache()
-        
+
         gg.log("伙伴移除临时buff", self.companionType, self:GetConfigName(), "buff", buffId)
     end
 end
@@ -553,7 +553,7 @@ end
 function CompanionInstance:UpdateTempBuffs()
     local currentTime = os.time()
     local needRefresh = false
-    
+
     for buffId, buffData in pairs(self.tempBuffs) do
         if currentTime >= buffData.startTime + buffData.duration then
             self.tempBuffs[buffId] = nil
@@ -561,7 +561,7 @@ function CompanionInstance:UpdateTempBuffs()
             gg.log("伙伴buff过期", self.companionType, self:GetConfigName(), "buff", buffId)
         end
     end
-    
+
     if needRefresh then
         self:RefreshAttributeCache()
     end
@@ -574,15 +574,15 @@ function CompanionInstance:GetItemBonuses()
     if not self.companionTypeConfig or not self.companionTypeConfig.CalculateCarryingEffectsByStarLevel then
         return {}
     end
-    
+
     local allEffects = self.companionTypeConfig:CalculateCarryingEffectsByStarLevel(starLevel)
-    
+
     -- 【日志1】打印从类型配置中收到的所有计算后的效果
     gg.log(string.format("[CompanionInstance] GetItemBonuses for %s (Slot %d, Star %d) - Received effects:", self:GetName(), self.slotIndex, starLevel))
     gg.log(allEffects)
-    
+
     local itemBonuses = {}
-    
+
     for variableName, effectData in pairs(allEffects) do
         -- 筛选出物品加成类型
         if effectData.bonusType == "物品" and effectData.itemTarget then
@@ -601,11 +601,11 @@ function CompanionInstance:GetItemBonuses()
             end
         end
     end
-    
+
     -- 【日志2】打印最终筛选出的、准备返回给上层的物品加成
     gg.log(string.format("[CompanionInstance] GetItemBonuses for %s (Slot %d) - Final item bonuses:", self:GetName(), self.slotIndex))
     gg.log(itemBonuses)
-    
+
     return itemBonuses
 end
 

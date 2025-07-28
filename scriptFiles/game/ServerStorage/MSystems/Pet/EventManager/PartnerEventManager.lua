@@ -27,7 +27,7 @@ end
 function PartnerEventManager.RegisterEventHandlers()
     -- 获取伙伴列表
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.GET_PARTNER_LIST, function(evt) PartnerEventManager.HandleGetPartnerList(evt) end)
-    
+
     -- 【重构】装备/卸下伙伴
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.EQUIP_PARTNER, function(evt) PartnerEventManager.HandleEquipPartner(evt) end)
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.UNEQUIP_PARTNER, function(evt) PartnerEventManager.HandleUnequipPartner(evt) end)
@@ -35,16 +35,16 @@ function PartnerEventManager.RegisterEventHandlers()
 
     -- 伙伴升级
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.LEVEL_UP_PARTNER, function(evt) PartnerEventManager.HandleLevelUpPartner(evt) end)
-    
+
     -- 伙伴获得经验
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.ADD_PARTNER_EXP, function(evt) PartnerEventManager.HandleAddPartnerExp(evt) end)
-    
+
     -- 伙伴升星
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.UPGRADE_PARTNER_STAR, function(evt) PartnerEventManager.HandleUpgradePartnerStar(evt) end)
-    
+
     -- 伙伴学习技能
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.LEARN_PARTNER_SKILL, function(evt) PartnerEventManager.HandleLearnPartnerSkill(evt) end)
-    
+
     -- 重命名伙伴
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.RENAME_PARTNER, function(evt) PartnerEventManager.HandleRenamePartner(evt) end)
 end
@@ -75,7 +75,7 @@ function PartnerEventManager.HandleGetPartnerList(evt)
     gg.log("获取伙伴列表", evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
-    
+
     local result = PartnerMgr.GetPlayerPartnerList(player.uin)
     if result then
         PartnerEventManager.NotifyPartnerListUpdate(player.uin, result)
@@ -95,7 +95,7 @@ function PartnerEventManager.HandleEquipPartner(evt)
     local equipSlotId = evt.args.equipSlotId
 
     local success, errorMsg = PartnerMgr.EquipPartner(player.uin, companionSlotId, equipSlotId)
-    
+
     if success then
         local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
         if updatedData then
@@ -117,7 +117,7 @@ function PartnerEventManager.HandleUnequipPartner(evt)
     local equipSlotId = evt.args.equipSlotId
 
     local success, errorMsg = PartnerMgr.UnequipPartner(player.uin, equipSlotId)
-    
+
     if success then
         local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
         if updatedData then
@@ -143,14 +143,14 @@ function PartnerEventManager.HandleLevelUpPartner(evt)
 
     local slotIndex = evt.args.slotIndex      -- 修改：从args中获取
     local targetLevel = evt.args.targetLevel  -- 修改：从args中获取
-    
+
     if not slotIndex then
         gg.log("伙伴升级缺少槽位参数", player.uin)
         return
     end
-    
+
     local success, errorMsg, leveledUp = PartnerMgr.LevelUpPartner(player.uin, slotIndex, targetLevel)
-    
+
     if success then
         -- 操作成功后，获取最新的完整伙伴列表数据并通知客户端
         local updatedData, getError = PartnerMgr.GetPlayerPartnerList(player.uin)
@@ -171,14 +171,14 @@ function PartnerEventManager.HandleAddPartnerExp(evt)
 
     local slotIndex = evt.args.slotIndex
     local expAmount = evt.args.expAmount
-    
+
     if not slotIndex or not expAmount then
         gg.log("伙伴获得经验缺少参数", player.uin, "槽位", slotIndex, "经验", expAmount)
         return
     end
-    
+
     local success, errorMsg, leveledUp = PartnerMgr.AddPartnerExp(player.uin, slotIndex, expAmount)
-    
+
     if success then
         -- 操作成功后，获取最新的完整伙伴列表数据并通知客户端
         local updatedData, getError = PartnerMgr.GetPlayerPartnerList(player.uin)
@@ -198,14 +198,14 @@ function PartnerEventManager.HandleUpgradePartnerStar(evt)
     if not player then return end
 
     local slotIndex = evt.args.slotIndex  -- 确认：使用 slotIndex
-    
+
     if not slotIndex then
         gg.log("伙伴升星缺少槽位参数", player.uin)
         return
     end
-    
+
     local success, errorMsg = PartnerMgr.UpgradePartnerStar(player.uin, slotIndex)
-    
+
     if success then
         -- 操作成功后，获取最新的完整伙伴列表数据并通知客户端
         local updatedData, getError = PartnerMgr.GetPlayerPartnerList(player.uin)
@@ -226,14 +226,14 @@ function PartnerEventManager.HandleLearnPartnerSkill(evt)
 
     local slotIndex = evt.args.slotIndex
     local skillId = evt.args.skillId
-    
+
     if not slotIndex or not skillId then
         gg.log("伙伴学习技能缺少参数", player.uin, "槽位", slotIndex, "技能", skillId)
         return
     end
-    
+
     local success, errorMsg = PartnerMgr.LearnPartnerSkill(player.uin, slotIndex, skillId)
-    
+
     if success then
         -- 操作成功后，获取最新的完整伙伴列表数据并通知客户端
         local updatedData, getError = PartnerMgr.GetPlayerPartnerList(player.uin)
@@ -254,12 +254,12 @@ function PartnerEventManager.HandleRenamePartner(evt)
 
     local slotIndex = evt.args.slotIndex
     local newName = evt.args.newName
-    
+
     if not slotIndex or not newName then
         gg.log("重命名伙伴缺少参数", player.uin, "槽位", slotIndex, "新名称", newName)
         return
     end
-    
+
     local partnerInstance = PartnerMgr.GetPartnerInstance(player.uin, slotIndex)
     if partnerInstance then
         partnerInstance:SetCustomName(newName)

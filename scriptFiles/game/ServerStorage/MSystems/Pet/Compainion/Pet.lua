@@ -21,7 +21,7 @@ function Pet:OnInit(uin, playerPetData)
     -- 【重构】从配置加载装备栏，并调用父类初始化
     local equipSlotIds = PetEventConfig.EQUIP_CONFIG.PET_SLOTS
     BaseCompanion.OnInit(self, uin, "宠物", equipSlotIds)
-    
+
     self:LoadFromPetData(playerPetData)
     gg.log("Pet管理器创建", uin, "宠物数量", self:GetCompanionCount())
 end
@@ -65,12 +65,12 @@ function Pet:GetSaveData()
         petSlots = self.maxSlots, -- 保留背包容量字段，以备将来使用
         unlockedEquipSlots = self.unlockedEquipSlots -- 【新增】保存已解锁栏位数
     }
-    
+
     -- 提取所有宠物的数据
     for slotIndex, companionInstance in pairs(self.companionInstances) do
         playerPetData.petList[slotIndex] = companionInstance.companionData
     end
-    
+
     return playerPetData
 end
 
@@ -82,7 +82,7 @@ end
 ---@param playerPetData PlayerPetData 宠物数据
 function Pet:LoadFromPetData(playerPetData)
     if not playerPetData then return end
-    
+
     -- 【重构】加载新的激活数据结构
     self.activeCompanionSlots = playerPetData.activeSlots or {}
     self.maxSlots = playerPetData.petSlots or 50 -- 兼容旧数据
@@ -90,7 +90,7 @@ function Pet:LoadFromPetData(playerPetData)
     -- 【新增】加载已解锁的装备栏数量，确保不超过系统配置的最大值
     local maxEquipped = #self.equipSlotIds
     self.unlockedEquipSlots = math.min(playerPetData.unlockedEquipSlots or 1, maxEquipped)
-    
+
     -- 创建宠物实例
     for slotIndex, petData in pairs(playerPetData.petList or {}) do
         local companionInstance = self:CreateCompanionInstance(petData, slotIndex)
@@ -98,7 +98,7 @@ function Pet:LoadFromPetData(playerPetData)
             self.companionInstances[slotIndex] = companionInstance
         end
     end
-    
+
     gg.log("从宠物数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "宠物数", self:GetCompanionCount())
 end
 
@@ -317,13 +317,13 @@ end
 function Pet:GetUpgradeMaterialStats(targetPetName, requiredStar, excludeSlot)
     local candidates = self:FindCompanionsByCondition(targetPetName, requiredStar, excludeSlot)
     local starStats = {}
-    
+
     for _, slotIndex in ipairs(candidates) do
         local companionInstance = self.companionInstances[slotIndex]
         local starLevel = companionInstance:GetStarLevel()
         starStats[starLevel] = (starStats[starLevel] or 0) + 1
     end
-    
+
     return {
         totalCount = #candidates,
         starDistribution = starStats,
