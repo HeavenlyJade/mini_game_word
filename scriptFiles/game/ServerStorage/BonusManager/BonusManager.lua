@@ -16,7 +16,7 @@ local BonusManager = {}
 
 --- 计算玩家所有物品加成
 ---@param player MPlayer 玩家实例
----@return table<string, number> 按物品目标分组的加成数据 {[物品名] = 加成百分比}
+---@return table<string, {fixed: number, percentage: number}> 按物品目标分组的加成数据
 function BonusManager.CalculatePlayerItemBonuses(player)
     if not player then
         gg.log("错误: [BonusManager] 玩家实例为空")
@@ -35,16 +35,27 @@ function BonusManager.CalculatePlayerItemBonuses(player)
     
     -- 3. 记录加成信息
     local bonusCount = 0
-    for itemName, bonus in pairs(totalBonuses) do
-        if bonus > 0 then
-            gg.log(string.format("[BonusManager] 玩家 %s 的 %s 加成: +%.1f%%", 
-                   player.name or "未知", itemName, bonus))
+    for itemName, bonusData in pairs(totalBonuses) do
+        local hasBonus = (bonusData.percentage and bonusData.percentage > 0) or (bonusData.fixed and bonusData.fixed > 0)
+        if hasBonus then
+            local logParts = {}
+            if bonusData.percentage and bonusData.percentage > 0 then
+                table.insert(logParts, string.format("百分比 +%.1f%%", bonusData.percentage))
+            end
+            if bonusData.fixed and bonusData.fixed > 0 then
+                table.insert(logParts, string.format("固定值 +%d", bonusData.fixed))
+            end
+            
+            gg.log(string.format("[BonusManager] 玩家 %s 的 %s 加成: %s", 
+                   player.name or "未知", itemName, table.concat(logParts, ", ")))
             bonusCount = bonusCount + 1
         end
     end
     
-    gg.log(string.format("[BonusManager] 玩家 %s 共享受 %d 种物品加成", 
-           player.name or "未知", bonusCount))
+    if bonusCount > 0 then
+        gg.log(string.format("[BonusManager] 玩家 %s 共享受 %d 种物品加成", 
+               player.name or "未知", bonusCount))
+    end
     
     return totalBonuses
 end

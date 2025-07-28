@@ -65,6 +65,7 @@ function PetType:OnInit(data)
     self.modelResource = data["模型资源"] or nil
     self.avatarResource = data["头像资源"] or nil
     self.soundResource = data["音效资源"] or nil
+    self.animationResource = data["动画资源"] or nil
     
     -- 特殊标记
     self.specialTags = data["特殊标签"] or {}

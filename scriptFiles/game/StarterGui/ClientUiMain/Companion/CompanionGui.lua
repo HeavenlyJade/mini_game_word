@@ -694,7 +694,12 @@ end
 function CompanionGui:GetSortedCompanionList()
     -- 1. 将伙伴数据从字典转为包含排序信息的数组
     local companionList = {}
-    for _, companionInfo in pairs(self.companionData) do
+    for slotIndex, companionInfo in pairs(self.companionData) do
+        -- 【关键修复】在排序前，为每个伙伴动态计算并添加 isEquipped 和 slotIndex 标志
+        -- 这样可以确保排序逻辑能正确识别出已装备的伙伴，并能进行稳定排序
+        companionInfo.isEquipped = self:IsCompanionEquipped(slotIndex)
+        companionInfo.slotIndex = slotIndex
+
         local config = self:GetPartnerConfig(companionInfo.companionName)
         table.insert(companionList, {
             info = companionInfo,

@@ -149,6 +149,12 @@ function MServerInitPlayer.player_enter_game(player)
     PetMgr.OnPlayerJoin(player_)
     PartnerMgr.OnPlayerJoin(player_)
     gg.log("玩家", uin_, "登录完成，邮件、背包、宠物、伙伴和天赋数据已加载")
+    
+    -- 【重构】玩家上线时，调用伙伴管理器来更新模型显示
+    PartnerMgr.UpdateAllEquippedPartnerModels(player_)
+    -- 【新增】玩家上线时，调用宠物管理器来更新模型显示
+    PetMgr.UpdateAllEquippedPetModels(player_)
+
     MServerInitPlayer.syncPlayerDataToClient(player_)
 
     

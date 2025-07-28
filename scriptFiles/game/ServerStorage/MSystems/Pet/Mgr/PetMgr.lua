@@ -266,6 +266,123 @@ function PetMgr.CanPetUpgradeStar(uin, slotIndex)
     return petManager:CanPetUpgradeStar(slotIndex)
 end
 
+---【新增】装备宠物接口
+---@param uin number 玩家ID
+---@param companionSlotId number 要装备的宠物背包槽位ID
+---@param equipSlotId string 目标装备栏ID
+---@return boolean, string|nil
+function PetMgr.EquipPet(uin, companionSlotId, equipSlotId)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        return false, "玩家宠物数据不存在"
+    end
+    
+    local success, errorMsg = petManager:EquipPet(companionSlotId, equipSlotId)
+
+    if success then
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin)
+        if player then
+            PetMgr.UpdateAllEquippedPetModels(player)
+        end
+    end
+    
+    return success, errorMsg
+end
+
+---【新增】卸下宠物接口
+---@param uin number 玩家ID
+---@param equipSlotId string 目标装备栏ID
+---@return boolean, string|nil
+function PetMgr.UnequipPet(uin, equipSlotId)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        return false, "玩家宠物数据不存在"
+    end
+    
+    local success, errorMsg = petManager:UnequipPet(equipSlotId)
+
+    if success then
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin)
+        if player then
+            PetMgr.UpdateAllEquippedPetModels(player)
+        end
+    end
+    
+    return success, errorMsg
+end
+
+
+---【新增】更新玩家所有已装备宠物的模型和动画
+---@param player MPlayer 玩家对象
+function PetMgr.UpdateAllEquippedPetModels(player)
+    if not player or not player.uin then
+        gg.log("PetMgr.UpdateAllEquippedPetModels: 玩家对象无效")
+        return
+    end
+
+    local uin = player.uin
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        gg.log("PetMgr.UpdateAllEquippedPetModels: 找不到玩家宠物数据", uin)
+        return
+    end
+
+    local player_actor = player.actor
+    if not player_actor then
+        gg.log("PetMgr.UpdateAllEquippedPetModels: 找不到玩家Actor", uin)
+        return
+    end
+
+    local activeSlots = petManager.activeCompanionSlots or {}
+    local allEquipSlotIds = petManager.equipSlotIds or {}
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+
+    -- 1. 先隐藏所有宠物节点
+    for _, equipSlotId in ipairs(allEquipSlotIds) do
+        local petNode = player_actor:FindFirstChild(equipSlotId)
+        if petNode then
+            petNode.Visible = false
+            petNode.ModelId = ""
+            local animatorNode = petNode:FindFirstChild("Animator")
+            if animatorNode then
+                animatorNode.ControllerAsset = ""
+            end
+        end
+    end
+
+    -- 2. 再根据当前激活的槽位，显示并更新正确的模型和动画
+    for equipSlotId, companionSlotId in pairs(activeSlots) do
+        if companionSlotId and companionSlotId > 0 then
+            local petNode = player_actor:FindFirstChild(equipSlotId)
+            if petNode then
+                local companionInstance = petManager:GetPetBySlot(companionSlotId)
+                if companionInstance then
+                    local petConfigName = companionInstance:GetConfigName()
+                    local petConfig = ConfigLoader.GetPet(petConfigName)
+                    if petConfig and petConfig.modelResource and petConfig.modelResource ~= "" then
+                        petNode.ModelId = petConfig.modelResource
+                        petNode.Visible = true
+                        
+                        local animatorNode = petNode:FindFirstChild("Animator")
+                        if animatorNode then
+                            animatorNode.ControllerAsset = petConfig.animationResource or ""
+                        end
+                        gg.log("更新宠物模型和动画成功:", uin, equipSlotId)
+                    else
+                        petNode.Visible = false
+                    end
+                else
+                     petNode.Visible = false
+                end
+            end
+        end
+    end
+    gg.log("玩家所有宠物模型更新完毕", uin)
+end
+
+
 ---给玩家添加宠物
 ---@param player MPlayer 玩家对象
 ---@param petName string 宠物名称

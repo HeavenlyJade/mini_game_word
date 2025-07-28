@@ -450,6 +450,78 @@ function PartnerMgr.GetPartnerCountByType(uin, partnerName, minStar)
     return partnerManager:GetPartnerCountByType(partnerName, minStar)
 end
 
+---【新增】更新玩家所有已装备伙伴的模型
+---@param player MPlayer 玩家对象
+function PartnerMgr.UpdateAllEquippedPartnerModels(player)
+    if not player or not player.uin then
+        gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 玩家对象无效")
+        return
+    end
+
+    local uin = player.uin
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if not partnerManager then
+        gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 找不到玩家伙伴数据", uin)
+        return
+    end
+
+    local player_actor = player.actor
+    if not player_actor then
+        gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 找不到玩家Actor", uin)
+        return
+    end
+
+    local activeSlots = partnerManager.activeCompanionSlots or {}
+    -- 从伙伴管理器实例中获取所有可能的装备栏位ID
+    local allEquipSlotIds = partnerManager.equipSlotIds or {}
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+
+    -- 1. 先隐藏所有伙伴节点，以处理离线时卸下装备的情况
+    for _, equipSlotId in ipairs(allEquipSlotIds) do
+        local partnerNode = player_actor:FindFirstChild(equipSlotId)
+        if partnerNode then
+            partnerNode.Visible = false
+        end
+    end
+
+    -- 2. 再根据当前激活的槽位，显示并更新正确的模型
+    for equipSlotId, companionSlotId in pairs(activeSlots) do
+        if companionSlotId and companionSlotId > 0 then
+            local partnerNode = player_actor:FindFirstChild(equipSlotId)
+            if partnerNode then
+                local companionInstance = partnerManager:GetPartnerBySlot(companionSlotId)
+                if companionInstance then
+                    local partnerConfigName = companionInstance:GetConfigName()
+                    local partnerConfig = ConfigLoader.GetPartner(partnerConfigName)
+                    if partnerConfig and partnerConfig.modelResource and partnerConfig.modelResource ~= "" then
+                        partnerNode.ModelId = partnerConfig.modelResource
+                        partnerNode.Visible = true
+                        
+                        -- 【新增】更新动画控制器
+                        local animatorNode = partnerNode:FindFirstChild("Animator")
+                        if animatorNode then
+                            animatorNode.ControllerAsset = partnerConfig.animationResource 
+                            gg.log("更新伙伴动画控制器成功:", uin, equipSlotId, partnerConfig.animationResource)
+                        end
+
+                        gg.log("更新伙伴模型成功:", uin, equipSlotId, partnerConfig.modelResource)
+                    else
+                        gg.log("伙伴模型资源无效, 隐藏节点:", uin, equipSlotId)
+                        partnerNode.Visible = false
+                    end
+                else
+                     gg.log("找不到伙伴实例, 隐藏节点:", uin, companionSlotId)
+                     partnerNode.Visible = false
+                end
+            else
+                gg.log("找不到伙伴节点:", uin, equipSlotId)
+            end
+        end
+    end
+    gg.log("玩家所有伙伴模型更新完毕", uin)
+end
+
+
 ---【新增】装备伙伴接口
 ---@param uin number 玩家ID
 ---@param companionSlotId number 要装备的伙伴背包槽位ID
@@ -460,7 +532,20 @@ function PartnerMgr.EquipPartner(uin, companionSlotId, equipSlotId)
     if not partnerManager then
         return false, "玩家伙伴数据不存在"
     end
-    return partnerManager:EquipPartner(companionSlotId, equipSlotId)
+    
+    local success, errorMsg = partnerManager:EquipPartner(companionSlotId, equipSlotId)
+
+    if success then
+        gg.log("伙伴装备数据更新成功, 开始更新模型", uin, companionSlotId, "->", equipSlotId)
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin) ---@type MPlayer
+        if player then
+            -- 【重构】调用通用函数来刷新所有伙伴模型
+            PartnerMgr.UpdateAllEquippedPartnerModels(player)
+        end
+    end
+    
+    return success, errorMsg
 end
 
 ---【新增】卸下伙伴接口
@@ -472,7 +557,20 @@ function PartnerMgr.UnequipPartner(uin, equipSlotId)
     if not partnerManager then
         return false, "玩家伙伴数据不存在"
     end
-    return partnerManager:UnequipPartner(equipSlotId)
+    
+    local success, errorMsg = partnerManager:UnequipPartner(equipSlotId)
+
+    if success then
+        gg.log("伙伴卸下数据更新成功, 开始更新模型", uin, equipSlotId)
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin) ---@type MPlayer
+        if player then
+            -- 【重构】调用通用函数来刷新所有伙伴模型
+            PartnerMgr.UpdateAllEquippedPartnerModels(player)
+        end
+    end
+    
+    return success, errorMsg
 end
 
 --- 获取当前激活伙伴的物品加成
