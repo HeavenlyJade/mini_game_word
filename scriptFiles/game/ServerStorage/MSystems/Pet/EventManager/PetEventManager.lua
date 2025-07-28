@@ -58,6 +58,9 @@ function PetEventManager.RegisterEventHandlers()
     -- 【新增】删除/锁定宠物
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.DELETE_PET, function(evt) PetEventManager.HandleDeletePet(evt) end)
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.TOGGLE_PET_LOCK, function(evt) PetEventManager.HandleTogglePetLock(evt) end)
+    
+    -- 【新增】一键升星
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.UPGRADE_ALL_PETS, function(evt) PetEventManager.HandleUpgradeAllPets(evt) end)
 end
 
 --- 验证玩家
@@ -185,6 +188,25 @@ function PetEventManager.HandleTogglePetLock(evt)
 end
 
 
+--- 【新增】处理一键升星请求
+---@param evt table 事件数据
+function PetEventManager.HandleUpgradeAllPets(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local upgradedCount = PetMgr.UpgradeAllPossiblePets(player.uin)
+
+    if upgradedCount > 0 then
+        gg.log("一键升星成功", player.uin, "总共升级次数", upgradedCount)
+        -- 成功的通知由PetMgr内部的NotifyPetDataUpdate发送，这里可以发送一个额外的成功提示
+        -- PetEventManager.NotifySuccess(player.uin, "一键升星完成！")
+    else
+        gg.log("一键升星：没有可升星的宠物", player.uin)
+        -- PetEventManager.NotifyError(player.uin, 0, "没有可升星的宠物")
+    end
+end
+
+
 --- 验证宠物管理器
 ---@param uin number 玩家UIN
 ---@return Pet|nil 宠物管理器
@@ -286,7 +308,8 @@ function PetEventManager.HandleUpgradePetStar(evt)
     local player = PetEventManager.ValidatePlayer(evt)
     if not player then return end
 
-    local slotIndex = evt.slotIndex
+    local args = evt.args or {}
+    local slotIndex = args.slotIndex
     
     if not slotIndex then
         gg.log("宠物升星缺少槽位参数", player.uin)

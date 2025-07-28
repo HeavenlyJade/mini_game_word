@@ -187,7 +187,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     if petManager then
         local petListData = petManager:GetPlayerPetList()
         local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
-        PetEventManager.NotifyPetListUpdate(uin, petListData.petList)
+        PetEventManager.NotifyPetListUpdate(uin, petListData)
         gg.log("已主动同步宠物数据到客户端:", uin, "宠物数量:", petManager:GetPetCount())
     else
         gg.log("警告: 玩家", uin, "的宠物数据不存在，跳过宠物数据同步")

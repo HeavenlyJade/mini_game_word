@@ -121,6 +121,15 @@ function RaceGameMode:LaunchPlayer(player)
     eventData.gravity = 0
     eventData.recoveryDelay = raceTime  -- 传送关卡配置的比赛时长作为客户端的恢复延迟
     
+    -- 【新增】获取并添加重生点位置
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
+    if handler and handler.respawnNode and handler.respawnNode.Position then
+        eventData.respawnPosition = handler.respawnNode.Position
+    else
+        gg.log("警告: [RaceGameMode] 无法为比赛实例 " .. self.instanceId .. " 找到有效的重生点位置。")
+    end
+    
     -- 【核心改造】通过网络通道向指定客户端发送事件
     if gg.network_channel then
         gg.network_channel:fireClient(player.uin, eventData)
@@ -246,10 +255,7 @@ function RaceGameMode:End()
     local cleanupDelay = self.levelType.prepareTime or 10
 
     self:AddDelay(cleanupDelay, function()
-        -- 1. 传送所有玩家
-        self:_teleportAllPlayersToRespawn()
-
-        -- 2. 将所有玩家从比赛模式中移除
+        --  将所有玩家从比赛模式中移除
         if GameModeManager then
             -- 必须从后往前遍历，因为 RemovePlayerFromCurrentMode 可能会修改 self.participants
             for i = #self.participants, 1, -1 do

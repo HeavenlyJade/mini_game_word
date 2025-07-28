@@ -5,6 +5,7 @@ local ServerStorage = game:GetService("ServerStorage")
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
+local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
 
 ---@class PetCommand
 local PetCommand = {}
@@ -12,15 +13,27 @@ local PetCommand = {}
 -- 子命令处理器
 PetCommand.handlers = {}
 
+--- 私有方法：同步宠物数据到客户端
+---@param player MPlayer
+local function _syncToClient(player)
+    local updatedData, errorMsg = PetMgr.GetPlayerPetList(player.uin)
+    if updatedData then
+        PetEventManager.NotifyPetListUpdate(player.uin, updatedData)
+        gg.log("宠物数据已通过指令同步到客户端", player.uin)
+    else
+        gg.log("宠物数据同步失败，无法获取最新列表", player.uin, errorMsg)
+    end
+end
+
 --- 新增宠物
 ---@param params table
 ---@param player MPlayer
 function PetCommand.handlers.add(params, player)
-    local petName = params["宠物名称"]
+    local petName = params["宠物"]
     local slotIndex = params["槽位"] and tonumber(params["槽位"]) or nil
 
     if not petName then
-        player:SendHoverText("缺少 '宠物名称' 字段")
+        player:SendHoverText("缺少 '宠物' 字段")
         return false
     end
 
@@ -29,6 +42,8 @@ function PetCommand.handlers.add(params, player)
         local msg = string.format("成功给玩家 %s 添加宠物: %s 到槽位 %d", player.name, petName, actualSlot)
         player:SendHoverText(msg)
         gg.log(msg)
+        _syncToClient(player) -- 同步数据
+        PetMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("给玩家 %s 添加宠物失败: %s", player.name, petName)
@@ -63,6 +78,8 @@ function PetCommand.handlers.remove(params, player)
         local msg = string.format("成功移除玩家 %s 在槽位 %d 的宠物: %s", player.name, slotIndex, petName)
         player:SendHoverText(msg)
         gg.log(msg)
+        _syncToClient(player) -- 同步数据
+        PetMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("移除玩家 %s 的宠物失败: %s", player.name, errorMsg)
@@ -140,6 +157,49 @@ function PetCommand.handlers.set(params, player)
              player:SendHoverText("宠物已达到目标星级")
         end
     end
+    _syncToClient(player) -- 同步数据
+    PetMgr.ForceSavePlayerData(player.uin) -- 保存数据
+    return true
+end
+
+--- 设置宠物栏位
+---@param params table
+---@param player MPlayer
+function PetCommand.handlers.setslots(params, player)
+    local carryCount = params["可携带"] and tonumber(params["可携带"])
+    local bagCapacity = params["背包"] and tonumber(params["背包"])
+
+    if not carryCount and not bagCapacity then
+        player:SendHoverText("请至少提供 '可携带' 或 '背包' 字段中的一个")
+        return false
+    end
+
+    local uin = player.uin
+    local anythingChanged = false
+
+    if carryCount then
+        if PetMgr.SetUnlockedEquipSlots(uin, carryCount) then
+            player:SendHoverText("成功设置可携带宠物栏位为: " .. carryCount)
+            anythingChanged = true
+        else
+            player:SendHoverText("设置可携带栏位失败, 可能是玩家数据未加载")
+        end
+    end
+
+    if bagCapacity then
+        if PetMgr.SetPetBagCapacity(uin, bagCapacity) then
+            player:SendHoverText("成功设置宠物背包容量为: " .. bagCapacity)
+            anythingChanged = true
+        else
+            player:SendHoverText("设置背包容量失败, 可能是玩家数据未加载")
+        end
+    end
+
+    if anythingChanged then
+        _syncToClient(player)
+        PetMgr.ForceSavePlayerData(uin)
+    end
+
     return true
 end
 
@@ -147,7 +207,8 @@ end
 local operationMap = {
     ["新增"] = "add",
     ["删除"] = "remove",
-    ["设置"] = "set"
+    ["设置"] = "set",
+    ["栏位设置"] = "setslots"
 }
 
 --- 宠物操作指令入口
@@ -158,14 +219,14 @@ function PetCommand.main(params, player)
     local operationType = params["操作类型"]
 
     if not operationType then
-        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '删除', '设置'")
+        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '删除', '设置', '栏位设置'")
         return false
     end
 
     -- 将中文指令映射到英文处理器
     local handlerName = operationMap[operationType]
     if not handlerName then
-        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '删除', '设置'")
+        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '删除', '设置', '栏位设置'")
         return false
     end
 

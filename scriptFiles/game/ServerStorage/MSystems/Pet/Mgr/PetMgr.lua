@@ -66,7 +66,23 @@ end
 ---@param uin number 玩家ID
 ---@return Pet|nil 宠物管理器实例
 function PetMgr.GetPlayerPet(uin)
-    return PetMgr.server_player_pets[uin]
+    local petManager = PetMgr.server_player_pets[uin]
+    if not petManager then
+        gg.log("宠物系统：在缓存中未找到玩家", uin, "的宠物管理器，尝试动态加载。")
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin)
+        if player then
+            PetMgr.OnPlayerJoin(player)
+            petManager = PetMgr.server_player_pets[uin]
+        end
+
+        if petManager then
+            gg.log("宠物系统：为玩家", uin, "动态加载宠物管理器成功。")
+        else
+            gg.log("宠物系统：为玩家", uin, "动态加载宠物管理器失败。")
+        end
+    end
+    return petManager
 end
 
 ---设置激活宠物
@@ -285,6 +301,8 @@ function PetMgr.EquipPet(uin, companionSlotId, equipSlotId)
         if player then
             PetMgr.UpdateAllEquippedPetModels(player)
         end
+        -- 【修复】通知客户端数据更新
+        PetMgr.NotifyPetDataUpdate(uin)
     end
     
     return success, errorMsg
@@ -308,6 +326,8 @@ function PetMgr.UnequipPet(uin, equipSlotId)
         if player then
             PetMgr.UpdateAllEquippedPetModels(player)
         end
+        -- 【修复】通知客户端数据更新
+        PetMgr.NotifyPetDataUpdate(uin)
     end
     
     return success, errorMsg
@@ -326,8 +346,8 @@ function PetMgr.DeletePet(uin, slotIndex)
     local success, errorMsg = petManager:DeletePet(slotIndex)
 
     if success then
-        local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
-        PetEventManager.NotifyPetRemoved(uin, slotIndex)
+        -- 【修复】不再发送专用的移除通知，而是发送全量更新通知，以避免客户端的竞态条件问题
+        PetMgr.NotifyPetDataUpdate(uin)
     end
     
     return success, errorMsg
@@ -466,7 +486,7 @@ end
 ---@param uin number 玩家ID
 ---@param slotIndex number|nil 具体槽位，nil表示全部更新
 function PetMgr.NotifyPetDataUpdate(uin, slotIndex)
-    local PetEventManager = require(ServerStorage.MSystems.Pet.PetEventManager) ---@type PetEventManager
+    local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
     
     if slotIndex then
         -- 单个宠物更新
@@ -481,7 +501,7 @@ function PetMgr.NotifyPetDataUpdate(uin, slotIndex)
         -- 全部宠物更新
         local result, errorMsg = PetMgr.GetPlayerPetList(uin)
         if result then
-            PetEventManager.NotifyPetListUpdate(uin, result.petList)
+            PetEventManager.NotifyPetListUpdate(uin, result)
         end
     end
 end
@@ -491,7 +511,7 @@ end
 function PetMgr.ForceSyncToClient(uin)
     local result, errorMsg = PetMgr.GetPlayerPetList(uin)
     if result then
-        local PetEventManager = require(ServerStorage.MSystems.Pet.PetEventManager) ---@type PetEventManager
+        local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
         PetEventManager.NotifyPetListUpdate(uin, result.petList)
         gg.log("PetMgr.ForceSyncToClient: 强制同步宠物数据", uin)
     else
@@ -557,6 +577,38 @@ function PetMgr.GetActiveItemBonuses(uin)
     return petManager:GetActiveItemBonuses()
 end
 
+---【新增】设置玩家可携带栏位数量
+---@param uin number 玩家ID
+---@param count number 数量
+---@return boolean
+function PetMgr.SetUnlockedEquipSlots(uin, count)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if petManager then
+        petManager:SetUnlockedEquipSlots(count)
+        gg.log("通过 PetMgr 更新玩家", uin, "的可携带栏位数量为", count)
+        return true
+    else
+        gg.log("更新可携带栏位失败，找不到玩家", uin, "的宠物管理器")
+        return false
+    end
+end
+
+---【新增】设置玩家宠物背包容量
+---@param uin number 玩家ID
+---@param capacity number 容量
+---@return boolean
+function PetMgr.SetPetBagCapacity(uin, capacity)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if petManager then
+        petManager:SetPetBagCapacity(capacity)
+        gg.log("通过 PetMgr 更新玩家", uin, "的背包容量为", capacity)
+        return true
+    else
+        gg.log("更新背包容量失败，找不到玩家", uin, "的宠物管理器")
+        return false
+    end
+end
+
 ---定时更新所有在线玩家的宠物buff
 function PetMgr.UpdateAllPlayerPetBuffs()
     for uin, petManager in pairs(PetMgr.server_player_pets) do
@@ -572,9 +624,25 @@ function PetMgr.SaveAllPlayerData()
             CloudPetDataAccessor:SavePlayerPetData(uin, playerPetData)
         end
     end
-    gg.log("PetMgr.SaveAllPlayerData: 批量保存所有玩家宠物数据")
+    -- gg.log("PetMgr.SaveAllPlayerData: 批量保存所有玩家宠物数据") -- 日志已移至定时器启动时
 end
 
+
+-- 定时器回调函数
+local function SaveAllPlayerPets_()
+    PetMgr.SaveAllPlayerData()
+end
+
+-- 创建并启动定时器
+local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+saveTimer.Name = 'PET_SAVE_ALL'
+saveTimer.Delay = PetMgr.SAVE_INTERVAL
+saveTimer.Loop = true
+saveTimer.Interval = PetMgr.SAVE_INTERVAL
+saveTimer.Callback = SaveAllPlayerPets_
+saveTimer:Start()
+gg.log("宠物数据定时保存任务已启动，间隔:", PetMgr.SAVE_INTERVAL, "秒")
 
 
 return PetMgr

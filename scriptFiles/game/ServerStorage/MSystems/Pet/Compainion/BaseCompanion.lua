@@ -601,20 +601,48 @@ end
 ---批量操作：一键升级所有可升级伙伴
 ---@return number 升级的伙伴数量
 function BaseCompanion:UpgradeAllPossibleCompanions()
-    local upgradedCount = 0
-    
-    for slotIndex, companionInstance in pairs(self.companionInstances) do
-        while companionInstance:CanLevelUp() do
-            companionInstance:DoLevelUp()
-            upgradedCount = upgradedCount + 1
+    local totalUpgradedCount = 0
+    local hasUpgradedInLoop = true
+
+    -- 持续循环，直到在一轮完整的遍历中没有任何伙伴可以升星
+    while hasUpgradedInLoop do
+        hasUpgradedInLoop = false
+        
+        -- 创建一个槽位索引的列表，以确保遍历顺序稳定
+        local slotsToCheck = {}
+        for slotIndex, _ in pairs(self.companionInstances) do
+            table.insert(slotsToCheck, slotIndex)
+        end
+        table.sort(slotsToCheck)
+
+        for _, slotIndex in ipairs(slotsToCheck) do
+            -- 检查实例是否在循环中被消耗掉了
+            local companionInstance = self.companionInstances[slotIndex]
+            if companionInstance then
+                local canUpgrade, reason = self:CanCompanionUpgradeStar(slotIndex)
+                if canUpgrade then
+                    local success, errorMsg = self:UpgradeCompanionStar(slotIndex)
+                    if success then
+                        totalUpgradedCount = totalUpgradedCount + 1
+                        hasUpgradedInLoop = true -- 标记本轮有升星发生，需要再来一轮
+                        gg.log(string.format("一键升星: 玩家 %d 的 %s (槽位 %d) 升星成功", self.uin, self.companionType, slotIndex))
+                        -- 因为升星消耗了其他伙伴，所以从外层循环重新开始检查是更安全的做法
+                        break 
+                    else
+                        gg.log(string.format("一键升星: 尝试为 %s (槽位 %d) 升星失败: %s", self.companionType, slotIndex, errorMsg or "未知错误"))
+                    end
+                end
+            end
         end
     end
     
-    if upgradedCount > 0 then
-        gg.log("批量升级伙伴", self.uin, self.companionType, "升级次数", upgradedCount)
+    if totalUpgradedCount > 0 then
+        gg.log(string.format("一键升星完成: 玩家 %d 的 %s 总共升星 %d 次", self.uin, self.companionType, totalUpgradedCount))
+    else
+        gg.log(string.format("一键升星: 玩家 %d 的 %s 没有可升星的伙伴", self.uin, self.companionType))
     end
     
-    return upgradedCount
+    return totalUpgradedCount
 end
 
 return BaseCompanion

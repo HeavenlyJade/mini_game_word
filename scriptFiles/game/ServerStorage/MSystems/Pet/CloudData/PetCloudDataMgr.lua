@@ -44,7 +44,7 @@ function CloudPetDataAccessor:LoadPlayerPetData(uin)
             activeSlots = {},
             petList = {},
             petSlots = 50,
-            unlockedEquipSlots = 1, -- 默认解锁1个栏位
+            unlockedEquipSlots = 3, -- 默认解锁1个栏位
        
         }
     end
@@ -64,7 +64,7 @@ function CloudPetDataAccessor:SavePlayerPetData(uin, petData)
         if not success then
             gg.log("保存玩家宠物数据失败", uin)
         else
-            gg.log("保存玩家宠物数据成功", uin)
+            -- gg.log("保存玩家宠物数据成功", uin)
         end
     end)
 

@@ -331,4 +331,23 @@ function Pet:GetUpgradeMaterialStats(targetPetName, requiredStar, excludeSlot)
     }
 end
 
+--- 设置可携带栏位数量
+---@param count number
+function Pet:SetUnlockedEquipSlots(count)
+    if count and count > 0 then
+        local maxEquipped = #self.equipSlotIds
+        self.unlockedEquipSlots = math.min(count, maxEquipped)
+        gg.log("玩家", self.uin, "可携带宠物栏位数量已设置为", self.unlockedEquipSlots)
+    end
+end
+
+--- 设置宠物背包容量
+---@param capacity number
+function Pet:SetPetBagCapacity(capacity)
+    if capacity and capacity > 0 then
+        self.maxSlots = capacity
+        gg.log("玩家", self.uin, "宠物背包容量已设置为", self.maxSlots)
+    end
+end
+
 return Pet

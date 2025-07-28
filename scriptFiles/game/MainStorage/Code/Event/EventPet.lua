@@ -5,7 +5,7 @@ local PetEventConfig = {}
 -- 【新】装备系统配置
 PetEventConfig.EQUIP_CONFIG = {
     PARTNER_SLOTS = { "Partner1", "Partner2", "Partner3", "Partner4" },
-    PET_SLOTS = { "Pet1", "Pet2", "Pet3", "Pet4", "Pet5", "Pet6", "Pet7", "Pet8", "Pet9" }
+    PET_SLOTS = { "Pet1", "Pet2", "Pet3", "Pet4", "Pet5", "Pet6", }
 }
 
 -- 客户端请求事件
@@ -21,7 +21,8 @@ PetEventConfig.REQUEST = {
     FEED_PET = "FeedPet",                      -- 喂养宠物
     RENAME_PET = "RenamePet",                   -- 重命名宠物
     DELETE_PET = "DeletePet",                  -- 【新增】删除宠物
-    TOGGLE_PET_LOCK = "TogglePetLock"          -- 【新增】切换宠物锁定状态
+    TOGGLE_PET_LOCK = "TogglePetLock",          -- 【新增】切换宠物锁定状态
+    UPGRADE_ALL_PETS = "UpgradeAllPets"        -- 【新增】一键升星
 }
 
 -- 服务器响应事件
