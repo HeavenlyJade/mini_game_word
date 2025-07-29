@@ -30,6 +30,7 @@ AchievementEventConfig.RESPONSE = {
     PREVIEW_RESPONSE = "AchievementResponse_Preview",           -- 升级预览响应
     SYNC_RESPONSE = "AchievementResponse_Sync",                 -- 同步响应
     GET_TALENT_LEVEL_RESPONSE = "AchievementResponse_GetTalentLevel", -- 获取天赋等级响应
+    GET_REBIRTH_LEVEL_RESPONSE = "AchievementResponse_GetRebirthLevel", -- 获取重生等级响应
     PERFORM_TALENT_ACTION_RESPONSE = "AchievementResponse_PerformTalentAction", -- 执行天赋动作响应
     ERROR = "AchievementResponse_Error",                        -- 错误响应
 }

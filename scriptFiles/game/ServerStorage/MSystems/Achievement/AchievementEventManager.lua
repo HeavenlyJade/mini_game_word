@@ -377,7 +377,7 @@ function AchievementEventManager.NotifyAllDataToClient(uin)
     -- 2. 为RebirthGui主动推送'重生'天赋的等级
     local rebirthTalentLevel = playerAchievement:GetTalentLevel("重生")
     gg.network_channel:fireClient(uin, {
-        cmd = AchievementEventConfig.RESPONSE.GET_TALENT_LEVEL_RESPONSE,
+        cmd = AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE,
         data = {
             talentId = "重生",
             currentLevel = rebirthTalentLevel

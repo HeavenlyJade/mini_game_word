@@ -52,8 +52,8 @@ end
 function RebirthGui:RegisterEvents()
     gg.log("注册重生UI事件监听")
     
-    -- 监听天赋等级数据
-    ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.GET_TALENT_LEVEL_RESPONSE, function(data)
+    -- 监听重生天赋等级数据
+    ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE, function(data)
         self:OnTalentLevelResponse(data)
         
     end)
