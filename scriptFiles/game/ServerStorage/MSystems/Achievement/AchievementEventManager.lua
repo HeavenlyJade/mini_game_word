@@ -39,6 +39,11 @@ function AchievementEventManager.RegisterNetworkHandlers()
     ServerEventManager.Subscribe(AchievementEventConfig.REQUEST.PERFORM_TALENT_ACTION, function(event)
         AchievementEventManager.HandlePerformTalentAction(event)
     end, 100)
+
+    -- 新增：处理执行最大化天赋动作的请求
+    ServerEventManager.Subscribe(AchievementEventConfig.REQUEST.PERFORM_MAX_TALENT_ACTION, function(event)
+        AchievementEventManager.HandlePerformMaxTalentAction(event)
+    end, 100)
     
 end
 
@@ -280,6 +285,91 @@ function AchievementEventManager.HandlePerformTalentAction(event)
     local bag = BagMgr.GetPlayerBag(player.uin)
     if bag then
         bag:SyncToClient()
+    end
+end
+
+
+--- 新增：处理最大化天赋动作请求
+---@param event table 事件对象
+function AchievementEventManager.HandlePerformMaxTalentAction(event)
+    local playerNode = event.player
+    local uin = playerNode.uin
+    local playerId = uin
+    local args = event.args or {}
+    local talentId = args.talentId
+
+    if not talentId then
+        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.INVALID_PARAMETERS)
+    end
+    gg.log("处理最大化天赋动作请求:", talentId)
+
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local player = MServerDataManager.getPlayerByUin(playerId)
+    if not player then
+        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.PLAYER_NOT_FOUND)
+    end
+
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local talentConfig = ConfigLoader.GetAchievement(talentId)
+    if not talentConfig or not talentConfig:IsTalentAchievement() then
+        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.ACHIEVEMENT_NOT_FOUND)
+    end
+
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    local totalActions = 0
+    local totalEffectApplied = 0
+
+    -- 循环执行，直到不满足条件
+    while true do
+        local currentTalentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
+        local targetLevel = totalActions + 1 -- 在这个循环里，我们总是尝试执行下一个等级
+
+        if currentTalentLevel < targetLevel then
+            gg.log("最大化重生结束: 资格不足。当前天赋等级", currentTalentLevel, "目标动作等级", targetLevel)
+            break
+        end
+
+        local costs = talentConfig:GetUpgradeCosts(targetLevel, player.variableSystem)
+        if not BagMgr.HasItemsByCosts(player, costs) then
+            gg.log("最大化重生结束: 材料不足。")
+            break
+        end
+
+        if not BagMgr.RemoveItemsByCosts(player, costs) then
+            gg.log("最大化重生结束: 扣除材料失败。")
+            break -- 避免死循环
+        end
+
+        local effectValue = talentConfig:GetLevelEffectValue(targetLevel)
+        local effectConfig = talentConfig:GetLevelEffect(targetLevel)
+        if effectConfig and effectConfig["效果字段名称"] then
+            local variableName = effectConfig["效果字段名称"]
+            player.variableSystem:Add(variableName, effectValue)
+            totalEffectApplied = totalEffectApplied + effectValue
+        end
+        
+        totalActions = totalActions + 1
+        gg.log(string.format("执行第 %d 次重生成功", totalActions))
+    end
+
+    if totalActions > 0 then
+        -- 至少成功了一次，发送成功响应并同步背包
+        local responseData = {
+            success = true,
+            talentId = talentId,
+            executedLevel = totalActions, -- 返回执行的总次数
+            effectApplied = totalEffectApplied,
+        }
+        AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
+
+        local bag = BagMgr.GetPlayerBag(player.uin)
+        if bag then
+            bag:SyncToClient()
+        end
+        gg.log(string.format("最大化重生完成，共执行 %d 次", totalActions))
+    else
+        -- 一次都未成功，发送失败响应
+        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
     end
 end
 

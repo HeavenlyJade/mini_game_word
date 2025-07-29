@@ -20,6 +20,7 @@ AchievementEventConfig.REQUEST = {
     SYNC_DATA = "AchievementRequest_SyncData",                  -- 请求同步数据
     GET_TALENT_LEVEL = "AchievementRequest_GetTalentLevel",       -- 获取天赋等级
     PERFORM_TALENT_ACTION = "AchievementRequest_PerformTalentAction", -- 执行天赋动作
+    PERFORM_MAX_TALENT_ACTION = "AchievementRequest_PerformMaxTalentAction", -- 执行最大化天赋动作
 }
 
 -- 服务器响应事件

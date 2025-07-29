@@ -28,6 +28,7 @@ function RebirthGui:OnInit(node, config)
     -- 1. 节点初始化
     self.closeButton = self:Get("重生界面/关闭", ViewButton) ---@type ViewButton
     self.rebirthList = self:Get("重生界面/重生栏位", ViewList) ---@type ViewList
+    self.maxRebirthButton = self:Get("重生界面/重生栏位/最大重生/最大重生", ViewButton) ---@type ViewButton
     
     -- 模板节点
     self.rebirthTemplate = self:Get("重生界面/模版界面/重生", ViewComponent) ---@type ViewComponent
@@ -69,6 +70,10 @@ function RebirthGui:RegisterButtonEvents()
     self.closeButton.clickCb = function()
         self:Close()
     end
+
+    self.maxRebirthButton.clickCb = function()
+        self:OnClickMaxRebirth()
+    end
 end
 
 -- =================================
@@ -85,7 +90,7 @@ end
 function RebirthGui:OnClose()
     gg.log("RebirthGui关闭")
     self.currentTalentLevel = 0
-    self.rebirthList:ClearChildren()
+    self.rebirthList:ClearChildren({ "最大重生" })
 end
 
 -- =================================
@@ -102,7 +107,7 @@ end
 
 function RebirthGui:OnTalentLevelResponse(data)
     gg.log("收到天赋等级响应:", data)
-    self.currentTalentLevel = data.currentLevel or 0
+    self.currentTalentLevel = data.data.currentLevel 
     self:RefreshDisplay()
 end
 
@@ -136,6 +141,17 @@ function RebirthGui:OnClickRebirthLevel(level)
     })
 end
 
+function RebirthGui:OnClickMaxRebirth()
+    gg.log("点击最大重生按钮")
+    
+    gg.network_channel:fireServer({
+        cmd = AchievementEventConfig.REQUEST.PERFORM_MAX_TALENT_ACTION,
+        args = {
+            talentId = TALENT_ID,
+        }
+    })
+end
+
 -- =================================
 -- UI刷新方法
 -- =================================
@@ -143,7 +159,7 @@ end
 function RebirthGui:RefreshDisplay()
     gg.log("根据天赋等级刷新重生列表:", self.currentTalentLevel)
     
-    self.rebirthList:ClearChildren()
+    self.rebirthList:ClearChildren({ "最大重生" })
 
     if not self.rebirthTemplate or not self.rebirthTemplate.node then
         gg.log("错误：找不到重生项模板")
@@ -162,19 +178,19 @@ function RebirthGui:RefreshDisplay()
         itemNode.Name = "RebirthOption_" .. i
 
         -- 查找并设置文本
-        local titleText = itemNode:FindFirstChild("可重生次数")
+        local titleText = itemNode["可重生次数"]
         if titleText then
-            titleText.Title = string.format("第 %d 次重生", i)
+            titleText.Title = string.format("可重生 %d 次", i)
         end
         
         -- 查找并设置消耗文本 (注意：此方案下客户端不预先知道消耗，所以显示固定文本)
-        local costText = itemNode:FindFirstChild("重生消耗")
+        local costText = itemNode["重生消耗"]
         if costText then
             costText.Title = "消耗: (点击查看)" -- 或者留空
         end
 
         -- 为整个克隆出的节点创建按钮并绑定事件
-        local itemButton = ViewButton.New(itemNode, self)
+        local itemButton = ViewButton.New(itemNode["重生"], self)
         itemButton.clickCb = function()
             self:OnClickRebirthLevel(i)
         end

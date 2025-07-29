@@ -242,16 +242,39 @@ function ViewList:RemoveChildByName(childName)
 end
 
 ---清空所有子元素
-function ViewList:ClearChildren()
-    -- 【修正】使用 ipairs 遍历数组部分，而不是用 ipairs 遍历字典
+---@param keepNodes string[] | nil 要保留的子节点名称列表
+function ViewList:ClearChildren(keepNodes)
+    local keepSet = {}
+    if keepNodes then
+        for _, name in ipairs(keepNodes) do
+            keepSet[name] = true
+        end
+    end
+
+    local childrenToDestroy = {}
+    local newChildrensList = {}
+    local newChildrens = {}
+
     for _, child in ipairs(self.childrensList) do
-        if child.node  then
+        local childName = child.node and child.node.Name
+        if childName and keepSet[childName] then
+            -- 保留这个节点
+            table.insert(newChildrensList, child)
+            newChildrens[childName] = child
+        else
+            -- 准备销毁这个节点
+            table.insert(childrenToDestroy, child)
+        end
+    end
+
+    for _, child in ipairs(childrenToDestroy) do
+        if child.node then
             child.node:Destroy()
         end
     end
-    self.childrens = {}
-    -- 【修正】同时清空数组
-    self.childrensList = {}
+
+    self.childrensList = newChildrensList
+    self.childrens = newChildrens
 end
 
 return ViewList
