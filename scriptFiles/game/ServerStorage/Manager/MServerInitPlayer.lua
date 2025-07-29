@@ -164,9 +164,7 @@ end
 function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
     local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
-    local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent) ---@type AchievementEventConfig
-    local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
-
+    local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
 
     local uin = mplayer.uin
 
@@ -218,48 +216,8 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
         questData = questData,
     })
 
-        -- 【新增】同步天赋成就数据
-        local playerAchievement = AchievementMgr.server_player_achievement_data[uin]
-        if playerAchievement then
-            -- 构建天赋响应数据
-            local talentData = playerAchievement:GetAllTalentData()
-            local normalAchievements = playerAchievement:GetAllNormalAchievements()
-
-            local achievementResponseData = {
-                talents = {},
-                normalAchievements = {},
-                totalTalentCount = playerAchievement:GetTalentCount(),
-                totalNormalCount = playerAchievement:GetUnlockedNormalAchievementCount()
-            }
-
-            -- 构建天赋列表
-            for talentId, talentInfo in pairs(talentData) do
-                achievementResponseData.talents[talentId] = {
-                    talentId = talentId,
-                    currentLevel = talentInfo.currentLevel,
-                    unlockTime = talentInfo.unlockTime
-                }
-            end
-
-            -- 构建普通成就列表
-            for achievementId, achievementInfo in pairs(normalAchievements) do
-                achievementResponseData.normalAchievements[achievementId] = {
-                    achievementId = achievementId,
-                    unlocked = achievementInfo.unlocked,
-                    unlockTime = achievementInfo.unlockTime
-                }
-            end
-
-
-            gg.network_channel:fireClient(uin, {
-                cmd = AchievementEventConfig.RESPONSE.LIST_RESPONSE,
-                data = achievementResponseData
-            })
-
-            gg.log("已主动同步天赋成就数据到客户端:", uin, "天赋数量:", achievementResponseData.totalTalentCount, "普通成就数量:", achievementResponseData.totalNormalCount)
-        else
-            gg.log("警告: 玩家", uin, "的天赋成就数据不存在，跳过天赋数据同步")
-        end
+    -- 【重构】调用成就事件管理器来处理所有成就数据的同步
+    AchievementEventManager.NotifyAllDataToClient(uin)
 
     gg.log("已向客户端", uin, "同步完整玩家数据")
 end

@@ -18,6 +18,8 @@ AchievementEventConfig.REQUEST = {
     UPGRADE_TALENT = "AchievementRequest_UpgradeTalent",        -- 升级天赋成就
     GET_UPGRADE_PREVIEW = "AchievementRequest_GetUpgradePreview", -- 获取升级预览
     SYNC_DATA = "AchievementRequest_SyncData",                  -- 请求同步数据
+    GET_TALENT_LEVEL = "AchievementRequest_GetTalentLevel",       -- 获取天赋等级
+    PERFORM_TALENT_ACTION = "AchievementRequest_PerformTalentAction", -- 执行天赋动作
 }
 
 -- 服务器响应事件
@@ -27,6 +29,8 @@ AchievementEventConfig.RESPONSE = {
     UPGRADE_RESPONSE = "AchievementResponse_Upgrade",           -- 升级响应
     PREVIEW_RESPONSE = "AchievementResponse_Preview",           -- 升级预览响应
     SYNC_RESPONSE = "AchievementResponse_Sync",                 -- 同步响应
+    GET_TALENT_LEVEL_RESPONSE = "AchievementResponse_GetTalentLevel", -- 获取天赋等级响应
+    PERFORM_TALENT_ACTION_RESPONSE = "AchievementResponse_PerformTalentAction", -- 执行天赋动作响应
     ERROR = "AchievementResponse_Error",                        -- 错误响应
 }
 

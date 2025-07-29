@@ -86,22 +86,101 @@ function ActionCosteRewardCal:_CalculateValue(expression, playerData, bagData, e
         return nil
     end
 
+    -- 1. 替换变量，得到一个纯粹的表达式字符串
     local processedExpression = self:_ProcessExpression(expression, playerData, bagData, externalContext)
     
-    local func, err = load("return " .. processedExpression, "expression", "t", {})
-    if not func then
-        gg.log("错误: [ActionCosteRewardCal] 表达式加载失败: '" .. tostring(processedExpression) .. "'. 错误: " .. err)
-        return nil
-    end
+    -- 2. 使用新的安全解析器来代替 load()
+    local success, result = xpcall(self._ParseAndEvaluate, gg.log, self, processedExpression)
 
-    local success, result = pcall(func)
     if not success then
-        gg.log("错误: [ActionCosteRewardCal] 表达式计算失败: '" .. tostring(processedExpression) .. "'. 错误: " .. result)
+        gg.log("错误: [ActionCosteRewardCal] 安全表达式解析失败: '" .. tostring(processedExpression) .. "'. 错误: " .. tostring(result))
         return nil
     end
 
     return result
 end
+
+--- 运算符优先级和执行函数的定义
+ActionCosteRewardCal._operators = {
+    ["<"]  = {prec = 1, func = function(a, b) return a < b end},
+    ["<="] = {prec = 1, func = function(a, b) return a <= b end},
+    [">"]  = {prec = 1, func = function(a, b) return a > b end},
+    [">="] = {prec = 1, func = function(a, b) return a >= b end},
+    ["=="] = {prec = 1, func = function(a, b) return a == b end},
+    ["~="] = {prec = 1, func = function(a, b) return a ~= b end},
+    ["+"]  = {prec = 2, func = function(a, b) return a + b end},
+    ["-"]  = {prec = 2, func = function(a, b) return a - b end},
+    ["*"]  = {prec = 3, func = function(a, b) return a * b end},
+    ["/"]  = {prec = 3, func = function(a, b) return b == 0 and 0 or a / b end},
+}
+
+--- 安全地解析和计算表达式，取代 load()
+---@param expression string 只包含数字和运算符的字符串
+function ActionCosteRewardCal:_ParseAndEvaluate(expression)
+    expression = expression:gsub("^%s+", ""):gsub("%s+$", "")
+
+    -- 1. 分词 (Tokenizer)
+    local tokens = {}
+    -- 这个正则表达式会匹配数字 (包括负数和小数) 和我们支持的运算符
+    for token in expression:gmatch("(-?%d+%.?%d*|[%+%-%*%/<>~=]=?)") do
+        local num = tonumber(token)
+        table.insert(tokens, num or token)
+    end
+
+    -- 2. 特殊情况处理: 链式比较 (A op B op C)
+    if #tokens == 5 and type(tokens[1]) == 'number' and type(tokens[3]) == 'number' and type(tokens[5]) == 'number' then
+        local op1, op2 = tokens[2], tokens[4]
+        -- 确保两个都是比较运算符
+        if self._operators[op1] and self._operators[op1].prec == 1 and self._operators[op2] and self._operators[op2].prec == 1 then
+            local a, b, c = tokens[1], tokens[3], tokens[5]
+            local res1 = self._operators[op1].func(a, b)
+            local res2 = self._operators[op2].func(b, c)
+            return res1 and res2
+        end
+    end
+
+    -- 3. 标准表达式求值 (Shunting-yard based)
+    local values = {} -- 输出栈
+    local ops = {}    -- 操作符栈
+
+    local function applyOp()
+        if #ops > 0 and #values >= 2 then
+            local op = table.remove(ops)
+            local b = table.remove(values)
+            local a = table.remove(values)
+            table.insert(values, self._operators[op].func(a, b))
+        else
+            error("无效的表达式，操作符或操作数不匹配")
+        end
+    end
+
+    for _, token in ipairs(tokens) do
+        if type(token) == "number" then
+            table.insert(values, token)
+        elseif self._operators[token] then
+            local o1_prec = self._operators[token].prec
+            while #ops > 0 and self._operators[ops[#ops]] and o1_prec <= self._operators[ops[#ops]].prec do
+                applyOp()
+            end
+            table.insert(ops, token)
+        else
+            error("未知的标记: " .. tostring(token))
+        end
+    end
+
+    while #ops > 0 do
+        applyOp()
+    end
+
+    if #values == 1 then
+        return values[1]
+    elseif #values == 0 and #tokens > 0 then
+         error("表达式 '"..expression.."' 解析后无结果, 请检查配置")
+    else
+        return values[#values] -- 处理只有一个数字的表达式
+    end
+end
+
 
 --- 预处理表达式，将所有变量替换为实际数值
 ---@param expression string 原始表达式

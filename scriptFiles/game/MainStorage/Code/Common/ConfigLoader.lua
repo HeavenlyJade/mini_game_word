@@ -5,6 +5,7 @@
 local MainStorage = game:GetService('MainStorage')
 
 -- 引用所有 Type 的定义
+
 local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType)
 local SkillTypes = require(MainStorage.Code.Common.TypeConfig.SkillTypes) 
 local EffectType = require(MainStorage.Code.Common.TypeConfig.EffectType)
@@ -12,9 +13,11 @@ local LevelType = require(MainStorage.Code.Common.TypeConfig.LevelType)
 local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType)
 local AchievementType = require(MainStorage.Code.Common.TypeConfig.AchievementType)
 local PetType = require(MainStorage.Code.Common.TypeConfig.PetType)
-local ActionCostType = require(MainStorage.Code.Common.TypeConfig.ActionCostType)
+local ActionCostType = require(MainStorage.Code.Common.TypeConfig.ActionCostType) ---@type ActionCostType
 
 -- 引用所有 Config 的原始数据
+local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig)
+
 local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig)
 local SkillConfig = require(MainStorage.Code.Common.Config.SkillConfig)
 local EffectTypeConfig = require(MainStorage.Code.Common.Config.EffectTypeConfig)
@@ -23,7 +26,7 @@ local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig)
 local AchievementConfig = require(MainStorage.Code.Common.Config.AchievementConfig)
 local PetConfig = require(MainStorage.Code.Common.Config.PetConfig)
 local PartnerConfig = require(MainStorage.Code.Common.Config.PartnerConfig)
-local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig)
+
 -- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) -- 已移除
 -- local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) -- 已移除
 
@@ -70,7 +73,7 @@ end
 -- 模块初始化函数，一次性加载所有配置
 function ConfigLoader.Init()
     print("开始装载配置")
-
+    ConfigLoader.LoadConfig(ActionCostConfig, ActionCostType, ConfigLoader.ActionCosts, "ActionCost")
     ConfigLoader.LoadConfig(ItemTypeConfig, ItemType, ConfigLoader.Items, "Item")
     ConfigLoader.LoadConfig(SkillConfig, SkillTypes, ConfigLoader.Skills, "Skill")
     ConfigLoader.LoadConfig(EffectTypeConfig, EffectType, ConfigLoader.Effects, "Effect")
@@ -79,7 +82,6 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(AchievementConfig, AchievementType, ConfigLoader.Achievements, "Achievement")
     ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
     ConfigLoader.LoadConfig(PartnerConfig, PetType, ConfigLoader.Partners, "Partner") -- 使用PetType因为格式相同
-    ConfigLoader.LoadConfig(ActionCostConfig, ActionCostType, ConfigLoader.ActionCosts, "ActionCost")
     -- ConfigLoader.LoadConfig(ItemQualityConfig, nil, ConfigLoader.ItemQualities, "ItemQuality") -- 暂无ItemQualityType
     -- ConfigLoader.LoadConfig(MailConfig, nil, ConfigLoader.Mails, "Mail") -- 暂无MailType
     -- ConfigLoader.LoadConfig(NpcConfig, nil, ConfigLoader.Npcs, "Npc") -- 暂无NpcType

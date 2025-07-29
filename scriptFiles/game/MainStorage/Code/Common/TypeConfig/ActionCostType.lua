@@ -16,16 +16,12 @@ local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Acti
 ---@field Segments CostSegment[] 数量分段
 
 ---@class ActionCostType : Class
----@field ConfigType string 配置类型
----@field ConfigName string 配置名称
 ---@field CostList CostItem[] 消耗列表
 local ActionCostType = ClassMgr.Class("ActionCostType")
 
 --- 初始化
 ---@param configData table<string, any> 从 ActionCostConfig.lua 中读取的单条原始配置数据
 function ActionCostType:OnInit(configData)
-    self.ConfigType = configData['配置类型'] or "未知类型"
-    self.ConfigName = configData['配置名称'] or "未命名配置"
     self.CostList = {}
 
     local rawCostList = configData['消耗列表'] or {}

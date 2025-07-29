@@ -28,27 +28,36 @@ local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Achi
 ---@field unlockRewards table[] 解锁奖励列表
 ---@field maxLevel number|nil 最大等级 (天赋成就专用)
 ---@field upgradeConditions UpgradeCondition[]|nil 升级条件列表 (天赋成就专用)
+---@field costConfigName string|nil 消耗配置名称，关联到ActionCostConfig
+---@field actionCostType ActionCostType|nil 对应的消耗配置实例
 ---@field levelEffects LevelEffect[]|nil 等级效果列表 (天赋成就专用)
 local AchievementType = ClassMgr.Class("AchievementType")
 
 --- 初始化成就类型
 ---@param data table 配置数据
 function AchievementType:OnInit(data)
+   local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
    -- 基本信息
    self.id = data["名字"]
    self.name = data["名字"]
    self.type = data["类型"] or "普通成就"
    self.description = data["描述"] or ""
    self.icon = data["图标"] or ""
-   self.sort = data["排序"] or 1 
+   self.sort = data["排序"] or 1
    -- 解锁相关
    self.unlockConditions = data["解锁条件"] or {}
    self.unlockRewards = data["解锁奖励"] or {}
-   
+
    -- 天赋成就专用字段
    self.maxLevel = data["最大等级"]
    self.upgradeConditions = data["升级条件"]
    self.levelEffects = data["等级效果"]
+   self.costConfigName = data["消耗配置"]
+   if self.costConfigName then
+       self.actionCostType = ConfigLoader.GetActionCost(self.costConfigName)
+   else
+       self.actionCostType = nil
+   end
 end
 
 --- 是否为天赋成就
@@ -76,14 +85,14 @@ function AchievementType:GetLevelEffect(level)
    if not self.levelEffects then
        return nil
    end
-   
+
    for _, effect in ipairs(self.levelEffects) do
        if effect["等级"] == level or not effect["等级"] then
            -- 如果没有指定等级，说明是通用效果公式
            return effect
        end
    end
-   
+
    return nil
 end
 
@@ -101,29 +110,38 @@ end
 
 --- 获取升级消耗
 ---@param currentLevel number 当前等级
----@return table[] 消耗列表
-function AchievementType:GetUpgradeCosts(currentLevel)
-   if not self.upgradeConditions then
-       return {}
-   end
-   
-   local costs = {}
-   for _, condition in ipairs(self.upgradeConditions) do
-       local itemName = condition["消耗物品"]
-       local costFormula = condition["消耗数量"]
-       
-       if itemName and costFormula and itemName ~= "" and costFormula ~= "" then
-           local amount = self:GetUpgradeCostValue(costFormula, currentLevel)
-           if amount > 0 then
-               table.insert(costs, {
-                   item = itemName,
-                   amount = amount
-               })
+---@param playerData table 玩家数据
+---@param bagData table 背包数据
+---@return table<string, number> 消耗列表, key为消耗名称, value为数量
+function AchievementType:GetUpgradeCosts(currentLevel, playerData, bagData)
+   local finalCosts = {}
+
+   -- 1. 处理旧的'升级条件'
+   if self.upgradeConditions then
+       for _, condition in ipairs(self.upgradeConditions) do
+           local itemName = condition["消耗物品"]
+           local costFormula = condition["消耗数量"]
+
+           if itemName and costFormula and itemName ~= "" and costFormula ~= "" then
+               local amount = self:GetUpgradeCostValue(costFormula, currentLevel)
+               if amount and amount > 0 then
+                   finalCosts[itemName] = (finalCosts[itemName] or 0) + amount
+               end
            end
        end
    end
-   
-   return costs
+
+   -- 2. 处理新的'消耗配置'
+   if self.actionCostType then
+       local externalContext = { T_LVL = currentLevel }
+       local actionCosts = self.actionCostType:GetActionCosts(playerData, bagData, externalContext)
+
+       for name, amount in pairs(actionCosts) do
+           finalCosts[name] = (finalCosts[name] or 0) + amount
+       end
+   end
+
+   return finalCosts
 end
 
 --- 获取升级消耗数值
