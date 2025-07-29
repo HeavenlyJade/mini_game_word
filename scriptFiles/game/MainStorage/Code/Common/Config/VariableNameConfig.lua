@@ -1,4 +1,4 @@
-﻿-- VariableNameConfig.lua
+-- VariableNameConfig.lua
 -- Generated from VariableNames.json. Any custom code will be overwritten.
 
 local VariableNameConfig = {}
