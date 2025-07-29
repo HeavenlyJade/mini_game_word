@@ -20,6 +20,13 @@ local CALCULATOR_CLASSES = {
     ['飞车挑战赛'] = require(MainStorage.Code.GameReward.RewardCalc.RaceRewardCal),
     ['成就天赋'] = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal), -- 新增
     ['宠物公式'] = require(MainStorage.Code.GameReward.RewardCalc.PetFormulaCalc), -- 新增
+    
+    -- 新增：将所有基于配置文件的通用计算都指向这个计算器
+    ['通用公式奖励'] = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal),
+    -- 示例：如果未来有一个“生存挑战”玩法，其奖励完全由ActionCostConfig驱动，
+    -- 你可以在这里添加一行:
+    -- ['生存挑战'] = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal),
+    -- 然后在关卡配置中设置 '默认玩法' = '生存挑战' 和 '公式配置ID' = '生存挑战奖励配置' 即可。
 
     -- ['时间挑战赛'] = require(MainStorage.Code.GameReward.RewardCalc.TimeTrialRewardCal), -- 预留
 }
@@ -70,7 +77,6 @@ function RewardManager.CalculateRewards(playerData, rewardConfig)
         -- GetCalculator 中已记录日志
         return nil
     end
-
     -- 验证数据和配置的有效性
     if not calculator:ValidatePlayerData(playerData) or not calculator:ValidateConfig(rewardConfig) then
         return nil

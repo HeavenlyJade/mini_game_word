@@ -7,11 +7,29 @@ local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
+-- 模拟重生事件配置, 实际项目中应放在独立的事件文件中
+local RebirthEventConfig = {
+    REQUEST = {
+        GET_REBIRTH_DATA = "Rebirth.GetRebirthData",
+        PERFORM_REBIRTH = "Rebirth.PerformRebirth",
+        PERFORM_MAX_REBIRTH = "Rebirth.PerformMaxRebirth",
+        TOGGLE_AUTO_REBIRTH = "Rebirth.ToggleAutoRebirth",
+    },
+    RESPONSE = {
+        REBIRTH_DATA = "Rebirth.Response.RebirthData",
+        REBIRTH_SUCCESS = "Rebirth.Response.RebirthSuccess",
+        ERROR = "Rebirth.Response.Error",
+    },
+    NOTIFY = {
+        REBIRTH_DATA_UPDATE = "Rebirth.Notify.DataUpdate",
+    },
+}
+
 local uiConfig = {
     uiName = "RebirthGui",
     layer = 3,
     hideOnInit = true,
-    closeHuds = true,  -- 改为true，正确管理layer=0界面
+    closeHuds = true,
 }
 
 ---@class RebirthGui:ViewBase
@@ -19,181 +37,239 @@ local RebirthGui = ClassMgr.Class("RebirthGui", ViewBase)
 
 ---@override
 function RebirthGui:OnInit(node, config)
-    -- UI组件初始化 - 所有组件都在"重生界面"节点下
+    -- 1. 节点初始化
     self.rebirthMainPanel = self:Get("重生界面", ViewComponent) ---@type ViewComponent
-
     self.closeButton = self:Get("重生界面/关闭", ViewButton) ---@type ViewButton
+
+    -- 重生介绍与数值
     self.rebirthIntro = self:Get("重生界面/重生介绍", ViewComponent) ---@type ViewComponent
     self.rebirthStats = self:Get("重生界面/重生数值", ViewComponent) ---@type ViewComponent
-    
-    -- 重生栏位相关组件
-    self.rebirthLevelList = self:Get("重生界面/重生栏位", ViewList) ---@type ViewList
-    self.maxRebirthSection = self:Get("重生界面/重生栏位/最大重生", ViewComponent) ---@type ViewComponent
-    self.maxRebirthDisplay = self:Get("重生界面/重生栏位/最大重生/最大重生", ViewComponent) ---@type ViewComponent
-    self.maxRebirthValues = self:Get("重生界面/重生栏位/最大重生/可重生次数", ViewComponent) ---@type ViewComponent
-    self.maxRebirthTips = self:Get("重生界面/重生栏位/最大重生/重生消耗", ViewComponent) ---@type ViewComponent
-    
-    -- 重生操作按钮
-    self.rebirthSection = self:Get("重生界面/重生栏位/重生", ViewComponent) ---@type ViewComponent
-    self.rebirthButton = self:Get("重生界面/重生栏位/重生/重生", ViewButton) ---@type ViewButton
-    self.rebirthCost = self:Get("重生界面/重生栏位/重生/可重生次数", ViewComponent) ---@type ViewComponent
-    self.rebirthConsume = self:Get("重生界面/重生栏位/重生/重生消耗", ViewComponent) ---@type ViewComponent
-    
-    -- 自动重生功能
-    self.autoRebirthSection = self:Get("重生界面/重生栏位/自动重生", ViewComponent) ---@type ViewComponent
-    self.autoRebirthToggle = self:Get("重生界面/重生栏位/自动重生/迷你币", ViewButton) ---@type ViewButton
-    self.autoRebirthStatus = self:Get("重生界面/重生栏位/自动重生/需求迷你币", ViewComponent) ---@type ViewComponent
 
-    -- 数据存储
-    self.rebirthCount = 0 ---@type number 当前重生次数
-    self.rebirthRequirement = {} ---@type table 重生条件
-    self.autoRebirthEnabled = false ---@type boolean 自动重生状态
-    self.miniCoinCost = 0 ---@type number 自动重生所需迷你币数量
-    self.rebirthHistoryData = {} ---@type table 重生历史数据
-
-    -- 为重生栏位UIList设置回调
-    local function createRebirthHistoryItem(itemNode)
-        local component = ViewComponent.New(itemNode, self)
-        return component
+    -- 重生历史记录列表
+    self.rebirthHistoryList = self:Get("重生界面/重生栏位", ViewList) ---@type ViewList
+    -- 模板节点需要根据实际UI编辑器中的命名来确定，这里假设它在"模版界面"下
+    self.historyTemplate = self:Get("重生界面/模版界面/模版界面", ViewComponent) ---@type ViewComponent
+    if self.historyTemplate and self.historyTemplate.node then
+        self.historyTemplate.node.Visible = false
     end
-    self.rebirthLevelList.onAddElementCb = createRebirthHistoryItem
 
-    -- 初始化UI状态
-    self:InitializeRebirthUI()
+    -- 主要重生按钮 (根据图片 "重生 +")
+    self.rebirthButton = self:Get("重生界面/重生 +/重生", ViewButton) ---@type ViewButton
+    self.rebirthCountText = self:Get("重生界面/重生 +/可重生次数", ViewComponent) ---@type ViewComponent
+    self.rebirthCostText = self:Get("重生界面/重生 +/重生消耗", ViewComponent) ---@type ViewComponent
 
-    -- 注册事件
+    -- 其他功能按钮
+    self.maxRebirthButton = self:Get("重生界面/最大重生", ViewButton) ---@type ViewButton
+    self.autoRebirthButton = self:Get("重生界面/自动重生", ViewButton) ---@type ViewButton
+
+    -- 2. 数据存储
+    self.rebirthData = nil ---@type table 服务端同步的重生数据
+    self.autoRebirthEnabled = false ---@type boolean 自动重生状态
+
+    -- 3. 事件注册
     self:RegisterEvents()
     self:RegisterButtonEvents()
 
     gg.log("RebirthGui 初始化完成")
 end
 
--- 初始化重生界面
-function RebirthGui:InitializeRebirthUI()
-    gg.log("初始化重生界面UI状态")
-    
-    -- 设置初始显示状态
-    self:UpdateRebirthDisplay()
-    self:UpdateAutoRebirthStatus()
-    
-    -- 隐藏暂时不用的组件
-    -- 如果有需要隐藏的组件，在这里设置
-end
+-- =================================
+-- 事件注册
+-- =================================
 
--- 注册事件监听
 function RebirthGui:RegisterEvents()
     gg.log("注册重生系统事件监听")
     
-    -- 这里后续添加与服务端的事件通信
-    -- 例如：重生成功/失败响应、数据更新通知等
+    ClientEventManager.Subscribe(RebirthEventConfig.RESPONSE.REBIRTH_DATA, function(data)
+        self:OnRebirthDataResponse(data)
+    end)
+
+    ClientEventManager.Subscribe(RebirthEventConfig.NOTIFY.REBIRTH_DATA_UPDATE, function(data)
+        self:OnRebirthDataUpdate(data)
+    end)
+
+    ClientEventManager.Subscribe(RebirthEventConfig.RESPONSE.ERROR, function(data)
+        gg.log("重生系统错误: " .. (data.errorMessage or "未知错误"))
+        -- TODO: 向玩家显示错误提示
+    end)
 end
 
--- 注册按钮事件
 function RebirthGui:RegisterButtonEvents()
     -- 关闭按钮
     self.closeButton.clickCb = function()
         self:Close()
-        gg.log("重生界面已关闭")
     end
     
     -- 重生按钮
     self.rebirthButton.clickCb = function()
-        self:OnRebirthButtonClick()
+        self:OnClickRebirth()
     end
     
-    -- 迷你币自动重生切换
-    self.autoRebirthToggle.clickCb = function()
-        self:OnAutoRebirthToggle()
+    -- 最大重生按钮
+    self.maxRebirthButton.clickCb = function()
+        self:OnClickMaxRebirth()
+    end
+
+    -- 自动重生切换
+    self.autoRebirthButton.clickCb = function()
+        self:OnClickAutoRebirth()
     end
 
     gg.log("重生界面按钮事件注册完成")
 end
 
--- 更新重生显示
-function RebirthGui:UpdateRebirthDisplay()
-    gg.log("更新重生显示数据")
-    
-    -- 更新重生次数显示
-    -- 更新重生条件和消耗显示
-    -- 更新按钮状态
-    
-    -- 后续在这里实现具体的UI更新逻辑
-end
+-- =================================
+-- 界面生命周期
+-- =================================
 
--- 更新自动重生状态显示
-function RebirthGui:UpdateAutoRebirthStatus()
-    gg.log("更新自动重生状态显示")
-    
-    -- 更新迷你币需求显示
-    -- 更新自动重生按钮状态
-    
-    -- 后续在这里实现具体的状态更新逻辑
-end
-
--- 处理重生按钮点击
-function RebirthGui:OnRebirthButtonClick()
-    gg.log("重生按钮被点击")
-    
-    if self:CheckRebirthRequirements() then
-        self:ExecuteRebirth()
-    else
-        gg.log("重生条件不足")
-    end
-end
-
--- 处理迷你币自动重生切换
-function RebirthGui:OnAutoRebirthToggle()
-    gg.log("自动重生开关被点击")
-    
-    if self:CheckMiniCoinRequirement() then
-        self.autoRebirthEnabled = not self.autoRebirthEnabled
-        self:UpdateAutoRebirthStatus()
-        gg.log("迷你币自动重生状态:", self.autoRebirthEnabled and "开启" or "关闭")
-    else
-        gg.log("迷你币不足，无法开启自动重生")
-    end
-end
-
--- 检查重生条件
-function RebirthGui:CheckRebirthRequirements()
-    gg.log("检查重生条件")
-    
-    -- 后续实现具体的重生条件检查逻辑
-    -- 例如：等级、金币、经验等条件
-    return true -- 临时返回true
-end
-
--- 检查迷你币需求
-function RebirthGui:CheckMiniCoinRequirement()
-    gg.log("检查迷你币需求")
-    
-    -- 后续实现具体的迷你币检查逻辑
-    return true -- 临时返回true
-end
-
--- 执行重生操作
-function RebirthGui:ExecuteRebirth()
-    gg.log("执行重生操作")
-    
-    -- 后续实现具体的重生逻辑
-    -- 发送重生请求到服务端
-    -- 处理重生结果
-end
-
--- 打开界面时的操作
+---@override
 function RebirthGui:OnOpen()
-    gg.log("RebirthGui打开，刷新重生数据")
-    
-    -- 请求最新的重生数据
-    -- 更新界面显示
-    self:UpdateRebirthDisplay()
+    gg.log("RebirthGui打开，请求最新重生数据")
+    self:RequestRebirthData()
 end
 
--- 关闭界面时的操作
+---@override
 function RebirthGui:OnClose()
     gg.log("RebirthGui关闭")
+    -- 可选：清理临时数据
+    self.rebirthData = nil
+end
+
+-- =================================
+-- 数据请求与响应
+-- =================================
+
+function RebirthGui:RequestRebirthData()
+    gg.log("请求重生数据")
+    gg.network_channel:fireServer({ cmd = RebirthEventConfig.REQUEST.GET_REBIRTH_DATA, args = {} })
+end
+
+function RebirthGui:OnRebirthDataResponse(data)
+    gg.log("收到重生数据响应:", data)
+    if not data then return end
+    self.rebirthData = data
+    self.autoRebirthEnabled = data.isAutoRebirthEnabled or false
+    self:RefreshAllDisplay()
+end
+
+function RebirthGui:OnRebirthDataUpdate(data)
+    gg.log("收到重生数据更新通知:", data)
+    if not data then return end
+    self.rebirthData = data
+    self.autoRebirthEnabled = data.isAutoRebirthEnabled or false
+    self:RefreshAllDisplay()
+end
+
+-- =================================
+-- 按钮操作处理
+-- =================================
+
+function RebirthGui:OnClickRebirth()
+    gg.log("点击重生按钮")
+    if not self.rebirthData or not self.rebirthData.canRebirth then
+        gg.log("不满足重生条件，无法重生")
+        -- TODO: 显示提示给玩家
+        return
+    end
+    gg.network_channel:fireServer({ cmd = RebirthEventConfig.REQUEST.PERFORM_REBIRTH, args = {} })
+end
+
+function RebirthGui:OnClickMaxRebirth()
+    gg.log("点击最大重生按钮")
+    if not self.rebirthData or not self.rebirthData.canRebirth then
+        gg.log("不满足重生条件，无法最大重生")
+        -- TODO: 显示提示给玩家
+        return
+    end
+    gg.network_channel:fireServer({ cmd = RebirthEventConfig.REQUEST.PERFORM_MAX_REBIRTH, args = {} })
+end
+
+function RebirthGui:OnClickAutoRebirth()
+    gg.log("点击自动重生切换按钮")
+    self.autoRebirthEnabled = not self.autoRebirthEnabled
+    gg.log("自动重生状态切换为:", self.autoRebirthEnabled)
+
+    gg.network_channel:fireServer({
+        cmd = RebirthEventConfig.REQUEST.TOGGLE_AUTO_REBIRTH,
+        args = { enable = self.autoRebirthEnabled }
+    })
+end
+
+-- =================================
+-- UI刷新方法
+-- =================================
+
+function RebirthGui:RefreshAllDisplay()
+    gg.log("刷新整个重生界面")
+    if not self.rebirthData then
+        gg.log("无重生数据，隐藏界面内容")
+        -- 可能需要隐藏主要面板或显示加载状态
+        return
+    end
+
+    self:RefreshRebirthInfo()
+    self:RefreshRebirthButtons()
+    self:RefreshHistoryList()
+end
+
+--- 更新重生信息显示
+function RebirthGui:RefreshRebirthInfo()
+    if not self.rebirthData then return end
     
-    -- 清理临时数据或状态
+    -- 更新重生次数和消耗
+    if self.rebirthCountText and self.rebirthCountText.node then
+        self.rebirthCountText.node.Title = "可重生 " .. (self.rebirthData.rebirthCount or 0) .. " 次"
+    end
+    if self.rebirthCostText and self.rebirthCostText.node then
+        self.rebirthCostText.node.Title = "消耗: " .. (self.rebirthData.costDescription or "N/A")
+    end
+
+    -- 更新重生统计数值
+    if self.rebirthStats and self.rebirthStats.node then
+        -- 假设重生数值是一个文本节点，内容由服务端提供
+        self.rebirthStats.node.Title = self.rebirthData.statsText or ""
+    end
+end
+
+--- 更新所有按钮的状态
+function RebirthGui:RefreshRebirthButtons()
+    if not self.rebirthData then return end
+    
+    local canRebirth = self.rebirthData.canRebirth or false
+    
+    self.rebirthButton:SetTouchEnable(canRebirth)
+    self.rebirthButton:SetGray(not canRebirth)
+    
+    self.maxRebirthButton:SetTouchEnable(canRebirth)
+    self.maxRebirthButton:SetGray(not canRebirth)
+
+end
+
+--- 刷新自动重生按钮状态
+
+--- 刷新重生历史记录
+function RebirthGui:RefreshHistoryList()
+    if not self.rebirthHistoryList or not self.rebirthData or not self.rebirthData.history then
+        return
+    end
+
+    self.rebirthHistoryList:ClearChildren()
+    
+    if not self.historyTemplate or not self.historyTemplate.node then
+        gg.log("找不到重生历史模板")
+        return
+    end
+
+    for i, historyEntry in ipairs(self.rebirthData.history) do
+        local itemNode = self.historyTemplate.node:Clone()
+        itemNode.Visible = true
+        
+        -- 假设模板的根节点可以直接设置文本，或者需要查找子节点
+        -- 这里假设模板根节点就是文本项
+        itemNode.Title = string.format("第 %d 次重生: %s", i, historyEntry.description)
+        
+        self.rebirthHistoryList:AppendChild(itemNode)
+    end
 end
 
 return RebirthGui.New(script.Parent, uiConfig)
