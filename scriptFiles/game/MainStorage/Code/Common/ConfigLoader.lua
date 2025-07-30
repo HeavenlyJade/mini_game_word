@@ -10,9 +10,10 @@ local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType)
 local SkillTypes = require(MainStorage.Code.Common.TypeConfig.SkillTypes) 
 local EffectType = require(MainStorage.Code.Common.TypeConfig.EffectType)
 local LevelType = require(MainStorage.Code.Common.TypeConfig.LevelType)
+local PetType = require(MainStorage.Code.Common.TypeConfig.PetType)
+local PlayerInitType = require(MainStorage.Code.Common.TypeConfig.PlayerInitType)
 local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType)
 local AchievementType = require(MainStorage.Code.Common.TypeConfig.AchievementType)
-local PetType = require(MainStorage.Code.Common.TypeConfig.PetType)
 local ActionCostType = require(MainStorage.Code.Common.TypeConfig.ActionCostType) ---@type ActionCostType
 
 -- 引用所有 Config 的原始数据
@@ -26,6 +27,9 @@ local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig)
 local AchievementConfig = require(MainStorage.Code.Common.Config.AchievementConfig)
 local PetConfig = require(MainStorage.Code.Common.Config.PetConfig)
 local PartnerConfig = require(MainStorage.Code.Common.Config.PartnerConfig)
+local PlayerInitConfig = require(MainStorage.Code.Common.Config.PlayerInitConfig)
+local VariableNameConfig = require(MainStorage.Code.Common.Config.VariableNameConfig)
+local GameModeConfig = require(MainStorage.Code.Common.Config.GameModeConfig)
 
 -- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) -- 已移除
 -- local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) -- 已移除
@@ -46,6 +50,10 @@ ConfigLoader.Achievements = {}
 ConfigLoader.Pets = {}
 ConfigLoader.Partners = {} -- 新增伙伴配置存储
 ConfigLoader.ActionCosts = {}
+ConfigLoader.ItemTypes = {}
+ConfigLoader.PlayerInits = {}
+ConfigLoader.VariableNames = {}
+ConfigLoader.GameModes = {}
 
 --- 一个通用的加载函数，避免重复代码
 ---@param configData table 从Config目录加载的原始数据
@@ -74,14 +82,16 @@ end
 function ConfigLoader.Init()
     print("开始装载配置")
     ConfigLoader.LoadConfig(ActionCostConfig, ActionCostType, ConfigLoader.ActionCosts, "ActionCost")
-    ConfigLoader.LoadConfig(ItemTypeConfig, ItemType, ConfigLoader.Items, "Item")
-    ConfigLoader.LoadConfig(SkillConfig, SkillTypes, ConfigLoader.Skills, "Skill")
-    ConfigLoader.LoadConfig(EffectTypeConfig, EffectType, ConfigLoader.Effects, "Effect")
+    ConfigLoader.LoadConfig(ItemTypeConfig, ItemType, ConfigLoader.ItemTypes, "ItemType")
     ConfigLoader.LoadConfig(LevelConfig, LevelType, ConfigLoader.Levels, "Level")
-    ConfigLoader.LoadConfig(SceneNodeConfig, SceneNodeType, ConfigLoader.SceneNodes, "SceneNode")
-    ConfigLoader.LoadConfig(AchievementConfig, AchievementType, ConfigLoader.Achievements, "Achievement")
+    ConfigLoader.LoadConfig(ActionCostConfig, ActionCostType, ConfigLoader.ActionCosts, "ActionCost")
+    ConfigLoader.LoadConfig(PartnerConfig, PetType, ConfigLoader.Partners, "Partner")
     ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
-    ConfigLoader.LoadConfig(PartnerConfig, PetType, ConfigLoader.Partners, "Partner") -- 使用PetType因为格式相同
+    ConfigLoader.LoadConfig(PlayerInitConfig, PlayerInitType, ConfigLoader.PlayerInits, "PlayerInit")
+    ConfigLoader.LoadConfig(SceneNodeConfig, SceneNodeType, ConfigLoader.SceneNodes, "SceneNode")
+    ConfigLoader.LoadConfig(VariableNameConfig,nil,ConfigLoader.VariableNames,"VariableName")
+    ConfigLoader.LoadConfig(GameModeConfig,nil,ConfigLoader.GameModes,"GameMode")
+    ConfigLoader.LoadConfig(SkillConfig, SkillTypes, ConfigLoader.Skills, "Skill")
     -- ConfigLoader.LoadConfig(ItemQualityConfig, nil, ConfigLoader.ItemQualities, "ItemQuality") -- 暂无ItemQualityType
     -- ConfigLoader.LoadConfig(MailConfig, nil, ConfigLoader.Mails, "Mail") -- 暂无MailType
     -- ConfigLoader.LoadConfig(NpcConfig, nil, ConfigLoader.Npcs, "Npc") -- 暂无NpcType
@@ -119,6 +129,17 @@ end
 
 function ConfigLoader.GetLevel(id)
     return ConfigLoader.Levels[id]
+end
+
+---@param id string
+---@return PlayerInitType
+function ConfigLoader.GetPlayerInit(id)
+    return ConfigLoader.PlayerInits[id]
+end
+
+---@return table<string, PlayerInitType>
+function ConfigLoader.GetAllPlayerInits()
+    return ConfigLoader.PlayerInits
 end
 
 ---@param id string

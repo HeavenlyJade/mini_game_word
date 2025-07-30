@@ -22,6 +22,7 @@ local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type P
 local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
+local PlayerInitMgr = require(ServerStorage.MSystems.PlayerInitMgr) ---@type PlayerInitMgr
 
 local cloudDataMgr  = require(ServerStorage.CloundDataMgr.MCloudDataMgr)    ---@type MCloudDataMgr
 
@@ -107,6 +108,8 @@ function MServerInitPlayer.player_enter_game(player)
         return   --加载数据网络层失败
     end
 
+    local isNewPlayer = next(cloud_player_data_) == nil
+
     -- 玩家信息初始化（MPlayer会自动调用initPlayerData初始化背包和邮件）
     ---@type MPlayer
     local player_ = MPlayer.New({
@@ -141,6 +144,10 @@ function MServerInitPlayer.player_enter_game(player)
     --     end
     -- end
     -- player_.inited = true
+
+    -- 【新增】检查并执行新玩家初始化
+
+
     ServerEventManager.Publish("PlayerInited", {player = player_})
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
     AchievementMgr.OnPlayerJoin(uin_)
@@ -148,8 +155,9 @@ function MServerInitPlayer.player_enter_game(player)
     BagMgr.OnPlayerJoin(player_)
     PetMgr.OnPlayerJoin(player_)
     PartnerMgr.OnPlayerJoin(player_)
-    gg.log("玩家", uin_, "登录完成，邮件、背包、宠物、伙伴和天赋数据已加载")
-
+    if isNewPlayer then
+        PlayerInitMgr.InitializeNewPlayer(player_)
+    end
     -- 【重构】玩家上线时，调用伙伴管理器来更新模型显示
     PartnerMgr.UpdateAllEquippedPartnerModels(player_)
     -- 【新增】玩家上线时，调用宠物管理器来更新模型显示

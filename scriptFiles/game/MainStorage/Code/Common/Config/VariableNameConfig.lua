@@ -16,4 +16,5 @@ VariableNameConfig.StatNames = {
     '数据_固定值_攻击力',
 }
 
+
 return VariableNameConfig

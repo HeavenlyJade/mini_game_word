@@ -381,5 +381,44 @@ function BagMgr.HasItemsByCosts(player, costs)
     return bag:HasItems(costMap)
 end
 
+--- 设置玩家物品数量
+---@param uin number 玩家UIN
+---@param itemName string 物品名称
+---@param amount number 目标数量
+---@return boolean 是否成功
+function BagMgr.SetItemAmount(uin, itemName, amount)
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local player = serverDataMgr.getPlayerByUin(uin)
+    if not player then
+        gg.log("BagMgr.SetItemAmount: 玩家不存在", uin)
+        return false
+    end
+
+    local bag = BagMgr.GetOrCreatePlayerBag(uin, player)
+    if not bag then
+        gg.log("BagMgr.SetItemAmount: 玩家背包不存在或创建失败", uin)
+        return false
+    end
+
+    local currentAmount = bag:GetItemAmount(itemName)
+    local diff = amount - currentAmount
+
+    if diff > 0 then
+        -- 需要增加物品
+        local itemData = ItemUtils.CreateItemData(itemName, diff)
+        if not itemData then
+            gg.log("BagMgr.SetItemAmount: 创建物品数据失败", itemName)
+            return false
+        end
+        return bag:AddItem(itemData)
+    elseif diff < 0 then
+        -- 需要减少物品
+        return bag:RemoveItems({ [itemName] = -diff })
+    else
+        -- 数量不变
+        return true
+    end
+end
+
 return BagMgr
 
