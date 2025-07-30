@@ -12,6 +12,77 @@ local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr
 ---@class AchievementEventManager
 local AchievementEventManager = {}
 
+--- 计算玩家可执行某个天赋动作的最大次数 (使用正确的GetVariable)
+---@param player table 玩家对象
+---@param talentConfig table 天赋配置
+---@param currentTalentLevel number 当前天赋等级
+---@return number maxActions可以执行的最大次数
+local function CalculateMaxTalentActionExecutions(player, talentConfig, currentTalentLevel)
+    if not player or not talentConfig or not talentConfig:IsTalentAchievement() or currentTalentLevel == 0 then
+        return 0
+    end
+
+    if not talentConfig.actionCostType or not talentConfig.actionCostType.CostList or #talentConfig.actionCostType.CostList == 0 then
+        gg.log("警告: 天赋 " .. talentConfig.name .. " 没有找到有效的 actionCostType 配置。")
+        return 0
+    end
+
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    local playerBag = BagMgr.GetPlayerBag(player.uin)
+    
+    -- 1. 一次性计算出动作等级1的所有消耗
+    local costsForLevel1 = talentConfig:GetActionCosts(1, player:GetConsumableData(), playerBag)
+    if not costsForLevel1 or #costsForLevel1 == 0 then
+        gg.log("警告: 无法计算天赋动作等级1的消耗，无法计算最大次数。")
+        return 0
+    end
+    
+    -- 将消耗列表转为映射表以便快速查找
+    local costsMap = {}
+    for _, cost in ipairs(costsForLevel1) do
+        costsMap[cost.item] = cost.amount
+    end
+
+    local maxExecutions = math.huge
+
+    -- 2. 遍历配置中定义的所有消耗类型，找出限制最大的那个（瓶颈）
+    for _, costConfigItem in ipairs(talentConfig.actionCostType.CostList) do
+        local resourceName = costConfigItem.Name
+        local resourceSource = costConfigItem.Source
+        
+        local singleCostAmount = costsMap[resourceName]
+
+        if singleCostAmount and singleCostAmount > 0 then
+            -- 3. 根据配置的来源(Source)，获取玩家拥有的资源总量
+            local playerTotalAmount = 0
+            if resourceSource == "玩家变量" then
+                -- 使用正确的 GetVariable 方法
+                if player.variableSystem then
+                    playerTotalAmount = player.variableSystem:GetVariable(resourceName) or 0
+                end
+            else -- 默认为背包物品
+                if playerBag then
+                    playerTotalAmount = playerBag:GetItemAmount(resourceName)
+                end
+            end
+
+            -- 4. 计算此单一资源能支持的最大次数
+            local maxForThisResource = math.floor(playerTotalAmount / singleCostAmount)
+
+            -- 5. 更新全局最大次数，取当前和新计算出的最小值
+            maxExecutions = math.min(maxExecutions, maxForThisResource)
+        end
+    end
+
+    -- 如果maxExecutions从未被更新（例如所有消耗都为0），则返回0
+    if maxExecutions == math.huge then
+        return 0
+    end
+
+    return maxExecutions
+end
+
+
 -- 初始化事件管理器
 function AchievementEventManager.Init()
     AchievementEventManager.RegisterNetworkHandlers()
@@ -178,7 +249,7 @@ end
 
 -- 处理获取天赋等级请求
 function AchievementEventManager.HandleGetTalentLevel(event)
-    gg.log("HandleGetTalentLevel",event)
+    gg.log("HandleGetTalentLevel", event)
     local uin = event.player.uin
     local params = event.args or {}
     local talentId = params.talentId
@@ -212,15 +283,72 @@ function AchievementEventManager.HandleGetTalentLevel(event)
     local playerData = player:GetConsumableData()
 
     for i = 1, currentTalentLevel do
-        -- 这里的i代表的是要执行的重生动作的目标等级成本消耗
-        local costs = talentConfig:GetActionCosts(i, playerData, playerBag)
-        costsByLevel[i] = costs
+        -- 1. 先获取配置的基础消耗值
+        local baseCosts = talentConfig:GetActionCosts(i, playerData, playerBag)
+        
+        -- 2. 获取该等级对应的效果值（即执行次数/乘数）
+        local executionCount = talentConfig:GetLevelEffectValue(i)
+
+        if executionCount and type(executionCount) == "number" and executionCount > 0 then
+            -- 3. 根据业务逻辑，将基础消耗乘以执行次数，得到最终消耗
+            local finalCosts = {}
+            for _, costInfo in ipairs(baseCosts) do
+                table.insert(finalCosts, {
+                    item = costInfo.item,
+                    amount = costInfo.amount * executionCount
+                })
+            end
+            costsByLevel[i] = finalCosts
+        else
+            gg.log(string.format("警告: 天赋 '%s' 等级 %d 的效果值(执行次数)无效或未配置, 无法计算消耗。", talentConfig.name, i))
+            costsByLevel[i] = {} -- 返回空消耗
+        end
+    end
+    
+    -- 计算最大可执行次数
+    local maxExecutions = CalculateMaxTalentActionExecutions(player, talentConfig, currentTalentLevel)
+    gg.log(string.format("玩家 %s 的天赋 '%s' 最大可执行次数为: %d", playerId, talentId, maxExecutions))
+
+    -- 计算最大执行次数的总消耗
+    local maxExecutionTotalCost = 0 -- 改为数值
+    if maxExecutions > 0 then
+        local singleActionCosts = talentConfig:GetActionCosts(1, player:GetConsumableData(), playerBag)
+        if singleActionCosts and #singleActionCosts > 0 then
+            -- 假设“重生”只有一个消耗项
+            local costInfo = singleActionCosts[1]
+            if costInfo then
+                maxExecutionTotalCost = (costInfo.amount or 0) * maxExecutions
+            end
+        end
+    end
+
+    -- 新增：获取玩家当前拥有的相关资源数量，并返回给客户端
+    local playerResources = {}
+    if talentConfig.actionCostType and talentConfig.actionCostType.CostList then
+        for _, costConfigItem in ipairs(talentConfig.actionCostType.CostList) do
+            local resourceName = costConfigItem.Name
+            local resourceSource = costConfigItem.Source
+            local playerTotalAmount = 0
+            if resourceSource == "玩家变量" then
+                if player.variableSystem then
+                    playerTotalAmount = player.variableSystem:GetVariable(resourceName) or 0
+                end
+            else -- 默认为背包物品
+                if playerBag then
+                    playerTotalAmount = playerBag:GetItemAmount(resourceName)
+                end
+            end
+            playerResources[resourceName] = playerTotalAmount
+        end
     end
 
     local responseData = {
         talentId = talentId,
         currentLevel = currentTalentLevel,
-        costsByLevel = costsByLevel -- 将计算出的消耗一并发送给客户端
+        costsByLevel = costsByLevel, 
+        maxExecutions = maxExecutions,
+        maxExecutionTotalCost = maxExecutionTotalCost,
+        playerResources = playerResources -- 新增：玩家资源数据
     }
 
     AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE, responseData)
@@ -357,7 +485,7 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
         end
 
         if not BagMgr.RemoveItemsByCosts(player, costs) then
-            gg.log("最大化重生结束: 扣除材料失败。")
+            gg.log("扣除材料失败。")
             break -- 避免死循环
         end
 

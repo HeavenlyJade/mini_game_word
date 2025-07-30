@@ -80,6 +80,87 @@ function gg.ProcessVariables(formula, caster, target)
     return processedFormula
 end
 
+--- 内部辅助函数：执行两个数字的比较运算
+---@param left number 左操作数
+---@param operator string 比较运算符
+---@param right number 右操作数
+---@return boolean 比较结果
+local function _compareNumbers(left, operator, right)
+    if operator == "<" then
+        return left < right
+    elseif operator == "<=" then
+        return left <= right
+    elseif operator == ">" then
+        return left > right
+    elseif operator == ">=" then
+        return left >= right
+    elseif operator == "==" then
+        return left == right
+    elseif operator == "~=" then
+        return left ~= right
+    else
+        gg.log("错误: [gg.evaluateCondition] 未知的比较运算符:", operator)
+        return false
+    end
+end
+
+--- 通用条件表达式求值器
+--- 专门处理比较运算符的布尔表达式，如 "0 < 1 < 100" 或 "x >= 1000"
+---@param expression string 条件表达式
+---@return boolean 条件是否成立
+function gg.evaluateCondition(expression)
+    if not expression or expression == "" then
+        return true -- 空条件默认为真
+    end
+
+    -- 移除多余空格
+    expression = expression:gsub("%s+", "")
+
+    -- 检查是否包含比较运算符
+    local hasComparison = expression:match("[<>=~]")
+    if not hasComparison then
+        -- 如果没有比较运算符，当作数值表达式处理，非0即为true
+        local result = gg.eval(expression)
+        return result and result ~= 0
+    end
+
+    -- 处理链式比较：A op1 B op2 C (如 0 < 1 < 100)
+    local chainPattern = "^([%d%.%-]+)%s*([<>=]+)%s*([%d%.%-]+)%s*([<>=]+)%s*([%d%.%-]+)$"
+    local a, op1, b, op2, c = expression:match(chainPattern)
+
+    if a and op1 and b and op2 and c then
+        -- 链式比较
+        a, b, c = tonumber(a), tonumber(b), tonumber(c)
+        if not (a and b and c) then
+            gg.log("警告: [gg.evaluateCondition] 链式比较中包含无效数字:", expression)
+            return false
+        end
+
+        local result1 = _compareNumbers(a, op1, b)
+        local result2 = _compareNumbers(b, op2, c)
+
+        return result1 and result2
+    end
+
+    -- 处理单个比较：A op B
+    local singlePattern = "^([%d%.%-]+)%s*([<>=~]+)%s*([%d%.%-]+)$"
+    local left, op, right = expression:match(singlePattern)
+
+    if left and op and right then
+        left, right = tonumber(left), tonumber(right)
+        if not (left and right) then
+            gg.log("警告: [gg.evaluateCondition] 单个比较中包含无效数字:", expression)
+            return false
+        end
+
+        return _compareNumbers(left, op, right)
+    end
+
+    -- 如果无法识别模式，记录警告并返回false
+    gg.log("警告: [gg.evaluateCondition] 无法解析的条件表达式:", expression)
+    return false
+end
+
 --- 复杂数学表达式计算器，支持中文符号和数学函数
 ---@param expr string 数学表达式
 ---@return number 计算结果

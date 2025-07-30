@@ -30,6 +30,10 @@ function RebirthGui:OnInit(node, config)
     self.rebirthList = self:Get("重生界面/重生栏位", ViewList) ---@type ViewList
     self.maxRebirthButton = self:Get("重生界面/重生栏位/最大重生/最大重生", ViewButton) ---@type ViewButton
     
+    -- "最大重生"节点的子控件
+    self.maxRebirthCountText = self:Get("重生界面/重生栏位/最大重生/可重生次数") ---@type UITextLabel
+    self.maxRebirthCostText = self:Get("重生界面/重生栏位/最大重生/重生消耗") ---@type UITextLabel
+    
     -- 模板节点
     self.rebirthTemplate = self:Get("重生界面/模版界面/重生", ViewComponent) ---@type ViewComponent
     if self.rebirthTemplate and self.rebirthTemplate.node then
@@ -57,13 +61,11 @@ function RebirthGui:RegisterEvents()
     -- 监听重生天赋等级数据
     ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE, function(data)
         self:OnTalentLevelResponse(data)
-        
     end)
     
     -- 监听天赋动作执行结果
     ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, function(data)
         self:OnPerformActionResponse(data)
-        
     end)
 end
 
@@ -110,6 +112,10 @@ function RebirthGui:OnTalentLevelResponse(data)
     gg.log("收到天赋等级响应:", data)
     self.currentTalentLevel = data.data.currentLevel
     self.costsByLevel = data.data.costsByLevel or {}
+    self.maxExecutions = data.data.maxExecutions or 0
+    self.maxExecutionTotalCost = data.data.maxExecutionTotalCost or 0
+    self.playerResources = data.data.playerResources or {} -- 新增：存储玩家资源
+
     self:RefreshDisplay()
 end
 
@@ -163,6 +169,9 @@ function RebirthGui:RefreshDisplay()
     
     self.rebirthList:ClearChildren({ "最大重生" })
 
+    -- 刷新最大重生节点
+    self:RefreshMaxRebirthNode()
+
     if not self.rebirthTemplate or not self.rebirthTemplate.node then
         gg.log("错误：找不到重生项模板")
         return
@@ -174,38 +183,63 @@ function RebirthGui:RefreshDisplay()
         return
     end
     
-    for i = 1, self.currentTalentLevel do
+    for level, costs in pairs(self.costsByLevel) do
+        -- 1. 在客户端判断玩家资源是否足够
+        local canAfford = true
+        if costs and #costs > 0 then
+            for _, costInfo in ipairs(costs) do
+                local playerAmount = self.playerResources[costInfo.item] or 0
+                if playerAmount < costInfo.amount then
+                    canAfford = false
+                    break -- 只要有一项资源不够，就跳出循环
+                end
+            end
+        else
+            canAfford = false -- 没有有效消耗配置，也视为不可负担
+        end
+
+        -- 2. 总是创建UI项
         local itemNode = self.rebirthTemplate.node:Clone()
         itemNode.Visible = true
-        itemNode.Name = "RebirthOption_" .. i
+        itemNode.Name = "RebirthOption_" .. level
 
-        -- 查找并设置文本
+        -- 3. 设置文本内容
         local titleText = itemNode["可重生次数"]
         if titleText then
-            titleText.Title = string.format("可重生 %d 次", i)
+            titleText.Title = string.format("可重生 %d 次", level)
         end
         
-        -- 查找并设置消耗文本
         local costText = itemNode["重生消耗"]
         if costText then
-            local costs = self.costsByLevel[i]
-            if costs and #costs > 0 then
-                local costInfo = costs[1] -- 假设每个等级只有一种消耗
-                local costName = string.gsub(costInfo.item, "数据_固定值_", "") -- 简化显示
-                costText.Title = string.format("消耗: %s %d", costName, costInfo.amount)
-            else
-                costText.Title = "消耗: (无法获取)"
-            end
+            local costInfo = costs[1] -- 假设每个等级只有一种消耗
+            local costName = "战力"
+            costText.Title = string.format("消耗: %s %s", costName, gg.FormatLargeNumber(costInfo.amount))
         end
 
-        -- 为整个克隆出的节点创建按钮并绑定事件
+        -- 4. 创建按钮并根据资源情况设置其可用状态
         local itemButton = ViewButton.New(itemNode["重生"], self)
+        itemButton:SetTouchEnable(canAfford) -- 如果canAfford为false，按钮将自动变灰且不可点击
+        
         itemButton.clickCb = function()
-            self:OnClickRebirthLevel(i)
+            -- SetTouchEnable会阻止不可用按钮的点击事件，但为了保险起见，可以再加一层判断
+            if canAfford then
+                self:OnClickRebirthLevel(level)
+            else
+                gg.log("资源不足，无法执行此等级的重生。") -- 可以加一个用户提示
+            end
         end
         
         self.rebirthList:AppendChild(itemNode)
     end
+end
+
+function RebirthGui:RefreshMaxRebirthNode()
+    gg.log("self.maxRebirthCountText",self.maxRebirthCountText,"elf.maxRebirthCostText",self.maxRebirthCostText)
+
+    self.maxRebirthCountText.node.Title = string.format("可重生 %d 次", self.maxExecutions)
+    local costName = "战力" -- 根据您的修改，硬编码为“战力”
+    self.maxRebirthCostText.node.Title = string.format("消耗: %s %s", costName, gg.FormatLargeNumber(self.maxExecutionTotalCost))
+
 end
 
 return RebirthGui.New(script.Parent, uiConfig)
