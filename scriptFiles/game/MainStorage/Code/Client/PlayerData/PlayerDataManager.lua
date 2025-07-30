@@ -62,6 +62,7 @@ end
 
 --- 【修改】处理新格式的变量数据同步
 function PlayerDataManager:HandleVariableSync(data)
+    gg.log("HandleVariableSync", data)
     if data.errorCode and data.errorCode ~= PlayerDataEventConfig.ERROR_CODES.SUCCESS then
         gg.log("变量数据同步失败:", PlayerDataEventConfig.GetErrorMessage(data.errorCode))
         return

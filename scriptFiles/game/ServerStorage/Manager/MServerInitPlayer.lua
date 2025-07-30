@@ -202,14 +202,19 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     end
 
     -- 获取变量数据
-    local variableData = mplayer.variables or {}
+    if mplayer.variableSystem then
+        local variableData = mplayer.variableSystem.variables or {}
+        gg.log("variableData", variableData)
+        gg.network_channel:fireClient(uin, {
+            cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
+            variableData = variableData,
+        })
+    else
+        gg.log("警告: 玩家", uin, "的variableSystem不存在，跳过变量数据同步")
+    end
+    
     -- 获取任务数据
     local questData = mplayer.questData or {}
-
-    gg.network_channel:fireClient(uin, {
-        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
-        variableData = variableData,
-    })
 
     gg.network_channel:fireClient(uin, {
         cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_QUEST,

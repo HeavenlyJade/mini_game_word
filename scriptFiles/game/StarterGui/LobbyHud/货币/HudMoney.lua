@@ -12,6 +12,7 @@ local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEve
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local ViewList = require(MainStorage.Code.Client.UI.ViewList) ---@type ViewList
 local MConfig = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 
 ---@class HudMoney:ViewBase
@@ -63,6 +64,9 @@ function HudMoney:OnInit(node, config)
     -- 【新增】初始化货币数据缓存
     self.currentCurrencyData = {}
     
+    -- 【新增】初始化玩家变量数据缓存
+    self.playerVariableData = {}
+    
     -- 初始化对象池
     MoneyAddPool.template = self:Get("货币增加").node ---@type UITextLabel
     MoneyAddPool.template.Visible = false
@@ -73,6 +77,12 @@ function HudMoney:OnInit(node, config)
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
         self:OnSyncInventoryItems(data)
     end)
+    
+    -- 【新增】订阅玩家变量数据同步事件
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
+        self:OnSyncPlayerVariables(data)
+    end)
+    
     gg.log("按钮初始化结束")
 end
 
@@ -241,6 +251,59 @@ function HudMoney:UpdateLastMoneyValues(currencyItems)
     for _, currencyItem in ipairs(currencyItems) do
         self.lastMoneyValues[currencyItem.name] = currencyItem.amount or 0
     end
+end
+
+--- 【新增】接收并处理玩家变量数据同步
+---@param data table 包含variableData的数据表
+function HudMoney:OnSyncPlayerVariables(data)
+    gg.log("HudMoney收到玩家变量数据同步:", data)
+    
+    if not data or not data.variableData then
+        gg.log("警告：玩家变量数据为空")
+        return
+    end
+    
+    -- 更新本地变量数据缓存
+    self.playerVariableData = data.variableData
+    
+    -- 更新UI显示
+    self:UpdateVariableDisplay()
+end
+
+--- 【修改后】更新变量相关的UI显示
+function HudMoney:UpdateVariableDisplay()
+    -- 更新重生次数显示
+    local rebirthData = self.playerVariableData["数据_固定值_重生次数"]
+    local rebirthCount = (rebirthData and rebirthData.base) or 0
+    local rebirthButton = self.moneyButtonList:GetChildByName("重生次数")
+    if rebirthButton then
+        local textNode = rebirthButton:Get("Text").node ---@cast textNode UITextLabel
+        textNode.Title = tostring(math.floor(rebirthCount))
+        gg.log("更新重生次数显示:", rebirthCount)
+    else
+        gg.log("警告：找不到重生次数按钮节点")
+    end
+    
+    -- 更新战力值显示（对应能量节点）
+    local powerData = self.playerVariableData["数据_固定值_战力值"]
+    gg.log("powerData", powerData)
+    local powerValue =  powerData.base or 0
+    local energyButton = self.moneyButtonList:GetChildByName("能量")
+    if energyButton then
+        local textNode = energyButton:Get("Text").node ---@cast textNode UITextLabel
+        textNode.Title = gg.FormatLargeNumber(powerValue)
+        gg.log("更新战力值显示:", powerValue)
+    else
+        gg.log("警告：找不到能量按钮节点")
+    end
+end
+
+--- 【修改后】获取指定变量的base值
+---@param variableName string 变量名
+---@return number 变量的base值，如果不存在则返回0
+function HudMoney:GetVariableValue(variableName)
+    local varData = self.playerVariableData[variableName]
+    return (varData and varData.base) or 0
 end
 
 return HudMoney.New(script.Parent, uiConfig)
