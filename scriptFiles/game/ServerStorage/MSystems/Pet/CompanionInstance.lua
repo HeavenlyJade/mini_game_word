@@ -42,7 +42,7 @@ end
 function CompanionInstance:LoadCompanionConfig()
     local configName = self:GetConfigName()
     if not configName or configName == "" then
-        gg.log("警告：伙伴配置名称为空", self.companionType, self.slotIndex)
+        --gg.log("警告：伙伴配置名称为空", self.companionType, self.slotIndex)
         return
     end
 

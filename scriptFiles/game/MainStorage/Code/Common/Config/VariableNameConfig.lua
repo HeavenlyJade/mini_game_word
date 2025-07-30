@@ -1,7 +1,7 @@
 -- VariableNameConfig.lua
 -- Generated from VariableNames.json. Any custom code will be overwritten.
 
-local VariableNameConfig = {}
+local VariableNameConfig = {Data = {}}
 
 VariableNameConfig.VariableNames = {
     '加成_百分比_双倍训练',

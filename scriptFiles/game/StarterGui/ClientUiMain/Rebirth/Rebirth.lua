@@ -38,6 +38,7 @@ function RebirthGui:OnInit(node, config)
 
     -- 2. 数据存储
     self.currentTalentLevel = 0 -- 当前重生天赋等级
+    self.costsByLevel = {} -- 存储每个等级的消耗
 
     -- 3. 事件注册
     self:RegisterEvents()
@@ -82,8 +83,8 @@ end
 
 ---@override
 function RebirthGui:OnOpen()
-    gg.log("RebirthGui打开，请求重生天赋等级")
-    self:RequestTalentLevel()
+    gg.log("RebirthGui打开")
+    -- 数据请求现在由仓库按钮发起，界面只负责监听和刷新
 end
 
 ---@override
@@ -107,7 +108,8 @@ end
 
 function RebirthGui:OnTalentLevelResponse(data)
     gg.log("收到天赋等级响应:", data)
-    self.currentTalentLevel = data.data.currentLevel 
+    self.currentTalentLevel = data.data.currentLevel
+    self.costsByLevel = data.data.costsByLevel or {}
     self:RefreshDisplay()
 end
 
@@ -183,10 +185,17 @@ function RebirthGui:RefreshDisplay()
             titleText.Title = string.format("可重生 %d 次", i)
         end
         
-        -- 查找并设置消耗文本 (注意：此方案下客户端不预先知道消耗，所以显示固定文本)
+        -- 查找并设置消耗文本
         local costText = itemNode["重生消耗"]
         if costText then
-            costText.Title = "消耗: (点击查看)" -- 或者留空
+            local costs = self.costsByLevel[i]
+            if costs and #costs > 0 then
+                local costInfo = costs[1] -- 假设每个等级只有一种消耗
+                local costName = string.gsub(costInfo.item, "数据_固定值_", "") -- 简化显示
+                costText.Title = string.format("消耗: %s %d", costName, costInfo.amount)
+            else
+                costText.Title = "消耗: (无法获取)"
+            end
         end
 
         -- 为整个克隆出的节点创建按钮并绑定事件

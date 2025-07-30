@@ -57,8 +57,6 @@ function AchievementEventManager.HandleGetAchievementList(event)
     local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]
     
     if not playerAchievement then
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
-            AchievementEventConfig.ERROR_CODES.PLAYER_NOT_FOUND)
         return
     end
     
@@ -174,33 +172,58 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     else
         -- 理论上不应该到这里，因为前面已经检查过所有条件
         gg.log("警告：天赋升级意外失败:", playerId, talentId)
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.ERROR,
-            AchievementEventConfig.ERROR_CODES.SYSTEM_ERROR)
     end
 end
 
 
 -- 处理获取天赋等级请求
 function AchievementEventManager.HandleGetTalentLevel(event)
-    local uin = event.uin
+    gg.log("HandleGetTalentLevel",event)
+    local uin = event.player.uin
     local params = event.args or {}
     local talentId = params.talentId
     local playerId = uin
-    
+
     if not talentId or talentId == "" then
-        -- AchievementEventManager.SendErrorResponse(uin, "AchievementResponse_GetTalentLevel",
-        --     AchievementEventConfig.ERROR_CODES.INVALID_PARAMETERS)
         return
     end
-    
-    local talentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
-    
+
+    -- 获取玩家实例
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local player = MServerDataManager.getPlayerByUin(playerId)
+    if not player then
+        return
+    end
+
+    -- 获取天赋配置
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local talentConfig = ConfigLoader.GetAchievement(talentId)
+    if not talentConfig then
+        return
+    end
+
+    local currentTalentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
+    local costsByLevel = {}
+
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    local playerBag = BagMgr.GetPlayerBag(player.uin)
+
+    -- 计算每个可执行等级的消耗
+    local playerData = player:GetConsumableData()
+
+    for i = 1, currentTalentLevel do
+        -- 这里的i代表的是要执行的重生动作的目标等级成本消耗
+        local costs = talentConfig:GetActionCosts(i, playerData, playerBag)
+        costsByLevel[i] = costs
+    end
+
     local responseData = {
         talentId = talentId,
-        currentLevel = talentLevel
+        currentLevel = currentTalentLevel,
+        costsByLevel = costsByLevel -- 将计算出的消耗一并发送给客户端
     }
-    
-    AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.GET_TALENT_LEVEL_RESPONSE, responseData)
+
+    AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE, responseData)
 end
 
 
@@ -215,34 +238,33 @@ function AchievementEventManager.HandlePerformTalentAction(event)
     local targetLevel = args.targetLevel
 
     if not talentId or not targetLevel or targetLevel <= 0 then
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.INVALID_PARAMETERS)
+        return
     end
-    gg.log("处理天赋动作请求:", talentId, "等级:", targetLevel)
 
     local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     local player = MServerDataManager.getPlayerByUin(playerId)
     if not player then
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.PLAYER_NOT_FOUND)
+        return
     end
 
     -- 1. 校验资格
     local currentTalentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
     if currentTalentLevel < targetLevel then
         gg.log("资格不足: 当前天赋等级", currentTalentLevel, "目标动作等级", targetLevel)
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS) -- 复用一个相近的错误码
+        return
     end
 
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
     local talentConfig = ConfigLoader.GetAchievement(talentId)
     if not talentConfig or not talentConfig:IsTalentAchievement() then
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.ACHIEVEMENT_NOT_FOUND)
+        return
     end
 
     -- 2. 计算效果 (奖励)
     local effectValue = talentConfig:GetLevelEffectValue(targetLevel)
     if not effectValue or effectValue <= 0 then
         gg.log("计算效果值为0或无效，操作终止", effectValue)
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.SYSTEM_ERROR)
+        return
     end
     gg.log(string.format("天赋动作'%s'等级%d的效果计算结果为: %s", talentId, targetLevel, tostring(effectValue)))
 
@@ -254,11 +276,11 @@ function AchievementEventManager.HandlePerformTalentAction(event)
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
     if not BagMgr.HasItemsByCosts(player, costs) then
         gg.log("执行天赋动作材料不足:", costs)
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
+        return
     end
     if not BagMgr.RemoveItemsByCosts(player, costs) then
         gg.log("扣除天赋动作材料失败:", costs)
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.SYSTEM_ERROR)
+        return
     end
     
     -- 5. 应用效果
@@ -299,20 +321,19 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
     local talentId = args.talentId
 
     if not talentId then
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.INVALID_PARAMETERS)
+        return
     end
-    gg.log("处理最大化天赋动作请求:", talentId)
 
     local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     local player = MServerDataManager.getPlayerByUin(playerId)
     if not player then
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.PLAYER_NOT_FOUND)
+        return
     end
 
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
     local talentConfig = ConfigLoader.GetAchievement(talentId)
     if not talentConfig or not talentConfig:IsTalentAchievement() then
-        return AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.ACHIEVEMENT_NOT_FOUND)
+        return
     end
 
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
@@ -369,7 +390,7 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
         gg.log(string.format("最大化重生完成，共执行 %d 次", totalActions))
     else
         -- 一次都未成功，发送失败响应
-        AchievementEventManager.SendErrorResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, AchievementEventConfig.ERROR_CODES.INSUFFICIENT_MATERIALS)
+        gg.log(string.format("最大化重生未执行任何一次", talentId))
     end
 end
 
@@ -403,22 +424,7 @@ function AchievementEventManager.SendSuccessResponse(uin, eventName, data)
     })
 end
 
---- 发送错误响应
----@param uin number 玩家UIN
----@param eventName string 响应事件名
----@param errorCode number 错误码
-function AchievementEventManager.SendErrorResponse(uin, eventName, errorCode)
-    local response = {
-        success = false,
-        data = {},
-        errorCode = errorCode
-    }
-    gg.network_channel:fireClient(uin, {
-        cmd = eventName,
-        data = response
-    })
-    gg.log("发送成就错误响应:", uin, eventName, errorCode)
-end
+
 
 --- 新增：向客户端通知所有初始成就数据
 ---@param uin number 玩家UIN

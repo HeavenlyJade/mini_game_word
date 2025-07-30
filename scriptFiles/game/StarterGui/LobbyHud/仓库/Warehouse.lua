@@ -5,6 +5,8 @@ local ViewList = require(MainStorage.Code.Client.UI.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
 local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
+local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent) ---@type AchievementEventConfig
+
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 local uiConfig = {
@@ -70,6 +72,10 @@ function Warehouse:RegisterButtonEvents()
     
     -- 重生按钮
     self.rebirthSection.clickCb = function()
+        gg.network_channel:fireServer({
+            cmd = AchievementEventConfig.REQUEST.GET_TALENT_LEVEL,
+            args = { talentId = "重生" }
+        })
         ViewBase["RebirthGui"]:Open()
     end
     self.wingsSection.clickCb =function ()

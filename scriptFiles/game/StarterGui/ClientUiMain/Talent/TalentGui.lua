@@ -98,9 +98,11 @@ end
 
 function TalentGui:InitTalentList()
     local allAchievements = ConfigLoader.GetAllAchievements()
+    gg.log("allAchievements",allAchievements)
     local talentList = {}
     for id, achievementType in pairs(allAchievements) do
         if achievementType:IsTalentAchievement() then
+            gg.log("天赋：", achievementType,achievementType.name)
             table.insert(talentList, achievementType)
         end
     end
@@ -198,8 +200,7 @@ function TalentGui:RefreshTalentDisplay(talentId, newLevel)
     local allAchievements = ConfigLoader.GetAllAchievements()
     local talentType = allAchievements[talentId]
     local costs = talentType:GetUpgradeCosts(newLevel)
-    for i in ipairs(costs) do
-        local cost = costs[i]
+    for _, cost in ipairs(costs) do
         local costname = cost.item
         local costNode = self.TalentCostsList[talentId].childrens[costname]
         if costNode and costNode.node then
@@ -224,6 +225,7 @@ function TalentGui:RefreshAllUpgradeButtons()
 end
 
 function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
+    
     slotNode["说明"].Title = talentType.name or ""
     slotNode.Name = talentType.name
     -- 建立天赋节点映射
@@ -317,7 +319,8 @@ function TalentGui:OnSyncInventoryItems(data)
         local allAchievements = ConfigLoader.GetAllAchievements()
         local talentType = allAchievements[name]
         if talentType then
-            self:UpdateUpgradeButtonState(talentType, 0)
+            local currentLevel = self.serverTalentData[name] or 0
+            self:UpdateUpgradeButtonState(talentType, currentLevel)
         end
     end
 end

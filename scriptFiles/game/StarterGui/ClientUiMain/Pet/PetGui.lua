@@ -77,7 +77,7 @@ function PetGui:OnInit(node, config)
     -- 3. 按钮点击事件注册
     self:RegisterButtonEvents()
 
-    gg.log("PetGui 宠物界面初始化完成")
+    -- gg.log("PetGui 宠物界面初始化完成")
 end
 
 -- =================================
@@ -85,7 +85,7 @@ end
 -- =================================
 
 function PetGui:RegisterEvents()
-    gg.log("注册宠物系统事件监听")
+    -- gg.log("注册宠物系统事件监听")
 
     -- 监听宠物列表响应
     ClientEventManager.Subscribe(PetEventConfig.NOTIFY.PET_LIST_UPDATE, function(data)
@@ -158,7 +158,7 @@ function PetGui:RegisterButtonEvents()
         end
     end
 
-    gg.log("宠物界面按钮事件注册完成")
+    -- gg.log("宠物界面按钮事件注册完成")
 end
 
 -- =================================
@@ -166,12 +166,12 @@ end
 -- =================================
 
 function PetGui:OnOpen()
-    gg.log("PetGui宠物界面打开")
+    -- gg.log("PetGui宠物界面打开")
     self:RequestPetData()
 end
 
 function PetGui:OnClose()
-    gg.log("PetGui宠物界面关闭")
+    -- gg.log("PetGui宠物界面关闭")
 end
 
 -- =================================
@@ -184,7 +184,7 @@ function PetGui:RequestPetData()
         cmd = PetEventConfig.REQUEST.GET_PET_LIST,
         args = {}
     }
-    gg.log("请求宠物数据同步")
+    -- gg.log("请求宠物数据同步")
     gg.network_channel:fireServer(requestData)
 end
 
@@ -199,20 +199,20 @@ function PetGui:OnPetListResponse(data)
         self.petBagCapacity = data.petList.petSlots or 50
         self.unlockedEquipSlots = data.petList.unlockedEquipSlots or 3
 
-        gg.log("宠物数据同步完成, 激活槽位:", self.activeSlots)
+        -- gg.log("宠物数据同步完成, 激活槽位:", self.activeSlots)
 
         -- 刷新界面显示
         self:RefreshPetList()
         self:RefreshPetCounts()
         self:SelectDefaultPet()
     else
-        gg.log("宠物数据响应格式错误或列表为空")
+        -- gg.log("宠物数据响应格式错误或列表为空")
     end
 end
 
 --- 处理升星响应
 function PetGui:OnUpgradeStarResponse(data)
-    gg.log("收到升星响应:", data)
+    -- gg.log("收到升星响应:", data)
     if data.success and data.petSlot then
         local slotIndex = data.petSlot
         local newStarLevel = data.newStarLevel
@@ -220,7 +220,7 @@ function PetGui:OnUpgradeStarResponse(data)
         -- 更新本地数据
         if self.petData[slotIndex] then
             self.petData[slotIndex].starLevel = newStarLevel
-            gg.log("宠物升星成功:", slotIndex, "新星级:", newStarLevel)
+            -- gg.log("宠物升星成功:", slotIndex, "新星级:", newStarLevel)
 
             -- 刷新显示
             self:RefreshPetSlotDisplay(slotIndex)
@@ -229,13 +229,13 @@ function PetGui:OnUpgradeStarResponse(data)
             end
         end
     else
-        gg.log("宠物升星失败:", data.errorMessage or "未知错误")
+        -- gg.log("宠物升星失败:", data.errorMessage or "未知错误")
     end
 end
 
 --- 处理宠物更新通知
 function PetGui:OnPetUpdateNotify(data)
-    gg.log("收到宠物更新通知:", data)
+    -- gg.log("收到宠物更新通知:", data)
     if data.petSlot and data.petInfo then
         local slotIndex = data.petSlot
         self.petData[slotIndex] = data.petInfo
@@ -255,14 +255,14 @@ end
 
 --- 处理新获得宠物通知
 function PetGui:OnPetObtainedNotify(data)
-    gg.log("收到新获得宠物通知:", data)
+    -- gg.log("收到新获得宠物通知:", data)
     if data.petSlot and data.petInfo then
         local slotIndex = data.petSlot
         self.petData[slotIndex] = data.petInfo
 
         if self:IsOpen() then
             self:CreatePetSlotItem(slotIndex, data.petInfo)
-            gg.log("新宠物已添加到界面显示:", data.petInfo.companionName)
+            -- gg.log("新宠物已添加到界面显示:", data.petInfo.companionName)
         end
         self:RefreshPetCounts()
     end
@@ -270,9 +270,9 @@ end
 
 --- 处理错误响应
 function PetGui:OnPetErrorResponse(data)
-    gg.log("收到宠物系统错误响应:", data)
+    -- gg.log("收到宠物系统错误响应:", data)
     local errorMessage = data.errorMessage or "操作失败"
-    gg.log("错误信息:", errorMessage)
+    -- gg.log("错误信息:", errorMessage)
     -- TODO: 显示错误提示给玩家
 end
 
@@ -288,18 +288,18 @@ end
 --- 升星按钮点击
 function PetGui:OnClickUpgradeStar()
     if not self.selectedPet then
-        gg.log("未选中宠物，无法升星")
+        -- gg.log("未选中宠物，无法升星")
         return
     end
 
     local slotIndex = self.selectedPet.slotIndex
     local currentStarLevel = self.selectedPet.starLevel or 1
 
-    gg.log("点击升星按钮:", "槽位", slotIndex, "当前星级", currentStarLevel)
+    -- gg.log("点击升星按钮:", "槽位", slotIndex, "当前星级", currentStarLevel)
 
     local petConfig = self:GetPetConfig(self.selectedPet.companionName)
     if petConfig and currentStarLevel >= (petConfig.maxStarLevel or 5) then
-        gg.log("宠物已达最高星级")
+        -- gg.log("宠物已达最高星级")
         return
     end
 
@@ -309,7 +309,7 @@ end
 --- 装备按钮点击
 function PetGui:OnClickEquipPet()
     if not self.selectedPet then
-        gg.log("未选中宠物，无法装备")
+        -- gg.log("未选中宠物，无法装备")
         return
     end
 
@@ -317,18 +317,18 @@ function PetGui:OnClickEquipPet()
     local equipSlotId = self:FindNextAvailableEquipSlot()
 
     if not equipSlotId then
-        gg.log("没有可用的装备栏")
+        -- gg.log("没有可用的装备栏")
         return
     end
 
-    gg.log("点击装备按钮:", "背包槽位", petSlotId, "目标装备栏", equipSlotId)
+    -- gg.log("点击装备按钮:", "背包槽位", petSlotId, "目标装备栏", equipSlotId)
     self:SendEquipPetRequest(petSlotId, equipSlotId)
 end
 
 --- 卸下按钮点击
 function PetGui:OnClickUnequipPet()
     if not self.selectedPet then
-        gg.log("未选中宠物，无法卸下")
+        -- gg.log("未选中宠物，无法卸下")
         return
     end
 
@@ -336,44 +336,44 @@ function PetGui:OnClickUnequipPet()
     local equipSlotId = self:GetEquipSlotByPetSlot(petSlotId)
 
     if not equipSlotId then
-        gg.log("错误：该宠物并未装备，但卸下按钮可见")
+        -- gg.log("错误：该宠物并未装备，但卸下按钮可见")
         return
     end
 
-    gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
+    -- gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
     self:SendUnequipPetRequest(equipSlotId)
 end
 
 function PetGui:OnClickDeletePet()
     if not self.selectedPet then
-        gg.log("未选择宠物，无法删除")
+        -- gg.log("未选择宠物，无法删除")
         return
     end
 
     if self.selectedPet.isLocked then
-        gg.log("宠物已锁定，无法删除")
+        -- gg.log("宠物已锁定，无法删除")
         -- TODO: 可以向玩家显示提示
         return
     end
 
     -- TODO: 在实际项目中，这里应该弹出一个二次确认对话框
-    gg.log("请求删除宠物:", self.selectedPet.slotIndex)
+    -- gg.log("请求删除宠物:", self.selectedPet.slotIndex)
     self:SendDeletePetRequest(self.selectedPet.slotIndex)
 end
 
 function PetGui:OnClickLockPet()
     if not self.selectedPet then
-        gg.log("未选择宠物，无法切换锁定状态")
+        -- gg.log("未选择宠物，无法切换锁定状态")
         return
     end
 
-    gg.log("请求切换宠物锁定状态:", self.selectedPet.slotIndex)
+    -- gg.log("请求切换宠物锁定状态:", self.selectedPet.slotIndex)
     self:SendToggleLockRequest(self.selectedPet.slotIndex)
 end
 
 --- 一键合成按钮点击
 function PetGui:OnClickSynthesis()
-    gg.log("点击了一键合成按钮，发送升星请求")
+    -- gg.log("点击了一键合成按钮，发送升星请求")
     local requestData = { 
         cmd = PetEventConfig.REQUEST.UPGRADE_ALL_PETS, 
         args = {} 
@@ -383,7 +383,7 @@ end
 
 --- 装备最佳按钮点击
 function PetGui:OnClickUltimateEquip()
-    gg.log("点击了装备最佳按钮，功能待实现")
+    -- gg.log("点击了装备最佳按钮，功能待实现")
     -- TODO: 实现装备最佳的逻辑, 例如发送一个请求到服务端
     -- local requestData = { cmd = PetEventConfig.REQUEST.EQUIP_BEST, args = {} }
     -- gg.network_channel:fireServer(requestData)
@@ -399,7 +399,7 @@ function PetGui:SendUpgradeStarRequest(slotIndex)
         cmd = PetEventConfig.REQUEST.UPGRADE_PET_STAR,
         args = { slotIndex = slotIndex }
     }
-    gg.log("发送宠物升星请求:", slotIndex)
+    -- gg.log("发送宠物升星请求:", slotIndex)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -412,7 +412,7 @@ function PetGui:SendEquipPetRequest(petSlotId, equipSlotId)
             equipSlotId = equipSlotId
         }
     }
-    gg.log("发送装备宠物请求:", requestData.args)
+    -- gg.log("发送装备宠物请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -423,7 +423,7 @@ function PetGui:SendUnequipPetRequest(equipSlotId)
             equipSlotId = equipSlotId
         }
     }
-    gg.log("发送卸下宠物请求:", requestData.args)
+    -- gg.log("发送卸下宠物请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -433,7 +433,7 @@ function PetGui:SendDeletePetRequest(slotIndex)
         cmd = PetEventConfig.REQUEST.DELETE_PET,
         args = { slotIndex = slotIndex }
     }
-    gg.log("发送删除宠物请求:", requestData.args)
+    -- gg.log("发送删除宠物请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -443,7 +443,7 @@ function PetGui:SendToggleLockRequest(slotIndex)
         cmd = PetEventConfig.REQUEST.TOGGLE_PET_LOCK,
         args = { slotIndex = slotIndex }
     }
-    gg.log("发送切换锁定状态请求:", requestData.args)
+    -- gg.log("发送切换锁定状态请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -474,7 +474,7 @@ end
 
 --- 刷新宠物列表
 function PetGui:RefreshPetList()
-    gg.log("刷新宠物列表显示")
+    -- gg.log("刷新宠物列表显示")
 
     self.petSlotButtons = {}
     self.petSlotList:ClearChildren()
@@ -487,16 +487,16 @@ function PetGui:RefreshPetList()
     end
 
     self.petCountLabel.node.Title = "宠物数量: " .. self:GetPetCount()
-    gg.log("宠物列表刷新完成")
+    -- gg.log("宠物列表刷新完成")
 end
 
 --- 创建宠物槽位项
 function PetGui:CreatePetSlotItem(slotIndex, companionInfo)
     if not self.slotTemplate or not self.slotTemplate.node then
-        gg.log("警告：宠物槽位模板不存在")
+        -- gg.log("警告：宠物槽位模板不存在")
         return
     end
-    gg.log("创建宠物槽位项", slotIndex, companionInfo)
+    -- gg.log("创建宠物槽位项", slotIndex, companionInfo)
 
     local slotNode = self.slotTemplate.node:Clone()
     slotNode.Visible = true
@@ -576,7 +576,7 @@ end
 
 --- 宠物槽位点击事件
 function PetGui:OnPetSlotClick(slotIndex, petInfo)
-    gg.log("点击宠物槽位:", slotIndex, petInfo.companionName)
+    -- gg.log("点击宠物槽位:", slotIndex, petInfo.companionName)
 
     local isEquipped = self:IsPetEquipped(slotIndex)
 
@@ -600,7 +600,7 @@ function PetGui:RefreshSelectedPetDisplay()
     end
 
     local pet = self.selectedPet
-    gg.log("刷新选中宠物显示:", pet.petName)
+    -- gg.log("刷新选中宠物显示:", pet.petName)
 
     local petConfig = self:GetPetConfig(pet.petName)
     if self.petUI and petConfig and petConfig.avatarResource then
@@ -861,16 +861,16 @@ end
 
 --- 默认选择第一个宠物
 function PetGui:SelectDefaultPet()
-    gg.log("尝试默认选择第一个宠物")
+    -- gg.log("尝试默认选择第一个宠物")
 
     local sortedList = self:GetSortedPetList()
 
     if #sortedList > 0 then
         local firstPet = sortedList[1].info
-        gg.log("默认选择宠物:", firstPet.companionName)
+        -- gg.log("默认选择宠物:", firstPet.companionName)
         self:OnPetSlotClick(firstPet.slotIndex, firstPet)
     else
-        gg.log("没有宠物可供选择，清空详情")
+        -- gg.log("没有宠物可供选择，清空详情")
         self.selectedPet = nil
         self:RefreshSelectedPetDisplay()
     end

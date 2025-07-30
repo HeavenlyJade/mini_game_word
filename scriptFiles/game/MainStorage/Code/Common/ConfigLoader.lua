@@ -84,7 +84,6 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(ActionCostConfig, ActionCostType, ConfigLoader.ActionCosts, "ActionCost")
     ConfigLoader.LoadConfig(ItemTypeConfig, ItemType, ConfigLoader.ItemTypes, "ItemType")
     ConfigLoader.LoadConfig(LevelConfig, LevelType, ConfigLoader.Levels, "Level")
-    ConfigLoader.LoadConfig(ActionCostConfig, ActionCostType, ConfigLoader.ActionCosts, "ActionCost")
     ConfigLoader.LoadConfig(PartnerConfig, PetType, ConfigLoader.Partners, "Partner")
     ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
     ConfigLoader.LoadConfig(PlayerInitConfig, PlayerInitType, ConfigLoader.PlayerInits, "PlayerInit")
@@ -92,6 +91,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(VariableNameConfig,nil,ConfigLoader.VariableNames,"VariableName")
     ConfigLoader.LoadConfig(GameModeConfig,nil,ConfigLoader.GameModes,"GameMode")
     ConfigLoader.LoadConfig(SkillConfig, SkillTypes, ConfigLoader.Skills, "Skill")
+    ConfigLoader.LoadConfig(AchievementConfig, AchievementType, ConfigLoader.Achievements, "Achievement")
     -- ConfigLoader.LoadConfig(ItemQualityConfig, nil, ConfigLoader.ItemQualities, "ItemQuality") -- 暂无ItemQualityType
     -- ConfigLoader.LoadConfig(MailConfig, nil, ConfigLoader.Mails, "Mail") -- 暂无MailType
     -- ConfigLoader.LoadConfig(NpcConfig, nil, ConfigLoader.Npcs, "Npc") -- 暂无NpcType

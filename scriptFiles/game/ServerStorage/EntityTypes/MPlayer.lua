@@ -245,4 +245,18 @@ function _MPlayer:resetBattleData(resethpmp_)
     self.auto_wait_tick = 0
 end
 
+--- 获取用于消耗计算的统一数据结构
+function _MPlayer:GetConsumableData()
+    local variableData = self.variableSystem:GetAllVariables()
+    local playerAttribute = {
+        level = self.level or 0,
+        health = self.health or 0,
+        maxHealth = self.maxHealth or 0,
+    }
+    return {
+        variableData = variableData,
+        playerAttribute = playerAttribute
+    }
+end
+
 return _MPlayer

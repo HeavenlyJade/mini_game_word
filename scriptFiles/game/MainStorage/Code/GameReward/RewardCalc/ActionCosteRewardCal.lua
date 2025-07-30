@@ -22,20 +22,26 @@ end
 ---@return table<string, number> 一个映射表，键是消耗名称，值是计算出的数量
 function ActionCosteRewardCal:CalculateCosts(actionCostType, playerData, bagData, externalContext)
     local calculatedCosts = {}
+    gg.log("[诊断][CalculateCosts] === 开始计算成本 ===")
+    gg.log("[诊断][CalculateCosts] 外部上下文 (T_LVL):", externalContext)
+    gg.log("[诊断][CalculateCosts] 消耗列表 CostList:", actionCostType and actionCostType.CostList)
 
     if not actionCostType or not actionCostType.CostList then
         gg.log("错误: [ActionCosteRewardCal] 无效的 ActionCostType 或空的消耗列表。")
         return calculatedCosts
     end
 
-    for _, costItem in ipairs(actionCostType.CostList) do
+    for i, costItem in ipairs(actionCostType.CostList) do
+        gg.log("[诊断][CalculateCosts] 正在处理第 " .. i .. " 个消耗项:", costItem.Name)
         local costAmount = self:_CalculateCostForItem(costItem, playerData, bagData, externalContext)
+        gg.log("[诊断][CalculateCosts] 第 " .. i .. " 个消耗项 '".. costItem.Name .."' 计算结果: " .. tostring(costAmount))
         if costAmount and costAmount > 0 then
             -- 使用消耗名称作为key，以避免重复
             calculatedCosts[costItem.Name] = (calculatedCosts[costItem.Name] or 0) + costAmount
         end
     end
     
+    gg.log("[诊断][CalculateCosts] === 成本计算结束, 最终结果: ===", calculatedCosts)
     return calculatedCosts
 end
 
@@ -47,16 +53,23 @@ end
 ---@param externalContext table 外部上下文
 ---@return number | nil 计算出的成本数量
 function ActionCosteRewardCal:_CalculateCostForItem(costItem, playerData, bagData, externalContext)
-    for _, segment in ipairs(costItem.Segments) do
+    gg.log("[诊断][_CalculateCostForItem] 开始处理消耗项:", costItem.Name)
+    for i, segment in ipairs(costItem.Segments) do
+        gg.log("[诊断][_CalculateCostForItem] 正在检查第 " .. i .. " 个分段, 条件:", segment.Condition)
         if self:_CheckCondition(segment.Condition, playerData, bagData, externalContext) then
+            gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件满足。开始计算公式:", segment.Formula)
             local value = self:_CalculateValue(segment.Formula, playerData, bagData, externalContext)
+            gg.log("[诊断][_CalculateCostForItem] 公式计算结果:", value)
             if value and type(value) == "number" and value >= 0 then
                 return math.floor(value) -- 成本必须是非负整数
             end
             -- 如果公式计算失败，则停止此项的计算
             return nil
+        else
+            gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件不满足。")
         end
     end
+    gg.log("[诊断][_CalculateCostForItem] 所有分段条件均不满足，返回 nil。")
     return nil -- 没有匹配的条件
 end
 
@@ -87,7 +100,9 @@ function ActionCosteRewardCal:_CalculateValue(expression, playerData, bagData, e
     end
 
     -- 1. 替换变量，得到一个纯粹的表达式字符串
+    gg.log("[诊断][_CalculateValue] 原始表达式:", expression)
     local processedExpression = self:_ProcessExpression(expression, playerData, bagData, externalContext)
+    gg.log("[诊断][_CalculateValue] 变量替换后表达式:", processedExpression)
     
     -- 2. 使用新的安全解析器来代替 load()
     local success, result = xpcall(self._ParseAndEvaluate, gg.log, self, processedExpression)
@@ -97,6 +112,7 @@ function ActionCosteRewardCal:_CalculateValue(expression, playerData, bagData, e
         return nil
     end
 
+    gg.log("[诊断][_CalculateValue] 表达式计算结果:", result)
     return result
 end
 
@@ -117,15 +133,15 @@ ActionCosteRewardCal._operators = {
 --- 安全地解析和计算表达式，取代 load()
 ---@param expression string 只包含数字和运算符的字符串
 function ActionCosteRewardCal:_ParseAndEvaluate(expression)
-    expression = expression:gsub("^%s+", ""):gsub("%s+$", "")
-
-    -- 1. 分词 (Tokenizer)
+    -- 1. 更健壮的分词 (Tokenizer)
     local tokens = {}
-    -- 这个正则表达式会匹配数字 (包括负数和小数) 和我们支持的运算符
-    for token in expression:gmatch("(-?%d+%.?%d*|[%+%-%*%/<>~=]=?)") do
+    for token in expression:gmatch("%S+") do
         local num = tonumber(token)
         table.insert(tokens, num or token)
     end
+    
+    -- 如果没有任何 token，说明表达式为空或无效
+    if #tokens == 0 then return nil end
 
     -- 2. 特殊情况处理: 链式比较 (A op B op C)
     if #tokens == 5 and type(tokens[1]) == 'number' and type(tokens[3]) == 'number' and type(tokens[5]) == 'number' then
@@ -191,13 +207,13 @@ end
 function ActionCosteRewardCal:_ProcessExpression(expression, playerData, bagData, externalContext)
     local processed = expression
 
-    -- 1. 替换玩家变量: $变量名$
-    processed = string.gsub(processed, "%$([%w_]+)%", function(varName)
+    -- 1. 替换玩家变量: $变量名$ (修正了正则表达式以支持中文)
+    processed = string.gsub(processed, "%$([^$]+)%$", function(varName)
         return tostring(self:_GetPlayerVariable(playerData, varName))
     end)
 
-    -- 2. 替换玩家属性: {变量名}
-    processed = string.gsub(processed, "{([%w_]+)}", function(varName)
+    -- 2. 替换玩家属性: {属性名} (修正了正则表达式以支持中文)
+    processed = string.gsub(processed, "{([^}]+)}", function(varName)
         return tostring(self:_GetPlayerAttribute(playerData, varName))
     end)
 
@@ -219,47 +235,9 @@ end
 ---@param varName string 变量名
 ---@return number
 function ActionCosteRewardCal:_GetPlayerVariable(playerData, varName)
-    -- 优先从 variableSystem 中获取变量值
-    if playerData and playerData.variableSystem then
-        -- 如果传入的是完整的 variableSystem 对象，直接调用其方法
-        if type(playerData.variableSystem.GetVariable) == "function" then
-            return playerData.variableSystem:GetVariable(varName, 0)
-        end
+    if playerData and playerData.variableData and type(playerData.variableData[varName]) == "number" then
+        return playerData.variableData[varName]
     end
-    
-    -- 从原始 variables 数据中获取（兼容处理）
-    if playerData and playerData.variables then
-        -- 如果是新的 VariableSystem 数据结构
-        if type(playerData.variables) == "table" and playerData.variables[varName] then
-            local varData = playerData.variables[varName]
-            if type(varData) == "table" and varData.base then
-                -- 计算最终值：基础值 + 所有来源的值
-                local baseValue = varData.base or 0
-                local flatSum = 0
-                local percentSum = 0
-                
-                if varData.sources then
-                    for _, sourceData in pairs(varData.sources) do
-                        if sourceData.type == "百分比" then
-                            percentSum = percentSum + sourceData.value
-                        else -- "固定值"
-                            flatSum = flatSum + sourceData.value
-                        end
-                    end
-                end
-                
-                return baseValue + flatSum + (baseValue * percentSum / 100)
-            else
-                -- 简单数值结构
-                return varData
-            end
-        elseif type(playerData.variables[varName]) == "number" then
-            -- 直接数值
-            return playerData.variables[varName]
-        end
-    end
-    
-    -- gg.log("警告: [ActionCosteRewardCal] 无法获取玩家变量 '" .. varName .. "' 的值。")
     return 0
 end
 
@@ -268,16 +246,9 @@ end
 ---@param attrName string 属性名
 ---@return number
 function ActionCosteRewardCal:_GetPlayerAttribute(playerData, attrName)
-    -- 优先从 variableSystem 中获取属性值（属性也可能存储在变量系统中）
-    if playerData and playerData.variableSystem then
-        if type(playerData.variableSystem.GetVariable) == "function" then
-            local value = playerData.variableSystem:GetVariable(attrName, nil)
-            if value ~= nil then
-                return value
-            end
-        end
+    if playerData and playerData.playerAttribute and type(playerData.playerAttribute[attrName]) == "number" then
+        return playerData.playerAttribute[attrName]
     end
-    
     return 0
 end
 

@@ -112,9 +112,9 @@ end
 ---@param currentLevel number 当前等级
 ---@param playerData table 玩家数据
 ---@param bagData table 背包数据
----@return table<string, number> 消耗列表, key为消耗名称, value为数量
+---@return {item: string, amount: number}[] 消耗列表
 function AchievementType:GetUpgradeCosts(currentLevel, playerData, bagData)
-   local finalCosts = {}
+   local costsDict = {}
 
    -- 1. 处理旧的'升级条件'
    if self.upgradeConditions then
@@ -125,23 +125,43 @@ function AchievementType:GetUpgradeCosts(currentLevel, playerData, bagData)
            if itemName and costFormula and itemName ~= "" and costFormula ~= "" then
                local amount = self:GetUpgradeCostValue(costFormula, currentLevel)
                if amount and amount > 0 then
-                   finalCosts[itemName] = (finalCosts[itemName] or 0) + amount
+                   costsDict[itemName] = (costsDict[itemName] or 0) + amount
                end
            end
        end
    end
 
-   -- 2. 处理新的'消耗配置'
-   if self.actionCostType then
-       local externalContext = { T_LVL = currentLevel }
-       local actionCosts = self.actionCostType:GetActionCosts(playerData, bagData, externalContext)
-
-       for name, amount in pairs(actionCosts) do
-           finalCosts[name] = (finalCosts[name] or 0) + amount
-       end
+   local finalCostsArray = {}
+   for name, amount in pairs(costsDict) do
+       table.insert(finalCostsArray, { item = name, amount = amount })
    end
 
-   return finalCosts
+   return finalCostsArray
+end
+
+--- 获取动作消耗（专门用于天赋动作，如重生）
+---@param targetLevel number 目标动作等级
+---@param playerData table 玩家数据
+---@param bagData table 背包数据
+---@return {item: string, amount: number}[] 消耗列表
+function AchievementType:GetActionCosts(targetLevel, playerData, bagData)
+    local costsDict = {}
+    -- 只处理'消耗配置' (actionCostType)
+    if self.actionCostType then
+        local externalContext = { T_LVL = targetLevel }
+        local actionCosts = self.actionCostType:GetActionCosts(playerData, bagData, externalContext)
+ 
+        for name, amount in pairs(actionCosts) do
+            costsDict[name] = (costsDict[name] or 0) + amount
+        end
+    end
+    
+    local finalCostsArray = {}
+    for name, amount in pairs(costsDict) do
+        table.insert(finalCostsArray, { item = name, amount = amount })
+    end
+ 
+    return finalCostsArray
 end
 
 --- 获取升级消耗数值
@@ -155,3 +175,4 @@ end
 
 
 return AchievementType
+
