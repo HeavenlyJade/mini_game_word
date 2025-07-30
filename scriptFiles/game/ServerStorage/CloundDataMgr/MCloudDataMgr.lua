@@ -87,7 +87,6 @@ function MCloudDataMgr.SavePlayerData( uin_,  force_ )
             level = player_.level,
             vars = player_.variables
         }
-        gg.log("SavePlayerData", data_)
         cloudService:SetTableAsync( 'pd' .. uin_, data_, function ( ret_ )
         end )
     end

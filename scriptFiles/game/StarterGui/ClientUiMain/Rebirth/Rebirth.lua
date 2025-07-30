@@ -212,8 +212,12 @@ function RebirthGui:RefreshDisplay()
         local costText = itemNode["重生消耗"]
         if costText then
             local costInfo = costs[1] -- 假设每个等级只有一种消耗
-            local costName = "战力"
-            costText.Title = string.format("消耗: %s %s", costName, gg.FormatLargeNumber(costInfo.amount))
+            if costInfo then
+                local costName = "战力"
+                costText.Title = string.format("消耗: %s %s", costName, gg.FormatLargeNumber(costInfo.amount))
+            else
+                costText.Title = "消耗: 无"
+            end
         end
 
         -- 4. 创建按钮并根据资源情况设置其可用状态

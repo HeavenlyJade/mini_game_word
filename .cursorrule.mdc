@@ -7,7 +7,7 @@
 - **项目类型**: 游戏
 - **语言**: Lua (使用 LuaJIT-2.1.ROLLING 版本)
 - **环境**: 项目遵循类似 Roblox 的结构，包含 `ServerScriptService` 和 `ServerStorage` 等目录。这是一个客户端-服
-日志打印使用gg.log
+日志打印使用--gg.log
 务器架构。
 
 ## 架构
@@ -141,11 +141,11 @@
             - *SystemName：数据实体定义、业务方法实现
 
 - **日志打印规范**:
-    - **必须** 使用 `gg.log()` 进行日志输出，禁止使用原生的 `print()` 函数。
+    - **必须** 使用 `--gg.log()` 进行日志输出，禁止使用原生的 `print()` 函数。
     - 日志内容**必须**使用中文，以便于团队内快速定位和理解问题。
       ```lua
       -- 正确示例
-      gg.log("错误：找不到ID为'xxx'的配置。")
+      --gg.log("错误：找不到ID为'xxx'的配置。")
 
       -- 错误示例
       print("Error: Config not found for ID 'xxx'.")

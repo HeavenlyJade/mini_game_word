@@ -22,12 +22,12 @@ end
 ---@return table<string, number> 一个映射表，键是消耗名称，值是计算出的数量
 function ActionCosteRewardCal:CalculateCosts(actionCostType, playerData, bagData, externalContext)
     local calculatedCosts = {}
-    --gg.log("[诊断][CalculateCosts] === 开始计算成本 ===")
-    --gg.log("[诊断][CalculateCosts] 外部上下文 (T_LVL):", externalContext)
+    ----gg.log("[诊断][CalculateCosts] === 开始计算成本 ===")
+    ----gg.log("[诊断][CalculateCosts] 外部上下文 (T_LVL):", externalContext)
     --gg.log("[诊断][CalculateCosts] 消耗列表 CostList:", actionCostType and actionCostType.CostList)
 
     if not actionCostType or not actionCostType.CostList then
-        --gg.log("错误: [ActionCosteRewardCal] 无效的 ActionCostType 或空的消耗列表。")
+        ----gg.log("错误: [ActionCosteRewardCal] 无效的 ActionCostType 或空的消耗列表。")
         return calculatedCosts
     end
 
@@ -35,7 +35,7 @@ function ActionCosteRewardCal:CalculateCosts(actionCostType, playerData, bagData
         --gg.log("[诊断][CalculateCosts] 正在处理第 " .. i .. " 个消耗项:", costItem.Name)
         local costAmount = self:_CalculateCostForItem(costItem, playerData, bagData, externalContext)
         --gg.log("[诊断][CalculateCosts] 第 " .. i .. " 个消耗项 '".. costItem.Name .."' 计算结果: " .. tostring(costAmount))
-        if costAmount and costAmount > 0 then
+        if costAmount and costAmount >= 0 then
             -- 使用消耗名称作为key，以避免重复
             calculatedCosts[costItem.Name] = (calculatedCosts[costItem.Name] or 0) + costAmount
         end
@@ -66,10 +66,10 @@ function ActionCosteRewardCal:_CalculateCostForItem(costItem, playerData, bagDat
             -- 如果公式计算失败，则停止此项的计算
             return nil
         else
-            --gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件不满足。")
+            ----gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件不满足。")
         end
     end
-    --gg.log("[诊断][_CalculateCostForItem] 所有分段条件均不满足，返回 nil。")
+    ----gg.log("[诊断][_CalculateCostForItem] 所有分段条件均不满足，返回 nil。")
     return nil -- 没有匹配的条件
 end
 
@@ -158,9 +158,17 @@ end
 ---@param varName string 变量名
 ---@return number
 function ActionCosteRewardCal:_GetPlayerVariable(playerData, varName)
-    if playerData and playerData.variableData and type(playerData.variableData[varName]) == "number" then
-        return playerData.variableData[varName]
+    --gg.log("[诊断][_GetPlayerVariable] 尝试获取变量:", varName)
+    --gg.log("[诊断][_GetPlayerVariable] playerData:", playerData)
+    --gg.log("[诊断][_GetPlayerVariable] playerData.variableData:", playerData and playerData.variableData)
+    
+    if playerData and playerData.variableData and playerData.variableData[varName] then
+        local value = playerData.variableData[varName]
+        --gg.log("[诊断][_GetPlayerVariable] 找到变量值:", varName, "=", value)
+        return value
     end
+    
+    --gg.log("[诊断][_GetPlayerVariable] 未找到变量:", varName, "，返回默认值 0")
     return 0
 end
 
@@ -169,7 +177,7 @@ end
 ---@param attrName string 属性名
 ---@return number
 function ActionCosteRewardCal:_GetPlayerAttribute(playerData, attrName)
-    if playerData and playerData.playerAttribute and type(playerData.playerAttribute[attrName]) == "number" then
+    if playerData.playerAttribute and playerData.playerAttribute[attrName] then
         return playerData.playerAttribute[attrName]
     end
     return 0
@@ -204,7 +212,7 @@ function ActionCosteRewardCal:_GetItemCount(bagData, itemName)
         end
     end
 
-    -- --gg.log("警告: [ActionCosteRewardCal] 无法获取物品 '" .. itemName .. "' 的数量。")
+    -- ----gg.log("警告: [ActionCosteRewardCal] 无法获取物品 '" .. itemName .. "' 的数量。")
     return 0
 end
 

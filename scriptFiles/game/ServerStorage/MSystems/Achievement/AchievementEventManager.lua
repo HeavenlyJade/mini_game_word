@@ -12,21 +12,25 @@ local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr
 ---@class AchievementEventManager
 local AchievementEventManager = {}
 
+-- 辅助方法 --------------------------------------------------------
+
 --- 计算玩家可执行某个天赋动作的最大次数 (使用正确的GetVariable)
 ---@param player table 玩家对象
----@param talentConfig table 天赋配置
+---@param talentConfig AchievementType 天赋配置
 ---@param currentTalentLevel number 当前天赋等级
 ---@return number maxActions可以执行的最大次数
 local function CalculateMaxTalentActionExecutions(player, talentConfig, currentTalentLevel)
+    gg.log("CalculateMaxTalentActionExecutions",player, talentConfig, currentTalentLevel,talentConfig.actionCostType)
     if not player or not talentConfig or not talentConfig:IsTalentAchievement() or currentTalentLevel == 0 then
         return 0
     end
 
-    if not talentConfig.actionCostType or not talentConfig.actionCostType.CostList or #talentConfig.actionCostType.CostList == 0 then
+    if not talentConfig.actionCostType  then
         gg.log("警告: 天赋 " .. talentConfig.name .. " 没有找到有效的 actionCostType 配置。")
         return 0
     end
-
+    gg.log("CalculateMaxTalentActionExecutions",player, talentConfig, currentTalentLevel)
+    gg.log("actionCostType",talentConfig.actionCostType.CostList,talentConfig.actionCostType.TargetList)
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
     local playerBag = BagMgr.GetPlayerBag(player.uin)
     
@@ -80,6 +84,113 @@ local function CalculateMaxTalentActionExecutions(player, talentConfig, currentT
     end
 
     return maxExecutions
+end
+
+--- 计算天赋动作消耗
+---@param talentConfig table 天赋配置
+---@param targetLevel number 目标等级
+---@param player table 玩家对象
+---@return table|nil 消耗列表，失败时返回nil
+local function CalculateTalentActionCosts(talentConfig, targetLevel, player)
+    if not talentConfig or not player then
+        return nil
+    end
+    
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    local playerBag = BagMgr.GetPlayerBag(player.uin)
+    local costs = talentConfig:GetActionCosts(targetLevel, player:GetConsumableData(), playerBag)
+    
+    gg.log("计算出的动作消耗:", costs)
+    return costs
+end
+
+--- 检查并扣除消耗
+---@param player table 玩家对象
+---@param costs table 消耗列表
+---@return boolean 是否成功扣除
+local function CheckAndDeductCosts(player, costs)
+    if not costs then
+        return false
+    end
+    
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    if not BagMgr.HasItemsByCosts(player, costs) then
+        gg.log("执行天赋动作材料不足:", costs)
+        return false
+    end
+    
+    if not BagMgr.RemoveItemsByCosts(player, costs) then
+        gg.log("扣除天赋动作材料失败:", costs)
+        return false
+    end
+    
+    return true
+end
+
+--- 应用天赋动作效果
+---@param talentConfig table 天赋配置
+---@param player table 玩家对象
+---@param playerId string 玩家ID
+---@return boolean 是否成功应用效果
+local function ApplyTalentActionEffects(talentConfig, player, playerId)
+    if not talentConfig or not player then
+        return false
+    end
+    
+    local actionCostType = talentConfig.actionCostType
+    if not actionCostType then
+        gg.log(string.format("警告：天赋 %s 没有配置 actionCostType，无法应用效果", talentConfig.id))
+        return false
+    end
+    
+    local successCount = actionCostType:ApplyAllEffects(player, playerId)
+    return successCount > 0
+end
+
+--- 计算多次天赋动作的总消耗
+---@param talentConfig table 天赋配置
+---@param player table 玩家对象
+---@param executionCount number 执行次数
+---@return table|nil 总消耗列表，失败时返回nil
+local function CalculateTotalTalentActionCosts(talentConfig, player, executionCount)
+    if not talentConfig or not player or executionCount <= 0 then
+        return nil
+    end
+    
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    local playerBag = BagMgr.GetPlayerBag(player.uin)
+    
+    -- 计算单次消耗
+    local singleCosts = talentConfig:GetActionCosts(1, player:GetConsumableData(), playerBag)
+    if not singleCosts or #singleCosts == 0 then
+        return nil
+    end
+    
+    -- 计算总消耗
+    local totalCosts = {}
+    for _, cost in ipairs(singleCosts) do
+        table.insert(totalCosts, {
+            item = cost.item,
+            amount = cost.amount * executionCount
+        })
+    end
+    
+    gg.log("计算出的总消耗:", totalCosts, "执行次数:", executionCount)
+    return totalCosts
+end
+
+--- 同步背包到客户端
+---@param player table 玩家对象
+local function SyncBagToClient(player)
+    if not player then
+        return
+    end
+    
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    local bag = BagMgr.GetPlayerBag(player.uin)
+    if bag then
+        bag:SyncToClient()
+    end
 end
 
 
@@ -214,10 +325,7 @@ function AchievementEventManager.HandleUpgradeTalent(event)
         return
     end
     -- 同步背包变化到客户端
-    local bag = BagMgr.GetPlayerBag(player.uin)
-    if bag then
-        bag:SyncToClient()
-    end
+    SyncBagToClient(player)
     
     -- 执行升级（确保成功，因为前面已经检查过所有条件）
     local upgradeSuccess = AchievementMgr.UpgradeTalent(playerId, talentId)
@@ -288,8 +396,8 @@ function AchievementEventManager.HandleGetTalentLevel(event)
         
         -- 2. 获取该等级对应的效果值（即执行次数/乘数）
         local executionCount = talentConfig:GetLevelEffectValue(i)
-
-        if executionCount and type(executionCount) == "number" and executionCount > 0 then
+        gg.log("executionCount",executionCount,baseCosts)
+        if executionCount  and executionCount > 0 then
             -- 3. 根据业务逻辑，将基础消耗乘以执行次数，得到最终消耗
             local finalCosts = {}
             for _, costInfo in ipairs(baseCosts) do
@@ -396,30 +504,22 @@ function AchievementEventManager.HandlePerformTalentAction(event)
     end
     gg.log(string.format("天赋动作'%s'等级%d的效果计算结果为: %s", talentId, targetLevel, tostring(effectValue)))
 
-    -- 3. 计算消耗 (成本)
-    local costs = talentConfig:GetUpgradeCosts(targetLevel, player.variableSystem)
-    gg.log("计算出的消耗:", costs)
-
-    -- 4. 检查并扣除消耗
-    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-    if not BagMgr.HasItemsByCosts(player, costs) then
-        gg.log("执行天赋动作材料不足:", costs)
+    -- 3. 计算消耗 (成本) - 使用动作消耗配置，不是升级消耗
+    local costs = CalculateTalentActionCosts(talentConfig, targetLevel, player)
+    if not costs then
+        gg.log("计算天赋动作消耗失败")
         return
     end
-    if not BagMgr.RemoveItemsByCosts(player, costs) then
-        gg.log("扣除天赋动作材料失败:", costs)
+
+    -- 4. 检查并扣除消耗
+    if not CheckAndDeductCosts(player, costs) then
         return
     end
     
     -- 5. 应用效果
-    -- 这里我们假设效果是增加某个玩家变量，变量名在效果配置中定义
-    local effectConfig = talentConfig:GetLevelEffect(targetLevel)
-    if effectConfig and effectConfig["效果字段名称"] then
-        local variableName = effectConfig["效果字段名称"]
-        player.variableSystem:Add(variableName, effectValue)
-        gg.log(string.format("成功为玩家 %s 的变量 %s 增加了 %s", playerId, variableName, effectValue))
-    else
-        gg.log(string.format("警告：天赋 %s 的等级 %d 效果配置不正确，未找到'效果字段名称'", talentId, targetLevel))
+    if not ApplyTalentActionEffects(talentConfig, player, playerId) then
+        gg.log("应用天赋动作效果失败")
+        return
     end
     
     -- 6. 发送成功响应
@@ -432,10 +532,7 @@ function AchievementEventManager.HandlePerformTalentAction(event)
     AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
 
     -- 同步背包变化到客户端
-    local bag = BagMgr.GetPlayerBag(player.uin)
-    if bag then
-        bag:SyncToClient()
-    end
+    SyncBagToClient(player)
 end
 
 
@@ -464,62 +561,61 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
         return
     end
 
-    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-    local totalActions = 0
-    local totalEffectApplied = 0
-
-    -- 循环执行，直到不满足条件
-    while true do
-        local currentTalentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
-        local targetLevel = totalActions + 1 -- 在这个循环里，我们总是尝试执行下一个等级
-
-        if currentTalentLevel < targetLevel then
-            gg.log("最大化重生结束: 资格不足。当前天赋等级", currentTalentLevel, "目标动作等级", targetLevel)
-            break
-        end
-
-        local costs = talentConfig:GetUpgradeCosts(targetLevel, player.variableSystem)
-        if not BagMgr.HasItemsByCosts(player, costs) then
-            gg.log("最大化重生结束: 材料不足。")
-            break
-        end
-
-        if not BagMgr.RemoveItemsByCosts(player, costs) then
-            gg.log("扣除材料失败。")
-            break -- 避免死循环
-        end
-
-        local effectValue = talentConfig:GetLevelEffectValue(targetLevel)
-        local effectConfig = talentConfig:GetLevelEffect(targetLevel)
-        if effectConfig and effectConfig["效果字段名称"] then
-            local variableName = effectConfig["效果字段名称"]
-            player.variableSystem:Add(variableName, effectValue)
-            totalEffectApplied = totalEffectApplied + effectValue
-        end
-        
-        totalActions = totalActions + 1
-        gg.log(string.format("执行第 %d 次重生成功", totalActions))
+    -- 1. 获取当前天赋等级
+    local currentTalentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
+    if currentTalentLevel < 1 then
+        gg.log("最大化重生失败: 天赋等级不足，当前等级", currentTalentLevel)
+        return
     end
 
-    if totalActions > 0 then
-        -- 至少成功了一次，发送成功响应并同步背包
-        local responseData = {
-            success = true,
-            talentId = talentId,
-            executedLevel = totalActions, -- 返回执行的总次数
-            effectApplied = totalEffectApplied,
-        }
-        AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
-
-        local bag = BagMgr.GetPlayerBag(player.uin)
-        if bag then
-            bag:SyncToClient()
-        end
-        gg.log(string.format("最大化重生完成，共执行 %d 次", totalActions))
-    else
-        -- 一次都未成功，发送失败响应
-        gg.log(string.format("最大化重生未执行任何一次", talentId))
+    -- 2. 计算可执行的最大次数
+    local maxExecutions = CalculateMaxTalentActionExecutions(player, talentConfig, currentTalentLevel)
+    if maxExecutions <= 0 then
+        gg.log("最大化重生失败: 无法计算最大执行次数或资源不足")
+        return
     end
+
+    gg.log(string.format("计算出的最大执行次数: %d", maxExecutions))
+
+    -- 3. 计算总消耗
+    local totalCosts = CalculateTotalTalentActionCosts(talentConfig, player, maxExecutions)
+    if not totalCosts then
+        gg.log("最大化重生失败: 无法计算总消耗")
+        return
+    end
+
+    -- 4. 检查并扣除总消耗
+    if not CheckAndDeductCosts(player, totalCosts) then
+        gg.log("最大化重生失败: 扣除总消耗失败")
+        return
+    end
+
+    -- 5. 计算总效果值
+    local totalEffectValue = talentConfig:GetLevelEffectValue(1) * maxExecutions
+
+    -- 6. 一次性应用所有效果
+    local successCount = 0
+    for i = 1, maxExecutions do
+        if ApplyTalentActionEffects(talentConfig, player, playerId) then
+            successCount = successCount + 1
+        else
+            gg.log(string.format("最大化重生：第 %d 次应用效果失败", i))
+        end
+    end
+
+    -- 7. 发送成功响应
+    local responseData = {
+        success = true,
+        talentId = talentId,
+        executedLevel = maxExecutions, -- 返回执行的总次数
+        effectApplied = totalEffectValue,
+    }
+    AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
+
+    -- 8. 同步背包变化到客户端
+    SyncBagToClient(player)
+    
+    gg.log(string.format("最大化重生完成，共执行 %d 次，成功应用效果 %d 次", maxExecutions, successCount))
 end
 
 
