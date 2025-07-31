@@ -66,7 +66,10 @@ end
 ---@param costs table 消耗列表
 ---@return boolean 是否成功扣除
 function BaseUntils.DeductCosts(player, costs)
+    gg.log("进入 BaseUntils.DeductCosts，收到的消耗列表:", costs)
+
     if not costs or #costs == 0 then
+        gg.log("消耗列表为空，直接返回成功。")
         return true -- 没有消耗，直接成功
     end
 
@@ -85,12 +88,17 @@ function BaseUntils.DeductCosts(player, costs)
         end
     end
 
+    gg.log("分类后的背包消耗:", itemCosts)
+    gg.log("分类后的变量消耗:", variableCosts)
+
     -- 2. 扣除背包物品
     if #itemCosts > 0 then
+        gg.log("开始扣除背包物品...")
         if not BagMgr.RemoveItemsByCosts(player, itemCosts) then
             gg.log("错误：扣除背包物品失败。", itemCosts)
             return false -- 扣除失败
         end
+        gg.log("背包物品扣除完成。")
     end
 
     -- 3. 扣除玩家变量
@@ -99,9 +107,15 @@ function BaseUntils.DeductCosts(player, costs)
             gg.log("错误：玩家对象缺少 'variableSystem'，无法扣除变量消耗。")
             return false
         end
+        gg.log("开始扣除玩家变量...")
         for _, cost in ipairs(variableCosts) do
-            player.variableSystem:ApplyVariableValue(cost.item, -cost.amount, "天赋动作消耗")
+            local originalValue = player.variableSystem:GetVariable(cost.item)
+            gg.log(string.format("准备扣除玩家变量: %s, 当前值: %s, 计划扣除: %s", cost.item, tostring(originalValue), cost.amount))
+            player.variableSystem:SubtractVariable(cost.item, cost.amount)
+            local newValue = player.variableSystem:GetVariable(cost.item)
+            gg.log(string.format("扣除后玩家变量: %s, 新值: %s", cost.item, tostring(newValue)))
         end
+        gg.log("玩家变量扣除完成。")
     end
 
     gg.log("所有消耗已成功扣除。")

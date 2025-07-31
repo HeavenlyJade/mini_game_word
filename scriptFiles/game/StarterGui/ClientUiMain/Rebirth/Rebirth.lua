@@ -122,14 +122,17 @@ function RebirthGui:OnTalentLevelResponse(data)
     self:RefreshDisplay()
 end
 
-function RebirthGui:OnPerformActionResponse(data)
-    gg.log("收到天赋动作执行响应:", data)
-    if data.success then
-        gg.log("重生成功！等级:", data.executedLevel, "效果:", data.effectApplied)
+function RebirthGui:OnPerformActionResponse(responseData)
+    gg.log("收到天赋动作执行响应:", responseData)
+    local eventData = responseData.data or {}
+
+    if eventData.success then
+        gg.log("重生成功！等级:", eventData.executedLevel, "效果:", eventData.effectApplied)
         -- 重生成功后，再次请求最新的天赋等级来刷新界面
         self:RequestTalentLevel()
     else
-        gg.log("重生失败:", AchievementEventConfig.GetErrorMessage(data.errorCode))
+        local errorMessage = AchievementEventConfig.GetErrorMessage(eventData.errorCode) or "未知错误"
+        gg.log("重生失败:", errorMessage)
         -- TODO: 向玩家显示错误提示
     end
 end

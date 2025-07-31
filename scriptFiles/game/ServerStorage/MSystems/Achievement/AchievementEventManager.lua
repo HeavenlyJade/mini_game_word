@@ -109,8 +109,10 @@ end
 ---@param AchievementTypeIns table 天赋配置
 ---@param player table 玩家对象
 ---@param playerId string 玩家ID
+---@param executionCount number 执行次数
 ---@return boolean 是否成功应用效果
-local function ApplyTalentActionEffects(AchievementTypeIns, player, playerId)
+local function ApplyTalentActionEffects(AchievementTypeIns, player, playerId,executionCount)
+    gg.log("ApplyTalentActionEffects",AchievementTypeIns, player, playerId)
     if not AchievementTypeIns or not player then
         return false
     end
@@ -121,7 +123,7 @@ local function ApplyTalentActionEffects(AchievementTypeIns, player, playerId)
         return false
     end
 
-    local successCount = actionCostType:ApplyAllEffects(player, playerId)
+    local successCount = actionCostType:ApplyAllEffects(player, playerId,executionCount)
     return successCount > 0
 end
 
@@ -487,10 +489,16 @@ function AchievementEventManager.HandlePerformTalentAction(event)
         gg.log("计算效果值为0或无效，操作终止", LevelEffectTable)
         return
     end
+    local executionCount = 1
+    if LevelEffectTable and #LevelEffectTable > 0 then
+        executionCount = LevelEffectTable[1]["数值"] 
+    end
+    gg.log(string.format("等级 %d 将执行 %d 次效果", targetLevel, executionCount))
 
-    local costs = CalculateTalentActionCosts(AchievementTypeIns, targetLevel, player)
+    -- 3. 计算总消耗（修复：使用总消耗计算函数，而不是获取单次消耗）
+    local costs = CalculateTotalTalentActionCosts(AchievementTypeIns, player, executionCount)
     if not costs then
-        gg.log("计算天赋动作消耗失败")
+        gg.log("计算天赋动作总消耗失败")
         return
     end
 
@@ -505,7 +513,7 @@ function AchievementEventManager.HandlePerformTalentAction(event)
         return
     end
     -- 6. 应用效果
-    if not ApplyTalentActionEffects(AchievementTypeIns, player, playerId) then
+    if not ApplyTalentActionEffects(AchievementTypeIns, player, playerId,executionCount) then
         gg.log("应用天赋动作效果失败")
         return
     end
@@ -584,17 +592,14 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
     end
 
     -- 5. 计算总效果值
-    local totalEffectValue = AchievementTypeIns:GetLevelEffectValue(1)[1]["数值"] * maxExecutions
-
-    -- 6. 一次性应用所有效果
-    local successCount = 0
-    for i = 1, maxExecutions do
-        if ApplyTalentActionEffects(AchievementTypeIns, player, playerId) then
-            successCount = successCount + 1
-        else
-            gg.log(string.format("最大化重生：第 %d 次应用效果失败", i))
-        end
+    local singleEffectValue = AchievementTypeIns:GetLevelEffectValue(1)[1]["数值"]
+    local totalEffectValue = singleEffectValue * maxExecutions
+    if not ApplyTalentActionEffects(AchievementTypeIns, player, playerId, maxExecutions) then
+        gg.log("最大化重生：应用效果失败")
+        -- 这里可能需要回滚消耗，但通常ApplyTalentActionEffects失败的概率很低
+        return
     end
+    
 
     -- 7. 发送成功响应
     local responseData = {

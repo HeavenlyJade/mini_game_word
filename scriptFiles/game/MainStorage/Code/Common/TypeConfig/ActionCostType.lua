@@ -101,19 +101,26 @@ end
 ---@param targetItem TargetItem 目标项
 ---@param player MPlayer 玩家对象
 ---@param playerId string 玩家ID
+---@param executionCount number/nil 执行次数
 ---@return boolean 是否成功应用
-function ActionCostType:ApplyEffectToPlayer(targetItem, player, playerId)
+function ActionCostType:ApplyEffectToPlayer(targetItem, player, playerId, executionCount)
     if not targetItem or not player then
         return false
     end
+    if not executionCount then
+        executionCount = 1
+    end
     
-    -- 计算作用数值
-    local effectValueToApply = self:CalculateEffectValue(targetItem)
+    -- 计算单次作用数值
+    local singleEffectValue = self:CalculateEffectValue(targetItem)
+    -- 计算最终作用数值 = 单次效果值 × 执行次数
+    local finalEffectValue = singleEffectValue * executionCount
     
     if targetItem.TargetType == "玩家变量" then
-        -- 应用效果到玩家变量系统
-        player.variableSystem:ApplyVariableValue(targetItem.TargetName, effectValueToApply, "天赋动作")
-        gg.log(string.format("成功为玩家 %s 的变量 %s 应用了效果 %s", playerId, targetItem.TargetName, effectValueToApply))
+        -- 应用最终效果值到玩家变量系统
+        player.variableSystem:ApplyVariableValue(targetItem.TargetName, finalEffectValue, "天赋动作")
+        gg.log(string.format("成功为玩家 %s 的变量 %s 应用了效果 %s (单次:%s × 次数:%s)", 
+            playerId, targetItem.TargetName, finalEffectValue, singleEffectValue, executionCount))
         return true
     elseif targetItem.TargetType == "玩家属性" then
         -- TODO: 玩家属性系统还未实现，需要后续开发
@@ -128,15 +135,16 @@ end
 --- 应用所有目标效果
 ---@param player MPlayer 玩家对象
 ---@param playerId string 玩家ID
+---@param executionCount number 执行次数
 ---@return number 成功应用的效果数量
-function ActionCostType:ApplyAllEffects(player, playerId)
+function ActionCostType:ApplyAllEffects(player, playerId,executionCount)
     if not self.TargetList or #self.TargetList == 0 then
         return 0
     end
     
     local successCount = 0
     for _, targetItem in ipairs(self.TargetList) do
-        if self:ApplyEffectToPlayer(targetItem, player, playerId) then
+        if self:ApplyEffectToPlayer(targetItem, player, playerId,executionCount) then
             successCount = successCount + 1
         end
     end
