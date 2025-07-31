@@ -87,81 +87,67 @@ function HudMoney:OnInit(node, config)
 end
 
 function HudMoney:OnSyncInventoryItems(data)
-    --gg.log("HudMoney:OnSyncInventoryItems", data)
+    gg.log("HudMoney:OnSyncInventoryItems", data)
     local items = data.items
     if not items then
-        --gg.log("警告：数据中没有items字段")
         return
-    end
-
-    -- 初始化当前的货币数据缓存（如果不存在）
-    if not self.currentCurrencyData then
-        self.currentCurrencyData = {}
     end
 
     local currencyType = MConfig.ItemTypeEnum["货币"]
 
-    -- 【关键修改】更新货币数据缓存
-    local hasUpdateData = false
+    -- 1. 检查更新中是否包含货币数据
+    local incomingCurrencyList = nil
     for category, itemList in pairs(items) do
-        if category == currencyType and itemList then
-            hasUpdateData = true
-            -- 【重要】这里要按位置索引更新，而不是按数组遍历
-            for slotIndex, item in pairs(itemList) do
-                if item and item.itemCategory == currencyType then
-                    -- 直接使用服务端发送的最新数据
-                    self.currentCurrencyData[item.name] = item
-                    --gg.log("更新货币缓存:", item.name, "数量:", item.amount, "位置:", slotIndex)
-                end
-            end
+        if tonumber(category) == currencyType and itemList then
+            incomingCurrencyList = itemList
+            break
         end
     end
 
-    -- 如果没有货币数据更新，直接返回，保持当前显示
-    if not hasUpdateData then
-        --gg.log("本次同步没有货币数据变更，保持当前显示")
+    -- 如果此数据包中没有货币信息，则不进行任何操作
+    if not incomingCurrencyList then
         return
     end
 
-    -- 转换为数组格式以兼容原有的显示逻辑
-    local currencyItems = {}
-    for itemName, currencyItem in pairs(self.currentCurrencyData) do
-        table.insert(currencyItems, currencyItem)
+    -- 2. 使用新数据建立一个临时的货币数据映射
+    local newCurrencyData = {}
+    for _, item in pairs(incomingCurrencyList) do
+        if item and item.name then
+            newCurrencyData[item.name] = item
+        end
     end
+    
+    -- 更新主数据缓存
+    self.currentCurrencyData = newCurrencyData
 
+    -- 3. 遍历所有UI上的货币按钮，并用新数据更新它们
+    for i = 1, self.moneyButtonList:GetChildCount() do
+        local button = self.moneyButtonList:GetChild(i)
+        if button and button.node then
+            local currencyName = button.node.Name
+            local currencyItem = self.currentCurrencyData[currencyName] -- 如果货币不存在，这里会是nil
+            local newAmount = (currencyItem and currencyItem.amount) or 0
 
+            local textNode = button:Get("Text").node ---@cast textNode UITextLabel
 
-    -- 【修改】如果缓存为空才清空显示，避免误清空
-    if #currencyItems == 0 then
-        --gg.log("警告：货币数据缓存为空，可能存在数据同步问题")
-        -- 暂时不清空显示，等待后续数据
-        return
-    end
-
-    -- 更新货币显示，使用名称查找按钮
-    for _, currencyItem in ipairs(currencyItems) do
-        local button = self.moneyButtonList:GetChildByName(currencyItem.name)
-        if button then
-            local node = button:Get("Text").node ---@cast node UITextLabel
-            local currentAmount = currencyItem.amount or 0
-
-            -- 检查是否需要显示货币增加动画
-            if self:ShouldShowMoneyAddition(currencyItem.name, currentAmount) then
-                self:ShowMoneyAddAnimation(currencyItem, currentAmount, node)
+            -- 仅当物品真实存在时，才可能触发增加动画
+            if currencyItem and self:ShouldShowMoneyAddition(currencyName, newAmount) then
+                self:ShowMoneyAddAnimation(currencyItem, newAmount, textNode)
             end
-
+            
             -- 更新显示文本
-            local displayText = self:GenerateDisplayText(currencyItem)
-            node.Title = displayText
+            if currencyItem then
+                textNode.Title = self:GenerateDisplayText(currencyItem)
+            else
+                -- 如果新数据中没有这个货币，显示为0
+                textNode.Title = gg.FormatLargeNumber(0)
+            end
 
-            --gg.log("更新货币显示:", currencyItem.name, "数量:", currentAmount, "显示:", displayText)
-        else
-            --gg.log("警告：找不到货币按钮，名称=", currencyItem.name)
+            -- 更新用于动画的缓存值
+            if not self.lastMoneyValues then self.lastMoneyValues = {} end
+            self.lastMoneyValues[currencyName] = newAmount
         end
     end
-
-    -- 更新记录的货币值
-    self:UpdateLastMoneyValues(currencyItems)
 end
 
 
@@ -307,4 +293,5 @@ function HudMoney:GetVariableValue(variableName)
 end
 
 return HudMoney.New(script.Parent, uiConfig)
+
 
