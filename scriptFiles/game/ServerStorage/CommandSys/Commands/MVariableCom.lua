@@ -178,7 +178,7 @@ function VariableCommand.handlers.view(params, player)
         
         local fullMessage = table.concat(response, "\n")
         player:SendHoverText(fullMessage)
-        gg.log(string.format("查看玩家 %s 的所有变量 (共 %d 个)", player.name, count))
+        gg.log(fullMessage)
     end
     return true
 end

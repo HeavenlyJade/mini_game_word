@@ -24,7 +24,7 @@ function ActionCosteRewardCal:CalculateCosts(actionCostType, playerData, bagData
     local calculatedCosts = {}
     ----gg.log("[诊断][CalculateCosts] === 开始计算成本 ===")
     ----gg.log("[诊断][CalculateCosts] 外部上下文 (T_LVL):", externalContext)
-    --gg.log("[诊断][CalculateCosts] 消耗列表 CostList:", actionCostType and actionCostType.CostList)
+    gg.log("[诊断][CalculateCosts] 消耗列表 CostList:", actionCostType and actionCostType.CostList)
 
     if not actionCostType or not actionCostType.CostList then
         ----gg.log("错误: [ActionCosteRewardCal] 无效的 ActionCostType 或空的消耗列表。")
@@ -32,16 +32,16 @@ function ActionCosteRewardCal:CalculateCosts(actionCostType, playerData, bagData
     end
 
     for i, costItem in ipairs(actionCostType.CostList) do
-        --gg.log("[诊断][CalculateCosts] 正在处理第 " .. i .. " 个消耗项:", costItem.Name)
+        gg.log("[诊断][CalculateCosts] 正在处理第 " .. i .. " 个消耗项:", costItem.Name)
         local costAmount = self:_CalculateCostForItem(costItem, playerData, bagData, externalContext)
-        --gg.log("[诊断][CalculateCosts] 第 " .. i .. " 个消耗项 '".. costItem.Name .."' 计算结果: " .. tostring(costAmount))
+        gg.log("[诊断][CalculateCosts] 第 " .. i .. " 个消耗项 '".. costItem.Name .."' 计算结果: " .. tostring(costAmount))
         if costAmount and costAmount >= 0 then
             -- 使用消耗名称作为key，以避免重复
             calculatedCosts[costItem.Name] = (calculatedCosts[costItem.Name] or 0) + costAmount
         end
     end
 
-    --gg.log("[诊断][CalculateCosts] === 成本计算结束, 最终结果: ===", calculatedCosts)
+    gg.log("[诊断][CalculateCosts] === 成本计算结束, 最终结果: ===", calculatedCosts)
     return calculatedCosts
 end
 
@@ -53,23 +53,23 @@ end
 ---@param externalContext table 外部上下文
 ---@return number | nil 计算出的成本数量
 function ActionCosteRewardCal:_CalculateCostForItem(costItem, playerData, bagData, externalContext)
-    --gg.log("[诊断][_CalculateCostForItem] 开始处理消耗项:", costItem.Name)
+    gg.log("[诊断][_CalculateCostForItem] 开始处理消耗项:", costItem.Name)
     for i, segment in ipairs(costItem.Segments) do
-        --gg.log("[诊断][_CalculateCostForItem] 正在检查第 " .. i .. " 个分段, 条件:", segment.Condition)
+        gg.log("[诊断][_CalculateCostForItem] 正在检查第 " .. i .. " 个分段, 条件:", segment.Condition)
         if self:_CheckCondition(segment.Condition, playerData, bagData, externalContext) then
-            --gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件满足。开始计算公式:", segment.Formula)
+            gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件满足。开始计算公式:", segment.Formula)
             local value = self:_CalculateValue(segment.Formula, playerData, bagData, externalContext)
-            --gg.log("[诊断][_CalculateCostForItem] 公式计算结果:", value)
+            gg.log("[诊断][_CalculateCostForItem] 公式计算结果:", value)
             if value and type(value) == "number" and value >= 0 then
                 return math.floor(value) -- 成本必须是非负整数
             end
             -- 如果公式计算失败，则停止此项的计算
             return nil
         else
-            ----gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件不满足。")
+        gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件不满足。")
         end
     end
-    ----gg.log("[诊断][_CalculateCostForItem] 所有分段条件均不满足，返回 nil。")
+    gg.log("[诊断][_CalculateCostForItem] 所有分段条件均不满足，返回 nil。")
     return nil -- 没有匹配的条件
 end
 

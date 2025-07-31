@@ -21,7 +21,7 @@ local  CONST_CLOUD_SAVE_TIME = 30    --每60秒存盘一次
 
 ---@class MCloudDataMgr
 local MCloudDataMgr = {
-    last_time_player = 0,     --最后一次玩家存盘时间
+    last_time_player = {},     --最后一次玩家存盘时间
 }
 
 function SaveAll()
@@ -68,15 +68,6 @@ end
 -- 保存玩家数据 等级 经验值
 -- force_:  立即存储，不检查时间间隔
 function MCloudDataMgr.SavePlayerData( uin_,  force_ )
-
-    if  force_ == false then
-        local now_ = os.time()
-        if  now_ - MCloudDataMgr.last_time_player < CONST_CLOUD_SAVE_TIME then
-            return
-        else
-            MCloudDataMgr.last_time_player = now_
-        end
-    end
 
 
     local player_ = MServerDataManager.server_players_list[ uin_ ]

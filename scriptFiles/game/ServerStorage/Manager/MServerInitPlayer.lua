@@ -125,27 +125,12 @@ function MServerInitPlayer.player_enter_game(player)
     -- 读取任务数据
     cloudDataMgr.ReadGameTaskData(player_)
 
-    -- 加载玩家邮件数据到MailMgr统一管理（包括个人邮件和全服邮件状态）
-
 
     player_actor_.Size = Vector3.New(120, 160, 120)      --碰撞盒子的大小
     player_actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
 
     player_:setGameActor(player_actor_)     --player
     player_actor_.CollideGroupID = 4
-
-    -- player_:setPlayerNetStat(common_const.PLAYER_NET_STAT.LOGIN_IN)    --player_net_stat login ok
-
-    -- player_:initSkillData()                 --- 加载玩家技能
-    -- player_:RefreshStats()               --重生 --刷新战斗属性
-    -- if gg.spawnSceneHandler and gg.spawnSceneHandler.node then
-    --     if not player_:IsNear(gg.spawnSceneHandler.node.Position, 500) then
-    --         player_actor_.Position = gg.spawnSceneHandler.node.Position
-    --     end
-    -- end
-    -- player_.inited = true
-
-    -- 【新增】检查并执行新玩家初始化
 
 
     ServerEventManager.Publish("PlayerInited", {player = player_})
@@ -211,8 +196,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
 
     -- 获取变量数据
     if mplayer.variableSystem then
-        local variableData = mplayer.variableSystem.variables or {}
-        gg.log("variableData", variableData)
+        local variableData = mplayer.variableSystem.variables
         gg.network_channel:fireClient(uin, {
             cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
             variableData = variableData,

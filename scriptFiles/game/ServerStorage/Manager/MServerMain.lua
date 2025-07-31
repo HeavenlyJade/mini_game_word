@@ -28,6 +28,7 @@ local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@
 local MServerInitPlayer = require(ServerStorage.Manager.MServerInitPlayer) ---@type MServerInitPlayer
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local SceneNodeManager = require(ServerStorage.SceneInteraction.SceneNodeManager) ---@type SceneNodeManager
+local cloudDataMgr = require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type MCloudDataMgr
 
 -- 总入口
 
@@ -75,6 +76,7 @@ function MainServer.start_server()
     MainServer.createNetworkChannel()     --建立网络通道
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
+    MainServer.bind_save_data_tick()      --开始定时存盘
     MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     MServerInitPlayer.setInitFinished(true)  -- 设置初始化完成
     for _, child in pairs(MainStorage.Code.Common.Config.Children) do
@@ -190,6 +192,22 @@ function MainServer.bind_update_tick()
     timer:Start()     -- 启动定时器
     gg.timer = timer;
 end
+
+--开启定时存盘
+function MainServer.bind_save_data_tick()
+    local timer = SandboxNode.New("Timer", game.WorkSpace)
+    timer.Name = 'timer_save_player_data'
+    timer.Delay = 30      -- 延迟多少秒开始
+    timer.Loop = true      -- 是否循环
+    timer.Interval = 120   -- 循环间隔多少秒
+    timer.Callback = function()
+        for uin, player in pairs(serverDataMgr.getAllPlayers()) do
+            player:leaveGame()
+        end
+    end
+    timer:Start()
+end
+
 
 --定时器update
 function MainServer.update()
