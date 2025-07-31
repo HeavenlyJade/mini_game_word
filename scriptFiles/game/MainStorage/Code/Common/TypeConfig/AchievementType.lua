@@ -17,6 +17,7 @@ local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Achi
 ---@class UpgradeCondition
 ---@field 消耗物品 string 物品名称
 ---@field 消耗数量 string 消耗数量公式（如“T_LVL*2+10”）
+---@field 消耗类型 string|nil 消耗类型 (例如 "物品", "玩家变量")
 
 ---@class AchievementType : Class
 ---@field id string 成就唯一ID
@@ -98,45 +99,63 @@ end
 
 --- 获取等级效果数值
 ---@param level number 天赋等级
----@return any 计算后的效果值
+---@return table[] 计算后的效果值列表，每个元素是 {["效果类型"]=string, ["效果字段名称"]=string, ["数值"]=any}
 function AchievementType:GetLevelEffectValue(level)
+    local results = {}
     if not self.levelEffects or #self.levelEffects == 0 then
-        return nil
+        return results
     end
-    local effectConfig = self.levelEffects[1] -- 假设只有一个效果
-    local formula = effectConfig["效果数值"]
-    return AchievementRewardCal:CalculateEffectValue(formula, level, self)
+
+    for _, effectConfig in ipairs(self.levelEffects) do
+        local formula = effectConfig["效果数值"]
+        local calculatedValue = AchievementRewardCal:CalculateEffectValue(formula, level, self)
+        
+        if calculatedValue then
+            table.insert(results, {
+                ["效果类型"] = effectConfig["效果类型"],
+                ["效果字段名称"] = effectConfig["效果字段名称"],
+                ["数值"] = calculatedValue
+            })
+        end
+    end
+    
+    return results
 end
 
 --- 获取升级消耗
 ---@param currentLevel number 当前等级
----@param playerData table 玩家数据
----@param bagData table 背包数据
 ---@return {item: string, amount: number}[] 消耗列表
-function AchievementType:GetUpgradeCosts(currentLevel, playerData, bagData)
-   local costsDict = {}
+function AchievementType:GetUpgradeCosts(currentLevel)
+    local costsDict = {}
 
-   -- 1. 处理旧的'升级条件'
-   if self.upgradeConditions then
-       for _, condition in ipairs(self.upgradeConditions) do
-           local itemName = condition["消耗物品"]
-           local costFormula = condition["消耗数量"]
+    if self.upgradeConditions then
+        for _, condition in ipairs(self.upgradeConditions) do
+            local itemName = condition["消耗物品"]
+            local costFormula = condition["消耗数量"]
+            local costType = condition["消耗类型"] 
 
-           if itemName and costFormula and itemName ~= "" and costFormula ~= "" then
-               local amount = self:GetUpgradeCostValue(costFormula, currentLevel)
-               if amount and amount > 0 then
-                   costsDict[itemName] = (costsDict[itemName] or 0) + amount
-               end
-           end
-       end
-   end
+            if itemName and costFormula and itemName ~= "" and costFormula ~= "" then
+                local amount = self:GetUpgradeCostValue(costFormula, currentLevel)
+                if amount and amount > 0 then
+                    if not costsDict[itemName] then
+                        costsDict[itemName] = {
+                            item = itemName,
+                            amount = 0,
+                            costType = costType
+                        }
+                    end
+                    costsDict[itemName].amount = costsDict[itemName].amount + amount
+                end
+            end
+        end
+    end
 
-   local finalCostsArray = {}
-   for name, amount in pairs(costsDict) do
-       table.insert(finalCostsArray, { item = name, amount = amount })
-   end
+    local finalCostsArray = {}
+    for _, costData in pairs(costsDict) do
+        table.insert(finalCostsArray, costData)
+    end
 
-   return finalCostsArray
+    return finalCostsArray
 end
 
 --- 获取动作消耗（专门用于天赋动作，如重生）
@@ -146,6 +165,7 @@ end
 ---@return {item: string, amount: number}[] 消耗列表
 function AchievementType:GetActionCosts(targetLevel, playerData, bagData)
     local costsDict = {}
+
     -- 只处理'消耗配置' (actionCostType)
     if self.actionCostType then
         local externalContext = { T_LVL = targetLevel }
@@ -158,7 +178,14 @@ function AchievementType:GetActionCosts(targetLevel, playerData, bagData)
     
     local finalCostsArray = {}
     for name, amount in pairs(costsDict) do
-        table.insert(finalCostsArray, { item = name, amount = amount })
+        -- 在构建最终数组时，使用新方法获取消耗类型
+
+        
+        table.insert(finalCostsArray, {
+            item = name,
+            amount = amount,
+            costType = self.actionCostType:GetCostTypeByName(name) 
+        })
     end
  
     return finalCostsArray

@@ -9,6 +9,8 @@ local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewB
 local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local AchievementEventConfig = require(MainStorage.Code.Event.AchievementEvent) ---@type AchievementEventConfig
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 local TALENT_ID = "重生" -- 定义此界面关联的核心天赋ID
@@ -43,6 +45,7 @@ function RebirthGui:OnInit(node, config)
     -- 2. 数据存储
     self.currentTalentLevel = 0 -- 当前重生天赋等级
     self.costsByLevel = {} -- 存储每个等级的消耗
+    self.playerResources = {} -- 玩家持有的资源
 
     -- 3. 事件注册
     self:RegisterEvents()
@@ -114,7 +117,7 @@ function RebirthGui:OnTalentLevelResponse(data)
     self.costsByLevel = data.data.costsByLevel or {}
     self.maxExecutions = data.data.maxExecutions or 0
     self.maxExecutionTotalCost = data.data.maxExecutionTotalCost or 0
-    self.playerResources = data.data.playerResources or {} -- 新增：存储玩家资源
+    self.playerResources = data.data.playerResources -- 新增：存储玩家资源
 
     self:RefreshDisplay()
 end
@@ -183,11 +186,11 @@ function RebirthGui:RefreshDisplay()
         return
     end
     
-    for level, costs in pairs(self.costsByLevel) do
+    for level, costsAndEffects in pairs(self.costsByLevel) do
         -- 1. 在客户端判断玩家资源是否足够
         local canAfford = true
-        if costs and #costs > 0 then
-            for _, costInfo in ipairs(costs) do
+        if costsAndEffects and #costsAndEffects > 0 then
+            for _, costInfo in ipairs(costsAndEffects) do
                 local playerAmount = self.playerResources[costInfo.item] or 0
                 if playerAmount < costInfo.amount then
                     canAfford = false
@@ -203,19 +206,32 @@ function RebirthGui:RefreshDisplay()
         itemNode.Visible = true
         itemNode.Name = "RebirthOption_" .. level
 
-        -- 3. 设置文本内容
-        local titleText = itemNode["可重生次数"]
-        if titleText then
-            titleText.Title = string.format("可重生 %d 次", level)
-        end
-        
-        local costText = itemNode["重生消耗"]
-        if costText then
-            local costInfo = costs[1] -- 假设每个等级只有一种消耗
-            if costInfo then
+        -- 3. 设置文本内容 
+        if costsAndEffects and #costsAndEffects > 0 then
+            local firstEntry = costsAndEffects[1]
+            local rebirthCount = firstEntry.effectValue or 0 -- 使用effectValue作为重生次数
+            local costItem = firstEntry.item
+            local costAmount = firstEntry.amount
+
+            local titleText = itemNode["可重生次数"]
+            if titleText then
+                titleText.Title = string.format("可重生 %d 次", rebirthCount)
+            end
+            
+            local costText = itemNode["重生消耗"]
+            if costText then
+                -- 假设消耗物品的名称是"战力"
                 local costName = "战力"
-                costText.Title = string.format("消耗: %s %s", costName, gg.FormatLargeNumber(costInfo.amount))
-            else
+                costText.Title = string.format("消耗: %s %s", costName, gg.FormatLargeNumber(costAmount))
+            end
+        else
+            -- 默认显示
+            local titleText = itemNode["可重生次数"]
+            if titleText then
+                titleText.Title = string.format("可重生 %d 次", 0)
+            end
+            local costText = itemNode["重生消耗"]
+            if costText then
                 costText.Title = "消耗: 无"
             end
         end

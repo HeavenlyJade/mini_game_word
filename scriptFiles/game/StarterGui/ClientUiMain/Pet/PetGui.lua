@@ -374,9 +374,9 @@ end
 --- 一键合成按钮点击
 function PetGui:OnClickSynthesis()
     --gg.log("点击了一键合成按钮，发送升星请求")
-    local requestData = { 
-        cmd = PetEventConfig.REQUEST.UPGRADE_ALL_PETS, 
-        args = {} 
+    local requestData = {
+        cmd = PetEventConfig.REQUEST.UPGRADE_ALL_PETS,
+        args = {}
     }
     gg.network_channel:fireServer(requestData)
 end

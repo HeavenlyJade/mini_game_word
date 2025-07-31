@@ -11,8 +11,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field Formula string | number 公式或固定值
 
 ---@class CostItem
----@field CostType string 消耗类型 (例如 "玩家变量")
----@field Source string 变量来源
+---@field CostType string 消耗类型 (例如 "玩家变量"，玩家属性，物品)
 ---@field Name string 消耗名称 (例如 "数据_固定值_战力值")
 ---@field Segments CostSegment[] 数量分段
 
@@ -47,7 +46,6 @@ function ActionCostType:OnInit(configData)
         ---@type CostItem
         local costItem = {
             CostType = costItemData['消耗类型'],
-            Source = costItemData['变量来源'],
             Name = costItemData['消耗名称'],
             Segments = segments
         }
@@ -101,7 +99,7 @@ end
 
 --- 应用效果到玩家
 ---@param targetItem TargetItem 目标项
----@param player table 玩家对象
+---@param player MPlayer 玩家对象
 ---@param playerId string 玩家ID
 ---@return boolean 是否成功应用
 function ActionCostType:ApplyEffectToPlayer(targetItem, player, playerId)
@@ -128,7 +126,7 @@ function ActionCostType:ApplyEffectToPlayer(targetItem, player, playerId)
 end
 
 --- 应用所有目标效果
----@param player table 玩家对象
+---@param player MPlayer 玩家对象
 ---@param playerId string 玩家ID
 ---@return number 成功应用的效果数量
 function ActionCostType:ApplyAllEffects(player, playerId)
@@ -144,6 +142,22 @@ function ActionCostType:ApplyAllEffects(player, playerId)
     end
     
     return successCount
+end
+
+--- 获取指定消耗名称的消耗类型
+---@param costName string 消耗名称
+---@return string|nil 消耗类型，如果未找到则返回 nil
+function ActionCostType:GetCostTypeByName(costName)
+    if not self.CostList or not costName then
+        return nil
+    end
+    for _, costItem in ipairs(self.CostList) do
+        if costItem.Name == costName then
+            return costItem.CostType
+        end
+    end
+
+    return nil
 end
 
 return ActionCostType
