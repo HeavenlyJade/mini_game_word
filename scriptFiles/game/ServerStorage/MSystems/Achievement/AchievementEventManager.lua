@@ -105,26 +105,39 @@ end
 
 
 
+local function SyncPlayerVariablesToClient(player)
+    if not player or not player.variableSystem then
+        return
+    end
+    local allVars = player.variableSystem.variables -- 直接获取原始数据
+    gg.network_channel:fireClient(player.uin, {
+        cmd = require(MainStorage.Code.Event.EventPlayer).NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
+        variableData = allVars,
+       
+    })
+    gg.log("已主动同步玩家变量数据到客户端:", player.uin)
+end
+
 --- 应用天赋动作效果
 ---@param AchievementTypeIns table 天赋配置
 ---@param player table 玩家对象
 ---@param playerId string 玩家ID
 ---@param executionCount number 执行次数
----@return boolean 是否成功应用效果
-local function ApplyTalentActionEffects(AchievementTypeIns, player, playerId,executionCount)
-    gg.log("ApplyTalentActionEffects",AchievementTypeIns, player, playerId)
+---@return number successCount 成功应用效果的数量
+local function ApplyTalentActionEffects(AchievementTypeIns, player, playerId, executionCount)
+    gg.log("ApplyTalentActionEffects", AchievementTypeIns, player, playerId)
     if not AchievementTypeIns or not player then
-        return false
+        return 0
     end
 
     local actionCostType = AchievementTypeIns.actionCostType ---@type ActionCostType
     if not actionCostType then
         gg.log(string.format("警告：天赋 %s 没有配置 actionCostType，无法应用效果", AchievementTypeIns.id))
-        return false
+        return 0
     end
 
-    local successCount = actionCostType:ApplyAllEffects(player, playerId,executionCount)
-    return successCount > 0
+    local successCount = actionCostType:ApplyAllEffects(player, playerId, executionCount)
+    return successCount
 end
 
 --- 计算多次天赋动作的总消耗
@@ -513,7 +526,8 @@ function AchievementEventManager.HandlePerformTalentAction(event)
         return
     end
     -- 6. 应用效果
-    if not ApplyTalentActionEffects(AchievementTypeIns, player, playerId,executionCount) then
+    local successCount = ApplyTalentActionEffects(AchievementTypeIns, player, playerId, executionCount)
+    if successCount == 0 then
         gg.log("应用天赋动作效果失败")
         return
     end
@@ -527,8 +541,9 @@ function AchievementEventManager.HandlePerformTalentAction(event)
     }
     AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
 
-    -- 同步背包变化到客户端
+    -- 同步背包和变量变化到客户端
     SyncBagToClient(player)
+    SyncPlayerVariablesToClient(player)
 end
 
 
@@ -591,15 +606,17 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
         return
     end
 
-    -- 5. 计算总效果值
-    local singleEffectValue = AchievementTypeIns:GetLevelEffectValue(1)[1]["数值"]
-    local totalEffectValue = singleEffectValue * maxExecutions
-    if not ApplyTalentActionEffects(AchievementTypeIns, player, playerId, maxExecutions) then
+    -- 5. 应用效果
+    local successCount = ApplyTalentActionEffects(AchievementTypeIns, player, playerId, maxExecutions)
+    if successCount == 0 then
         gg.log("最大化重生：应用效果失败")
         -- 这里可能需要回滚消耗，但通常ApplyTalentActionEffects失败的概率很低
         return
     end
     
+    -- 6. 计算总效果值 (用于日志或响应)
+    local singleEffectValue = AchievementTypeIns:GetLevelEffectValue(1)[1]["数值"]
+    local totalEffectValue = singleEffectValue * maxExecutions
 
     -- 7. 发送成功响应
     local responseData = {
@@ -610,8 +627,9 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
     }
     AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
 
-    -- 8. 同步背包变化到客户端
+    -- 8. 同步背包和变量变化到客户端
     SyncBagToClient(player)
+    SyncPlayerVariablesToClient(player)
 
     gg.log(string.format("最大化重生完成，共执行 %d 次，成功应用效果 %d 次", maxExecutions, successCount))
 end

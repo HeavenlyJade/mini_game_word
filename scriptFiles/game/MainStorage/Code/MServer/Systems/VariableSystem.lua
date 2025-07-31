@@ -187,21 +187,22 @@ function VariableSystem:_CalculateFinalValue(key)
     if not varData then
         return 0
     end
-    
     local baseValue = varData.base or 0
     local flatSum = 0    -- 固定值总和
     local percentSum = 0 -- 百分比总和
     
     -- 分类累加各来源的值
-    for _, sourceData in pairs(varData.sources) do
-        if sourceData.type == "百分比" then
-            percentSum = percentSum + sourceData.value
-        else -- "固定值"
-            flatSum = flatSum + sourceData.value
+    if varData.sources then
+        for _, sourceData in pairs(varData.sources) do
+            if sourceData.type == "百分比" then
+                percentSum = percentSum + sourceData.value
+            else -- "固定值"
+                flatSum = flatSum + sourceData.value
+            end
         end
     end
     
-    -- 最终值 = 基础值 + 固定值总和 + 基础值 × (百分比总和 / 100)
+    -- 最终值 = 基础值 + 固定值总和 + (基础值 * (1 + 百分比总和)) -- 修正计算逻辑
     return baseValue + flatSum + (baseValue * percentSum / 100)
 end
 
@@ -279,19 +280,38 @@ end
 ---@param source string|nil 来源标识，默认为"UNKNOWN"
 function VariableSystem:ApplyVariableValue(variableName, value, source)
     source = source or "UNKNOWN"
-    local parsed = self:ParseVariableName(variableName)
-    
-    if parsed then
-        -- 三段式变量处理
-        local valueType = (parsed.method == "百分比") and "百分比" or "固定值"
-        
-        if parsed.operation == "加成" or parsed.operation == "计数" then
-            self:AddSourceValue(variableName, source, value, valueType)
+
+    local parts = {}
+    for part in string.gmatch(variableName, "([^_]+)") do
+        table.insert(parts, part)
+    end
+
+    if #parts == 3 then
+        local operation, name, method = parts[1], parts[2], parts[3]
+
+        if operation == "加成" then
+            -- "加成"操作，作为来源添加到变量
+            local valueType = (method == "百分比") and "百分比" or "固定值"
+            self:AddSourceValue(name, source, value, valueType)
+
+        elseif operation == "数据" or operation == "解锁" then
+            -- "数据"操作，直接修改基础值
+            if method == "固定值" then
+                self:AddVariable(name, value) -- 在基础值上累加
+            elseif method == "百分比" then
+                local baseValue = self:GetBaseValue(name)
+                local increaseAmount = baseValue * (value / 100)
+                self:SetBaseValue(name, baseValue + increaseAmount)
+            else
+                -- 未知方法，按原样设置基础值
+                self:SetBaseValue(variableName, value)
+            end
         else
-            self:SetSourceValue(variableName, source, value, valueType)
+             -- 未知操作，按原样设置基础值
+            self:SetBaseValue(variableName, value)
         end
     else
-        -- 不是三段式格式，默认设置为基础值
+        -- 非三段式（作为安全措施），按原样设置基础值
         self:SetBaseValue(variableName, value)
     end
 end
