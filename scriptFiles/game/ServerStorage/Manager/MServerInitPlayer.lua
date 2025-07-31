@@ -107,7 +107,7 @@ function MServerInitPlayer.player_enter_game(player)
         gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家等级数据失败，请退出游戏后重试' })    --飘字
         return   --加载数据网络层失败
     end
-
+    gg.log('cloud_player_data_', cloud_player_data_)
     local isNewPlayer = next(cloud_player_data_) == nil
 
     -- 玩家信息初始化（MPlayer会自动调用initPlayerData初始化背包和邮件）

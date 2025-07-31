@@ -466,7 +466,7 @@ function Bag:SyncToClient()
     if #self.dirtySyncSlots == 0 and not self.dirtySyncAll and #self.deletedSlots == 0 then
         return
     end
-
+    gg.log("self.bag_items",self.bag_items)
     local syncItems = {}
     if self.dirtySyncAll then
         syncItems = self.bag_items

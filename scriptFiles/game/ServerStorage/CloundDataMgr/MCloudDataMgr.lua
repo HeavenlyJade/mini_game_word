@@ -47,6 +47,7 @@ end
 
 
 
+
 -- 读取玩家数据 等级 经验值
 function MCloudDataMgr.ReadPlayerData( uin_ )
     local ret_, ret2_ = cloudService:GetTableOrEmpty( 'pd' .. uin_ )
@@ -82,7 +83,6 @@ function MCloudDataMgr.SavePlayerData( uin_,  force_ )
         end )
     end
 end
-
 
 
 
@@ -142,16 +142,60 @@ function MCloudDataMgr.SaveSkillConfig(player)
         skills = {}
     }
     -- 保存所有技能数据
-    for skillId, skill in pairs(player.skills) do
-        skillData.skills[skillId] = {
-            skill = skill.skillType.name,
-            level = skill.level,
-            slot = skill.equipSlot,
-            star_level = skill.star_level,
-            growth = skill.growth
-        }
+    if player.skills then
+        for skillId, skill in pairs(player.skills) do
+            skillData.skills[skillId] = {
+                skill = skill.skillType.name,
+                level = skill.level,
+                slot = skill.equipSlot,
+                star_level = skill.star_level,
+                growth = skill.growth
+            }
+        end
     end
     cloudService:SetTableAsync( 'sk' .. player.uin, skillData, function ( ret_ )
     end )
 end
+
+--- 清空玩家核心数据（等级、经验、变量），同时处理在线和云端数据
+---@param uin_ number 玩家UIN
+---@return boolean
+function MCloudDataMgr.ClearCorePlayerData(uin_)
+    if not uin_ then
+        gg.log("ClearCorePlayerData: 无效的玩家UIN")
+        return false
+    end
+
+    -- 1. 如果玩家在线，重置内存数据
+    local player_ = MServerDataManager.server_players_list[uin_]
+    if player_ then
+        player_.level = 1
+        player_.exp = 0
+        if player_.variableSystem then
+            -- 假设 variableSystem 有一个清空方法
+            if player_.variableSystem.ClearAllVariables then
+                 player_.variableSystem:ClearAllVariables()
+            else
+                player_.variables = {}
+            end
+        else
+            player_.variables = {}
+        end
+        gg.log("已重置在线玩家的内存基础数据:", player_.name)
+    end
+
+    -- 2. 清理云端数据
+    local key = 'pd' .. uin_
+    -- 设置为空表来清空数据
+    cloudService:SetTableAsync(key, {}, function(success)
+        if success then
+            gg.log("成功清空玩家核心云端数据:", uin_)
+        else
+            gg.log("清空玩家核心云端数据失败:", uin_)
+        end
+    end)
+    
+    return true
+end
+
 return MCloudDataMgr

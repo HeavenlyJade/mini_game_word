@@ -15,7 +15,7 @@ local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Achi
 ---@field 等级 number|nil 适用等级，可选
 
 ---@class UpgradeCondition
----@field 消耗物品 string 物品名称
+---@field 消耗名称 string 物品名称
 ---@field 消耗数量 string 消耗数量公式（如“T_LVL*2+10”）
 ---@field 消耗类型 string|nil 消耗类型 (例如 "物品", "玩家变量")
 
@@ -130,7 +130,7 @@ function AchievementType:GetUpgradeCosts(currentLevel)
 
     if self.upgradeConditions then
         for _, condition in ipairs(self.upgradeConditions) do
-            local itemName = condition["消耗物品"]
+            local itemName = condition["消耗名称"]
             local costFormula = condition["消耗数量"]
             local costType = condition["消耗类型"] 
 

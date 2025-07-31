@@ -5,6 +5,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 ---@class PlayerInitMgr
 local PlayerInitMgr = {}
@@ -15,7 +16,7 @@ function PlayerInitMgr.InitializeNewPlayer(player)
     gg.log("开始初始化新玩家:", player.name)
     
     -- 获取默认初始化配置
-    local initConfig = ConfigLoader.GetPlayerInit('默认玩家初始化')
+    local initConfig = ConfigLoader.GetPlayerInit('玩家初始化')
     if not initConfig then
         gg.log("错误：找不到默认玩家初始化配置")
         return
@@ -30,6 +31,9 @@ function PlayerInitMgr.InitializeNewPlayer(player)
     -- 3. 设置其他初始设置
     PlayerInitMgr._ApplyOtherSettings(player, initConfig)
     
+    -- 4. 【新增】同步初始化数据到客户端
+    PlayerInitMgr._SyncInitializedData(player)
+    
     gg.log("玩家初始化完成:", player.name)
 end
 
@@ -41,7 +45,7 @@ function PlayerInitMgr._InitializeCurrencies(player, initConfig)
     
     for currencyName, amount in pairs(currencyMap) do
         gg.log(string.format("初始化货币 %s: %d", currencyName, amount))
-        BagMgr.SetItemAmount(player.uin, currencyName, amount)
+        BagMgr.AddItem(player, currencyName, amount)
     end
 end
 
@@ -71,6 +75,29 @@ function PlayerInitMgr._ApplyOtherSettings(player, initConfig)
     if initialLevel > 1 then
         player.level = initialLevel
         gg.log("设置初始等级:", initialLevel)
+    end
+end
+
+--- 【新增】内部函数：同步初始化后的核心数据到客户端
+---@param player MPlayer 玩家实例
+function PlayerInitMgr._SyncInitializedData(player)
+    gg.log("向客户端同步新玩家的初始化数据:", player.name)
+
+    -- 1. 同步通过此管理器初始化的变量
+    if player.variableSystem then
+        local variableData = player.variableSystem:GetAllVariables()
+        gg.network_channel:fireClient(player.uin, {
+            cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
+            variableData = variableData,
+        })
+        gg.log("已同步新玩家的变量数据")
+    end
+
+    -- 2. 强制同步背包数据
+    -- 尽管SetItemAmount可能会触发部分同步，但在这里进行一次全量同步可以保证最终数据的一致性
+    if BagMgr.ForceSyncToClient then
+        BagMgr.ForceSyncToClient(player.uin)
+        gg.log("已强制同步新玩家的背包数据")
     end
 end
 

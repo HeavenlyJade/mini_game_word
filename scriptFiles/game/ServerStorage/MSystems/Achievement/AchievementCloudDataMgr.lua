@@ -83,7 +83,7 @@ function AchievementCloudDataMgr.ClearPlayerAchievements(playerId)
     
     local key = "achievement_data_" .. playerId
     
-    cloudService:SetTableAsync(key, nil, function(success)
+    cloudService:SetTableAsync(key, {}, function(success)
         if success then
             gg.log("成功删除玩家成就数据:", playerId)
         else
