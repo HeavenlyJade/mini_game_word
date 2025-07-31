@@ -41,13 +41,13 @@ local  Controller = {
 function Controller.init()
     -- local UiSettingBut = require(MainStorage.code.client.UiClient.SysUi.SettingBut) ---@type UiSettingBut
     -- local NpcClient = require(MainStorage.code.client.UiClient.Npc) ---@type NpcClient
-    gg.log("Controller初始化")
+    --gg.log("Controller初始化")
     local ui_size_x = gg.get_ui_size().x
     Controller.press_xy_limit = ui_size_x * 0.01   --屏幕长度的1/100(用来判断是否是点击动作)
 
     Controller.initKeyboard()
     gg.get_camera_window_size()
-    gg.log("Controller初始化完成")
+    --gg.log("Controller初始化完成")
 
 
 end
@@ -97,7 +97,7 @@ end
 function Controller.handleWinSizeChange( inputObj )
     local winSize = gg.getClientWorkSpace().CurrentCamera.WindowSize
     local ui_size = game:GetService( 'WorldService' ):GetUISize()
-    gg.log( 'handleWinSizeChange==', winSize, ui_size )
+    --gg.log( 'handleWinSizeChange==', winSize, ui_size )
 end
 
 
@@ -149,7 +149,7 @@ end
 
 --鼠标输入
 function Controller.handleMouse( inputObj, flag )
-    -- gg.log( 'handleMouse', inputObj, flag,Controller.m_enableMove )
+    -- --gg.log( 'handleMouse', inputObj, flag,Controller.m_enableMove )
 
     if  Controller.m_enableMove ~= true then
         return
@@ -186,7 +186,7 @@ function Controller.handleMouse( inputObj, flag )
                 local time_delta_ = RunService:CurrentMilliSecondTimeStamp() - Controller.last_press_pos.t
                 if  time_delta_ < 200 then  --0.2秒
                     --（ 快速点击屏幕同一个地方 ）
-                    -- gg.log( 'press pick obj:', len_delta_, time_delta_, inputObj.Position.x, inputObj.Position.y  )   --是一个快速点击动作
+                    -- --gg.log( 'press pick obj:', len_delta_, time_delta_, inputObj.Position.x, inputObj.Position.y  )   --是一个快速点击动作
                     Controller.tryPickObject( inputObj.Position.x, inputObj.Position.y )
                 end
             end
@@ -253,7 +253,7 @@ end
 --开启碰撞检测
 function Controller.EnableOverlap(enable)
     if not WorldService.SetSceneId then
-        gg.log("Actor:EnableOverlap error SetSceneId is nil")
+        --gg.log("Actor:EnableOverlap error SetSceneId is nil")
         return
     end
     if  enable then

@@ -40,7 +40,7 @@ local SceneNodeHandlerBase = ClassMgr.Class("SceneNodeHandlerBase")
 function SceneNodeHandlerBase:OnEntityEnter(entity)
     -- 只处理玩家的通用进入/离开事件
     if entity.isPlayer then
-        gg.log(string.format("DEBUG: SceneNodeHandlerBase:OnEntityEnter - 玩家 '%s' (uin: %s) 进入了一个由 '%s' 管理的区域。", (entity.GetName and entity:GetName()) or entity.uuid, entity.uin, self.name))
+        --gg.log(string.format("DEBUG: SceneNodeHandlerBase:OnEntityEnter - 玩家 '%s' (uin: %s) 进入了一个由 '%s' 管理的区域。", (entity.GetName and entity:GetName()) or entity.uuid, entity.uin, self.name))
         ---@cast entity MPlayer
         if not self.players[entity.uin] then
             self.players[entity.uin] = entity
@@ -66,7 +66,7 @@ function SceneNodeHandlerBase:OnUpdate()
     if next(self.players) == nil then
         return
     end
-    
+
     for _, player in pairs(self.players) do
         if player and player.update_player then
             player:update_player()
@@ -94,12 +94,12 @@ function SceneNodeHandlerBase:initNpcs()
             if npcNodeContainer and npcNodeContainer[npc_data["节点名"]] then
                 local actor = npcNodeContainer[npc_data["节点名"]]
                 local npc = Npc.New(npc_data, actor)
-                
+
                 self.uuid2Entity[actor] = npc
                 self.npcs[npc.uuid] = npc
-                gg.log(string.format("SceneNodeHandlerBase: NPC创建成功：'%s' 属于场景 '%s'", npc_name, self.name))
+                --gg.log(string.format("SceneNodeHandlerBase: NPC创建成功：'%s' 属于场景 '%s'", npc_name, self.name))
             else
-                gg.log(string.format("ERROR: SceneNodeHandlerBase: 在场景 '%s' 中找不到NPC '%s' 的节点 '%s'", self.name, npc_name, npc_data["节点名"]))
+                --gg.log(string.format("ERROR: SceneNodeHandlerBase: 在场景 '%s' 中找不到NPC '%s' 的节点 '%s'", self.name, npc_name, npc_data["节点名"]))
             end
         end
     end
@@ -122,7 +122,7 @@ function SceneNodeHandlerBase:ForceEntityLeave(entity)
 
     local entityId = entity.uuid
     if self.entitiesInZone[entityId] then
-        gg.log(string.format("DEBUG: %s:ForceEntityLeave - 外部逻辑强制实体 '%s' 离开。", self.name, (entity.GetName and entity:GetName()) or entityId))
+        --gg.log(string.format("DEBUG: %s:ForceEntityLeave - 外部逻辑强制实体 '%s' 离开。", self.name, (entity.GetName and entity:GetName()) or entityId))
         self.entitiesInZone[entityId] = nil
         self:OnEntityLeave(entity)
     end
@@ -148,7 +148,7 @@ function SceneNodeHandlerBase:_getNodeFromPath(path)
     if string.find(path, "/", 1, true) then -- `true` for plain search
         return gg.GetChild(game.WorkSpace, path)
     end
-    
+
     -- 规则2: 相对路径 - 先在当前节点下查找
     if self.visualNode then
         local foundNode = self.visualNode:FindFirstChild(path, true) -- 递归查找
@@ -156,7 +156,7 @@ function SceneNodeHandlerBase:_getNodeFromPath(path)
             return foundNode
         end
     end
-    
+
     -- 规则3: 相对路径 - 在父节点下查找 (处理兄弟节点的情况)
     if self.visualNode and self.visualNode.Parent then
         local foundNode = self.visualNode.Parent:FindFirstChild(path, true)
@@ -165,7 +165,7 @@ function SceneNodeHandlerBase:_getNodeFromPath(path)
         end
     end
 
-    gg.log(string.format("警告: _getNodeFromPath 在 '%s' 及其父节点下都找不到相对路径为 '%s' 的节点。", self.visualNode and self.visualNode.Name or "未知节点", path))
+    --gg.log(string.format("警告: _getNodeFromPath 在 '%s' 及其父节点下都找不到相对路径为 '%s' 的节点。", self.visualNode and self.visualNode.Name or "未知节点", path))
     return nil
 end
 
@@ -174,7 +174,7 @@ end
 ---@param node SandboxNode # 场景中对应的节点
 ---@param debugId number|nil # 用于调试的唯一ID
 function SceneNodeHandlerBase:OnInit(node, config, debugId)
-    gg.log("创建节点",node, config, debugId)
+    --gg.log("创建节点",node, config, debugId)
     self.config = config
     self.name = config.name
     self.handlerId = config.uuid
@@ -233,22 +233,22 @@ end
 ---绑定 TriggerBox 节点的物理触碰事件
 function SceneNodeHandlerBase:_connectTriggerEvents()
     if not self.node or self.node.ClassType ~= 'TriggerBox' then
-        gg.log(string.format("错误: %s 的节点无效或不是 TriggerBox 类型，无法绑定事件。", self.name))
+        --gg.log(string.format("错误: %s 的节点无效或不是 TriggerBox 类型，无法绑定事件。", self.name))
         return
     end
 
     self.node.Touched:Connect(function(actor)
         -- 事件的参数是一个通用的物理 actor，我们需要从中找到对应的游戏实体
         if not actor then return end
-        
+
         local entity = nil
         if actor.UserId then
             -- 如果 actor 有 UserId 属性，说明它是一个玩家的 Actor
-            gg.log(string.format("DEBUG: %s.Touched - 检测到玩家Actor触碰，ID: %s, 名字: %s", self.name, actor.UserId, actor.Name))
+            --gg.log(string.format("DEBUG: %s.Touched - 检测到玩家Actor触碰，ID: %s, 名字: %s", self.name, actor.UserId, actor.Name))
             local ServerDataManager = require(ServerStorage.Manager.MServerDataManager)
             entity = ServerDataManager.getPlayerByUin(actor.UserId)
             if not entity then
-                gg.log(string.format("警告: %s.Touched - 找到了玩家Actor，但在DataManager中找不到对应的MPlayer实体 (UIN: %s)", self.name, actor.UserId))
+                --gg.log(string.format("警告: %s.Touched - 找到了玩家Actor，但在DataManager中找不到对应的MPlayer实体 (UIN: %s)", self.name, actor.UserId))
                 return
             end
         else
@@ -257,14 +257,14 @@ function SceneNodeHandlerBase:_connectTriggerEvents()
             -- 实现方式可能包括：
             -- 1. 遍历 ServerDataManager 中的怪物/NPC列表，通过 entity.actor == actor 匹配
             -- 2. 在创建怪物/NPC时，给其 actor 对象添加一个自定义属性(如 "EntityUUID")，在此处获取该属性来反向查找
-            gg.log(string.format("DEBUG: %s.Touched - 检测到非玩家Actor触碰: %s。实体查找逻辑待实现。", self.name, actor.Name))
+            --gg.log(string.format("DEBUG: %s.Touched - 检测到非玩家Actor触碰: %s。实体查找逻辑待实现。", self.name, actor.Name))
             return -- 暂时不对非玩家实体做任何处理
         end
 
         -- 后续是通用逻辑，无论找到的是玩家还是怪物
         local entityId = entity.uuid
         if not self.entitiesInZone[entityId] then
-            gg.log(string.format("DEBUG: %s.Touched - 确认实体 '%s' 进入，调用 OnEntityEnter。", self.name, entity.name or entityId))
+            --gg.log(string.format("DEBUG: %s.Touched - 确认实体 '%s' 进入，调用 OnEntityEnter。", self.name, entity.name or entityId))
             self.entitiesInZone[entityId] = entity
             self:OnEntityEnter(entity)
         end
@@ -275,20 +275,20 @@ function SceneNodeHandlerBase:_connectTriggerEvents()
 
         local entity = nil
         if actor.UserId then
-            gg.log(string.format("DEBUG: %s.TouchEnded - 玩家Actor接触结束，ID: %s, 名字: %s", self.name, actor.UserId, actor.Name))
+            --gg.log(string.format("DEBUG: %s.TouchEnded - 玩家Actor接触结束，ID: %s, 名字: %s", self.name, actor.UserId, actor.Name))
             local ServerDataManager = require(ServerStorage.Manager.MServerDataManager)
             entity = ServerDataManager.getPlayerByUin(actor.UserId)
             if not entity then
                 return
             end
         else
-            gg.log(string.format("DEBUG: %s.TouchEnded - 非玩家Actor接触结束: %s。实体查找逻辑待实现。", self.name, actor.Name))
+            --gg.log(string.format("DEBUG: %s.TouchEnded - 非玩家Actor接触结束: %s。实体查找逻辑待实现。", self.name, actor.Name))
             return
         end
 
         local entityId = entity.uuid
         if self.entitiesInZone[entityId] then
-            gg.log(string.format("DEBUG: %s.TouchEnded - 确认实体 '%s' 离开，调用 OnEntityLeave。", self.name, entity.name or entityId))
+            --gg.log(string.format("DEBUG: %s.TouchEnded - 确认实体 '%s' 离开，调用 OnEntityLeave。", self.name, entity.name or entityId))
             self.entitiesInZone[entityId] = nil
             self:OnEntityLeave(entity)
         end
@@ -314,7 +314,7 @@ function SceneNodeHandlerBase:Get(path)
         if part ~= "" then
             lastPart = part
             if not node then
-                gg.log(string.format("场景处理器[%s]获取路径[%s]失败: 在[%s]处节点不存在", self.name, path, lastPart))
+                --gg.log(string.format("场景处理器[%s]获取路径[%s]失败: 在[%s]处节点不存在", self.name, path, lastPart))
                 return nil
             end
             node = node[part]

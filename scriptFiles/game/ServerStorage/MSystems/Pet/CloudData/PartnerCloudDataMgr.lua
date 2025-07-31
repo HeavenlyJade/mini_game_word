@@ -60,9 +60,9 @@ function CloudPartnerDataAccessor:SavePlayerPartnerData(uin, partnerData)
     -- 保存到云存储
     cloudService:SetTableAsync('partner_player_' .. uin, partnerData, function(success)
         if not success then
-            gg.log("保存玩家伙伴数据失败", uin)
+            --gg.log("保存玩家伙伴数据失败", uin)
         else
-            -- gg.log("保存玩家伙伴数据成功", uin)
+            -- --gg.log("保存玩家伙伴数据成功", uin)
         end
     end)
 

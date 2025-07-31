@@ -14,7 +14,7 @@ local RewardManager = require(MainStorage.Code.GameReward.RewardManager) --[[@ty
 ---@field maxPlayers number 最多人数
 ---@field scorePerMeter number 每米得分数
 ---@field raceTime number 比赛时长(秒)
----@field prepareTime number 准备时间(秒) 
+---@field prepareTime number 准备时间(秒)
 ---@field victoryCondition string 胜利条件
 ---@field baseRewards table 基础奖励列表
 ---@field rankRewards table<string, table> 排名奖励字典 (名次 -> 奖励配置)
@@ -30,34 +30,33 @@ function LevelType:OnInit(data)
     self.minPlayers = data["最少人数"] or 1
     self.maxPlayers = data["最多人数"] or 8
     self.scorePerMeter = data["每米得分数"] or 1.0
-    
+
     -- 玩法规则 - 转换为直接属性
     local gameplayRules = data["玩法规则"] or {}
     self.raceTime = gameplayRules["比赛时长"] or 60
     self.prepareTime = gameplayRules["准备时间"] or 10
-    self.victoryCondition = gameplayRules["胜利条件"] 
-    
+    self.victoryCondition = gameplayRules["胜利条件"]
+
     -- 基础奖励单独存储
     self.baseRewards = data["基础奖励"] or {}
-    
+
     -- rankRewards专门存储排名奖励: 排名名称 -> 奖励配置
     self.rankRewards = {}
     local rankRewards = data["排名奖励"] or {}
-    
+
     -- 将排名奖励转换为字典格式
     for _, rankReward in ipairs(rankRewards) do
         local rank = rankReward["名次"] or 0
         local rankName = string.format("第%d名", rank)
         self.rankRewards[rankName] = rankReward["奖励列表"] or {}
     end
-    
+
     -- 【新增】缓存计算器实例
     self._calculator = nil
-    
+
     -- 调试信息：显示关卡配置加载结果
     local gg = require(game:GetService("MainStorage").Code.Untils.MGlobal)
-    gg.log(string.format("LevelType 初始化完成 - 关卡: %s, 基础奖励数: %d, 每米得分: %.1f", 
-           self.name, #self.baseRewards, self.scorePerMeter))
+    --gg.log(string.format("LevelType 初始化完成 - 关卡: %s, 基础奖励数: %d, 每米得分: %.1f",self.name, #self.baseRewards, self.scorePerMeter))
 end
 
 --- 【新增】获取或创建并缓存奖励计算器
@@ -136,7 +135,7 @@ function LevelType:CalculateBaseRewards(playerData)
     local calculator = self:_GetCalculator()
     if not calculator then
         local gg = require(game:GetService("MainStorage").Code.Untils.MGlobal)
-        gg.log(string.format("错误: [LevelType] 无法为玩法 '%s' 获取奖励计算器。", self.defaultGameMode))
+        --gg.log(string.format("错误: [LevelType] 无法为玩法 '%s' 获取奖励计算器。", self.defaultGameMode))
         return {}
     end
 
@@ -144,4 +143,4 @@ function LevelType:CalculateBaseRewards(playerData)
     return calculator:CalcBaseReward(playerData, self)
 end
 
-return LevelType 
+return LevelType

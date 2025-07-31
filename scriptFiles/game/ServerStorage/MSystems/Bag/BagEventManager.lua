@@ -26,23 +26,23 @@ end
 function BagEventManager.RegisterEventHandlers()
     -- 获取背包物品
     ServerEventManager.Subscribe(BagEventManager.REQUEST.GET_BAG_ITEMS, function(evt) BagEventManager.HandleGetBagItems(evt) end)
-    
+
     -- 使用物品
     ServerEventManager.Subscribe(BagEventManager.REQUEST.USE_ITEM, function(evt) BagEventManager.HandleUseItem(evt) end)
-    
+
     -- 分解装备
     ServerEventManager.Subscribe(BagEventManager.REQUEST.DECOMPOSE_ITEM, function(evt) BagEventManager.HandleDecomposeItem(evt) end)
-    
+
     -- 交换物品位置
     ServerEventManager.Subscribe(BagEventManager.REQUEST.SWAP_ITEMS, function(evt) BagEventManager.HandleSwapItems(evt) end)
-    
+
     -- 打开所有宝箱
     ServerEventManager.Subscribe(BagEventManager.REQUEST.USE_ALL_BOXES, function(evt) BagEventManager.HandleUseAllBoxes(evt) end)
-    
+
     -- 分解所有低质量装备
     ServerEventManager.Subscribe(BagEventManager.REQUEST.DECOMPOSE_ALL_LOW_EQ, function(evt) BagEventManager.HandleDecomposeAllLowEq(evt) end)
 
-    gg.log("已注册 " .. 6 .. " 个背包事件处理器")
+    --gg.log("已注册 " .. 6 .. " 个背包事件处理器")
 end
 
 --- 验证玩家
@@ -52,13 +52,13 @@ function BagEventManager.ValidatePlayer(evt)
     local env_player = evt.player
     local uin = env_player.uin
     if not uin then
-        gg.log("背包事件缺少玩家UIN参数")
+        --gg.log("背包事件缺少玩家UIN参数")
         return nil
     end
 
     local player = gg.getPlayerByUin(uin)
     if not player then
-        gg.log("背包事件找不到玩家: " .. uin)
+        --gg.log("背包事件找不到玩家: " .. uin)
         return nil
     end
 
@@ -75,13 +75,13 @@ end
 --- 处理获取背包物品请求
 ---@param evt table 事件数据
 function BagEventManager.HandleGetBagItems(evt)
-    gg.log("同步背包数据",evt)
+    --gg.log("同步背包数据",evt)
     local player = BagEventManager.ValidatePlayer(evt)
     if not player then return end
     local bag = BagEventManager.GetPlayerBag(player.uin)
-    -- gg.log("玩家的背包对数据同步",evt.uin,bag ,bag.bag_items)
+    -- --gg.log("玩家的背包对数据同步",evt.uin,bag ,bag.bag_items)
     if bag ~=nil then
-        bag:SyncToClient() 
+        bag:SyncToClient()
     end
 end
 
@@ -148,4 +148,4 @@ function BagEventManager.HandleDecomposeAllLowEq(evt)
     -- end
 end
 
-return BagEventManager 
+return BagEventManager

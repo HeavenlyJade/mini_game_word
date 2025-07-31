@@ -18,17 +18,17 @@ local AchievementMgr = {
 ---@param playerId number 玩家ID
 function AchievementMgr.OnPlayerJoin(playerId)
     local Achievement = require(ServerStorage.MSystems.Achievement.Achievement) ---@type Achievement
-    gg.log("玩家上线，初始化成就数据:", Achievement)
+    --gg.log("玩家上线，初始化成就数据:", Achievement)
     -- 从云端加载数据
     local success, achievementData = AchievementCloudDataMgr.LoadPlayerAchievements(playerId)
-    
+
     -- 创建玩家成就实例，直接传入成就数据
-    gg.log("创建玩家成就实例", playerId, achievementData)
+    --gg.log("创建玩家成就实例", playerId, achievementData)
     local achievement = Achievement.New(playerId, achievementData) ---@type Achievement
-    
+
     -- 存储到管理器
     AchievementMgr.server_player_achievement_data[playerId] = achievement
-    
+
     -- 应用天赋效果（变量系统已在初始化时构建好）
     local player = MServerDataManager.getPlayerInfoByUin(playerId)
     achievement:ApplyAllTalentEffects(player)
@@ -38,14 +38,14 @@ end
 --- 玩家离线处理
 ---@param playerId number 玩家ID
 function AchievementMgr.OnPlayerLeave(playerId)
-    
+
     -- 保存数据
     AchievementMgr.SavePlayerAchievements(playerId)
-    
+
     -- 清理内存
     AchievementMgr.server_player_achievement_data[playerId] = nil
-    
-    gg.log("玩家离线，清理成就数据:", playerId)
+
+    --gg.log("玩家离线，清理成就数据:", playerId)
 end
 
 -- 数据保存 --------------------------------------------------------
@@ -57,7 +57,7 @@ function AchievementMgr.SavePlayerAchievements(playerId)
     if not playerAchievement then
         return
     end
-    
+
     local saveData = playerAchievement:GetSaveData()
     AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData)
 end
@@ -79,12 +79,12 @@ end
 ---@return boolean 是否升级成功
 function AchievementMgr.UpgradeTalent(playerId, talentId)
     local achievement = AchievementMgr.server_player_achievement_data[playerId]
-    
+
     if achievement then
         local player = MServerDataManager.getPlayerInfoByUin(playerId)
         return achievement:UpgradeTalent(talentId, player)
     end
-    
+
     return false
 end
 
@@ -92,7 +92,7 @@ end
 ---@param playerId number 玩家ID
 function AchievementMgr.ResetAllTalents(playerId)
     local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]
-    
+
     if playerAchievement then
         playerAchievement:ResetAllTalents()
     end
@@ -106,11 +106,11 @@ end
 ---@return boolean 是否解锁成功
 function AchievementMgr.UnlockAchievement(playerId, achievementId)
     local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]
-    
+
     if playerAchievement then
         return playerAchievement:UnlockNormalAchievement(achievementId)
     end
-    
+
     return false
 end
 
@@ -120,11 +120,11 @@ end
 ---@return boolean 是否已解锁
 function AchievementMgr.HasAchievement(playerId, achievementId)
     local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]
-    
+
     if playerAchievement then
         return playerAchievement:IsNormalAchievementUnlocked(achievementId)
     end
-    
+
     return false
 end
 
@@ -136,7 +136,7 @@ local function SaveAllPlayerAchievements()
         AchievementMgr.SavePlayerAchievements(playerId)
         count = count + 1
     end
-    -- gg.log("定时保存成就数据完成，保存了", count, "个玩家的数据")
+    -- --gg.log("定时保存成就数据完成，保存了", count, "个玩家的数据")
 end
 
 -- 定时器

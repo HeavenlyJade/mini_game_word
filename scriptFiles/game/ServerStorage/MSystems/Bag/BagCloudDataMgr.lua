@@ -49,13 +49,13 @@ function BagCloudDataMgr.ReadPlayerBag(player)
         if ret2_ and ret2_.items then
             -- 开发阶段，不进行兼容转换，直接加载
             bag:Load(ret2_)
-            gg.log("从云端加载背包数据成功", ret2_)
+            --gg.log("从云端加载背包数据成功", ret2_)
         else
-            gg.log("云端无背包数据，已创建空背包", player.uin)
+            --gg.log("云端无背包数据，已创建空背包", player.uin)
         end
         return 0, bag
     else
-        gg.log("读取云端背包失败，为玩家创建新背包", player.uin)
+        --gg.log("读取云端背包失败，为玩家创建新背包", player.uin)
         return 1, Bag.New(player) -- 读取失败，返回新背包
     end
 end
@@ -80,9 +80,9 @@ function BagCloudDataMgr.SavePlayerBag(uin, bag, force_)
         if bagData then
             cloudService:SetTableAsync('inv' .. uin, bagData, function(ret_)
                 if ret_ then
-                    -- gg.log("背包数据保存成功", uin)
+                    -- --gg.log("背包数据保存成功", uin)
                 else
-                    gg.log("背包数据保存失败", uin)
+                    --gg.log("背包数据保存失败", uin)
                 end
             end)
         end
@@ -101,11 +101,11 @@ end
 function BagCloudDataMgr.ClearPlayerBag(uin)
     cloudService:SetTableAsync('inv' .. uin, { items = {} }, function(ret_)
         if ret_ then
-            gg.log("背包数据清空成功", uin)
+            --gg.log("背包数据清空成功", uin)
         else
-            gg.log("背包数据清空失败", uin)
+            --gg.log("背包数据清空失败", uin)
         end
     end)
 end
 
-return BagCloudDataMgr 
+return BagCloudDataMgr

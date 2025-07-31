@@ -21,13 +21,13 @@ local AchievementEventManager = {}
 ---@param currentTalentLevel number 当前天赋等级
 ---@return number maxActions可以执行的最大次数
 local function CalculateMaxTalentActionExecutions(player, AchievementTypeIns, currentTalentLevel)
-    gg.log("CalculateMaxTalentActionExecutions",player, AchievementTypeIns, currentTalentLevel,AchievementTypeIns.actionCostType)
+    --gg.log("CalculateMaxTalentActionExecutions",player, AchievementTypeIns, currentTalentLevel,AchievementTypeIns.actionCostType)
     if not player or not AchievementTypeIns or not AchievementTypeIns:IsTalentAchievement() or currentTalentLevel == 0 then
         return 0
     end
 
     if not AchievementTypeIns.actionCostType  then
-        gg.log("警告: 天赋 " .. AchievementTypeIns.name .. " 没有找到有效的 actionCostType 配置。")
+        --gg.log("警告: 天赋 " .. AchievementTypeIns.name .. " 没有找到有效的 actionCostType 配置。")
         return 0
     end
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
@@ -35,9 +35,9 @@ local function CalculateMaxTalentActionExecutions(player, AchievementTypeIns, cu
     local playerConsumableData = player:GetConsumableData()
     -- 1. 一次性计算出动作等级1的所有消耗
     local costsForLevel1 = AchievementTypeIns:GetActionCosts(1, playerConsumableData, playerBag)
-    gg.log("costsForLevel1",costsForLevel1,playerConsumableData)
+    --gg.log("costsForLevel1",costsForLevel1,playerConsumableData)
     if not costsForLevel1 or #costsForLevel1 == 0 then
-        gg.log("警告: 无法计算天赋动作等级1的消耗，无法计算最大次数。")
+        --gg.log("警告: 无法计算天赋动作等级1的消耗，无法计算最大次数。")
         return 0
     end
 
@@ -113,9 +113,9 @@ local function SyncPlayerVariablesToClient(player)
     gg.network_channel:fireClient(player.uin, {
         cmd = require(MainStorage.Code.Event.EventPlayer).NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
         variableData = allVars,
-       
+
     })
-    gg.log("已主动同步玩家变量数据到客户端:", player.uin)
+    --gg.log("已主动同步玩家变量数据到客户端:", player.uin)
 end
 
 --- 应用天赋动作效果
@@ -125,14 +125,14 @@ end
 ---@param executionCount number 执行次数
 ---@return number successCount 成功应用效果的数量
 local function ApplyTalentActionEffects(AchievementTypeIns, player, playerId, executionCount)
-    gg.log("ApplyTalentActionEffects", AchievementTypeIns, player, playerId)
+    --gg.log("ApplyTalentActionEffects", AchievementTypeIns, player, playerId)
     if not AchievementTypeIns or not player then
         return 0
     end
 
     local actionCostType = AchievementTypeIns.actionCostType ---@type ActionCostType
     if not actionCostType then
-        gg.log(string.format("警告：天赋 %s 没有配置 actionCostType，无法应用效果", AchievementTypeIns.id))
+        --gg.log(string.format("警告：天赋 %s 没有配置 actionCostType，无法应用效果", AchievementTypeIns.id))
         return 0
     end
 
@@ -169,7 +169,7 @@ local function CalculateTotalTalentActionCosts(AchievementTypeIns, player, execu
         })
     end
 
-    gg.log("计算出的总消耗:", totalCosts, "执行次数:", executionCount)
+    --gg.log("计算出的总消耗:", totalCosts, "执行次数:", executionCount)
     return totalCosts
 end
 
@@ -191,7 +191,7 @@ end
 -- 初始化事件管理器
 function AchievementEventManager.Init()
     AchievementEventManager.RegisterNetworkHandlers()
-    gg.log("AchievementEventManager 初始化完成")
+    --gg.log("AchievementEventManager 初始化完成")
 end
 
 -- 注册网络事件处理器
@@ -271,7 +271,7 @@ end
 
 -- 处理升级天赋成就请求
 function AchievementEventManager.HandleUpgradeTalent(event)
-    gg.log("HandleUpgradeTalent",event)
+    --gg.log("HandleUpgradeTalent",event)
     local env_player = event.player
     local uin = env_player.uin
 
@@ -279,7 +279,7 @@ function AchievementEventManager.HandleUpgradeTalent(event)
     local talentId = params.talentId
     local playerId = uin
 
-    gg.log("处理升级天赋成就请求:", playerId, talentId)
+    --gg.log("处理升级天赋成就请求:", playerId, talentId)
 
     if not talentId or talentId == "" then
         return
@@ -309,13 +309,13 @@ function AchievementEventManager.HandleUpgradeTalent(event)
 
     -- 【关键】检查和扣除升级消耗
     local costs = AchievementTypeIns:GetUpgradeCosts(oldLevel)
-    gg.log("升级消耗:", costs)
+    --gg.log("升级消耗:", costs)
     if not BaseUntils.CheckCosts(player, costs) then
-        gg.log("升级材料不足:", costs,oldLevel)
+        --gg.log("升级材料不足:", costs,oldLevel)
         return
     end
     if not BaseUntils.DeductCosts(player, costs) then
-        gg.log("扣除材料失败:", costs)
+        --gg.log("扣除材料失败:", costs)
         return
     end
     -- 同步背包变化到客户端
@@ -340,18 +340,18 @@ function AchievementEventManager.HandleUpgradeTalent(event)
 
         -- 发送升级通知
 
-        gg.log("天赋升级成功:", playerId, talentId, oldLevel, "->", newLevel)
+        --gg.log("天赋升级成功:", playerId, talentId, oldLevel, "->", newLevel)
 
     else
         -- 理论上不应该到这里，因为前面已经检查过所有条件
-        gg.log("警告：天赋升级意外失败:", playerId, talentId)
+        --gg.log("警告：天赋升级意外失败:", playerId, talentId)
     end
 end
 
 
 -- 处理获取天赋等级请求
 function AchievementEventManager.HandleGetTalentLevel(event)
-    gg.log("HandleGetTalentLevel", event)
+    --gg.log("HandleGetTalentLevel", event)
     local uin = event.player.uin
     local params = event.args or {}
     local talentId = params.talentId
@@ -408,14 +408,14 @@ function AchievementEventManager.HandleGetTalentLevel(event)
             end
             costsByLevel[i] = finalCosts
         else
-            gg.log(string.format("警告: 天赋 '%s' 等级 %d 的效果值(执行次数)无效或未配置, 无法计算消耗。", AchievementTypeIns.name, i))
+            --gg.log(string.format("警告: 天赋 '%s' 等级 %d 的效果值(执行次数)无效或未配置, 无法计算消耗。", AchievementTypeIns.name, i))
             costsByLevel[i] = {} -- 返回空消耗
         end
     end
 
     -- 计算最大可执行次数
     local maxExecutions = CalculateMaxTalentActionExecutions(player, AchievementTypeIns, currentTalentLevel)
-    gg.log(string.format("玩家 %s 的天赋 '%s' 最大可执行次数为: %d", playerId, talentId, maxExecutions))
+    --gg.log(string.format("玩家 %s 的天赋 '%s' 最大可执行次数为: %d", playerId, talentId, maxExecutions))
 
     -- 计算最大执行次数的总消耗
     local maxExecutionTotalCost = 0 -- 改为数值
@@ -455,7 +455,7 @@ function AchievementEventManager.HandleGetTalentLevel(event)
         costsByLevel = costsByLevel,
         maxExecutions = maxExecutions,
         maxExecutionTotalCost = maxExecutionTotalCost,
-        playerResources = playerResources 
+        playerResources = playerResources
     }
 
     AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE, responseData)
@@ -485,7 +485,7 @@ function AchievementEventManager.HandlePerformTalentAction(event)
     -- 1. 校验资格
     local currentTalentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
     if currentTalentLevel < targetLevel then
-        gg.log("资格不足: 当前天赋等级", currentTalentLevel, "目标动作等级", targetLevel)
+        --gg.log("资格不足: 当前天赋等级", currentTalentLevel, "目标动作等级", targetLevel)
         return
     end
 
@@ -497,21 +497,21 @@ function AchievementEventManager.HandlePerformTalentAction(event)
 
     -- 2. 计算效果 (奖励)
     local LevelEffectTable = AchievementTypeIns:GetLevelEffectValue(targetLevel)
-    gg.log("LevelEffectTable",LevelEffectTable)
+    --gg.log("LevelEffectTable",LevelEffectTable)
     if not next(LevelEffectTable)  then
-        gg.log("计算效果值为0或无效，操作终止", LevelEffectTable)
+        --gg.log("计算效果值为0或无效，操作终止", LevelEffectTable)
         return
     end
     local executionCount = 1
     if LevelEffectTable and #LevelEffectTable > 0 then
-        executionCount = LevelEffectTable[1]["数值"] 
+        executionCount = LevelEffectTable[1]["数值"]
     end
-    gg.log(string.format("等级 %d 将执行 %d 次效果", targetLevel, executionCount))
+    --gg.log(string.format("等级 %d 将执行 %d 次效果", targetLevel, executionCount))
 
     -- 3. 计算总消耗（修复：使用总消耗计算函数，而不是获取单次消耗）
     local costs = CalculateTotalTalentActionCosts(AchievementTypeIns, player, executionCount)
     if not costs then
-        gg.log("计算天赋动作总消耗失败")
+        --gg.log("计算天赋动作总消耗失败")
         return
     end
 
@@ -519,16 +519,16 @@ function AchievementEventManager.HandlePerformTalentAction(event)
     if not BaseUntils.CheckCosts(player, costs) then
         return
     end
-    
+
     -- 5. 扣除消耗
     if not BaseUntils.DeductCosts(player, costs) then
-        gg.log("扣除材料失败:", costs)
+        --gg.log("扣除材料失败:", costs)
         return
     end
     -- 6. 应用效果
     local successCount = ApplyTalentActionEffects(AchievementTypeIns, player, playerId, executionCount)
     if successCount == 0 then
-        gg.log("应用天赋动作效果失败")
+        --gg.log("应用天赋动作效果失败")
         return
     end
 
@@ -575,45 +575,45 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
     -- 1. 获取当前天赋等级
     local currentTalentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
     if currentTalentLevel < 1 then
-        gg.log("最大化重生失败: 天赋等级不足，当前等级", currentTalentLevel)
+        --gg.log("最大化重生失败: 天赋等级不足，当前等级", currentTalentLevel)
         return
     end
 
     -- 2. 计算可执行的最大次数
     local maxExecutions = CalculateMaxTalentActionExecutions(player, AchievementTypeIns, currentTalentLevel)
     if maxExecutions <= 0 then
-        gg.log("最大化重生失败: 无法计算最大执行次数或资源不足")
+        --gg.log("最大化重生失败: 无法计算最大执行次数或资源不足")
         return
     end
 
-    gg.log(string.format("计算出的最大执行次数: %d", maxExecutions))
+    --gg.log(string.format("计算出的最大执行次数: %d", maxExecutions))
 
     -- 3. 计算总消耗
     local totalCosts = CalculateTotalTalentActionCosts(AchievementTypeIns, player, maxExecutions)
     if not totalCosts then
-        gg.log("最大化重生失败: 无法计算总消耗")
+        --gg.log("最大化重生失败: 无法计算总消耗")
         return
     end
 
     -- 4. 检查并扣除总消耗
     if not BaseUntils.CheckCosts(player, totalCosts) then
-        gg.log("最大化重生失败: 检查总消耗失败")
+        --gg.log("最大化重生失败: 检查总消耗失败")
         return
     end
-    
+
     if not BaseUntils.DeductCosts(player, totalCosts) then
-        gg.log("最大化重生失败: 扣除总消耗失败")
+        --gg.log("最大化重生失败: 扣除总消耗失败")
         return
     end
 
     -- 5. 应用效果
     local successCount = ApplyTalentActionEffects(AchievementTypeIns, player, playerId, maxExecutions)
     if successCount == 0 then
-        gg.log("最大化重生：应用效果失败")
+        --gg.log("最大化重生：应用效果失败")
         -- 这里可能需要回滚消耗，但通常ApplyTalentActionEffects失败的概率很低
         return
     end
-    
+
     -- 6. 计算总效果值 (用于日志或响应)
     local singleEffectValue = AchievementTypeIns:GetLevelEffectValue(1)[1]["数值"]
     local totalEffectValue = singleEffectValue * maxExecutions
@@ -631,7 +631,7 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
     SyncBagToClient(player)
     SyncPlayerVariablesToClient(player)
 
-    gg.log(string.format("最大化重生完成，共执行 %d 次，成功应用效果 %d 次", maxExecutions, successCount))
+    --gg.log(string.format("最大化重生完成，共执行 %d 次，成功应用效果 %d 次", maxExecutions, successCount))
 end
 
 
@@ -648,7 +648,7 @@ function AchievementEventManager.SendUnlockNotification(uin, achievementId)
         cmd = AchievementEventConfig.NOTIFY.ACHIEVEMENT_UNLOCKED,
         data = notificationData
     })
-    gg.log("发送成就解锁通知:", uin, achievementId)
+    --gg.log("发送成就解锁通知:", uin, achievementId)
 end
 
 -- 通用响应方法 --------------------------------------------------------
@@ -673,7 +673,7 @@ function AchievementEventManager.NotifyAllDataToClient(uin)
     local playerAchievement = AchievementMgr.server_player_achievement_data[uin]
 
     if not playerAchievement then
-        gg.log("警告: 玩家", uin, "的天赋成就数据不存在，跳过天赋数据同步")
+        --gg.log("警告: 玩家", uin, "的天赋成就数据不存在，跳过天赋数据同步")
         return
     end
 
@@ -708,7 +708,7 @@ function AchievementEventManager.NotifyAllDataToClient(uin)
         cmd = AchievementEventConfig.RESPONSE.LIST_RESPONSE,
         data = achievementResponseData
     })
-    gg.log("已主动同步天赋成就数据到客户端:", uin, "天赋数量:", achievementResponseData)
+    --gg.log("已主动同步天赋成就数据到客户端:", uin, "天赋数量:", achievementResponseData)
 
     -- 2. 为RebirthGui主动推送'重生'天赋的等级
     local rebirthTalentLevel = playerAchievement:GetTalentLevel("重生")
@@ -719,7 +719,7 @@ function AchievementEventManager.NotifyAllDataToClient(uin)
             currentLevel = rebirthTalentLevel
         }
     })
-    gg.log("已为RebirthGui主动同步'重生'天赋等级:", rebirthTalentLevel)
+    --gg.log("已为RebirthGui主动同步'重生'天赋等级:", rebirthTalentLevel)
 end
 
 

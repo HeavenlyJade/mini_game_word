@@ -40,7 +40,7 @@ function GameModeBase:AddDelay(delay, callback)
         end
         callback()
     end
-    
+
     timer = ScheduledTask.AddDelay(delay, "GameModeBase_Delay_" .. delay, wrappedCallback)
     if timer then
         self.activeTimers[timer] = true
@@ -76,7 +76,7 @@ end
 ---@return boolean 是否成功传送至少一个玩家
 function GameModeBase:TeleportAllPlayersToPosition(targetPosition, logPrefix)
     if not targetPosition then
-        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 目标位置为空")
+        --gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 目标位置为空")
         return false
     end
 
@@ -90,14 +90,12 @@ function GameModeBase:TeleportAllPlayersToPosition(targetPosition, logPrefix)
             totalCount = totalCount + 1
             TeleportService:Teleport(player.actor, targetPosition)
             successCount = successCount + 1
-            gg.log(string.format("%s: 已传送玩家 %s 到位置 %s", 
-                logPrefix or "GameModeBase", player.name, tostring(targetPosition)))
+            --gg.log(string.format("%s: 已传送玩家 %s 到位置 %s",logPrefix or "GameModeBase", player.name, tostring(targetPosition)))
         end
     end
 
-    gg.log(string.format("%s: 传送完成 - 成功: %d/%d", 
-        logPrefix or "GameModeBase", successCount, totalCount))
-    
+    --gg.log(string.format("%s: 传送完成 - 成功: %d/%d",logPrefix or "GameModeBase", successCount, totalCount))
+
     return successCount > 0
 end
 
@@ -106,13 +104,13 @@ end
 ---@param logPrefix string|nil 日志前缀
 ---@return boolean 是否成功传送
 function GameModeBase:TeleportAllPlayersToHandlerNode(nodeType, logPrefix)
-    
+
     -- 延迟加载，避免循环依赖
     local serverDataMgr = require(game:GetService("ServerStorage").Manager.MServerDataManager)
     local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
 
     if not handler then
-        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 无法找到处理器实例")
+        --gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 无法找到处理器实例")
         return false
     end
 
@@ -122,12 +120,12 @@ function GameModeBase:TeleportAllPlayersToHandlerNode(nodeType, logPrefix)
     elseif nodeType == "teleport" then
         targetNode = handler.teleportNode
     else
-        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 未知节点类型: " .. tostring(nodeType))
+        --gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 未知节点类型: " .. tostring(nodeType))
         return false
     end
 
     if not targetNode or not targetNode.Position then
-        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - " .. nodeType .. "节点不存在或无位置信息")
+        --gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - " .. nodeType .. "节点不存在或无位置信息")
         return false
     end
 
@@ -164,7 +162,7 @@ function GameModeBase:Destroy()
     for timer, _ in pairs(self.activeTimers) do
         ScheduledTask.Remove(timer)
     end
-    
+
     -- 清空追踪表和参与者列表
     self.activeTimers = {}
     self.participants = {}

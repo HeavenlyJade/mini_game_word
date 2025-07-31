@@ -87,15 +87,15 @@ function ViewList:SetElementSize(size)
     -- 只保留模板节点（如'背景'）克隆逻辑
     local templateKey, templateNode
     local count = 0
-    gg.log("self.childrens",self.childrens)
+    --gg.log("self.childrens",self.childrens)
     for k, v in pairs(self.childrens) do
         templateKey = k
         templateNode = v
         count = count + 1
     end
     -- 扩容
-    gg.log("templateKey",templateKey)
-    gg.log("templateNode",templateNode.node)
+    --gg.log("templateKey",templateKey)
+    --gg.log("templateNode",templateNode.node)
     for i = #self.childrensList + 1, size do
 
         if  templateKey and templateNode then
@@ -117,8 +117,8 @@ function ViewList:SetElementSize(size)
             end
         end
     end
-    gg.log("生成后的",self.childrensList)
-    gg.log("self.childrens",self.childrens)
+    --gg.log("生成后的",self.childrensList)
+    --gg.log("self.childrens",self.childrens)
     -- -- 显示/隐藏并同步移除多余名字key
     -- for i = 1, #self.childrensList do
     --     local button = self.childrensList[i]

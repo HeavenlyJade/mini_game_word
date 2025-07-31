@@ -23,7 +23,7 @@ function Pet:OnInit(uin, playerPetData)
     BaseCompanion.OnInit(self, uin, "宠物", equipSlotIds)
 
     self:LoadFromPetData(playerPetData)
-    gg.log("Pet管理器创建", uin, "宠物数量", self:GetCompanionCount())
+    --gg.log("Pet管理器创建", uin, "宠物数量", self:GetCompanionCount())
 end
 
 -- =================================
@@ -99,7 +99,7 @@ function Pet:LoadFromPetData(playerPetData)
         end
     end
 
-    gg.log("从宠物数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "宠物数", self:GetCompanionCount())
+    --gg.log("从宠物数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "宠物数", self:GetCompanionCount())
 end
 
 ---获取宠物列表信息（兼容原接口）
@@ -170,7 +170,7 @@ end
 
 ---【废弃】旧的单一激活接口
 function Pet:SetActivePet(slotIndex)
-    gg.log("警告: SetActivePet 是一个废弃的接口，请使用 EquipPet 或 UnequipPet。")
+    --gg.log("警告: SetActivePet 是一个废弃的接口，请使用 EquipPet 或 UnequipPet。")
     return false, "接口已废弃"
 end
 
@@ -337,7 +337,7 @@ function Pet:SetUnlockedEquipSlots(count)
     if count and count > 0 then
         local maxEquipped = #self.equipSlotIds
         self.unlockedEquipSlots = math.min(count, maxEquipped)
-        gg.log("玩家", self.uin, "可携带宠物栏位数量已设置为", self.unlockedEquipSlots)
+        --gg.log("玩家", self.uin, "可携带宠物栏位数量已设置为", self.unlockedEquipSlots)
     end
 end
 
@@ -346,7 +346,7 @@ end
 function Pet:SetPetBagCapacity(capacity)
     if capacity and capacity > 0 then
         self.maxSlots = capacity
-        gg.log("玩家", self.uin, "宠物背包容量已设置为", self.maxSlots)
+        --gg.log("玩家", self.uin, "宠物背包容量已设置为", self.maxSlots)
     end
 end
 

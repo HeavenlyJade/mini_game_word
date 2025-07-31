@@ -29,11 +29,11 @@ function RaceGameAction:OnStart(data)
     ---@type Actor
     local actor = gg.getClientLocalPlayer()
     if not actor then
-        gg.log("RaceGameAction: 无法获取 Actor，模块启动失败。")
+        --gg.log("RaceGameAction: 无法获取 Actor，模块启动失败。")
         self:OnEnd() -- 启动失败也应通知管理器结束
         return
     end
-    gg.log("游戏启动",actor,data)
+    --gg.log("游戏启动",actor,data)
     -- 1. 解析参数
     local jumpSpeed = data.jumpSpeed
     local moveSpeed = data.moveSpeed
@@ -46,8 +46,8 @@ function RaceGameAction:OnStart(data)
     self.originalMoveSpeed = actor.Movespeed
     self.originalGravity = actor.Gravity -- 新增：保存原始重力
     actor.Gravity =0  -- 应用新的重力值
-    gg.log("启动了客户的动画222",actor:GetCurMoveState() )
-    gg.log("启动了客户的动画222")
+    --gg.log("启动了客户的动画222",actor:GetCurMoveState() )
+    --gg.log("启动了客户的动画222")
     actor.Movespeed = moveSpeed
     actor.Animator:Play("Base Layer.fei", 0, 0)
 
@@ -91,7 +91,7 @@ end
 function RaceGameAction:OnEnd()
     ---@type Actor
     local actor = gg.getClientLocalPlayer()
-    gg.log("客户的游戏结束")
+    --gg.log("客户的游戏结束")
     if self.isEnding then
         return -- 如果已经在结束流程中，则直接返回，防止重复执行
     end
@@ -112,9 +112,9 @@ function RaceGameAction:OnEnd()
         if self.respawnPosition then
             local TeleportService = game:GetService('TeleportService')
             TeleportService:Teleport(actor, self.respawnPosition)
-            gg.log("RaceGameAction: 已将玩家传送到重生点: " .. tostring(self.respawnPosition))
+            --gg.log("RaceGameAction: 已将玩家传送到重生点: " .. tostring(self.respawnPosition))
         else
-            gg.log("RaceGameAction: 警告 - 未收到有效的重生点坐标，无法传送。")
+            --gg.log("RaceGameAction: 警告 - 未收到有效的重生点坐标，无法传送。")
         end
     end
 

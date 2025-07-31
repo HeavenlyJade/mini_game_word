@@ -32,7 +32,7 @@ function BaseCompanion:OnInit(uin, companionType, equipSlotIds)
     self.unlockedEquipSlots = 1 -- 默认值，将在LoadData时被覆盖
     self.companionType = companionType or "未知"
 
-    gg.log("BaseCompanion基类初始化", uin, "类型", self.companionType, "可用装备栏", table.concat(self.equipSlotIds, ", "))
+    --gg.log("BaseCompanion基类初始化", uin, "类型", self.companionType, "可用装备栏", table.concat(self.equipSlotIds, ", "))
 end
 
 -- =================================
@@ -72,7 +72,7 @@ function BaseCompanion:DeleteCompanion(slotIndex)
     end
 
     self.companionInstances[slotIndex] = nil
-    gg.log("删除伙伴成功", self.uin, self.companionType, slotIndex)
+    --gg.log("删除伙伴成功", self.uin, self.companionType, slotIndex)
     return true, nil
 end
 
@@ -108,7 +108,7 @@ end
 ---@return CompanionInstance|nil 伙伴实例
 function BaseCompanion:CreateCompanionInstance(companionData, slotIndex)
     if not companionData then
-        gg.log("警告：伙伴数据无效", self.companionType, slotIndex)
+        --gg.log("警告：伙伴数据无效", self.companionType, slotIndex)
         return nil
     end
 
@@ -239,7 +239,7 @@ function BaseCompanion:AddCompanion(companionName, slotIndex)
     local companionInstance = self:CreateCompanionInstance(newCompanionData, slotIndex)
     if companionInstance then
         self.companionInstances[slotIndex] = companionInstance
-        gg.log("添加伙伴成功", self.uin, self.companionType, companionName, "槽位", slotIndex)
+        --gg.log("添加伙伴成功", self.uin, self.companionType, companionName, "槽位", slotIndex)
         return true, nil, slotIndex
     else
         return false, "创建伙伴实例失败", nil
@@ -266,7 +266,7 @@ function BaseCompanion:RemoveCompanion(slotIndex)
     -- 移除伙伴实例
     self.companionInstances[slotIndex] = nil
 
-    gg.log("移除伙伴成功", self.uin, self.companionType, companionInstance:GetConfigName(), "槽位", slotIndex)
+    --gg.log("移除伙伴成功", self.uin, self.companionType, companionInstance:GetConfigName(), "槽位", slotIndex)
     return true, nil
 end
 
@@ -315,7 +315,7 @@ function BaseCompanion:EquipCompanion(companionSlotId, equipSlotId)
     self.activeCompanionSlots[equipSlotId] = companionSlotId
     companionToEquip:SetActive(true)
 
-    gg.log(string.format("装备伙伴成功: 玩家 %d, 类型 %s, 背包槽位 %d -> 装备栏 %s", self.uin, self.companionType, companionSlotId, equipSlotId))
+    --gg.log(string.format("装备伙伴成功: 玩家 %d, 类型 %s, 背包槽位 %d -> 装备栏 %s", self.uin, self.companionType, companionSlotId, equipSlotId))
     return true, nil
 end
 
@@ -331,7 +331,7 @@ function BaseCompanion:UnequipCompanion(equipSlotId)
             companionInstance:SetActive(false)
         end
         self.activeCompanionSlots[equipSlotId] = nil
-        gg.log(string.format("卸下伙伴成功: 玩家 %d, 类型 %s, 从装备栏 %s (原背包槽位 %d)", self.uin, self.companionType, equipSlotId, companionSlotId))
+        --gg.log(string.format("卸下伙伴成功: 玩家 %d, 类型 %s, 从装备栏 %s (原背包槽位 %d)", self.uin, self.companionType, equipSlotId, companionSlotId))
         return true
     end
     return false
@@ -412,7 +412,7 @@ function BaseCompanion:ConsumeCompanions(companionName, count, requiredStar, exc
     local candidates = self:FindCompanionsByCondition(companionName, requiredStar, excludeSlot)
 
     if #candidates < count then
-        gg.log("伙伴材料不足", self.uin, self.companionType, companionName, "需要", count, "找到", #candidates)
+        --gg.log("伙伴材料不足", self.uin, self.companionType, companionName, "需要", count, "找到", #candidates)
         return false
     end
 
@@ -420,7 +420,7 @@ function BaseCompanion:ConsumeCompanions(companionName, count, requiredStar, exc
     for i = 1, count do
         local slotToRemove = candidates[i]
         self:RemoveCompanion(slotToRemove)
-        gg.log("消耗伙伴", self.uin, self.companionType, companionName, "槽位", slotToRemove)
+        --gg.log("消耗伙伴", self.uin, self.companionType, companionName, "槽位", slotToRemove)
     end
 
     return true
@@ -475,14 +475,14 @@ function BaseCompanion:UpgradeCompanionStar(slotIndex)
             end
         elseif material["消耗类型"] == "物品" then
             -- TODO: 实现物品消耗逻辑
-            gg.log("升星需要物品材料", material["材料物品"], material["需要数量"])
+            --gg.log("升星需要物品材料", material["材料物品"], material["需要数量"])
         end
     end
 
     -- 执行升星
     local success, errorMsg = companionInstance:DoUpgradeStar()
     if success then
-        gg.log("伙伴升星成功", self.uin, self.companionType, companionInstance:GetConfigName(), "新星级", companionInstance:GetStarLevel())
+        --gg.log("伙伴升星成功", self.uin, self.companionType, companionInstance:GetConfigName(), "新星级", companionInstance:GetStarLevel())
     end
 
     return success, errorMsg
@@ -607,7 +607,7 @@ function BaseCompanion:UpgradeAllPossibleCompanions()
     -- 持续循环，直到在一轮完整的遍历中没有任何伙伴可以升星
     while hasUpgradedInLoop do
         hasUpgradedInLoop = false
-        
+
         -- 创建一个槽位索引的列表，以确保遍历顺序稳定
         local slotsToCheck = {}
         for slotIndex, _ in pairs(self.companionInstances) do
@@ -625,23 +625,23 @@ function BaseCompanion:UpgradeAllPossibleCompanions()
                     if success then
                         totalUpgradedCount = totalUpgradedCount + 1
                         hasUpgradedInLoop = true -- 标记本轮有升星发生，需要再来一轮
-                        gg.log(string.format("一键升星: 玩家 %d 的 %s (槽位 %d) 升星成功", self.uin, self.companionType, slotIndex))
+                        --gg.log(string.format("一键升星: 玩家 %d 的 %s (槽位 %d) 升星成功", self.uin, self.companionType, slotIndex))
                         -- 因为升星消耗了其他伙伴，所以从外层循环重新开始检查是更安全的做法
-                        break 
+                        break
                     else
-                        gg.log(string.format("一键升星: 尝试为 %s (槽位 %d) 升星失败: %s", self.companionType, slotIndex, errorMsg or "未知错误"))
+                        --gg.log(string.format("一键升星: 尝试为 %s (槽位 %d) 升星失败: %s", self.companionType, slotIndex, errorMsg or "未知错误"))
                     end
                 end
             end
         end
     end
-    
+
     if totalUpgradedCount > 0 then
-        gg.log(string.format("一键升星完成: 玩家 %d 的 %s 总共升星 %d 次", self.uin, self.companionType, totalUpgradedCount))
+        --gg.log(string.format("一键升星完成: 玩家 %d 的 %s 总共升星 %d 次", self.uin, self.companionType, totalUpgradedCount))
     else
-        gg.log(string.format("一键升星: 玩家 %d 的 %s 没有可升星的伙伴", self.uin, self.companionType))
+        --gg.log(string.format("一键升星: 玩家 %d 的 %s 没有可升星的伙伴", self.uin, self.companionType))
     end
-    
+
     return totalUpgradedCount
 end
 

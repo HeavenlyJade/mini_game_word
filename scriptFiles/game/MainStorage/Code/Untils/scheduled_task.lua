@@ -32,7 +32,7 @@ function ScheduledTask.Init()
     end
     timersNode = SandboxNode.New("SandboxNode", game.WorkSpace) -- 【修正】 "Folder" 不是有效的节点类型，使用通用的 "SandboxNode" 作为容器
     timersNode.Name = name
-    gg.log("全局任务调度器 ScheduledTask 已初始化。")
+    --gg.log("全局任务调度器 ScheduledTask 已初始化。")
 end
 
 ---
@@ -43,7 +43,7 @@ end
 ---@return Timer|nil 返回创建的Timer实例，如果未初始化则返回nil
 function ScheduledTask.AddDelay(delay,name, callback)
     if not timersNode or timersNode.isDestroyed then
-        gg.log("ERROR: [ScheduledTask] 模块未初始化。请在启动脚本中调用 ScheduledTask.Init()。")
+        --gg.log("ERROR: [ScheduledTask] 模块未初始化。请在启动脚本中调用 ScheduledTask.Init()。")
         return nil
     end
     local timer = SandboxNode.New("Timer", timersNode)
@@ -63,7 +63,7 @@ end
 ---@return Timer|nil 返回创建的Timer实例，如果未初始化则返回nil
 function ScheduledTask.AddInterval(interval,name, callback)
     if not timersNode or timersNode.isDestroyed then
-        gg.log("ERROR: [ScheduledTask] 模块未初始化。请在启动脚本中调用 ScheduledTask.Init()。")
+        --gg.log("ERROR: [ScheduledTask] 模块未初始化。请在启动脚本中调用 ScheduledTask.Init()。")
         return nil
     end
     local timer = SandboxNode.New("Timer", timersNode) ---@type Timer

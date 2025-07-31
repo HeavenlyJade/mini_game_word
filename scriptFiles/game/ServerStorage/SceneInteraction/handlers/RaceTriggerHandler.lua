@@ -22,7 +22,7 @@ function RaceTriggerHandler:OnEntityEnter(player)
     -- 【核心修正】从处理器配置中获取关联的关卡ID，使用面向对象的方式访问
     local levelId = self.config.linkedLevel
     if not levelId then
-        gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'linkedLevel'字段。", self.name))
+        --gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'linkedLevel'字段。", self.name))
         return
     end
 
@@ -32,35 +32,35 @@ function RaceTriggerHandler:OnEntityEnter(player)
     local levelConfig = ConfigLoader.Levels
     local levelData = levelConfig and levelConfig[levelId] ---@type LevelType
     if not levelData then
-        gg.log(string.format("错误: 飞车触发器(%s) - 在LevelConfig中找不到ID为'%s'的关卡配置。", self.name, levelId))
+        --gg.log(string.format("错误: 飞车触发器(%s) - 在LevelConfig中找不到ID为'%s'的关卡配置。", self.name, levelId))
         return
     end
-    
+
     -- 【调试】输出关卡数据信息
 
     if levelData then
         -- 如果defaultGameMode为空，尝试输出原始数据
         if not levelData.defaultGameMode or levelData.defaultGameMode == "" then
-            gg.log("调试: defaultGameMode为空，检查原始配置数据...")
-            
+            --gg.log("调试: defaultGameMode为空，检查原始配置数据...")
+
             -- 尝试访问原始的LevelConfig数据
             local LevelConfig = require(MainStorage.Code.Common.Config.LevelConfig)
             local rawData = LevelConfig.Data[levelId]
             if rawData then
-                gg.log(string.format("调试: 原始配置中的'默认玩法' = %s", tostring(rawData["默认玩法"])))
+                --gg.log(string.format("调试: 原始配置中的'默认玩法' = %s", tostring(rawData["默认玩法"])))
                 for key, value in pairs(rawData) do
-                    gg.log(string.format("调试: 原始配置[%s] = %s", tostring(key), tostring(value)))
+                    --gg.log(string.format("调试: 原始配置[%s] = %s", tostring(key), tostring(value)))
                 end
             else
-                gg.log("调试: 在原始LevelConfig中也找不到该关卡数据")
+                --gg.log("调试: 在原始LevelConfig中也找不到该关卡数据")
             end
         end
     end
-    
+
     -- 3. 从关卡规则中，获取游戏模式的名称
     local gameModeName = levelData.defaultGameMode
     if not gameModeName or gameModeName == "" then
-        gg.log(string.format("错误: 飞车触发器(%s) - 关卡'%s'的配置中缺少'默认玩法'字段。", self.name, levelId))
+        --gg.log(string.format("错误: 飞车触发器(%s) - 关卡'%s'的配置中缺少'默认玩法'字段。", self.name, levelId))
         return
     end
 
@@ -68,22 +68,22 @@ function RaceTriggerHandler:OnEntityEnter(player)
     -- 我们使用场景节点配置中的'唯一ID'作为这场比赛的唯一实例ID
     local instanceId = self.config.uuid
     if not instanceId then
-        gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'uuid'字段。", self.name))
+        --gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'uuid'字段。", self.name))
         return
     end
-    
+
     GameModeManager:AddPlayerToMode(player, gameModeName, instanceId, levelData, self.handlerId)
 
-    gg.log(string.format("成功: 飞车触发器 - 玩家 %s 已被请求加入游戏模式 %s (实例ID: %s)", player.name, gameModeName, instanceId))
+    --gg.log(string.format("成功: 飞车触发器 - 玩家 %s 已被请求加入游戏模式 %s (实例ID: %s)", player.name, gameModeName, instanceId))
 end
 
 --- 当实体离开触发区域时调用
 ---@param player MPlayer
 function RaceTriggerHandler:OnEntityLeave(player)
     if not player then return end
-    gg.log(string.format("玩家 %s 离开了 '%s' 触发区域。", player.name, self.name))
+    --gg.log(string.format("玩家 %s 离开了 '%s' 触发区域。", player.name, self.name))
     -- 目前，离开区域不会将玩家从比赛中移除，只记录日志。
     -- 这是为了防止玩家在比赛开始前误操作离开区域。
 end
 
-return RaceTriggerHandler 
+return RaceTriggerHandler

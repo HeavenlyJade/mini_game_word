@@ -179,7 +179,7 @@ function _M:TryFindTarget(detectRange)
     local nearestTarget = nil
     local minDistanceSq = detectRangeSq
 
-    -- gg.log("TryFindTarget", enemies)
+    -- --gg.log("TryFindTarget", enemies)
     for _, entity in ipairs(enemies) do
         -- 检查是否是敌对单位
         if entity.isEntity and not entity.isDead then
@@ -407,7 +407,7 @@ function _M:UpdateBehavior()
             -- 进入新行为
             self.currentBehavior = newBehavior
             BehaviorTree[newBehavior["类型"]]:OnEnter(self)
-            -- gg.log("EnterBehavior", self, newBehavior["类型"])
+            -- --gg.log("EnterBehavior", self, newBehavior["类型"])
         end
     end
 end
@@ -427,11 +427,11 @@ end
 -- --- 处理待释放的技能
 -- function _M:ProcessPendingSkills()
 --     if #self.pendingSkills == 0 then return end
-    
+
 --     -- 复制待释放技能列表
 --     local skillsToCast = self.pendingSkills
 --     self.pendingSkills = {}
-    
+
 --     -- 释放所有待释放的技能
 --     for _, skill in ipairs(skillsToCast) do
 --         skill:CastSkill(self, self.target)

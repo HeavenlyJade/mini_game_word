@@ -28,12 +28,12 @@ local PetMgr = {
 ---@param player MPlayer 玩家对象
 function PetMgr.OnPlayerJoin(player)
     if not player or not player.uin then
-        gg.log("玩家上线处理失败：玩家对象无效")
+        --gg.log("玩家上线处理失败：玩家对象无效")
         return
     end
 
     local uin = player.uin
-    gg.log("开始处理玩家宠物上线", uin)
+    --gg.log("开始处理玩家宠物上线", uin)
 
     -- 从云端加载玩家宠物数据
     local playerPetData = CloudPetDataAccessor:LoadPlayerPetData(uin)
@@ -42,7 +42,7 @@ function PetMgr.OnPlayerJoin(player)
     local petManager = Pet.New(uin, playerPetData)
     PetMgr.server_player_pets[uin] = petManager
 
-    gg.log("玩家宠物管理器加载完成", uin, "宠物数量", petManager:GetPetCount())
+    --gg.log("玩家宠物管理器加载完成", uin, "宠物数量", petManager:GetPetCount())
 end
 
 ---玩家离线处理
@@ -58,7 +58,7 @@ function PetMgr.OnPlayerLeave(uin)
 
         -- 清理内存缓存
         PetMgr.server_player_pets[uin] = nil
-        gg.log("玩家宠物数据已保存并清理", uin)
+        --gg.log("玩家宠物数据已保存并清理", uin)
     end
 end
 
@@ -68,7 +68,7 @@ end
 function PetMgr.GetPlayerPet(uin)
     local petManager = PetMgr.server_player_pets[uin]
     if not petManager then
-        gg.log("宠物系统：在缓存中未找到玩家", uin, "的宠物管理器，尝试动态加载。")
+        --gg.log("宠物系统：在缓存中未找到玩家", uin, "的宠物管理器，尝试动态加载。")
         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
         local player = serverDataMgr.getPlayerByUin(uin)
         if player then
@@ -77,9 +77,9 @@ function PetMgr.GetPlayerPet(uin)
         end
 
         if petManager then
-            gg.log("宠物系统：为玩家", uin, "动态加载宠物管理器成功。")
+            --gg.log("宠物系统：为玩家", uin, "动态加载宠物管理器成功。")
         else
-            gg.log("宠物系统：为玩家", uin, "动态加载宠物管理器失败。")
+            --gg.log("宠物系统：为玩家", uin, "动态加载宠物管理器失败。")
         end
     end
     return petManager
@@ -376,20 +376,20 @@ end
 ---@param player MPlayer 玩家对象
 function PetMgr.UpdateAllEquippedPetModels(player)
     if not player or not player.uin then
-        gg.log("PetMgr.UpdateAllEquippedPetModels: 玩家对象无效")
+        --gg.log("PetMgr.UpdateAllEquippedPetModels: 玩家对象无效")
         return
     end
 
     local uin = player.uin
     local petManager = PetMgr.GetPlayerPet(uin)
     if not petManager then
-        gg.log("PetMgr.UpdateAllEquippedPetModels: 找不到玩家宠物数据", uin)
+        --gg.log("PetMgr.UpdateAllEquippedPetModels: 找不到玩家宠物数据", uin)
         return
     end
 
     local player_actor = player.actor
     if not player_actor then
-        gg.log("PetMgr.UpdateAllEquippedPetModels: 找不到玩家Actor", uin)
+        --gg.log("PetMgr.UpdateAllEquippedPetModels: 找不到玩家Actor", uin)
         return
     end
 
@@ -427,7 +427,7 @@ function PetMgr.UpdateAllEquippedPetModels(player)
                         if animatorNode then
                             animatorNode.ControllerAsset = petConfig.animationResource or ""
                         end
-                        gg.log("更新宠物模型和动画成功:", uin, equipSlotId)
+                        --gg.log("更新宠物模型和动画成功:", uin, equipSlotId)
                     else
                         petNode.Visible = false
                     end
@@ -437,7 +437,7 @@ function PetMgr.UpdateAllEquippedPetModels(player)
             end
         end
     end
-    gg.log("玩家所有宠物模型更新完毕", uin)
+    --gg.log("玩家所有宠物模型更新完毕", uin)
 end
 
 
@@ -449,17 +449,17 @@ end
 ---@return number|nil 实际使用的槽位
 function PetMgr.AddPet(player, petName, slotIndex)
     if not player or not player.uin then
-        gg.log("PetMgr.AddPet: 玩家对象无效")
+        --gg.log("PetMgr.AddPet: 玩家对象无效")
         return false, nil
     end
 
     local success, errorMsg, actualSlot = PetMgr.AddPetToSlot(player.uin, petName, slotIndex)
     if success then
-        gg.log("PetMgr.AddPet: 成功给玩家", player.uin, "添加宠物", petName, "槽位", actualSlot)
+        --gg.log("PetMgr.AddPet: 成功给玩家", player.uin, "添加宠物", petName, "槽位", actualSlot)
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, actualSlot)
     else
-        gg.log("PetMgr.AddPet: 给玩家", player.uin, "添加宠物失败", petName, "错误", errorMsg)
+        --gg.log("PetMgr.AddPet: 给玩家", player.uin, "添加宠物失败", petName, "错误", errorMsg)
     end
 
     return success, actualSlot
@@ -475,7 +475,7 @@ function PetMgr.AddPetByUin(uin, petName, slotIndex)
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local player = serverDataMgr.getPlayerByUin(uin)
     if not player then
-        gg.log("PetMgr.AddPetByUin: 玩家不存在", uin)
+        --gg.log("PetMgr.AddPetByUin: 玩家不存在", uin)
         return false, nil
     end
 
@@ -513,9 +513,9 @@ function PetMgr.ForceSyncToClient(uin)
     if result then
         local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
         PetEventManager.NotifyPetListUpdate(uin, result.petList)
-        gg.log("PetMgr.ForceSyncToClient: 强制同步宠物数据", uin)
+        --gg.log("PetMgr.ForceSyncToClient: 强制同步宠物数据", uin)
     else
-        gg.log("PetMgr.ForceSyncToClient: 同步失败", uin, errorMsg)
+        --gg.log("PetMgr.ForceSyncToClient: 同步失败", uin, errorMsg)
     end
 end
 
@@ -527,7 +527,7 @@ function PetMgr.ForceSavePlayerData(uin)
         local playerPetData = petManager:GetSaveData()
         if playerPetData then
             CloudPetDataAccessor:SavePlayerPetData(uin, playerPetData)
-            gg.log("PetMgr.ForceSavePlayerData: 强制保存宠物数据", uin)
+            --gg.log("PetMgr.ForceSavePlayerData: 强制保存宠物数据", uin)
         end
     end
 end
@@ -570,7 +570,7 @@ end
 function PetMgr.GetActiveItemBonuses(uin)
     local petManager = PetMgr.GetPlayerPet(uin)
     if not petManager then
-        gg.log("[PetMgr] GetActiveItemBonuses: 找不到玩家的宠物管理器", uin)
+        --gg.log("[PetMgr] GetActiveItemBonuses: 找不到玩家的宠物管理器", uin)
         return {}
     end
 
@@ -585,10 +585,10 @@ function PetMgr.SetUnlockedEquipSlots(uin, count)
     local petManager = PetMgr.GetPlayerPet(uin)
     if petManager then
         petManager:SetUnlockedEquipSlots(count)
-        gg.log("通过 PetMgr 更新玩家", uin, "的可携带栏位数量为", count)
+        --gg.log("通过 PetMgr 更新玩家", uin, "的可携带栏位数量为", count)
         return true
     else
-        gg.log("更新可携带栏位失败，找不到玩家", uin, "的宠物管理器")
+        --gg.log("更新可携带栏位失败，找不到玩家", uin, "的宠物管理器")
         return false
     end
 end
@@ -601,10 +601,10 @@ function PetMgr.SetPetBagCapacity(uin, capacity)
     local petManager = PetMgr.GetPlayerPet(uin)
     if petManager then
         petManager:SetPetBagCapacity(capacity)
-        gg.log("通过 PetMgr 更新玩家", uin, "的背包容量为", capacity)
+        --gg.log("通过 PetMgr 更新玩家", uin, "的背包容量为", capacity)
         return true
     else
-        gg.log("更新背包容量失败，找不到玩家", uin, "的宠物管理器")
+        --gg.log("更新背包容量失败，找不到玩家", uin, "的宠物管理器")
         return false
     end
 end
@@ -624,7 +624,7 @@ function PetMgr.SaveAllPlayerData()
             CloudPetDataAccessor:SavePlayerPetData(uin, playerPetData)
         end
     end
-    -- gg.log("PetMgr.SaveAllPlayerData: 批量保存所有玩家宠物数据") -- 日志已移至定时器启动时
+    -- --gg.log("PetMgr.SaveAllPlayerData: 批量保存所有玩家宠物数据") -- 日志已移至定时器启动时
 end
 
 
@@ -642,7 +642,7 @@ saveTimer.Loop = true
 saveTimer.Interval = PetMgr.SAVE_INTERVAL
 saveTimer.Callback = SaveAllPlayerPets_
 saveTimer:Start()
-gg.log("宠物数据定时保存任务已启动，间隔:", PetMgr.SAVE_INTERVAL, "秒")
+--gg.log("宠物数据定时保存任务已启动，间隔:", PetMgr.SAVE_INTERVAL, "秒")
 
 
 return PetMgr

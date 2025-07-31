@@ -42,13 +42,13 @@ function Assistant:RegisterEventFunction()
     -- "脱离卡死"按钮事件
     if self.unstuckButton then
         self.unstuckButton.clickCb = function(ui, button)
-            gg.log("'脱离卡死'按钮被点击")
+            --gg.log("'脱离卡死'按钮被点击")
 
             local teleportPointId = "g0"
             local teleportPath = MConfig.TeleportPoints[teleportPointId]
 
             if not teleportPath then
-                gg.log("错误: 在MConfig中未找到传送点配置: " .. teleportPointId)
+                --gg.log("错误: 在MConfig中未找到传送点配置: " .. teleportPointId)
                 return
             end
 

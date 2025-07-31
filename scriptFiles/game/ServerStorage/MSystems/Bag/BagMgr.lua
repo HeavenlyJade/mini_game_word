@@ -27,7 +27,7 @@ function SaveAllPlayerBags()
         end
 
     end
-    -- gg.log("定时保存背包数据完成，保存了", count, "个玩家的背包")
+    -- --gg.log("定时保存背包数据完成，保存了", count, "个玩家的背包")
 end
 
 local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
@@ -183,31 +183,31 @@ end
 ---@return boolean 是否添加成功
 function BagMgr.AddItem(player, itemName, amount)
     if not player or not itemName or not amount or amount <= 0 then
-        gg.log("BagMgr.AddItem: 参数无效", player and player.uin or "nil", itemName, amount)
+        --gg.log("BagMgr.AddItem: 参数无效", player and player.uin or "nil", itemName, amount)
         return false
     end
-    
+
     local bag = BagMgr.GetOrCreatePlayerBag(player.uin, player)
     if not bag then
-        gg.log("BagMgr.AddItem: 玩家背包不存在或创建失败", player.uin)
+        --gg.log("BagMgr.AddItem: 玩家背包不存在或创建失败", player.uin)
         return false
     end
-    
+
     -- 创建物品数据
     local itemData = ItemUtils.CreateItemData(itemName, amount)
     if not itemData then
-        gg.log("BagMgr.AddItem: 创建物品数据失败", itemName)
+        --gg.log("BagMgr.AddItem: 创建物品数据失败", itemName)
         return false
     end
-    
+
     local success = bag:AddItem(itemData)
     if success then
         bag:SyncToClient()
-        gg.log("BagMgr.AddItem: 成功给玩家", player.uin, "添加物品", itemName, "x" .. amount)
+        --gg.log("BagMgr.AddItem: 成功给玩家", player.uin, "添加物品", itemName, "x" .. amount)
     else
-        gg.log("BagMgr.AddItem: 给玩家", player.uin, "添加物品失败", itemName, "x" .. amount)
+        --gg.log("BagMgr.AddItem: 给玩家", player.uin, "添加物品失败", itemName, "x" .. amount)
     end
-    
+
     return success
 end
 
@@ -219,12 +219,12 @@ function BagMgr.AddItems(player, items)
     if not player or not items then
         return {}
     end
-    
+
     local results = {}
     for itemName, amount in pairs(items) do
         results[itemName] = BagMgr.AddItem(player, itemName, amount)
     end
-    
+
     return results
 end
 
@@ -237,10 +237,10 @@ function BagMgr.AddItemByUin(uin, itemName, amount)
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local player = serverDataMgr.getPlayerByUin(uin)
     if not player then
-        gg.log("BagMgr.AddItemByUin: 玩家不存在", uin)
+        --gg.log("BagMgr.AddItemByUin: 玩家不存在", uin)
         return false
     end
-    
+
     return BagMgr.AddItem(player, itemName, amount)
 end
 
@@ -253,20 +253,20 @@ function BagMgr.RemoveItem(player, itemName, amount)
     if not player or not itemName or not amount or amount <= 0 then
         return false
     end
-    
+
     local bag = BagMgr.GetPlayerBag(player.uin)
     if not bag then
         return false
     end
-    
+
     -- 使用 Bag.lua 中已有的 RemoveItems 方法，它接受一个table作为参数
     local success = bag:RemoveItems({ [itemName] = amount })
     if success then
-        gg.log("BagMgr.RemoveItem: 成功移除玩家", player.uin, "的物品", itemName, "x" .. amount)
+        --gg.log("BagMgr.RemoveItem: 成功移除玩家", player.uin, "的物品", itemName, "x" .. amount)
     else
-        gg.log("BagMgr.RemoveItem: 移除玩家", player.uin, "的物品失败 (可能数量不足)", itemName, "x" .. amount)
+        --gg.log("BagMgr.RemoveItem: 移除玩家", player.uin, "的物品失败 (可能数量不足)", itemName, "x" .. amount)
     end
-    
+
     return success
 end
 
@@ -294,12 +294,12 @@ function BagMgr.HasItem(player, itemName, amount)
     if not player or not itemName or not amount then
         return false
     end
-    
+
     local bag = BagMgr.GetPlayerBag(player.uin)
     if not bag then
         return false
     end
-    
+
     return bag:GetItemAmount(itemName) >= amount
 end
 
@@ -311,12 +311,12 @@ function BagMgr.HasItems(player, items)
     if not player or not items then
         return false
     end
-    
+
     local bag = BagMgr.GetPlayerBag(player.uin)
     if not bag then
         return false
     end
-    
+
     return bag:HasItems(items)
 end
 
@@ -328,12 +328,12 @@ function BagMgr.GetItemAmount(player, itemName)
     if not player or not itemName then
         return 0
     end
-    
+
     local bag = BagMgr.GetPlayerBag(player.uin)
     if not bag then
         return 0
     end
-    
+
     return bag:GetItemAmount(itemName)
 end
 
@@ -345,12 +345,12 @@ function BagMgr.HasEnoughSpace(player, items)
     if not player or not items then
         return true
     end
-    
+
     local bag = BagMgr.GetPlayerBag(player.uin)
     if not bag then
         return false
     end
-    
+
     return bag:HasEnoughSpace(items)
 end
 
@@ -361,7 +361,7 @@ function BagMgr.ForceSyncToClient(uin)
     if bag then
         bag:MarkDirty(true)  -- 标记为全量同步
         bag:SyncToClient()
-        gg.log("BagMgr.ForceSyncToClient: 强制同步背包数据", uin)
+        --gg.log("BagMgr.ForceSyncToClient: 强制同步背包数据", uin)
     end
 end
 
@@ -390,13 +390,13 @@ function BagMgr.SetItemAmount(uin, itemName, amount)
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local player = serverDataMgr.getPlayerByUin(uin)
     if not player then
-        gg.log("BagMgr.SetItemAmount: 玩家不存在", uin)
+        --gg.log("BagMgr.SetItemAmount: 玩家不存在", uin)
         return false
     end
 
     local bag = BagMgr.GetOrCreatePlayerBag(uin, player)
     if not bag then
-        gg.log("BagMgr.SetItemAmount: 玩家背包不存在或创建失败", uin)
+        --gg.log("BagMgr.SetItemAmount: 玩家背包不存在或创建失败", uin)
         return false
     end
 
@@ -407,7 +407,7 @@ function BagMgr.SetItemAmount(uin, itemName, amount)
         -- 需要增加物品
         local itemData = ItemUtils.CreateItemData(itemName, diff)
         if not itemData then
-            gg.log("BagMgr.SetItemAmount: 创建物品数据失败", itemName)
+            --gg.log("BagMgr.SetItemAmount: 创建物品数据失败", itemName)
             return false
         end
         return bag:AddItem(itemData)

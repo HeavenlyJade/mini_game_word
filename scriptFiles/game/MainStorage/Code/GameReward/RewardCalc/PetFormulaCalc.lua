@@ -20,18 +20,18 @@ end
 function PetFormulaCalc:BuildVariableContext(petData, petConfig)
     -- 获取基础变量上下文
     local context = self.super.BuildVariableContext(self, petData, petConfig or {})
-    
+
     -- 添加宠物计算专用变量
     context.S_LVL = petData.starLevel or 1        -- 星级
     context.STAR_LEVEL = petData.starLevel or 1   -- 星级（别名）
     context.PET_LEVEL = petData.level or 1        -- 宠物等级
     context.LVL = petData.level or 1              -- 等级（别名）
     context.RARITY = petData.rarity or "N"        -- 稀有度
-    
+
     -- 可能用于复杂计算的衍生变量
     context.TOTAL_POWER = (context.S_LVL * 10) + context.PET_LEVEL -- 总战力
     context.STAR_BONUS = context.S_LVL * 0.1                       -- 星级基础加成
-    
+
     return context
 end
 
@@ -45,21 +45,21 @@ function PetFormulaCalc:CalculateEffectValue(formula, starLevel, petLevel, petCo
     if not formula or not starLevel then
         return nil
     end
-    
+
     -- 构建计算数据
     local petData = {
         starLevel = starLevel,
         level = petLevel or 1,
         rarity = petConfig and petConfig.rarity or "N"
     }
-    
+
     -- 使用父类的公式计算方法
     local result = self:EvaluateFormula(formula, petData, petConfig or {})
-    
+
     if result and type(result) == "number" then
         return result
     end
-    
+
     return nil
 end
 
@@ -72,14 +72,14 @@ end
 ---@return table<number, number> 星级->效果值的映射表
 function PetFormulaCalc:CalculateEffectRange(formula, startStar, endStar, petLevel, petConfig)
     local results = {}
-    
+
     for star = startStar, endStar do
         local value = self:CalculateEffectValue(formula, star, petLevel, petConfig)
         if value then
             results[star] = value
         end
     end
-    
+
     return results
 end
 
@@ -88,15 +88,15 @@ end
 ---@return boolean 是否有效
 function PetFormulaCalc:ValidatePlayerData(petData)
     if not petData then
-        gg.log("错误: [PetFormulaCalc] 宠物数据为空")
+        --gg.log("错误: [PetFormulaCalc] 宠物数据为空")
         return false
     end
-    
+
     if not petData.starLevel or type(petData.starLevel) ~= "number" or petData.starLevel < 1 then
-        gg.log("错误: [PetFormulaCalc] 星级数据无效:", petData.starLevel)
+        --gg.log("错误: [PetFormulaCalc] 星级数据无效:", petData.starLevel)
         return false
     end
-    
+
     return true
 end
 

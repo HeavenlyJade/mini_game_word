@@ -19,9 +19,9 @@ local function _syncToClient(player)
     local updatedData, errorMsg = PetMgr.GetPlayerPetList(player.uin)
     if updatedData then
         PetEventManager.NotifyPetListUpdate(player.uin, updatedData)
-        gg.log("宠物数据已通过指令同步到客户端", player.uin)
+        --gg.log("宠物数据已通过指令同步到客户端", player.uin)
     else
-        gg.log("宠物数据同步失败，无法获取最新列表", player.uin, errorMsg)
+        --gg.log("宠物数据同步失败，无法获取最新列表", player.uin, errorMsg)
     end
 end
 
@@ -41,14 +41,14 @@ function PetCommand.handlers.add(params, player)
     if success then
         local msg = string.format("成功给玩家 %s 添加宠物: %s 到槽位 %d", player.name, petName, actualSlot)
         player:SendHoverText(msg)
-        gg.log(msg)
+        --gg.log(msg)
         _syncToClient(player) -- 同步数据
         PetMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("给玩家 %s 添加宠物失败: %s", player.name, petName)
         player:SendHoverText(msg)
-        gg.log(msg)
+        --gg.log(msg)
         return false
     end
 end
@@ -68,7 +68,7 @@ function PetCommand.handlers.remove(params, player)
     if not petInstance then
         local msg = string.format("槽位 %d 上没有宠物", slotIndex)
         player:SendHoverText(msg)
-        gg.log(msg)
+        --gg.log(msg)
         return false
     end
     local petName = petInstance:GetConfigName()
@@ -77,14 +77,14 @@ function PetCommand.handlers.remove(params, player)
     if success then
         local msg = string.format("成功移除玩家 %s 在槽位 %d 的宠物: %s", player.name, slotIndex, petName)
         player:SendHoverText(msg)
-        gg.log(msg)
+        --gg.log(msg)
         _syncToClient(player) -- 同步数据
         PetMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("移除玩家 %s 的宠物失败: %s", player.name, errorMsg)
         player:SendHoverText(msg)
-        gg.log(msg)
+        --gg.log(msg)
         return false
     end
 end
@@ -119,11 +119,11 @@ function PetCommand.handlers.set(params, player)
         if success then
             local msg = string.format("成功设置宠物 %s (槽位 %d) 等级为 %d", petInstance:GetConfigName(), slotIndex, level)
             player:SendHoverText(msg)
-            gg.log(msg)
+            --gg.log(msg)
         else
             local msg = string.format("设置宠物 %s (槽位 %d) 等级失败: %s", petInstance:GetConfigName(), slotIndex, errorMsg)
             player:SendHoverText(msg)
-            gg.log(msg)
+            --gg.log(msg)
         end
     end
 
@@ -133,13 +133,13 @@ function PetCommand.handlers.set(params, player)
         if star > currentStar then
             local upgradesNeeded = star - currentStar
             local allSuccess = true
-            gg.log(string.format("开始为宠物 %s (槽位 %d) 升星，当前: %d, 目标: %d", petInstance:GetConfigName(), slotIndex, currentStar, star))
+            --gg.log(string.format("开始为宠物 %s (槽位 %d) 升星，当前: %d, 目标: %d", petInstance:GetConfigName(), slotIndex, currentStar, star))
             for i = 1, upgradesNeeded do
                 local success, errorMsg = PetMgr.UpgradePetStar(player.uin, slotIndex)
                 if not success then
                     local msg = string.format("升星失败: 从 %d 星升到 %d 星时出错: %s (请检查升星材料)", currentStar, currentStar + 1, errorMsg or '未知错误')
                     player:SendHoverText(msg)
-                    gg.log(msg)
+                    --gg.log(msg)
                     allSuccess = false
                     break
                 end
@@ -149,7 +149,7 @@ function PetCommand.handlers.set(params, player)
             if allSuccess then
                 local msg = string.format("成功将宠物 %s (槽位 %d) 星级提升至 %d", petInstance:GetConfigName(), slotIndex, star)
                 player:SendHoverText(msg)
-                gg.log(msg)
+                --gg.log(msg)
             end
         elseif star < currentStar then
              player:SendHoverText("目标星级不能低于当前星级")
@@ -232,7 +232,7 @@ function PetCommand.main(params, player)
 
     local handler = PetCommand.handlers[handlerName]
     if handler then
-        gg.log("宠物命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
+        --gg.log("宠物命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
         return handler(params, player)
     else
         -- 理论上不会执行到这里，因为上面已经检查过了

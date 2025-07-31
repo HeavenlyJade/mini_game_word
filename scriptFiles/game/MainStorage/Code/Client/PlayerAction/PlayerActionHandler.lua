@@ -18,7 +18,7 @@ local ActionModules = {
 local PlayerActionHandler = ClassMgr.Class("PlayerActionHandler")
 
 function PlayerActionHandler:OnInit()
-    gg.log("PlayerActionHandler 初始化...")
+    --gg.log("PlayerActionHandler 初始化...")
     self:SubscribeServerEvents()
     self:ListenToPlayerEvents()
     self.activeModule = nil -- 当前激活的行为模块
@@ -32,7 +32,7 @@ function PlayerActionHandler:ListenToPlayerEvents()
         return
     end
 
-    gg.log("PlayerActionHandler: 成功获取本地玩家 Actor，开始监听事件...")
+    --gg.log("PlayerActionHandler: 成功获取本地玩家 Actor，开始监听事件...")
 
     -- 监听移动状态变化，并转发给当前模块
     -- actor.MoveStateChange:Connect(function(before, after)
@@ -43,7 +43,7 @@ function PlayerActionHandler:ListenToPlayerEvents()
 
     -- 新增：监听飞行状态变化，并转发给当前模块
     -- actor.Flying:Connect(function(isFlying)
-    --     -- gg.log("PlayerActionHandler: 监听到飞行状态变化，isFlying: ", tostring(isFlying))
+    --     -- --gg.log("PlayerActionHandler: 监听到飞行状态变化，isFlying: ", tostring(isFlying))
     -- end)
 end
 
@@ -52,7 +52,7 @@ end
 function PlayerActionHandler:OnModuleFinished(module)
     -- 确认是当前模块请求的结束
     if self.activeModule == module then
-        gg.log("PlayerActionHandler: 已收到模块结束通知，正在清理。")
+        --gg.log("PlayerActionHandler: 已收到模块结束通知，正在清理。")
         self.activeModule = nil
     end
 end
@@ -70,11 +70,11 @@ end
 --- 处理来自服务端的通用"发射"或"开始特殊模式"指令
 ---@param data LaunchPlayerParams
 function PlayerActionHandler:OnReceiveLaunchCommand(data)
-    gg.log("PlayerActionHandler: 接收到启动指令, 数据: ", gg.table2str(data))
+    --gg.log("PlayerActionHandler: 接收到启动指令, 数据: ", gg.table2str(data))
 
     -- 1. 如果有旧模块在运行，先调用其 OnEnd() 强制结束
     if self.activeModule and self.activeModule.OnEnd then
-        gg.log("PlayerActionHandler: 检测到旧模块仍在运行，将强制结束它。")
+        --gg.log("PlayerActionHandler: 检测到旧模块仍在运行，将强制结束它。")
         self.activeModule:OnEnd()
         self.activeModule = nil -- 立即清除引用
     end
@@ -84,12 +84,12 @@ function PlayerActionHandler:OnReceiveLaunchCommand(data)
     local ModuleClass = ActionModules[gameMode]
 
     if not ModuleClass then
-        gg.log("PlayerActionHandler: 未找到与游戏模式 '" .. tostring(gameMode) .. "' 对应的行为模块。")
+        --gg.log("PlayerActionHandler: 未找到与游戏模式 '" .. tostring(gameMode) .. "' 对应的行为模块。")
         return
     end
 
     -- 3. 创建模块实例，并开始其生命周期
-    gg.log("PlayerActionHandler: 正在创建并启动模块: " .. tostring(gameMode))
+    --gg.log("PlayerActionHandler: 正在创建并启动模块: " .. tostring(gameMode))
     self.activeModule = ModuleClass.New(self) -- 将自身作为 handler 传入
     if self.activeModule.OnStart then
         self.activeModule:OnStart(data)

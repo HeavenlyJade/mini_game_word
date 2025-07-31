@@ -54,6 +54,7 @@ function ActionCostType:OnInit(configData)
 
     -- 解析作用目标列表
     local rawTargetList = configData['作用目标列表'] or {}
+    --gg.log("rawTargetList",rawTargetList)
     for _, targetItemData in ipairs(rawTargetList) do
         ---@type TargetItem
         local targetItem = {
@@ -87,7 +88,7 @@ function ActionCostType:CalculateEffectValue(targetItem)
     if not targetItem or not targetItem.EffectValue then
         return 0
     end
-    
+
     if type(targetItem.EffectValue) == "string" then
         -- 公式字符串，使用gg.eval计算
         return gg.eval(targetItem.EffectValue) or 0
@@ -104,30 +105,30 @@ end
 ---@param executionCount number/nil 执行次数
 ---@return boolean 是否成功应用
 function ActionCostType:ApplyEffectToPlayer(targetItem, player, playerId, executionCount)
+    --gg.log("作用的目标相关名称字段", targetItem,targetItem.TargetName, player, playerId, executionCount)
     if not targetItem or not player then
         return false
     end
     if not executionCount then
         executionCount = 1
     end
-    
+
     -- 计算单次作用数值
     local singleEffectValue = self:CalculateEffectValue(targetItem)
     -- 计算最终作用数值 = 单次效果值 × 执行次数
     local finalEffectValue = singleEffectValue * executionCount
-    
+
     if targetItem.TargetType == "玩家变量" then
         -- 应用最终效果值到玩家变量系统
         player.variableSystem:ApplyVariableValue(targetItem.TargetName, finalEffectValue, "天赋动作")
-        gg.log(string.format("成功为玩家 %s 的变量 %s 应用了效果 %s (单次:%s × 次数:%s)", 
-            playerId, targetItem.TargetName, finalEffectValue, singleEffectValue, executionCount))
+        --gg.log(string.format("成功为玩家 %s 的变量 %s 应用了效果 %s (单次:%s × 次数:%s)",playerId, targetItem.TargetName, finalEffectValue, singleEffectValue, executionCount))
         return true
     elseif targetItem.TargetType == "玩家属性" then
         -- TODO: 玩家属性系统还未实现，需要后续开发
-        gg.log(string.format("警告：玩家属性系统还未实现，无法应用效果到 %s", targetItem.TargetName))
+        --gg.log(string.format("警告：玩家属性系统还未实现，无法应用效果到 %s", targetItem.TargetName))
         return false
     else
-        gg.log(string.format("警告：未知的目标类型 %s，目标名称 %s", targetItem.TargetType, targetItem.TargetName))
+        --gg.log(string.format("警告：未知的目标类型 %s，目标名称 %s", targetItem.TargetType, targetItem.TargetName))
         return false
     end
 end
@@ -141,14 +142,16 @@ function ActionCostType:ApplyAllEffects(player, playerId,executionCount)
     if not self.TargetList or #self.TargetList == 0 then
         return 0
     end
-    
+
     local successCount = 0
+    --gg.log("self.TargetList",self.TargetList)
     for _, targetItem in ipairs(self.TargetList) do
+        --gg.log("作用的目标相关名称字段", targetItem,targetItem.TargetName, player, playerId, executionCount)
         if self:ApplyEffectToPlayer(targetItem, player, playerId,executionCount) then
             successCount = successCount + 1
         end
     end
-    
+
     return successCount
 end
 

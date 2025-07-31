@@ -20,7 +20,7 @@ local CALCULATOR_CLASSES = {
     ['飞车挑战赛'] = require(MainStorage.Code.GameReward.RewardCalc.RaceRewardCal),
     ['成就天赋'] = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal), -- 新增
     ['宠物公式'] = require(MainStorage.Code.GameReward.RewardCalc.PetFormulaCalc), -- 新增
-    
+
     -- 新增：将所有基于配置文件的通用计算都指向这个计算器
     ['通用公式奖励'] = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal),
     -- 示例：如果未来有一个“生存挑战”玩法，其奖励完全由ActionCostConfig驱动，
@@ -36,13 +36,13 @@ local CALCULATOR_CLASSES = {
 ---@return RewardBase|nil
 function RewardManager.GetCalculator(gameModeName)
     if not gameModeName then
-        gg.log("错误: [RewardManager] 获取计算器失败，玩法名称(gameModeName)为空。")
+        --gg.log("错误: [RewardManager] 获取计算器失败，玩法名称(gameModeName)为空。")
         return nil
     end
 
     local CalculatorClass = CALCULATOR_CLASSES[gameModeName]
     if not CalculatorClass then
-        gg.log(string.format("错误: [RewardManager] 找不到与玩法 '%s' 匹配的计算器类。", gameModeName))
+        --gg.log(string.format("错误: [RewardManager] 找不到与玩法 '%s' 匹配的计算器类。", gameModeName))
         return nil
     end
 
@@ -52,10 +52,10 @@ function RewardManager.GetCalculator(gameModeName)
     end)
 
     if not success or not calculatorInstance then
-        gg.log(string.format("错误: [RewardManager] 在为玩法 '%s' 创建计算器实例时出错: %s", gameModeName, tostring(calculatorInstance)))
+        --gg.log(string.format("错误: [RewardManager] 在为玩法 '%s' 创建计算器实例时出错: %s", gameModeName, tostring(calculatorInstance)))
         return nil
     end
-    
+
     return calculatorInstance
 end
 
@@ -65,7 +65,7 @@ end
 ---@return table|nil 包含基础奖励和排名奖励的表: {base: table, rank: table}
 function RewardManager.CalculateRewards(playerData, rewardConfig)
     if not rewardConfig or not rewardConfig['默认玩法'] then
-        gg.log("错误: [RewardManager] 计算奖励失败，奖励配置(rewardConfig)或'默认玩法'字段无效。")
+        --gg.log("错误: [RewardManager] 计算奖励失败，奖励配置(rewardConfig)或'默认玩法'字段无效。")
         return nil
     end
 
@@ -81,7 +81,7 @@ function RewardManager.CalculateRewards(playerData, rewardConfig)
     if not calculator:ValidatePlayerData(playerData) or not calculator:ValidateConfig(rewardConfig) then
         return nil
     end
-    
+
     -- 分别计算基础奖励和排名奖励
     local baseRewards = calculator:CalcBaseReward(playerData, rewardConfig) or {}
     local rankRewards = calculator:CalcRankReward(playerData, rewardConfig) or {}

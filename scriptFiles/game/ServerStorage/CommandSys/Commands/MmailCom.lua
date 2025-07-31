@@ -55,10 +55,10 @@ function MailCommand.sendGlobalMail(params, sender)
     local success, mailId = MailEventManager.SendGlobalMail(title, content, attachments, expireDays)
     if success then
         sender:SendHoverText("全服邮件发送成功, ID: " .. mailId)
-        gg.log("全服邮件发送成功", "发件人:", params["发件人"], "标题:", title, "ID:", mailId)
+        --gg.log("全服邮件发送成功", "发件人:", params["发件人"], "标题:", title, "ID:", mailId)
     else
         sender:SendHoverText("全服邮件发送失败: " .. mailId)
-        gg.log("全服邮件发送失败:", mailId)
+        --gg.log("全服邮件发送失败:", mailId)
     end
     return success
 end
@@ -104,10 +104,10 @@ function MailCommand.sendPersonalMail(params, sender)
     if success then
         local typeText = senderType == "系统" and "系统邮件" or "玩家邮件"
         sender:SendHoverText(typeText .. "已成功发送给 " .. recipientUin .. ", ID: " .. mailId)
-        gg.log("个人邮件发送成功", "发件人类型:", senderType, "收件人:", recipientUin, "标题:", title, "ID:", mailId)
+        --gg.log("个人邮件发送成功", "发件人类型:", senderType, "收件人:", recipientUin, "标题:", title, "ID:", mailId)
     else
         sender:SendHoverText("邮件发送失败: " .. mailId)
-        gg.log("个人邮件发送失败:", mailId)
+        --gg.log("个人邮件发送失败:", mailId)
     end
     return success
 end
@@ -131,7 +131,7 @@ function MailCommand.main(params, player)
         return false
     end
 
-    gg.log("邮件命令执行", "投递方式:", deliveryMethod, "发件人:", senderType, "执行者:", player.name)
+    --gg.log("邮件命令执行", "投递方式:", deliveryMethod, "发件人:", senderType, "执行者:", player.name)
 
     if deliveryMethod == "全服" then
         -- 全服邮件只能由系统发送

@@ -63,7 +63,7 @@ function SkillCommands.destroy(params, player)
         return
     end
 
-    gg.log("开始销毁技能: " .. skillName .. "，玩家:" .. player.name)
+    --gg.log("开始销毁技能: " .. skillName .. "，玩家:" .. player.name)
 
     -- 执行销毁逻辑
     local destroyResult = SkillCommon.PerformSkillDestroy(player, skillName)
@@ -133,7 +133,7 @@ end
 ---@param params table
 ---@param player Player
 function SkillCommands.destroyAll(params, player)
-    gg.log("开始销毁所有技能，玩家:" .. player.name)
+    --gg.log("开始销毁所有技能，玩家:" .. player.name)
 
     if not player.skills or next(player.skills) == nil then
         local warningMsg = SkillCommon.FormatErrorMessage("玩家没有任何技能需要销毁", player, "所有技能")
@@ -152,7 +152,7 @@ function SkillCommands.destroyAll(params, player)
         skillCount = skillCount + 1
     end
 
-    gg.log("找到 " .. skillCount .. " 个技能需要销毁")
+    --gg.log("找到 " .. skillCount .. " 个技能需要销毁")
 
     -- 遍历销毁所有技能
     for _, skillName in ipairs(skillNames) do
@@ -170,7 +170,7 @@ function SkillCommands.destroyAll(params, player)
             end
         else
             table.insert(failedSkills, skillName)
-            gg.log("销毁技能失败: " .. skillName .. ", 错误: " .. (destroyResult.errorCode or "未知错误"))
+            --gg.log("销毁技能失败: " .. skillName .. ", 错误: " .. (destroyResult.errorCode or "未知错误"))
         end
     end
 
@@ -225,7 +225,7 @@ function SkillCommands.afk(params, player)
     if action == "进入挂机" then
         -- 如果玩家在关卡中，不执行挂机操作
         if currentLevel and currentLevel.isActive then
-            gg.log("玩家在关卡中，跳过进入挂机操作 - 玩家:", player.name, "关卡:", currentLevel.levelType.levelId)
+            --gg.log("玩家在关卡中，跳过进入挂机操作 - 玩家:", player.name, "关卡:", currentLevel.levelType.levelId)
             return
         end
         player:SendEvent("AfkSpotUpdate", {enter = true})
@@ -233,7 +233,7 @@ function SkillCommands.afk(params, player)
     elseif action == "离开挂机" then
         -- 如果玩家在关卡中，不执行离开挂机操作
         if currentLevel and currentLevel.isActive then
-            gg.log("玩家在关卡中，跳过离开挂机操作 - 玩家:", player.name, "关卡:", currentLevel.levelType.levelId)
+            --gg.log("玩家在关卡中，跳过离开挂机操作 - 玩家:", player.name, "关卡:", currentLevel.levelType.levelId)
             return
         end
         player:SendEvent("AfkSpotUpdate", {enter = false})
@@ -243,7 +243,7 @@ end
 
 -- --装载配置的文件的技能
 function SkillCommands.main(params, player)
-    gg.log("技能命令处理",params)
+    --gg.log("技能命令处理",params)
     local uin = params["ID"]
     local player = gg.getPlayerByUin(uin)
     local skillName = params["技能"]
@@ -252,7 +252,7 @@ function SkillCommands.main(params, player)
     local optype = params["类型"]
 
     if not player then
-        gg.log("玩家不存在: " .. uin)
+        --gg.log("玩家不存在: " .. uin)
         return false
     end
 

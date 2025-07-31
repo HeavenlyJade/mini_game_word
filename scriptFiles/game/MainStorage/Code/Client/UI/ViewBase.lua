@@ -87,7 +87,7 @@ end
 ---@generic T : ViewComponent|ViewButton|ViewList
 ---@param path string 组件路径
 ---@param type? T 组件类型
----@---@param ... any 额外参数  
+---@---@param ... any 额外参数
 ---@return T
 function ViewBase:Get(path, type, ...)
     local cacheKey = path
@@ -102,8 +102,7 @@ function ViewBase:Get(path, type, ...)
         if part ~= "" then
             lastPart = part
             if not node then
-                gg.log(string.format("UI[%s]获取路径[%s]失败: 在[%s]处节点不存在", self.className, path,
-                    fullPath))
+                --gg.log(string.format("UI[%s]获取路径[%s]失败: 在[%s]处节点不存在", self.className, path,fullPath))
                 return nil
             end
             node = node[part]
@@ -116,7 +115,7 @@ function ViewBase:Get(path, type, ...)
     end
 
     if not node then
-        gg.log(string.format("UI[%s]获取路径[%s]失败: 最终节点[%s]不存在", self.className, path, lastPart))
+        --gg.log(string.format("UI[%s]获取路径[%s]失败: 最终节点[%s]不存在", self.className, path, lastPart))
         return nil
     end
 
@@ -124,7 +123,7 @@ function ViewBase:Get(path, type, ...)
         local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
         type = ViewComponent
     end
-    
+
     ---@type T
     local component = type.New(node, self, fullPath, ...)
 
@@ -327,7 +326,7 @@ function ViewBase:DestroyComponent(component)
             break
         end
     end
-    
+
     -- Destroy the component's node
     if component.node then
         component.node:Destroy()

@@ -37,11 +37,11 @@ local waitingPlayers = {} -- 存储等待初始化的玩家
 -- 设置初始化完成状态
 function MServerInitPlayer.setInitFinished(finished)
     initFinished = finished
-    gg.log('====waitingPlayers', waitingPlayers)
+    --gg.log('====waitingPlayers', waitingPlayers)
     -- 如果初始化完成，处理等待的玩家
     if finished then
         for _, player in ipairs(waitingPlayers) do
-            gg.log('====player_enter_game', player)
+            --gg.log('====player_enter_game', player)
             MServerInitPlayer.player_enter_game(player)
         end
         waitingPlayers = {} -- 清空等待列表
@@ -53,19 +53,19 @@ function MServerInitPlayer.register_player_in_out()
     local players = game:GetService("Players")
 
     players.PlayerAdded:Connect(function(player)
-        gg.log('====PlayerAdded', player.UserId)
+        --gg.log('====PlayerAdded', player.UserId)
         -- MServerInitPlayer.player_enter_game(player)
 
         if initFinished then
             MServerInitPlayer.player_enter_game(player)
         else
             table.insert(waitingPlayers, player)
-            gg.log('====PlayerAdded to waiting list', player.UserId)
+            --gg.log('====PlayerAdded to waiting list', player.UserId)
         end
     end)
 
     players.PlayerRemoving:Connect(function(player)
-        gg.log('====PlayerRemoving', player.UserId)
+        --gg.log('====PlayerRemoving', player.UserId)
         -- 如果玩家在等待列表中，需要移除
         for i, waitingPlayer in ipairs(waitingPlayers) do
             if waitingPlayer.UserId == player.UserId then
@@ -79,12 +79,12 @@ end
 
 -- 玩家进入游戏，数据加载
 function MServerInitPlayer.player_enter_game(player)
-    gg.log("player_enter_game====", player.UserId, player.Name, player.Nickname)
+    --gg.log("player_enter_game====", player.UserId, player.Name, player.Nickname)
     player.DefaultDie = false   --取消默认死亡
 
     local uin_ = player.UserId
     if serverDataMgr.server_players_list[uin_] then
-        gg.log('WARNING, Same uin enter game:', uin_)
+        --gg.log('WARNING, Same uin enter game:', uin_)
 
         -- 清理旧的玩家实例（防止重复登录）
         local oldPlayer = serverDataMgr.server_players_list[uin_]
@@ -100,14 +100,14 @@ function MServerInitPlayer.player_enter_game(player)
     --加载数据 1 玩家历史等级经验值
     local ret1_, cloud_player_data_ = cloudDataMgr.ReadPlayerData(uin_)
     if ret1_ == 0 then
-        gg.log('clould_player_data ok:', uin_, cloud_player_data_)
+        --gg.log('clould_player_data ok:', uin_, cloud_player_data_)
         gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家等级数据成功' })     --飘字
     else
-        gg.log('clould_player_data fail:', uin_, cloud_player_data_)
+        --gg.log('clould_player_data fail:', uin_, cloud_player_data_)
         gg.network_channel:fireClient(uin_, { cmd="cmd_client_show_msg", txt='加载玩家等级数据失败，请退出游戏后重试' })    --飘字
         return   --加载数据网络层失败
     end
-    gg.log('cloud_player_data_', cloud_player_data_)
+    --gg.log('cloud_player_data_', cloud_player_data_)
     local isNewPlayer = next(cloud_player_data_) == nil
 
     -- 玩家信息初始化（MPlayer会自动调用initPlayerData初始化背包和邮件）
@@ -168,9 +168,9 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
         -- 标记为全量同步，确保发送完整的背包数据
         bag:MarkDirty(true)  -- true 表示全量同步
         bag:SyncToClient()   -- 直接调用背包的同步方法
-        gg.log("已使用 Bag:SyncToClient() 同步背包数据到客户端:", uin)
+        --gg.log("已使用 Bag:SyncToClient() 同步背包数据到客户端:", uin)
     else
-        gg.log("警告: 玩家", uin, "的背包数据不存在，跳过背包同步")
+        --gg.log("警告: 玩家", uin, "的背包数据不存在，跳过背包同步")
     end
 
     -- 【新增】同步宠物数据
@@ -179,9 +179,9 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
         local petListData = petManager:GetPlayerPetList()
         local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
         PetEventManager.NotifyPetListUpdate(uin, petListData)
-        gg.log("已主动同步宠物数据到客户端:", uin, "宠物数量:", petManager:GetPetCount())
+        --gg.log("已主动同步宠物数据到客户端:", uin, "宠物数量:", petManager:GetPetCount())
     else
-        gg.log("警告: 玩家", uin, "的宠物数据不存在，跳过宠物数据同步")
+        --gg.log("警告: 玩家", uin, "的宠物数据不存在，跳过宠物数据同步")
     end
 
     -- 【新增】同步伙伴数据
@@ -191,7 +191,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
         local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
         PartnerEventManager.NotifyPartnerListUpdate(uin, partnerListData)
     else
-        gg.log("警告: 玩家", uin, "的伙伴数据不存在，跳过伙伴数据同步")
+        --gg.log("警告: 玩家", uin, "的伙伴数据不存在，跳过伙伴数据同步")
     end
 
     -- 获取变量数据
@@ -202,9 +202,9 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
             variableData = variableData,
         })
     else
-        gg.log("警告: 玩家", uin, "的variableSystem不存在，跳过变量数据同步")
+        --gg.log("警告: 玩家", uin, "的variableSystem不存在，跳过变量数据同步")
     end
-    
+
     -- 获取任务数据
     local questData = mplayer.questData or {}
 
@@ -216,11 +216,11 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)
 
-    gg.log("已向客户端", uin, "同步完整玩家数据")
+    --gg.log("已向客户端", uin, "同步完整玩家数据")
 end
 -- 玩家离开游戏
 function MServerInitPlayer.player_leave_game(player)
-    gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
+    --gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
     local uin_ = player.UserId
 
     local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer

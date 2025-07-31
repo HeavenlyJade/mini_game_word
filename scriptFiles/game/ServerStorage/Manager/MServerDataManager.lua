@@ -141,7 +141,7 @@ function MServerDataManager.GetNodeByFullPath(path)
     for part in string.gmatch(path, "[^/]+") do
         if currentNode then
             currentNode = currentNode[part]
-          
+
         else
             return nil
         end
@@ -183,7 +183,7 @@ end
 ---@param handler SceneNodeHandlerBase
 function MServerDataManager.addSceneNodeHandler(handler)
     if not handler.handlerId then
-        gg.log(string.format("警告: 尝试注册一个没有'handlerId'的场景节点处理器: %s", handler.name))
+        --gg.log(string.format("警告: 尝试注册一个没有'handlerId'的场景节点处理器: %s", handler.name))
         return
     end
     MServerDataManager.scene_node_handlers[handler.handlerId] = handler
@@ -214,4 +214,4 @@ function MServerDataManager.getAllScenes()
     return gg.server_scenes_list
 end
 
-return MServerDataManager 
+return MServerDataManager

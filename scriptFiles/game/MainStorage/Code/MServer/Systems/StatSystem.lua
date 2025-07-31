@@ -1,6 +1,6 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr 
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 
 -- 属性触发类型映射
@@ -139,9 +139,9 @@ function StatSystem:ResetStats(source)
         for statName, value in pairs(self.stats[source]) do
             oldStats[statName] = self:GetStat(statName)
         end
-        
+
         self.stats[source] = nil
-        
+
         -- 触发属性变化
         for statName, oldValue in pairs(oldStats) do
             self:TriggerStatRefresh(statName, oldValue, self:GetStat(statName))
@@ -207,7 +207,7 @@ function StatSystem:GetAllStats(source)
     else
         local allStats = {}
         local processedStats = {}
-        
+
         for _, statMap in pairs(self.stats) do
             for statName in pairs(statMap) do
                 if not processedStats[statName] then
@@ -216,7 +216,7 @@ function StatSystem:GetAllStats(source)
                 end
             end
         end
-        
+
         return allStats
     end
 end
@@ -229,11 +229,11 @@ function StatSystem:CopyStats(fromSource, toSource)
         if not self.stats[toSource] then
             self.stats[toSource] = {}
         end
-        
+
         for statName, value in pairs(self.stats[fromSource]) do
             self.stats[toSource][statName] = value
         end
-        
+
         -- 触发刷新
         self:RefreshStats()
     end
@@ -248,18 +248,18 @@ function StatSystem:MergeStats(fromSource, toSource, removeFrom)
         if not self.stats[toSource] then
             self.stats[toSource] = {}
         end
-        
+
         for statName, value in pairs(self.stats[fromSource]) do
             if not self.stats[toSource][statName] then
                 self.stats[toSource][statName] = 0
             end
             self.stats[toSource][statName] = self.stats[toSource][statName] + value
         end
-        
+
         if removeFrom then
             self.stats[fromSource] = nil
         end
-        
+
         -- 触发刷新
         self:RefreshStats()
     end
@@ -306,7 +306,7 @@ end
 ---@return boolean
 function StatSystem:CheckStatCondition(statName, operator, value)
     local statValue = self:GetStat(statName)
-    
+
     if operator == ">" then
         return statValue > value
     elseif operator == "<" then
@@ -356,7 +356,7 @@ function StatSystem:TriggerStatRefresh(statName, oldValue, newValue)
     if TRIGGER_STAT_TYPES[statName] then
         TRIGGER_STAT_TYPES[statName](self.entity, newValue)
     end
-    
+
     -- 触发属性变化事件
     local evt = {
         entity = self.entity,
@@ -406,7 +406,7 @@ end
 function StatSystem:ClearAllStats()
     local oldStats = self:GetAllStats()
     self.stats = {}
-    
+
     -- 触发所有属性变化
     for statName, oldValue in pairs(oldStats) do
         self:TriggerStatRefresh(statName, oldValue, 0)
@@ -429,7 +429,7 @@ function StatSystem:DeserializeStats(data)
         self.stats = stats
         self:RefreshStats()
     else
-        gg.log("属性反序列化失败: " .. tostring(data))
+        --gg.log("属性反序列化失败: " .. tostring(data))
     end
 end
 
@@ -457,4 +457,4 @@ function StatSystem.GetTriggerTypes()
     return TRIGGER_STAT_TYPES
 end
 
-return StatSystem 
+return StatSystem

@@ -26,7 +26,7 @@ function Warehouse:OnInit(node, config)
     self.expandButton = self:Get("底图/展开", ViewButton) ---@type ViewButton
     self.bgSection = self:Get("底图/背景", ViewComponent) ---@type ViewComponent
     self.warehouseList = self:Get("底图/背景/仓库", ViewList) ---@type ViewList
-    
+
     -- 仓库下的所有子节点
     self.rebirthSection = self:Get("底图/背景/仓库/重生", ViewButton) ---@type ViewButton
     self.wingsSection = self:Get("底图/背景/仓库/翅膀", ViewButton) ---@type ViewButton
@@ -44,12 +44,12 @@ function Warehouse:OnInit(node, config)
     self:RegisterEvents()
     self:RegisterButtonEvents()
 
-    gg.log("Warehouse 仓库界面初始化完成")
+    --gg.log("Warehouse 仓库界面初始化完成")
 end
 
 -- 注册事件监听
 function Warehouse:RegisterEvents()
-    gg.log("注册仓库系统事件监听")
+    --gg.log("注册仓库系统事件监听")
 end
 
 -- 注册按钮事件
@@ -59,17 +59,17 @@ function Warehouse:RegisterButtonEvents()
         self.bgSection:SetVisible(false)
         self.expandButton:SetVisible(true)
         self.collapseButton:SetVisible(false)
-        gg.log("收起按钮被点击")
+        --gg.log("收起按钮被点击")
     end
-    
+
     -- 展开按钮
     self.expandButton.clickCb = function()
         self.bgSection:SetVisible(true)
         self.collapseButton:SetVisible(true)
         self.expandButton:SetVisible(false)
-        gg.log("展开按钮被点击")
+        --gg.log("展开按钮被点击")
     end
-    
+
     -- 重生按钮
     self.rebirthSection.clickCb = function()
         gg.network_channel:fireServer({
@@ -93,17 +93,17 @@ function Warehouse:RegisterButtonEvents()
     self.talentSection.clickCb = function ()
         ViewBase["TalentGui"]:Open()
     end
-    gg.log("仓库界面按钮事件注册完成")  
+    --gg.log("仓库界面按钮事件注册完成")
 end
 
 -- 打开界面时的操作
 function Warehouse:OnOpen()
-    gg.log("Warehouse仓库界面打开")
+    --gg.log("Warehouse仓库界面打开")
 end
 
 -- 关闭界面时的操作
 function Warehouse:OnClose()
-    gg.log("Warehouse仓库界面关闭")
+    --gg.log("Warehouse仓库界面关闭")
 end
 
 return Warehouse.New(script.Parent, uiConfig)

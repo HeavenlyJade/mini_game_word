@@ -26,7 +26,7 @@ function Partner:OnInit(uin, playerPartnerData)
     -- 从伙伴数据初始化
     self:LoadFromPartnerData(playerPartnerData)
 
-    gg.log("Partner管理器创建", uin, "伙伴数量", self:GetCompanionCount())
+    --gg.log("Partner管理器创建", uin, "伙伴数量", self:GetCompanionCount())
 end
 
 -- =================================
@@ -102,7 +102,7 @@ function Partner:LoadFromPartnerData(playerPartnerData)
         end
     end
 
-    gg.log("从伙伴数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "伙伴数", self:GetCompanionCount())
+    --gg.log("从伙伴数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "伙伴数", self:GetCompanionCount())
 end
 
 ---获取伙伴列表信息
@@ -174,7 +174,7 @@ end
 
 ---【废弃】旧的单一激活接口
 function Partner:SetActivePartner(slotIndex)
-    gg.log("警告: SetActivePartner 是一个废弃的接口，请使用 EquipPartner 或 UnequipPartner。")
+    --gg.log("警告: SetActivePartner 是一个废弃的接口，请使用 EquipPartner 或 UnequipPartner。")
     return false, "接口已废弃"
 end
 
@@ -388,7 +388,7 @@ function Partner:SetAllPartnersMood(mood)
     for _, companionInstance in pairs(self.companionInstances) do
         companionInstance:SetMood(mood)
     end
-    gg.log("批量设置伙伴心情值", self.uin, "心情", mood, "伙伴数", self:GetPartnerCount())
+    --gg.log("批量设置伙伴心情值", self.uin, "心情", mood, "伙伴数", self:GetPartnerCount())
 end
 
 ---伙伴专用：获取心情值统计

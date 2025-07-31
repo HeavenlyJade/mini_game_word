@@ -56,13 +56,13 @@ function PartnerEventManager.ValidatePlayer(evt)
     local env_player = evt.player
     local uin = env_player.uin
     if not uin then
-        gg.log("伙伴事件缺少玩家UIN参数")
+        --gg.log("伙伴事件缺少玩家UIN参数")
         return nil
     end
 
     local player = MServerDataManager.getPlayerByUin(uin)
     if not player then
-        gg.log("伙伴事件找不到玩家: " .. uin)
+        --gg.log("伙伴事件找不到玩家: " .. uin)
         return nil
     end
 
@@ -72,7 +72,7 @@ end
 --- 处理获取伙伴列表请求
 ---@param evt table 事件数据
 function PartnerEventManager.HandleGetPartnerList(evt)
-    gg.log("获取伙伴列表", evt)
+    --gg.log("获取伙伴列表", evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
 
@@ -80,14 +80,14 @@ function PartnerEventManager.HandleGetPartnerList(evt)
     if result then
         PartnerEventManager.NotifyPartnerListUpdate(player.uin, result)
     else
-        gg.log("获取伙伴列表失败", player.uin, errorMsg)
+        --gg.log("获取伙伴列表失败", player.uin, errorMsg)
     end
 end
 
 --- 【重构】处理装备伙伴请求
 ---@param evt table 事件数据 {args = {companionSlotId, equipSlotId}}
 function PartnerEventManager.HandleEquipPartner(evt)
-    gg.log("处理装备伙伴请求", evt)
+    --gg.log("处理装备伙伴请求", evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
 
@@ -102,7 +102,7 @@ function PartnerEventManager.HandleEquipPartner(evt)
             PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
         end
     else
-        gg.log("装备伙伴失败", player.uin, errorMsg)
+        --gg.log("装备伙伴失败", player.uin, errorMsg)
         -- TODO: 发送错误信息给客户端
     end
 end
@@ -110,7 +110,7 @@ end
 --- 【新增】处理卸下伙伴请求
 ---@param evt table 事件数据 {args = {equipSlotId}}
 function PartnerEventManager.HandleUnequipPartner(evt)
-    gg.log("处理卸下伙伴请求", evt)
+    --gg.log("处理卸下伙伴请求", evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     if not player then return end
 
@@ -124,7 +124,7 @@ function PartnerEventManager.HandleUnequipPartner(evt)
             PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
         end
     else
-        gg.log("卸下伙伴失败", player.uin, errorMsg)
+        --gg.log("卸下伙伴失败", player.uin, errorMsg)
         -- TODO: 发送错误信息给客户端
     end
 end
@@ -132,7 +132,7 @@ end
 
 --- 【废弃】处理设置激活伙伴请求
 function PartnerEventManager.HandleSetActivePartner(evt)
-    gg.log("警告: 收到已废弃的SetActivePartner请求", evt)
+    --gg.log("警告: 收到已废弃的SetActivePartner请求", evt)
 end
 
 --- 处理伙伴升级请求
@@ -145,7 +145,7 @@ function PartnerEventManager.HandleLevelUpPartner(evt)
     local targetLevel = evt.args.targetLevel  -- 修改：从args中获取
 
     if not slotIndex then
-        gg.log("伙伴升级缺少槽位参数", player.uin)
+        --gg.log("伙伴升级缺少槽位参数", player.uin)
         return
     end
 
@@ -157,9 +157,9 @@ function PartnerEventManager.HandleLevelUpPartner(evt)
         if updatedData then
             PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
         end
-        gg.log("伙伴升级成功", player.uin, "槽位", slotIndex, "是否升级", leveledUp)
+        --gg.log("伙伴升级成功", player.uin, "槽位", slotIndex, "是否升级", leveledUp)
     else
-        gg.log("伙伴升级失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("伙伴升级失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -173,7 +173,7 @@ function PartnerEventManager.HandleAddPartnerExp(evt)
     local expAmount = evt.args.expAmount
 
     if not slotIndex or not expAmount then
-        gg.log("伙伴获得经验缺少参数", player.uin, "槽位", slotIndex, "经验", expAmount)
+        --gg.log("伙伴获得经验缺少参数", player.uin, "槽位", slotIndex, "经验", expAmount)
         return
     end
 
@@ -185,9 +185,9 @@ function PartnerEventManager.HandleAddPartnerExp(evt)
         if updatedData then
             PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
         end
-        gg.log("伙伴获得经验成功", player.uin, "槽位", slotIndex, "经验", expAmount, "是否升级", leveledUp)
+        --gg.log("伙伴获得经验成功", player.uin, "槽位", slotIndex, "经验", expAmount, "是否升级", leveledUp)
     else
-        gg.log("伙伴获得经验失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("伙伴获得经验失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -200,7 +200,7 @@ function PartnerEventManager.HandleUpgradePartnerStar(evt)
     local slotIndex = evt.args.slotIndex  -- 确认：使用 slotIndex
 
     if not slotIndex then
-        gg.log("伙伴升星缺少槽位参数", player.uin)
+        --gg.log("伙伴升星缺少槽位参数", player.uin)
         return
     end
 
@@ -212,9 +212,9 @@ function PartnerEventManager.HandleUpgradePartnerStar(evt)
         if updatedData then
             PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
         end
-        gg.log("伙伴升星成功", player.uin, "槽位", slotIndex)
+        --gg.log("伙伴升星成功", player.uin, "槽位", slotIndex)
     else
-        gg.log("伙伴升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("伙伴升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -228,7 +228,7 @@ function PartnerEventManager.HandleLearnPartnerSkill(evt)
     local skillId = evt.args.skillId
 
     if not slotIndex or not skillId then
-        gg.log("伙伴学习技能缺少参数", player.uin, "槽位", slotIndex, "技能", skillId)
+        --gg.log("伙伴学习技能缺少参数", player.uin, "槽位", slotIndex, "技能", skillId)
         return
     end
 
@@ -240,9 +240,9 @@ function PartnerEventManager.HandleLearnPartnerSkill(evt)
         if updatedData then
             PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
         end
-        gg.log("伙伴学习技能成功", player.uin, "槽位", slotIndex, "技能", skillId)
+        --gg.log("伙伴学习技能成功", player.uin, "槽位", slotIndex, "技能", skillId)
     else
-        gg.log("伙伴学习技能失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("伙伴学习技能失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -256,7 +256,7 @@ function PartnerEventManager.HandleRenamePartner(evt)
     local newName = evt.args.newName
 
     if not slotIndex or not newName then
-        gg.log("重命名伙伴缺少参数", player.uin, "槽位", slotIndex, "新名称", newName)
+        --gg.log("重命名伙伴缺少参数", player.uin, "槽位", slotIndex, "新名称", newName)
         return
     end
 
@@ -268,9 +268,9 @@ function PartnerEventManager.HandleRenamePartner(evt)
         if updatedData then
             PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
         end
-        gg.log("重命名伙伴成功", player.uin, "槽位", slotIndex, "新名称", newName)
+        --gg.log("重命名伙伴成功", player.uin, "槽位", slotIndex, "新名称", newName)
     else
-        gg.log("重命名伙伴失败：伙伴不存在", player.uin, "槽位", slotIndex)
+        --gg.log("重命名伙伴失败：伙伴不存在", player.uin, "槽位", slotIndex)
     end
 end
 
@@ -278,7 +278,7 @@ end
 ---@param uin number 玩家ID
 ---@param partnerData table 完整的伙伴数据
 function PartnerEventManager.NotifyPartnerListUpdate(uin, partnerData)
-    -- gg.log("通知客户端伙伴列表更新", uin, partnerData)
+    -- --gg.log("通知客户端伙伴列表更新", uin, partnerData)
     gg.network_channel:fireClient(uin, {
         cmd = PartnerEventManager.NOTIFY.PARTNER_LIST_UPDATE,
         companionList = partnerData.companionList, -- 【修改】使用新字段名

@@ -1,6 +1,6 @@
 local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr 
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 
 ---@class VariableSystem
@@ -57,10 +57,10 @@ function VariableSystem:SetBaseValue(key, baseValue)
             sources = {}
         }
     end
-    
+
     local oldFinalValue = self:GetVariable(key)
     self.variables[key].base = baseValue
-    
+
     -- 触发变量变化事件
     local newFinalValue = self:GetVariable(key)
     self:TriggerVariableEvent("VariableChanged", key, oldFinalValue, newFinalValue)
@@ -90,15 +90,15 @@ function VariableSystem:SetSourceValue(key, source, value, valueType)
             sources = {}
         }
     end
-    
+
     valueType = valueType or "固定值"
     local oldFinalValue = self:GetVariable(key)
-    
+
     self.variables[key].sources[source] = {
         value = value,
         type = valueType
     }
-    
+
     -- 触发变量变化事件
     local newFinalValue = self:GetVariable(key)
     self:TriggerVariableEvent("VariableChanged", key, oldFinalValue, newFinalValue)
@@ -116,14 +116,14 @@ function VariableSystem:AddSourceValue(key, source, value, valueType)
             sources = {}
         }
     end
-    
+
     valueType = valueType or "固定值"
     local currentValue = 0
-    
+
     if self.variables[key].sources[source] then
         currentValue = self.variables[key].sources[source].value or 0
     end
-    
+
     self:SetSourceValue(key, source, currentValue + value, valueType)
 end
 
@@ -134,10 +134,10 @@ function VariableSystem:RemoveSource(key, source)
     if not self.variables[key] or not self.variables[key].sources[source] then
         return
     end
-    
+
     local oldFinalValue = self:GetVariable(key)
     self.variables[key].sources[source] = nil
-    
+
     -- 触发变量变化事件
     local newFinalValue = self:GetVariable(key)
     self:TriggerVariableEvent("VariableChanged", key, oldFinalValue, newFinalValue)
@@ -148,13 +148,13 @@ end
 function VariableSystem:RemoveSourcesByPattern(pattern)
     for varKey, varData in pairs(self.variables) do
         local sourcesToRemove = {}
-        
+
         for sourceKey in pairs(varData.sources) do
             if string.find(sourceKey, pattern) then
                 table.insert(sourcesToRemove, sourceKey)
             end
         end
-        
+
         for _, sourceKey in ipairs(sourcesToRemove) do
             self:RemoveSource(varKey, sourceKey)
         end
@@ -169,11 +169,11 @@ end
 ---@return number 计算后的最终值
 function VariableSystem:GetVariable(key, defaultValue)
     defaultValue = defaultValue or 0
-    
+
     if not self.variables[key] then
         return defaultValue
     end
-    
+
     -- 直接计算最终值
     return self:_CalculateFinalValue(key)
 end
@@ -190,7 +190,7 @@ function VariableSystem:_CalculateFinalValue(key)
     local baseValue = varData.base or 0
     local flatSum = 0    -- 固定值总和
     local percentSum = 0 -- 百分比总和
-    
+
     -- 分类累加各来源的值
     if varData.sources then
         for _, sourceData in pairs(varData.sources) do
@@ -201,7 +201,7 @@ function VariableSystem:_CalculateFinalValue(key)
             end
         end
     end
-    
+
     -- 最终值 = 基础值 + 固定值总和 + (基础值 * (1 + 百分比总和)) -- 修正计算逻辑
     return baseValue + flatSum + (baseValue * percentSum / 100)
 end
@@ -233,11 +233,11 @@ end
 function VariableSystem:SubtractVariable(key, value, minValue)
     local currentBase = self:GetBaseValue(key)
     local newBase = currentBase - value
-    
+
     if minValue and newBase < minValue then
         newBase = minValue
     end
-    
+
     self:SetBaseValue(key, newBase)
     return self:GetVariable(key)
 end
@@ -262,7 +262,7 @@ function VariableSystem:ParseVariableName(variableName)
     for part in string.gmatch(variableName, "([^_]+)") do
         table.insert(parts, part)
     end
-    
+
     if #parts == 3 then
         return {
             operation = parts[1],   -- 操作类型：解锁、加成、计数、状态等
@@ -270,7 +270,7 @@ function VariableSystem:ParseVariableName(variableName)
             name = parts[3]         -- 变量名称：攻击力、生命值、经验倍率等
         }
     end
-    
+
     return nil -- 不是三段式格式
 end
 
@@ -287,21 +287,24 @@ function VariableSystem:ApplyVariableValue(variableName, value, source)
     end
 
     if #parts == 3 then
-        local operation, name, method = parts[1], parts[2], parts[3]
+        local operation, method = parts[1], parts[2]
 
         if operation == "加成" then
-            -- "加成"操作，作为来源添加到变量
+            -- "加成"操作，对完整的变量名添加来源
             local valueType = (method == "百分比") and "百分比" or "固定值"
-            self:AddSourceValue(name, source, value, valueType)
+            -- 直接使用原始的 variableName 作为 key
+            self:AddSourceValue(variableName, source, value, valueType)
 
         elseif operation == "数据" or operation == "解锁" then
-            -- "数据"操作，直接修改基础值
+            -- "数据"或"解锁"操作，直接修改完整变量名的基础值
             if method == "固定值" then
-                self:AddVariable(name, value) -- 在基础值上累加
+                 -- 直接对原始 variableName 进行累加
+                self:AddVariable(variableName, value)
             elseif method == "百分比" then
-                local baseValue = self:GetBaseValue(name)
+                -- 对原始 variableName 计算百分比增量
+                local baseValue = self:GetBaseValue(variableName)
                 local increaseAmount = baseValue * (value / 100)
-                self:SetBaseValue(name, baseValue + increaseAmount)
+                self:SetBaseValue(variableName, baseValue + increaseAmount)
             else
                 -- 未知方法，按原样设置基础值
                 self:SetBaseValue(variableName, value)
@@ -342,7 +345,7 @@ function VariableSystem:GetVariableSources(key)
     if not self.variables[key] then
         return nil
     end
-    
+
     return {
         base = self.variables[key].base,
         sources = self.variables[key].sources,
@@ -353,9 +356,9 @@ end
 --- 清空所有变量
 function VariableSystem:ClearAllVariables()
     local oldVariables = self:GetAllVariables()
-    
+
     self.variables = {}
-    
+
     -- 触发清空事件
     for k, v in pairs(oldVariables) do
         self:TriggerVariableEvent("VariableRemoved", k, v, nil)
@@ -377,7 +380,7 @@ function VariableSystem:RemoveVariable(key)
 
     for _, k in ipairs(keysToRemove) do
         self.variables[k] = nil
-        
+
         -- 触发变量移除事件
         self:TriggerVariableEvent("VariableRemoved", k, removedVars[k], nil)
     end
@@ -401,16 +404,16 @@ function VariableSystem:CheckConditions(conditions)
     if not conditions or #conditions == 0 then
         return true
     end
-    
+
     for _, condition in ipairs(conditions) do
         local variableName = condition[1] or condition.variableName
         local requiredValue = condition[2] or condition.requiredValue
-        
+
         if not self:CheckCondition(variableName, requiredValue) then
             return false
         end
     end
-    
+
     return true
 end
 
@@ -421,7 +424,7 @@ end
 ---@return boolean 是否满足条件
 function VariableSystem:CheckVariableCondition(key, operator, value)
     local varValue = self:GetVariable(key)
-    
+
     if operator == ">" then
         return varValue > value
     elseif operator == "<" then
@@ -435,7 +438,7 @@ function VariableSystem:CheckVariableCondition(key, operator, value)
     elseif operator == "!=" then
         return varValue ~= value
     else
-        gg.log("未知的操作符: " .. operator)
+        --gg.log("未知的操作符: " .. operator)
         return false
     end
 end
@@ -467,7 +470,7 @@ end
 function VariableSystem:GetVariableMax(keys)
     local maxValue = nil
     local maxKey = ""
-    
+
     for _, key in ipairs(keys) do
         local value = self:GetVariable(key)
         if maxValue == nil or value > maxValue then
@@ -475,7 +478,7 @@ function VariableSystem:GetVariableMax(keys)
             maxKey = key
         end
     end
-    
+
     return maxValue or 0, maxKey
 end
 
@@ -485,7 +488,7 @@ end
 function VariableSystem:GetVariableMin(keys)
     local minValue = nil
     local minKey = ""
-    
+
     for _, key in ipairs(keys) do
         local value = self:GetVariable(key)
         if minValue == nil or value < minValue then
@@ -493,7 +496,7 @@ function VariableSystem:GetVariableMin(keys)
             minKey = key
         end
     end
-    
+
     return minValue or 0, minKey
 end
 
@@ -562,7 +565,7 @@ function VariableSystem:DeserializeVariables(data)
     if success and type(variables) == "table" then
         self.variables = variables
     else
-        gg.log("变量反序列化失败: " .. tostring(data))
+        --gg.log("变量反序列化失败: " .. tostring(data))
     end
 end
 

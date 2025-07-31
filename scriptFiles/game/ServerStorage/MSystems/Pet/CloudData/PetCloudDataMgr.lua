@@ -62,9 +62,9 @@ function CloudPetDataAccessor:SavePlayerPetData(uin, petData)
     -- 保存到云存储
     cloudService:SetTableAsync('pet_player_' .. uin, petData, function(success)
         if not success then
-            gg.log("保存玩家宠物数据失败", uin)
+            --gg.log("保存玩家宠物数据失败", uin)
         else
-            -- gg.log("保存玩家宠物数据成功", uin)
+            -- --gg.log("保存玩家宠物数据成功", uin)
         end
     end)
 

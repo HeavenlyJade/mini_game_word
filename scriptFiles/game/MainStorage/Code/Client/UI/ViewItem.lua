@@ -45,7 +45,7 @@ function ViewItem:SetItem(item)
         itemType = item.itemType
     end
     if not itemType.icon then
-        gg.log("物品没有配置图标:", itemType)
+        --gg.log("物品没有配置图标:", itemType)
         return
     end
     self._itemCache = item

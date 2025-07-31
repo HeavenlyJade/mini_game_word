@@ -41,12 +41,12 @@ end
 function ClientEventManager.Subscribe(eventType, listener, priority, key)
     -- 参数验证
     if not eventType then
-        gg.log("错误：eventType 不能为 nil",eventType,listener)
+        --gg.log("错误：eventType 不能为 nil",eventType,listener)
         return
     end
 
     if not listener then
-        gg.log("错误：listener 不能为 nil")
+        --gg.log("错误：listener 不能为 nil")
         return
     end
 
@@ -96,7 +96,7 @@ function ClientEventManager.Unsubscribe(eventType, listener, priority, key)
     if ClientEventManager._eventDictionary[eventType] then
         local list = ClientEventManager._eventDictionary[eventType]
         for i = #list, 1, -1 do
-            if (not listener or list[i].cb == listener) and 
+            if (not listener or list[i].cb == listener) and
                (not priority or list[i].priority == priority) and
                (not key or list[i].key == key) then
                 table.remove(list, i)
@@ -115,7 +115,7 @@ function ClientEventManager.Publish(eventType, eventData)
         for _, item in ipairs(ClientEventManager._eventDictionary[eventType]) do
             local success, err = pcall(item.cb, eventData)
             if not success then
-                gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
+                --gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
             end
         end
     end
@@ -149,7 +149,7 @@ end
 -- ---@param eventData table 事件数据
 -- function ClientEventManager.HandleServerEvent(eventType, eventData)
 --     eventData.__class = eventType
-    
+
 --     -- 如果事件需要回调，添加Return函数
 --     if eventData.__cb then
 --         eventData.Return = function(returnData)
@@ -159,13 +159,13 @@ end
 --             })
 --         end
 --     end
---     gg.log("HandleServerEvent", eventData)
+--     --gg.log("HandleServerEvent", eventData)
 
 --     if ClientEventManager._eventDictionary[eventType] then
 --         for _, item in ipairs(ClientEventManager._eventDictionary[eventType]) do
 --             local success, err = pcall(item.cb, eventData)
 --             if not success then
---                 gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
+--                 --gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
 --             end
 --         end
 --     end

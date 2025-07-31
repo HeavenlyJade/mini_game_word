@@ -14,7 +14,7 @@ local ClientMain = ClassMgr.Class("ClientMain")
 function ClientMain.InitDataSystems()
     local PlayerDataManager = require(MainStorage.Code.Client.PlayerData.PlayerDataManager)
     PlayerDataManager:Init()
-    gg.log("玩家数据系统初始化完成")
+    --gg.log("玩家数据系统初始化完成")
 end
 
 --- 新增：专门用于初始化所有“动作处理器”模块的函数
@@ -83,12 +83,12 @@ end
 
 function ClientMain.createNetworkChannel()
     gg.network_channel = MainStorage:WaitForChild("NetworkChannel") ---@type NetworkChannel
-    gg.log("gg.network_channel",gg.network_channel,gg.network_channel.OnClientNotify)
+    --gg.log("gg.network_channel",gg.network_channel,gg.network_channel.OnClientNotify)
     gg.network_channel.OnClientNotify:Connect(ClientMain.OnClientNotify)
 
     gg.network_channel:FireServer({ cmd = 'cmd_heartbeat', msg = 'new_client_join' })
 
-    gg.log('网络通道建立结束')
+    --gg.log('网络通道建立结束')
 end
 
 --  通过CoreUI 屏蔽默认的按钮组件

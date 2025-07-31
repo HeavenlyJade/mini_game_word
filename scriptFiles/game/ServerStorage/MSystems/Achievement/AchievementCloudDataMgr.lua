@@ -21,18 +21,18 @@ local AchievementCloudDataMgr = {}
 ---@return boolean, table|nil 是否成功，成就数据
 function AchievementCloudDataMgr.LoadPlayerAchievements(playerId)
     if not playerId then
-        gg.log("无效的玩家ID:", playerId)
+        --gg.log("无效的玩家ID:", playerId)
         return false, nil
     end
-    
+
     local key = "achievement_data_" .. playerId
     local success, cloudData = cloudService:GetTableOrEmpty(key)
-    
+
     if success and cloudData and cloudData.achievements then
-        gg.log("成功加载玩家成就数据:", playerId)
+        --gg.log("成功加载玩家成就数据:", playerId)
         return true, cloudData.achievements
     else
-        gg.log("玩家成就数据为空或加载失败:", playerId)
+        --gg.log("玩家成就数据为空或加载失败:", playerId)
         return false, nil
     end
 end
@@ -44,31 +44,31 @@ end
 ---@return boolean 是否成功
 function AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData, force)
     if not playerId then
-        gg.log("无效的玩家ID:", playerId)
+        --gg.log("无效的玩家ID:", playerId)
         return false
     end
-    
+
     if not saveData then
-        gg.log("保存成就数据失败：数据为空", playerId)
+        --gg.log("保存成就数据失败：数据为空", playerId)
         return false
     end
-    
+
     local cloudData = {
         uin = playerId,
         achievements = saveData,
         lastUpdate = os.time()
     }
-    
+
     local key = "achievement_data_" .. playerId
-    
+
     cloudService:SetTableAsync(key, cloudData, function(success)
         if success then
-            -- gg.log("成功保存玩家成就数据:", playerId)
+            -- --gg.log("成功保存玩家成就数据:", playerId)
         else
-            gg.log("保存玩家成就数据失败:", playerId)
+            --gg.log("保存玩家成就数据失败:", playerId)
         end
     end)
-    
+
     return true
 end
 
@@ -77,20 +77,20 @@ end
 ---@return boolean 是否成功
 function AchievementCloudDataMgr.ClearPlayerAchievements(playerId)
     if not playerId then
-        gg.log("无效的玩家ID:", playerId)
+        --gg.log("无效的玩家ID:", playerId)
         return false
     end
-    
+
     local key = "achievement_data_" .. playerId
-    
+
     cloudService:SetTableAsync(key, {}, function(success)
         if success then
-            gg.log("成功删除玩家成就数据:", playerId)
+            --gg.log("成功删除玩家成就数据:", playerId)
         else
-            gg.log("删除玩家成就数据失败:", playerId)
+            --gg.log("删除玩家成就数据失败:", playerId)
         end
     end)
-    
+
     return true
 end
 

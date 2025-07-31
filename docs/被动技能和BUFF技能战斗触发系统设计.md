@@ -121,7 +121,7 @@ function PassiveSkillListener:TriggerPassiveSkill(entity, skill, eventData)
     
     -- 记录触发日志
     if skill.config.enableLog then
-        --gg.log(string.format("被动技能触发: %s [%s] -> %s", 
+        ----gg.log(string.format("被动技能触发: %s [%s] -> %s", 
             entity.name, skill.skillName, eventData.eventType))
     end
 end
@@ -446,7 +446,7 @@ function BattleEventManager:TriggerEvent(eventType, eventData)
     for _, listenerData in ipairs(listeners) do
         local success, result = pcall(listenerData.callback, listenerData.listener, eventType, eventData)
         if not success then
-            --gg.log("事件处理错误:", eventType, result)
+            ----gg.log("事件处理错误:", eventType, result)
         end
     end
 end

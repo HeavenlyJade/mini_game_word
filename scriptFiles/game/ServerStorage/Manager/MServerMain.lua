@@ -48,7 +48,7 @@ function MainServer.handleMidnightRefresh()
         sec = 0
     })
     local secondsUntilMidnight = nextMidnight - os.time()
-    
+
     local timer = SandboxNode.New("Timer", game.WorkSpace)
     timer.Name = "MidnightRefreshTimer"
     timer.Delay = secondsUntilMidnight
@@ -67,7 +67,7 @@ function MainServer.handleMidnightRefresh()
 end
 
 function MainServer.start_server()
-    gg.log("开始服务器")
+    --gg.log("开始服务器")
     ConfigLoader.Init()
     math.randomseed(os.time() + gg.GetTimeStamp())
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
@@ -82,17 +82,17 @@ function MainServer.start_server()
     for _, child in pairs(MainStorage.Code.Common.Config.Children) do
         require(child)
     end
-    gg.log("结束服务器")
+    --gg.log("结束服务器")
 
 end
 
 
 function MainServer.initModule()
-    gg.log("初始化模块")
+    --gg.log("初始化模块")
     -- 【新增】初始化全局任务调度器
     local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
     ScheduledTask.Init()
-    
+
     -- 初始化核心管理器
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr)
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
@@ -126,11 +126,11 @@ function MainServer.initModule()
     PartnerEventManager.Init()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
-    
+
     -- 初始化场景交互系统
     SceneNodeManager:Init()
-    
-    gg.log("模块初始化完成")
+
+    --gg.log("模块初始化完成")
 end
 
 -- --设置碰撞组
@@ -217,7 +217,7 @@ function MainServer.update()
     -- for _, scene_ in pairs(serverDataMgr.getAllScenes()) do
     --     scene_:update()
     -- end
-    
+
     -- 更新调度器（按秒为单位，而不是每tick）(已废弃)
     -- ServerScheduler.tick = serverDataMgr.tick
     -- if ServerScheduler.updateTiming() then

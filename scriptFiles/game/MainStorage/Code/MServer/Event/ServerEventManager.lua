@@ -53,7 +53,7 @@ local function CleanupCallback(callbackId, uin)
         -- 清理所有玩家的回调
         ServerEventManager._callbackMap[callbackId] = nil
     end
-    
+
     ServerEventManager.Unsubscribe(callbackId .. "_Return", nil, nil, callbackId)
 end
 
@@ -65,7 +65,7 @@ function ServerEventManager.CleanupPlayerCallbacks(uin)
             CleanupCallback(callbackId, uin)
         end
     end
-    
+
     -- 清理玩家的本地事件监听器
     ServerEventManager._localListeners[uin] = nil
 end
@@ -77,7 +77,7 @@ end
 ---@param key? string 记录ID，可用 ServerEventManager.UnsubscribeByKey(key) 移除所有指定key的监听器
 function ServerEventManager.Subscribe(eventType, listener, priority, key)
     if not eventType then
-        gg.log("错误：尝试订阅一个 nil 事件类型。\n" .. debug.traceback())
+        --gg.log("错误：尝试订阅一个 nil 事件类型。\n" .. debug.traceback())
         return
     end
 
@@ -140,7 +140,7 @@ function ServerEventManager.Unsubscribe(eventType, listener, priority, key)
     if ServerEventManager._eventDictionary[eventType] then
         local list = ServerEventManager._eventDictionary[eventType]
         for i = #list, 1, -1 do
-            if (not listener or list[i].cb == listener) and 
+            if (not listener or list[i].cb == listener) and
                (not priority or list[i].priority == priority) and
                (not key or list[i].key == key) then
                 table.remove(list, i)
@@ -177,7 +177,7 @@ function ServerEventManager.UnsubscribeByKey(key)
             end
         end
     end
-    
+
     -- 同时清理本地事件
     for uin, eventTypes in pairs(ServerEventManager._localListeners) do
         for eventType, listeners in pairs(eventTypes) do
@@ -200,7 +200,7 @@ function ServerEventManager.Publish(eventType, eventData, callback)
         for _, item in ipairs(ServerEventManager._eventDictionary[eventType]) do
             local success, err = pcall(item.cb, eventData)
             if not success then
-                gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
+                --gg.log(string.format("事件执行失败 %s\n%s", err, debug.traceback()))
             end
         end
     end
@@ -219,7 +219,7 @@ function ServerEventManager.SendToClient(uin, eventType, eventData, callback)
             ServerEventManager._callbackMap[callbackId] = {}
         end
         ServerEventManager._callbackMap[callbackId][uin] = callback
-        
+
         -- 监听客户端返回的事件
         ServerEventManager.Subscribe(callbackId .. "_Return", function(returnData)
             local callbacks = ServerEventManager._callbackMap[callbackId]
@@ -243,7 +243,7 @@ function ServerEventManager.PublishToPlayer(player, eventType, eventData)
         for _, item in ipairs(ServerEventManager._localListeners[uin][eventType]) do
             local success, err = pcall(item.cb, eventData)
             if not success then
-                gg.log(string.format("向玩家 %d 发布本地事件 %s 执行失败: %s\n%s", uin, eventType, err, debug.traceback()))
+                --gg.log(string.format("向玩家 %d 发布本地事件 %s 执行失败: %s\n%s", uin, eventType, err, debug.traceback()))
             end
         end
     end

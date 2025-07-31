@@ -10,7 +10,7 @@ local pairs        = pairs
 local SandboxNode  = SandboxNode ---@type SandboxNode
 
 local MainStorage   = game:GetService("MainStorage")
-local ServerStorage = game:GetService("ServerStorage")      
+local ServerStorage = game:GetService("ServerStorage")
 local cloudService      = game:GetService("CloudService")     --- @type CloudService
 -- MServerDataManager
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
@@ -34,7 +34,7 @@ end
 --读取玩家技能数据
 function MCloudDataMgr.ReadSkillData( uin_ )
     local ret_, ret2_ = cloudService:GetTableOrEmpty( 'sk' .. uin_ )
-    gg.log( '获取玩家技能数据信息', 'pd' .. uin_, ret_, ret2_ )
+    --gg.log( '获取玩家技能数据信息', 'pd' .. uin_, ret_, ret2_ )
     if  ret_ then
         if  ret2_ and ret2_.uin == uin_ then
             return 0, ret2_
@@ -52,7 +52,7 @@ end
 function MCloudDataMgr.ReadPlayerData( uin_ )
     local ret_, ret2_ = cloudService:GetTableOrEmpty( 'pd' .. uin_ )
 
-    gg.log( '获取与玩家当前的经验和等级', 'pd' .. uin_, ret_, ret2_ )
+    --gg.log( '获取与玩家当前的经验和等级', 'pd' .. uin_, ret_, ret2_ )
     if  ret_ then
         if  ret2_ and ret2_.uin == uin_ then
             return 0, ret2_
@@ -162,7 +162,7 @@ end
 ---@return boolean
 function MCloudDataMgr.ClearCorePlayerData(uin_)
     if not uin_ then
-        gg.log("ClearCorePlayerData: 无效的玩家UIN")
+        --gg.log("ClearCorePlayerData: 无效的玩家UIN")
         return false
     end
 
@@ -181,7 +181,7 @@ function MCloudDataMgr.ClearCorePlayerData(uin_)
         else
             player_.variables = {}
         end
-        gg.log("已重置在线玩家的内存基础数据:", player_.name)
+        --gg.log("已重置在线玩家的内存基础数据:", player_.name)
     end
 
     -- 2. 清理云端数据
@@ -189,12 +189,12 @@ function MCloudDataMgr.ClearCorePlayerData(uin_)
     -- 设置为空表来清空数据
     cloudService:SetTableAsync(key, {}, function(success)
         if success then
-            gg.log("成功清空玩家核心云端数据:", uin_)
+            --gg.log("成功清空玩家核心云端数据:", uin_)
         else
-            gg.log("清空玩家核心云端数据失败:", uin_)
+            --gg.log("清空玩家核心云端数据失败:", uin_)
         end
     end)
-    
+
     return true
 end
 

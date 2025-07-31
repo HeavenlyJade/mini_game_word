@@ -43,8 +43,7 @@ function RaceGameMode:OnInit(instanceId, modeName, levelType)
     self.levelType = levelType -- 存储完整的LevelType实例
 
     -- 调试信息：显示比赛模式初始化结果
-    gg.log(string.format("RaceGameMode 初始化 - 实例ID: %s, 关卡: %s",
-           instanceId, levelType and levelType.name or "无关卡配置"))
+    --gg.log(string.format("RaceGameMode 初始化 - 实例ID: %s, 关卡: %s",instanceId, levelType and levelType.name or "无关卡配置"))
     self.finishedPlayers = {} -- 【新增】初始化已完成玩家的记录表
     self.flightData = {} -- 实时飞行数据 (uin -> FlightPlayerData)
     self.rankings = {} -- 按飞行距离排序的玩家uin列表
@@ -127,7 +126,7 @@ function RaceGameMode:LaunchPlayer(player)
     if handler and handler.respawnNode and handler.respawnNode.Position then
         eventData.respawnPosition = handler.respawnNode.Position
     else
-        gg.log("警告: [RaceGameMode] 无法为比赛实例 " .. self.instanceId .. " 找到有效的重生点位置。")
+        --gg.log("警告: [RaceGameMode] 无法为比赛实例 " .. self.instanceId .. " 找到有效的重生点位置。")
     end
 
     -- 【核心改造】通过网络通道向指定客户端发送事件
@@ -187,15 +186,15 @@ function RaceGameMode:Start()
     self:AddDelay(prepareTime, function()
         if self.state == RaceState.WAITING then
             self.state = RaceState.RACING
-            gg.log("比赛开始准备！")
+            --gg.log("比赛开始准备！")
 
             -- 1. 先传送所有玩家到传送节点
             local teleportSuccess = self:TeleportAllPlayersToStartPosition()
-            gg.log("玩家传送结束",teleportSuccess)
+            --gg.log("玩家传送结束",teleportSuccess)
             if teleportSuccess then
                 -- 2. 给传送一点时间完成，然后发射玩家
                 self:AddDelay(0.5, function()
-                    gg.log("传送完成，开始发射玩家！")
+                    --gg.log("传送完成，开始发射玩家！")
                     for _, player in ipairs(self.participants) do
                         self:LaunchPlayer(player)
                     end
@@ -203,7 +202,7 @@ function RaceGameMode:Start()
                     self:_startFlightDistanceTracking()
                 end)
             else
-                gg.log("传送失败，直接开始比赛")
+                --gg.log("传送失败，直接开始比赛")
                 -- 如果传送失败，直接发射（保持向后兼容）
                 for _, player in ipairs(self.participants) do
                     self:LaunchPlayer(player)
@@ -223,7 +222,7 @@ function RaceGameMode:End()
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
 
-    gg.log("比赛结束！")
+    --gg.log("比赛结束！")
 
     -- 停止实时飞行距离追踪
     self:_stopFlightDistanceTracking()
@@ -279,11 +278,11 @@ end
 --- 【核心重构】计算并发放奖励，直接使用 LevelType 实例
 function RaceGameMode:_calculateAndDistributeRewards()
     if not self.levelType then
-        gg.log("错误: [RaceGameMode] 关卡实例(levelType)为空，无法发放奖励。")
+        --gg.log("错误: [RaceGameMode] 关卡实例(levelType)为空，无法发放奖励。")
         return
     end
 
-    gg.log(string.format("信息: [RaceGameMode] 开始计算奖励，参与玩家数: %d", #self.participants))
+    --gg.log(string.format("信息: [RaceGameMode] 开始计算奖励，参与玩家数: %d", #self.participants))
 
     -- 按照真实排名顺序处理奖励
     for _, uin in ipairs(self.rankings) do
@@ -300,7 +299,7 @@ function RaceGameMode:_calculateAndDistributeRewards()
                     uin = flightData.uin
                 }
 
-                gg.log(string.format("信息: [RaceGameMode] 开始为玩家 %s (第%d名) 计算奖励...", playerData.playerName, playerData.rank))
+                --gg.log(string.format("信息: [RaceGameMode] 开始为玩家 %s (第%d名) 计算奖励...", playerData.playerName, playerData.rank))
 
                 -- 1. 计算原始奖励
                 local baseRewards = self.levelType:CalculateBaseRewards(playerData)
@@ -328,19 +327,19 @@ function RaceGameMode:_calculateAndDistributeRewards()
                 -- 5. 发放最终奖励
                 -- a. 发放基础奖励
                 if finalBaseRewards and next(finalBaseRewards) then
-                    gg.log(" -> 开始发放基础奖励...")
+                    --gg.log(" -> 开始发放基础奖励...")
                     for itemName, amount in pairs(finalBaseRewards) do
                         if amount > 0 then
                             self:_giveItemToPlayer(player, itemName, amount)
                         end
                     end
                 else
-                    gg.log(" -> 无基础奖励可发放。")
+                    --gg.log(" -> 无基础奖励可发放。")
                 end
 
                 -- b. 发放排名奖励
                 if finalRankRewards and next(finalRankRewards) then
-                    gg.log(" -> 开始发放排名奖励...")
+                    --gg.log(" -> 开始发放排名奖励...")
                     for itemName, amount in pairs(finalRankRewards) do
                         if amount > 0 then
                             self:_giveItemToPlayer(player, itemName, amount)
@@ -348,11 +347,11 @@ function RaceGameMode:_calculateAndDistributeRewards()
                     end
                 else
                     if not (rankRewardsArray and #rankRewardsArray > 0) then
-                        gg.log(string.format(" -> 玩家 %s (第%d名) 无排名奖励可发放。", playerData.playerName, playerData.rank))
+                        --gg.log(string.format(" -> 玩家 %s (第%d名) 无排名奖励可发放。", playerData.playerName, playerData.rank))
                     end
                 end
             else
-                gg.log(string.format("警告: [RaceGameMode] 未找到 UIN %d 对应的玩家实例，无法发放奖励。", uin))
+                --gg.log(string.format("警告: [RaceGameMode] 未找到 UIN %d 对应的玩家实例，无法发放奖励。", uin))
             end
         end
     end
@@ -364,12 +363,11 @@ end
 ---@param amount number 物品数量
 function RaceGameMode:_giveItemToPlayer(player, itemName, amount)
     if not player or not itemName or amount <= 0 then
-        gg.log(string.format("RaceGameMode: 发放物品失败，参数无效 - player: %s, itemName: %s, amount: %s",
-               tostring(player), tostring(itemName), tostring(amount)))
+        --gg.log(string.format("RaceGameMode: 发放物品失败，参数无效 - player: %s, itemName: %s, amount: %s",tostring(player), tostring(itemName), tostring(amount)))
         return
     end
 
-    gg.log(string.format("RaceGameMode: 尝试给玩家 %s 发放物品 %s x%d", player.name or "未知", itemName, amount))
+    --gg.log(string.format("RaceGameMode: 尝试给玩家 %s 发放物品 %s x%d", player.name or "未知", itemName, amount))
 
     -- 这里集成背包系统来发放物品
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)  ---@type MServerDataManager
@@ -378,14 +376,14 @@ function RaceGameMode:_giveItemToPlayer(player, itemName, amount)
     if BagMgr then
         local success = BagMgr.AddItem(player, itemName, amount)
         if success then
-            gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))
+            --gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))
             -- 向玩家发送奖励通知
             player:SendHoverText(string.format("获得 %s x%d", itemName, amount))
         else
-            gg.log(string.format("RaceGameMode: 物品发放失败 - %s x%d", itemName, amount))
+            --gg.log(string.format("RaceGameMode: 物品发放失败 - %s x%d", itemName, amount))
         end
     else
-        gg.log("RaceGameMode: 背包系统不可用，发送提示消息")
+        --gg.log("RaceGameMode: 背包系统不可用，发送提示消息")
         -- 如果背包系统不可用，至少给玩家发送提示
         player:SendHoverText(string.format("应获得 %s x%d (系统暂不可用)", itemName, amount))
     end

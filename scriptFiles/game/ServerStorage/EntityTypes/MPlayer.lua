@@ -24,7 +24,7 @@ local _MPlayer = ClassMgr.Class('MPlayer', Entity)
 
 function _MPlayer:OnInit(info_)
     Entity.OnInit(self, info_)    --父类初始化
-    
+
     -- 玩家特有属性
     self.uin = info_.uin
     self.name = info_.nickname or info_.name or ""
@@ -38,11 +38,11 @@ function _MPlayer:OnInit(info_)
     self.auto_attack = 0 -- 自动攻击技能id
     self.auto_attack_tick = 10 -- 攻击间隔
     self.auto_wait_tick = 0 -- 等待tick
-    
+
     -- 网络状态
     self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
     self.loginTime = os.time() -- 登录时间
-    
+
 
 end
 
@@ -70,7 +70,7 @@ end
 
 --改变网络状态
 function _MPlayer:setPlayerNetStat(player_net_stat_)
-    gg.log('setPlayerNetStat:', self.uin, player_net_stat_)
+    --gg.log('setPlayerNetStat:', self.uin, player_net_stat_)
     self.player_net_stat = player_net_stat_
 end
 
@@ -79,10 +79,10 @@ end
 --通知客户端玩家的技能框和技能id
 function _MPlayer:syncSkillData()
     if self.dict_btn_skill then
-        gg.network_channel:fireClient(self.uin, { 
-            cmd = 'cmd_sync_player_skill', 
-            uin = self.uin, 
-            skill = self.dict_btn_skill 
+        gg.network_channel:fireClient(self.uin, {
+            cmd = 'cmd_sync_player_skill',
+            uin = self.uin,
+            skill = self.dict_btn_skill
         })
     end
 end
@@ -108,10 +108,10 @@ end
 -- 显示伤害飘字，闪避，升级等特效
 function _MPlayer:showDamage(number_, eff_, victim)
     if not victim then return end
-    
+
     local victimPosition = victim:GetCenterPosition()
     local position = victimPosition + (self:GetCenterPosition() - victimPosition):Normalize() * 2 * victim:GetSize().x
-    
+
     gg.network_channel:fireClient(self.uin, {
         cmd = "ShowDamage",
         amount = number_,
@@ -132,38 +132,38 @@ function _MPlayer:leaveGame()
     -- 保存各种数据
     if self.variableSystem then
         self.variables = self.variableSystem.variables
-        -- gg.log("同步VariableSystem数据到variables", self.uin)
+        -- --gg.log("同步VariableSystem数据到variables", self.uin)
     end
     cloudDataMgr.SavePlayerData(self.uin, true)
     -- cloudDataMgr.SaveGameTaskData(self)
     -- cloudDataMgr.SaveSkillConfig(self)
-    
+
 end
 
 -- 重写死亡处理
 function _MPlayer:Die()
     if self.isDead then return end
-    
+
     -- 玩家死亡特殊处理
     self.isDead = true
-    
+
     -- 停止自动攻击
     self.auto_attack = 0
     self.auto_wait_tick = 0
-    
+
     -- 清除施法状态
     self.stat_flags = {}
-    
+
     -- 停止导航
     if self.actor then
         self.actor:StopNavigate()
     end
-    
+
     local deathTime = 0
     if self.modelPlayer then
         deathTime = self.modelPlayer:OnDead()
     end
-    
+
     -- 发布玩家死亡事件
     local evt = {
         entity = self,
@@ -178,7 +178,7 @@ end
 function _MPlayer:updatePlayer()
     -- 调用父类update
     self:update()
-    
+
     -- 自动攻击逻辑
     if self.auto_attack > 0 then
         self.auto_wait_tick = self.auto_wait_tick - 1
@@ -222,7 +222,7 @@ end
 function _MPlayer:checkDead()
     -- 进入战斗状态
     self.combatTime = 10
-    
+
     -- 如果血量为0，触发死亡
     if self.health <= 0 and not self.isDead then
         self:Die()
@@ -233,13 +233,13 @@ end
 function _MPlayer:resetBattleData(resethpmp_)
     -- 调用父类方法
     Entity.resetBattleData(self, resethpmp_)
-    
+
     -- 玩家特有的重置逻辑
     if resethpmp_ then
         self:SetHealth(self.maxHealth)
         self.mana = self.maxMana
     end
-    
+
     -- 清除战斗状态
     self.combatTime = 0
     self.auto_wait_tick = 0

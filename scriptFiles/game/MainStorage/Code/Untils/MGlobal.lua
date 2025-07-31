@@ -1,8 +1,8 @@
 local MainStorage = game:GetService("MainStorage")
 local Vec2 = require(MainStorage.Code.Untils.Math.Vec2) ---@type Vec2
 local Vec3 = require(MainStorage.Code.Untils.Math.Vec3) ---@type Vec3
-local Vec4 = require(MainStorage.Code.Untils.Math.Vec4) 
-local Quat = require(MainStorage.Code.Untils.Math.Quat) 
+local Vec4 = require(MainStorage.Code.Untils.Math.Vec4)
+local Quat = require(MainStorage.Code.Untils.Math.Quat)
 
 local inputservice = game:GetService("UserInputService")
 local Players = game:GetService('Players')
@@ -12,11 +12,11 @@ local Players = game:GetService('Players')
 ---@field FireServer fun(self, data: table)
 ---@field fireClient fun(self, uin: number, data: table)
 ---@
----@class gg      --存放自定义的global全局变量和函数  
+---@class gg      --存放自定义的global全局变量和函数
 local gg = {
     isServer = nil,
     opUin = {[1995296726]= true, [1999522565]= true, [1997748985] = true, [1831921352] = true, [1995494850] = true, [1997807412] = true, [1972857840] = true},
-    
+
     -- 【移除】不再通过 gg 重定向向量计算函数，请直接使用 VectorUtils 模块
     Vec2 = Vec2, ---@type Vec2
     Vec3 = Vec3, ---@type Vec3
@@ -24,7 +24,7 @@ local gg = {
     Quat = Quat, ---@type Quat
     VECUP = Vector3.New(0, 1, 0), -- 向上方向 y+
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
-    
+
     noise = require(MainStorage.Code.Untils.Math.PerlinNoise),
     uuid_start = nil,
     CommandManager = nil, ---@type CommandManager
@@ -99,7 +99,7 @@ local function _compareNumbers(left, operator, right)
     elseif operator == "~=" then
         return left ~= right
     else
-        gg.log("错误: [gg.evaluateCondition] 未知的比较运算符:", operator)
+        --gg.log("错误: [gg.evaluateCondition] 未知的比较运算符:", operator)
         return false
     end
 end
@@ -132,7 +132,7 @@ function gg.evaluateCondition(expression)
         -- 链式比较
         a, b, c = tonumber(a), tonumber(b), tonumber(c)
         if not (a and b and c) then
-            gg.log("警告: [gg.evaluateCondition] 链式比较中包含无效数字:", expression)
+            --gg.log("警告: [gg.evaluateCondition] 链式比较中包含无效数字:", expression)
             return false
         end
 
@@ -149,7 +149,7 @@ function gg.evaluateCondition(expression)
     if left and op and right then
         left, right = tonumber(left), tonumber(right)
         if not (left and right) then
-            gg.log("警告: [gg.evaluateCondition] 单个比较中包含无效数字:", expression)
+            --gg.log("警告: [gg.evaluateCondition] 单个比较中包含无效数字:", expression)
             return false
         end
 
@@ -157,7 +157,7 @@ function gg.evaluateCondition(expression)
     end
 
     -- 如果无法识别模式，记录警告并返回false
-    gg.log("警告: [gg.evaluateCondition] 无法解析的条件表达式:", expression)
+    --gg.log("警告: [gg.evaluateCondition] 无法解析的条件表达式:", expression)
     return false
 end
 
@@ -342,7 +342,7 @@ function gg.eval(expr)
     if ok then
         return result
     else
-        gg.log("[gg.eval] 公式计算失败: " .. tostring(result) .. "，表达式: " .. tostring(expr))
+        --gg.log("[gg.eval] 公式计算失败: " .. tostring(result) .. "，表达式: " .. tostring(expr))
         return 0
     end
 end
@@ -431,34 +431,34 @@ end
 ---@return SandboxNode|nil 怪物容器
 function gg.clentGetContainerMonster()
     if not gg.client_scene_name then
-        gg.log("警告：client_scene_name 未初始化，使用默认场景名 'terrain'")
+        --gg.log("警告：client_scene_name 未初始化，使用默认场景名 'terrain'")
         gg.client_scene_name = 'init_map'
     end
-    
+
     local ground = game.WorkSpace["Ground"]
     if not ground then
-        gg.log("错误：未找到 WorkSpace.Ground")
+        --gg.log("错误：未找到 WorkSpace.Ground")
         return nil
     end
-    
+
     local scene = ground[gg.client_scene_name]
     if not scene then
-        gg.log("错误：未找到场景", gg.client_scene_name)
+        --gg.log("错误：未找到场景", gg.client_scene_name)
         return nil
     end
-    
+
     local terrain = scene.terrain
     if not terrain then
-        gg.log("错误：场景中未找到 terrain", gg.client_scene_name)
+        --gg.log("错误：场景中未找到 terrain", gg.client_scene_name)
         return nil
     end
-    
+
     local container = terrain.Monster
     if not container then
-        gg.log("错误：terrain中未找到 Monster", gg.client_scene_name)
+        --gg.log("错误：terrain中未找到 Monster", gg.client_scene_name)
         return nil
     end
-    
+
     return container
 end
 
@@ -484,7 +484,7 @@ end
 function gg.get_ui_size()
     if not gg.ui_size then
         gg.ui_size = game:GetService('WorldService'):GetUISize()
-        gg.log('获取屏幕大小====', gg.ui_size)
+        --gg.log('获取屏幕大小====', gg.ui_size)
     end
     return gg.ui_size
 end
@@ -495,7 +495,7 @@ function gg.FormatTime(time, isShort)
     end
     local s = ""
     local c = 0
-    
+
     -- Handle days
     if time > 86400 then
         local days = math.floor(time / 86400)
@@ -506,7 +506,7 @@ function gg.FormatTime(time, isShort)
             return s
         end
     end
-    
+
     -- Handle hours
     if time > 3600 then
         local hours = math.floor(time / 3600)
@@ -517,7 +517,7 @@ function gg.FormatTime(time, isShort)
             return s
         end
     end
-    
+
     -- Handle minutes
     if time > 60 then
         local minutes = math.floor(time / 60)
@@ -528,7 +528,7 @@ function gg.FormatTime(time, isShort)
             return s
         end
     end
-    
+
     -- Add seconds
     s = s .. math.floor(time) .. "秒"
     return s
@@ -573,7 +573,7 @@ function gg.get_camera_window_size()
     if not gg.camera_win_size then
         wait(1)
         gg.camera_win_size = game.WorkSpace.CurrentCamera.WindowSize
-        gg.log('camera_win_size====', gg.camera_win_size)
+        --gg.log('camera_win_size====', gg.camera_win_size)
     end
     return gg.camera_win_size.x, gg.camera_win_size.y
 end
@@ -682,7 +682,7 @@ function gg.table2str(tbl, level_, visited)
     end
     level_ = level_ or 0
     if level_ >= 20 then
-        gg.log('ERROR table2str level>=10')
+        --gg.log('ERROR table2str level>=10')
         return '' -- 层数保护
     end
 
@@ -812,7 +812,7 @@ end
 -- 【移除】距离计算函数已迁移到 VectorUtils 模块
 -- 如需使用，请调用：
 -- gg.vec.FastInDistance(dir_, len)
--- gg.vec.FastOutDistance(pos1, pos2, len) 
+-- gg.vec.FastOutDistance(pos1, pos2, len)
 -- gg.vec.OutDistance(pos1, pos2, len)
 -- gg.vec.Normalize2Coords(x, y)
 
@@ -842,8 +842,7 @@ function gg.GetChild(node, path)
         if part ~= "" then
             lastPart = part
             if not node then
-                gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在", root.Name, path,
-                    fullPath))
+                --gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在", root.Name, path,ullPath))
                 return nil
             end
             node = node[part]
@@ -856,7 +855,7 @@ function gg.GetChild(node, path)
     end
 
     if not node then
-        gg.log(string.format("[%s]获取路径[%s]失败: 最终节点[%s]不存在", root.Name, path, lastPart))
+        --gg.log(string.format("[%s]获取路径[%s]失败: 最终节点[%s]不存在", root.Name, path, lastPart))
         return nil
     end
     return node
@@ -876,7 +875,7 @@ function gg.clientPickObjectMiddle()
     -- 从中间扩散选择，增大范围
     for xx = 0, 5 do
         ret_node_ = inputservice:PickObjects(gg.camera_mid_x + xx * 10, gg.camera_mid_y, obj_list)
-        -- gg.log( 'clientPickObjectMiddle===:[', ret_node_, ']' )
+        -- --gg.log( 'clientPickObjectMiddle===:[', ret_node_, ']' )
         if ret_node_ then
             return ret_node_
         end
@@ -909,13 +908,13 @@ function gg.clientPickPress()
             -- 从中间扩散选择，增大范围
             for x = 0, 5 do
                 rets = inputservice:PickObjects(xx + x * 10, yy, obj_list)
-                -- gg.log( 'GetCursorPick[', #obj_list, '] [', rets, ']' )
+                -- --gg.log( 'GetCursorPick[', #obj_list, '] [', rets, ']' )
                 if rets then
                     break
                 end
 
                 rets = inputservice:PickObjects(xx - x * 10, yy, obj_list)
-                -- gg.log( 'GetCursorPick[', #obj_list, '] [', rets, ']' )
+                -- --gg.log( 'GetCursorPick[', #obj_list, '] [', rets, ']' )
                 if rets then
                     break
                 end
@@ -1216,7 +1215,7 @@ function gg.eval(expr)
     if ok then
         return result
     else
-        gg.log("[gg.eval] 公式计算失败: " .. tostring(result) .. "，表达式: " .. tostring(expr))
+        --gg.log("[gg.eval] 公式计算失败: " .. tostring(result) .. "，表达式: " .. tostring(expr))
         return 0
     end
 end
@@ -1240,40 +1239,40 @@ if gg.isServer then
         end
         return gg._serverDataMgr
     end
-    
+
     -- 创建代理访问器
     gg.getPlayerInfoByUin = function(uin_)
         return getServerDataMgr().getPlayerInfoByUin(uin_)
     end
-    
+
     gg.getLivingByName = function(name_)
         return getServerDataMgr().getLivingByName(name_)
     end
-    
+
     gg.getPlayerByUin = function(uin_)
         return getServerDataMgr().getPlayerByUin(uin_)
     end
-    
+
     gg.findMonsterByUuid = function(uuid_)
         return getServerDataMgr().findMonsterByUuid(uuid_)
     end
-    
+
     gg.findMonsterClientContainer = function(scene_name_, uuid_)
         return getServerDataMgr().findMonsterClientContainer(scene_name_, uuid_)
     end
-    
+
     gg.serverGetContainerWeapon = function(scene_name_)
         return getServerDataMgr().serverGetContainerWeapon(scene_name_)
     end
-    
+
     gg.create_uuid = function(pre_)
         return getServerDataMgr().create_uuid(pre_)
     end
-    
+
     gg.GetSceneNode = function(path)
         return getServerDataMgr().GetSceneNode(path)
     end
-    
+
     -- 属性代理
     local mt = {
         __index = function(t, k)

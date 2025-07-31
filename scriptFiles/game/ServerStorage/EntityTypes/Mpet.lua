@@ -33,7 +33,7 @@ local Mpet = ClassMgr.Class("Mpet", Entity)
 function Mpet:OnInit(info)
     -- 调用父类初始化
     Entity.OnInit(self, info)
-    
+
     -- 宠物实体专用初始化
     self.petConfigName = info.petConfigName or ""
     self.ownerUin = info.ownerUin or 0
@@ -44,51 +44,51 @@ function Mpet:OnInit(info)
     self.aiTimer = 0
     self.skillCooldowns = {}
     self.isFollowing = false
-    
+
     -- 加载宠物配置
     self:LoadPetConfig()
-    
+
     -- 初始化Actor
     self:InitializeActor()
-    
-    gg.log("Mpet实体创建", self.petConfigName, "主人", self.ownerUin, "UUID", self.uuid)
+
+    --gg.log("Mpet实体创建", self.petConfigName, "主人", self.ownerUin, "UUID", self.uuid)
 end
 
 ---加载宠物配置
 function Mpet:LoadPetConfig()
     if self.petConfigName == "" then
-        gg.log("警告：宠物配置名称为空", self.ownerUin)
+        --gg.log("警告：宠物配置名称为空", self.ownerUin)
         return
     end
-    
+
     self.petConfig = ConfigLoader.GetConfig("PetType", self.petConfigName)
     if not self.petConfig then
-        gg.log("警告：找不到宠物配置", self.petConfigName)
+        --gg.log("警告：找不到宠物配置", self.petConfigName)
     end
 end
 
 ---初始化Actor
 function Mpet:InitializeActor()
     if not self.petConfig or not self.petConfig.modelPath then
-        gg.log("警告：宠物配置或模型路径缺失", self.petConfigName)
+        --gg.log("警告：宠物配置或模型路径缺失", self.petConfigName)
         return
     end
-    
+
     -- 创建宠物Actor
     local actor = game:GetService("WorldService"):CreateActor(self.petConfig.modelPath)
     if actor then
         self.actor = actor
         self.actor.Name = self.petConfigName .. "_" .. self.uuid
-        
+
         -- 设置基础属性
         self:ApplyBaseAttributes()
-        
+
         -- 绑定实体映射
         Entity.node2Entity[actor] = self
-        
-        gg.log("宠物Actor创建成功", self.petConfigName, self.actor.Name)
+
+        --gg.log("宠物Actor创建成功", self.petConfigName, self.actor.Name)
     else
-        gg.log("宠物Actor创建失败", self.petConfigName)
+        --gg.log("宠物Actor创建失败", self.petConfigName)
     end
 end
 
@@ -97,25 +97,25 @@ function Mpet:ApplyBaseAttributes()
     if not self.actor or not self.petConfig then
         return
     end
-    
+
     -- 从MSystems/Pet获取计算后的属性
     local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
     local petInstance = PetMgr.GetPetInstance(self.ownerUin, self.slotIndex)
-    
+
     if petInstance then
         -- 应用速度
         local speed = petInstance:GetFinalAttribute("速度")
         if speed > 0 then
             self.actor.Movespeed = speed
         end
-        
+
         -- 应用生命值
         local health = petInstance:GetFinalAttribute("生命")
         if health > 0 then
             self:SetMaxHealth(health)
         end
-        
-        gg.log("宠物属性已应用", self.petConfigName, "速度", speed, "生命", health)
+
+        --gg.log("宠物属性已应用", self.petConfigName, "速度", speed, "生命", health)
     else
         -- 使用默认配置值
         if self.petConfig.baseAttributes then
@@ -131,7 +131,7 @@ function Mpet:SetFollowTarget(target)
     self.followTarget = target
     self.isFollowing = true
     self:ChangeState("following")
-    gg.log("宠物设置跟随目标", self.petConfigName, target and target.uuid or "nil")
+    --gg.log("宠物设置跟随目标", self.petConfigName, target and target.uuid or "nil")
 end
 
 ---停止跟随
@@ -139,7 +139,7 @@ function Mpet:StopFollowing()
     self.followTarget = nil
     self.isFollowing = false
     self:ChangeState("idle")
-    gg.log("宠物停止跟随", self.petConfigName)
+    --gg.log("宠物停止跟随", self.petConfigName)
 end
 
 ---改变行为状态
@@ -149,9 +149,9 @@ function Mpet:ChangeState(newState)
         local oldState = self.behaviorState
         self.behaviorState = newState
         self.lastStateTime = os.time()
-        
+
         self:OnStateChanged(oldState, newState)
-        gg.log("宠物状态切换", self.petConfigName, oldState, "->", newState)
+        --gg.log("宠物状态切换", self.petConfigName, oldState, "->", newState)
     end
 end
 
@@ -173,13 +173,13 @@ function Mpet:StartFollowing()
     if not self.followTarget or not self.actor then
         return
     end
-    
+
     -- 实现跟随逻辑
     local targetPos = self.followTarget.actor and self.followTarget.actor.Position or nil
     if targetPos then
         local myPos = self.actor.Position
         local distance = (targetPos - myPos).Magnitude
-        
+
         -- 如果距离过远，则移动向目标
         if distance > 50 then -- 跟随距离阈值
             self.actor:MoveTo(targetPos)
@@ -201,7 +201,7 @@ function Mpet:StartAttacking()
     if not self.target or not self.actor then
         return
     end
-    
+
     -- 实现攻击逻辑
     self:UseSkill("基础攻击")
 end
@@ -213,35 +213,35 @@ function Mpet:UseSkill(skillId)
     if not skillId or skillId == "" then
         return false
     end
-    
+
     -- 检查冷却时间
     local currentTime = os.time()
     if self.skillCooldowns[skillId] and currentTime < self.skillCooldowns[skillId] then
         return false
     end
-    
+
     -- 从MSystems/Pet检查是否学会技能
     local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
     local petInstance = PetMgr.GetPetInstance(self.ownerUin, self.slotIndex)
-    
+
     if petInstance then
         local learnedSkills = petInstance.petData.learnedSkills or {}
         if skillId ~= "基础攻击" and not learnedSkills[skillId] then
-            gg.log("宠物未学会技能", self.petConfigName, skillId)
+            --gg.log("宠物未学会技能", self.petConfigName, skillId)
             return false
         end
     end
-    
+
     -- 执行技能效果
     self:ExecuteSkill(skillId)
-    
+
     -- 设置冷却时间
     local skillConfig = ConfigLoader.GetConfig("PetSkill", skillId)
     if skillConfig and skillConfig.cooldown then
         self.skillCooldowns[skillId] = currentTime + skillConfig.cooldown
     end
-    
-    gg.log("宠物使用技能", self.petConfigName, skillId)
+
+    --gg.log("宠物使用技能", self.petConfigName, skillId)
     return true
 end
 
@@ -251,7 +251,7 @@ function Mpet:ExecuteSkill(skillId)
     if not self.actor then
         return
     end
-    
+
     local skillConfig = ConfigLoader.GetConfig("PetSkill", skillId)
     if not skillConfig then
         -- 如果没有配置，默认为基础攻击
@@ -260,7 +260,7 @@ function Mpet:ExecuteSkill(skillId)
         end
         return
     end
-    
+
     -- 根据技能类型执行不同效果
     if skillConfig.type == "attack" then
         self:ExecuteAttackSkill(skillConfig)
@@ -276,18 +276,18 @@ function Mpet:ExecuteBasicAttack()
     if not self.target or not self.target.actor then
         return
     end
-    
+
     -- 获取攻击力
     local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
     local petInstance = PetMgr.GetPetInstance(self.ownerUin, self.slotIndex)
     local attackPower = petInstance and petInstance:GetFinalAttribute("攻击") or 50
-    
+
     -- 造成伤害
     if self.target.TakeDamage then
         self.target:TakeDamage(attackPower, self)
     end
-    
-    gg.log("宠物基础攻击", self.petConfigName, "伤害", attackPower, "目标", self.target.uuid)
+
+    --gg.log("宠物基础攻击", self.petConfigName, "伤害", attackPower, "目标", self.target.uuid)
 end
 
 ---执行攻击技能
@@ -296,21 +296,21 @@ function Mpet:ExecuteAttackSkill(skillConfig)
     if not self.target or not self.target.actor then
         return
     end
-    
+
     -- 获取攻击力
     local PetMgr = require(ServerStorage.MSystems.Pet.PetMgr) ---@type PetMgr
     local petInstance = PetMgr.GetPetInstance(self.ownerUin, self.slotIndex)
     local attackPower = petInstance and petInstance:GetFinalAttribute("攻击") or 50
-    
+
     -- 计算伤害
     local damage = attackPower * (skillConfig.damageMultiplier or 1.0)
-    
+
     -- 造成伤害
     if self.target.TakeDamage then
         self.target:TakeDamage(damage, self)
     end
-    
-    gg.log("宠物攻击技能", self.petConfigName, skillConfig.name, "伤害", damage, "目标", self.target.uuid)
+
+    --gg.log("宠物攻击技能", self.petConfigName, skillConfig.name, "伤害", damage, "目标", self.target.uuid)
 end
 
 ---执行增益技能
@@ -321,8 +321,8 @@ function Mpet:ExecuteBuffSkill(skillConfig)
     if target and target.AddBuff then
         target:AddBuff(skillConfig.buffId, skillConfig.duration or 30)
     end
-    
-    gg.log("宠物增益技能", self.petConfigName, skillConfig.name)
+
+    --gg.log("宠物增益技能", self.petConfigName, skillConfig.name)
 end
 
 ---执行治疗技能
@@ -332,27 +332,27 @@ function Mpet:ExecuteHealSkill(skillConfig)
     if not target then
         return
     end
-    
+
     local healAmount = skillConfig.healAmount or 50
     if target.Heal then
         target:Heal(healAmount, self)
     end
-    
-    gg.log("宠物治疗技能", self.petConfigName, skillConfig.name, "治疗量", healAmount)
+
+    --gg.log("宠物治疗技能", self.petConfigName, skillConfig.name, "治疗量", healAmount)
 end
 
 ---更新AI行为
 ---@param deltaTime number 时间间隔
 function Mpet:UpdateAI(deltaTime)
     self.aiTimer = self.aiTimer + deltaTime
-    
+
     -- AI更新频率控制：每0.5秒更新一次
     if self.aiTimer < 0.5 then
         return
     end
-    
+
     self.aiTimer = 0
-    
+
     -- 根据当前状态执行AI逻辑
     if self.behaviorState == "following" then
         self:UpdateFollowingAI()
@@ -369,17 +369,17 @@ function Mpet:UpdateFollowingAI()
         self:ChangeState("idle")
         return
     end
-    
+
     -- 检查跟随目标是否还存在
     if self.followTarget.isDead or self.followTarget.isDestroyed then
         self.followTarget = nil
         self:ChangeState("idle")
         return
     end
-    
+
     -- 执行跟随逻辑
     self:StartFollowing()
-    
+
     -- 检查是否需要攻击敌人
     local enemy = self:FindNearbyEnemy()
     if enemy then
@@ -408,7 +408,7 @@ function Mpet:UpdateAttackingAI()
         end
         return
     end
-    
+
     -- 检查攻击距离
     if self.actor and self.target.actor then
         local distance = (self.target.actor.Position - self.actor.Position).Magnitude
@@ -428,7 +428,7 @@ function Mpet:FindNearbyEnemy()
     if not self.actor then
         return nil
     end
-    
+
     -- TODO: 实现敌人搜索逻辑
     -- 这里可以遍历附近的Entity，寻找敌对目标
     return nil
@@ -440,11 +440,11 @@ function Mpet:FindOwnerEntity()
     if self.ownerUin == 0 then
         return nil
     end
-    
+
     -- 从玩家管理器获取主人实体
     local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     local player = MServerDataManager.getPlayerByUin(self.ownerUin)
-    
+
     return player
 end
 
@@ -461,13 +461,13 @@ function Mpet:SyncStatusToDataLayer()
     if not petInstance then
         return
     end
-    
+
     -- 同步位置信息（如果需要）
     if self.actor then
         -- 可以将当前位置等信息同步到数据层
         -- petInstance.lastPosition = self.actor.Position
     end
-    
+
     -- 同步其他状态信息
     -- petInstance.lastActiveTime = os.time()
 end
@@ -477,13 +477,13 @@ end
 function Mpet:Update(deltaTime)
     -- 调用父类更新
     Entity.Update(self, deltaTime)
-    
+
     -- 宠物AI更新
     self:UpdateAI(deltaTime)
-    
+
     -- 更新技能冷却
     self:UpdateSkillCooldowns()
-    
+
     -- 定期同步状态
     if math.random() < 0.01 then -- 1%概率同步，避免频繁操作
         self:SyncStatusToDataLayer()
@@ -521,25 +521,25 @@ end
 function Mpet:Destroy()
     -- 同步最终状态到数据层
     self:SyncStatusToDataLayer()
-    
+
     -- 停止AI
     self.aiTimer = 0
     self.followTarget = nil
     self.target = nil
     self.isFollowing = false
-    
+
     -- 清理技能冷却
     self.skillCooldowns = {}
-    
+
     -- 从映射表移除
     if self.actor then
         Entity.node2Entity[self.actor] = nil
     end
-    
+
     -- 调用父类销毁
     Entity.Destroy(self)
-    
-    gg.log("Mpet实体销毁", self.petConfigName, "主人", self.ownerUin, "UUID", self.uuid)
+
+    --gg.log("Mpet实体销毁", self.petConfigName, "主人", self.ownerUin, "UUID", self.uuid)
 end
 
 return Mpet

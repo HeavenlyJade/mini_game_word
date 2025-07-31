@@ -69,13 +69,13 @@ function PetEventManager.ValidatePlayer(evt)
     local env_player = evt.player
     local uin = env_player.uin
     if not uin then
-        gg.log("宠物事件缺少玩家UIN参数")
+        --gg.log("宠物事件缺少玩家UIN参数")
         return nil
     end
 
     local player = MServerDataManager.getPlayerByUin(uin)
     if not player then
-        gg.log("宠物事件找不到玩家: " .. uin)
+        --gg.log("宠物事件找不到玩家: " .. uin)
         return nil
     end
 
@@ -93,7 +93,7 @@ function PetEventManager.HandleEquipPet(evt)
     local equipSlotId = args.equipSlotId
 
     if not companionSlotId or not equipSlotId then
-        gg.log("装备宠物缺少参数", player.uin)
+        --gg.log("装备宠物缺少参数", player.uin)
         PetEventManager.NotifyError(player.uin, -1, "装备宠物缺少参数")
         return
     end
@@ -101,10 +101,10 @@ function PetEventManager.HandleEquipPet(evt)
     local success, errorMsg = PetMgr.EquipPet(player.uin, companionSlotId, equipSlotId)
 
     if success then
-        gg.log("装备宠物成功", player.uin, "宠物槽位", companionSlotId, "装备栏", equipSlotId)
+        --gg.log("装备宠物成功", player.uin, "宠物槽位", companionSlotId, "装备栏", equipSlotId)
         -- 成功后，管理器内部会自动通知客户端更新
     else
-        gg.log("装备宠物失败", player.uin, "错误", errorMsg)
+        --gg.log("装备宠物失败", player.uin, "错误", errorMsg)
         PetEventManager.NotifyError(player.uin, -1, errorMsg)
     end
 end
@@ -119,7 +119,7 @@ function PetEventManager.HandleUnequipPet(evt)
     local equipSlotId = args.equipSlotId
 
     if not equipSlotId then
-        gg.log("卸下宠物缺少参数", player.uin)
+        --gg.log("卸下宠物缺少参数", player.uin)
         PetEventManager.NotifyError(player.uin, -1, "卸下宠物缺少参数")
         return
     end
@@ -127,10 +127,10 @@ function PetEventManager.HandleUnequipPet(evt)
     local success, errorMsg = PetMgr.UnequipPet(player.uin, equipSlotId)
 
     if success then
-        gg.log("卸下宠物成功", player.uin, "装备栏", equipSlotId)
+        --gg.log("卸下宠物成功", player.uin, "装备栏", equipSlotId)
         -- 成功后，管理器内部会自动通知客户端更新
     else
-        gg.log("卸下宠物失败", player.uin, "错误", errorMsg)
+        --gg.log("卸下宠物失败", player.uin, "错误", errorMsg)
         PetEventManager.NotifyError(player.uin, -1, errorMsg)
     end
 end
@@ -146,17 +146,17 @@ function PetEventManager.HandleDeletePet(evt)
     local slotIndex = args.slotIndex
 
     if not slotIndex then
-        gg.log("删除宠物缺少参数", player.uin)
+        --gg.log("删除宠物缺少参数", player.uin)
         return
     end
 
     local success, errorMsg = PetMgr.DeletePet(player.uin, slotIndex)
 
     if success then
-        gg.log("删除宠物成功", player.uin, "槽位", slotIndex)
+        --gg.log("删除宠物成功", player.uin, "槽位", slotIndex)
         -- 成功后，管理器内部会发送通知
     else
-        gg.log("删除宠物失败", player.uin, "错误", errorMsg)
+        --gg.log("删除宠物失败", player.uin, "错误", errorMsg)
         PetEventManager.NotifyError(player.uin, -1, errorMsg)
     end
 end
@@ -171,17 +171,17 @@ function PetEventManager.HandleTogglePetLock(evt)
     local slotIndex = args.slotIndex
 
     if not slotIndex then
-        gg.log("切换宠物锁定状态缺少参数", player.uin)
+        --gg.log("切换宠物锁定状态缺少参数", player.uin)
         return
     end
 
     local success, errorMsg, isLocked = PetMgr.TogglePetLock(player.uin, slotIndex)
 
     if success then
-        gg.log("切换宠物锁定状态成功", player.uin, "槽位", slotIndex, "当前状态", isLocked)
+        --gg.log("切换宠物锁定状态成功", player.uin, "槽位", slotIndex, "当前状态", isLocked)
         -- 成功后，管理器内部会发送通知
     else
-        gg.log("切换宠物锁定状态失败", player.uin, "错误", errorMsg)
+        --gg.log("切换宠物锁定状态失败", player.uin, "错误", errorMsg)
         PetEventManager.NotifyError(player.uin, -1, errorMsg)
     end
 end
@@ -196,11 +196,11 @@ function PetEventManager.HandleUpgradeAllPets(evt)
     local upgradedCount = PetMgr.UpgradeAllPossiblePets(player.uin)
 
     if upgradedCount > 0 then
-        gg.log("一键升星成功", player.uin, "总共升级次数", upgradedCount)
+        --gg.log("一键升星成功", player.uin, "总共升级次数", upgradedCount)
         -- 成功的通知由PetMgr内部的NotifyPetDataUpdate发送，这里可以发送一个额外的成功提示
         -- PetEventManager.NotifySuccess(player.uin, "一键升星完成！")
     else
-        gg.log("一键升星：没有可升星的宠物", player.uin)
+        --gg.log("一键升星：没有可升星的宠物", player.uin)
         -- PetEventManager.NotifyError(player.uin, 0, "没有可升星的宠物")
     end
 end
@@ -212,7 +212,7 @@ end
 function PetEventManager.ValidatePetManager(uin)
     local petManager = PetMgr.GetPlayerPet(uin)
     if not petManager then
-        gg.log("宠物管理器不存在", uin)
+        --gg.log("宠物管理器不存在", uin)
         return nil
     end
     return petManager
@@ -221,7 +221,7 @@ end
 --- 处理获取宠物列表请求
 ---@param evt table 事件数据
 function PetEventManager.HandleGetPetList(evt)
-    gg.log("获取宠物列表", evt)
+    --gg.log("获取宠物列表", evt)
     local player = PetEventManager.ValidatePlayer(evt)
     if not player then return end
 
@@ -229,7 +229,7 @@ function PetEventManager.HandleGetPetList(evt)
     if result then
         PetEventManager.NotifyPetListUpdate(player.uin, result.petList)
     else
-        gg.log("获取宠物列表失败", player.uin, errorMsg)
+        --gg.log("获取宠物列表失败", player.uin, errorMsg)
     end
 end
 
@@ -245,9 +245,9 @@ function PetEventManager.HandleSetActivePet(evt)
     if success then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin)
-        gg.log("设置激活宠物成功", player.uin, "槽位", slotIndex)
+        --gg.log("设置激活宠物成功", player.uin, "槽位", slotIndex)
     else
-        gg.log("设置激活宠物失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("设置激活宠物失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -261,7 +261,7 @@ function PetEventManager.HandleLevelUpPet(evt)
     local targetLevel = evt.targetLevel
 
     if not slotIndex then
-        gg.log("宠物升级缺少槽位参数", player.uin)
+        --gg.log("宠物升级缺少槽位参数", player.uin)
         return
     end
 
@@ -270,9 +270,9 @@ function PetEventManager.HandleLevelUpPet(evt)
     if success then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
-        gg.log("宠物升级成功", player.uin, "槽位", slotIndex, "是否升级", leveledUp)
+        --gg.log("宠物升级成功", player.uin, "槽位", slotIndex, "是否升级", leveledUp)
     else
-        gg.log("宠物升级失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("宠物升级失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -286,7 +286,7 @@ function PetEventManager.HandleAddPetExp(evt)
     local expAmount = evt.expAmount
 
     if not slotIndex or not expAmount then
-        gg.log("宠物获得经验缺少参数", player.uin, "槽位", slotIndex, "经验", expAmount)
+        --gg.log("宠物获得经验缺少参数", player.uin, "槽位", slotIndex, "经验", expAmount)
         return
     end
 
@@ -295,9 +295,9 @@ function PetEventManager.HandleAddPetExp(evt)
     if success then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
-        gg.log("宠物获得经验成功", player.uin, "槽位", slotIndex, "经验", expAmount, "是否升级", leveledUp)
+        --gg.log("宠物获得经验成功", player.uin, "槽位", slotIndex, "经验", expAmount, "是否升级", leveledUp)
     else
-        gg.log("宠物获得经验失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("宠物获得经验失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -311,7 +311,7 @@ function PetEventManager.HandleUpgradePetStar(evt)
     local slotIndex = args.slotIndex
 
     if not slotIndex then
-        gg.log("宠物升星缺少槽位参数", player.uin)
+        --gg.log("宠物升星缺少槽位参数", player.uin)
         return
     end
 
@@ -320,9 +320,9 @@ function PetEventManager.HandleUpgradePetStar(evt)
     if success then
         -- 通知客户端更新（升星可能消耗了其他宠物，需要全量更新）
         PetMgr.NotifyPetDataUpdate(player.uin)
-        gg.log("宠物升星成功", player.uin, "槽位", slotIndex)
+        --gg.log("宠物升星成功", player.uin, "槽位", slotIndex)
     else
-        gg.log("宠物升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("宠物升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -336,7 +336,7 @@ function PetEventManager.HandleLearnPetSkill(evt)
     local skillId = evt.skillId
 
     if not slotIndex or not skillId then
-        gg.log("宠物学习技能缺少参数", player.uin, "槽位", slotIndex, "技能", skillId)
+        --gg.log("宠物学习技能缺少参数", player.uin, "槽位", slotIndex, "技能", skillId)
         return
     end
 
@@ -345,9 +345,9 @@ function PetEventManager.HandleLearnPetSkill(evt)
     if success then
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
-        gg.log("宠物学习技能成功", player.uin, "槽位", slotIndex, "技能", skillId)
+        --gg.log("宠物学习技能成功", player.uin, "槽位", slotIndex, "技能", skillId)
     else
-        gg.log("宠物学习技能失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
+        --gg.log("宠物学习技能失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
 
@@ -361,7 +361,7 @@ function PetEventManager.HandleFeedPet(evt)
     local foodType = evt.foodType
 
     if not slotIndex or not foodType then
-        gg.log("喂养宠物缺少参数", player.uin, "槽位", slotIndex, "食物类型", foodType)
+        --gg.log("喂养宠物缺少参数", player.uin, "槽位", slotIndex, "食物类型", foodType)
         return
     end
 
@@ -375,9 +375,9 @@ function PetEventManager.HandleFeedPet(evt)
 
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
-        gg.log("喂养宠物成功", player.uin, "槽位", slotIndex, "食物类型", foodType, "新心情", newMood)
+        --gg.log("喂养宠物成功", player.uin, "槽位", slotIndex, "食物类型", foodType, "新心情", newMood)
     else
-        gg.log("喂养宠物失败：宠物不存在", player.uin, "槽位", slotIndex)
+        --gg.log("喂养宠物失败：宠物不存在", player.uin, "槽位", slotIndex)
     end
 end
 
@@ -391,7 +391,7 @@ function PetEventManager.HandleRenamePet(evt)
     local newName = evt.newName
 
     if not slotIndex or not newName then
-        gg.log("重命名宠物缺少参数", player.uin, "槽位", slotIndex, "新名称", newName)
+        --gg.log("重命名宠物缺少参数", player.uin, "槽位", slotIndex, "新名称", newName)
         return
     end
 
@@ -401,9 +401,9 @@ function PetEventManager.HandleRenamePet(evt)
 
         -- 通知客户端更新
         PetMgr.NotifyPetDataUpdate(player.uin, slotIndex)
-        gg.log("重命名宠物成功", player.uin, "槽位", slotIndex, "新名称", newName)
+        --gg.log("重命名宠物成功", player.uin, "槽位", slotIndex, "新名称", newName)
     else
-        gg.log("重命名宠物失败：宠物不存在", player.uin, "槽位", slotIndex)
+        --gg.log("重命名宠物失败：宠物不存在", player.uin, "槽位", slotIndex)
     end
 end
 
@@ -416,7 +416,7 @@ function PetEventManager.HandleUpgradeAllPets(evt)
     local upgradedCount = PetMgr.UpgradeAllPossiblePets(player.uin)
 
     if upgradedCount > 0 then
-        gg.log("批量升级宠物成功", player.uin, "升级次数", upgradedCount)
+        --gg.log("批量升级宠物成功", player.uin, "升级次数", upgradedCount)
         -- 发送响应事件到客户端
         gg.network_channel:fireClient(player.uin, {
             cmd = PetEventManager.RESPONSE.PET_BATCH_UPGRADE,
@@ -424,7 +424,7 @@ function PetEventManager.HandleUpgradeAllPets(evt)
             upgradedCount = upgradedCount
         })
     else
-        gg.log("批量升级宠物：没有可升级的宠物", player.uin)
+        --gg.log("批量升级宠物：没有可升级的宠物", player.uin)
         gg.network_channel:fireClient(player.uin, {
             cmd = PetEventManager.RESPONSE.PET_BATCH_UPGRADE,
             success = false,
@@ -443,7 +443,7 @@ function PetEventManager.HandleGetPetStats(evt)
     local minStar = evt.minStar
 
     if not petName then
-        gg.log("宠物统计查询缺少参数", player.uin)
+        --gg.log("宠物统计查询缺少参数", player.uin)
         return
     end
 
@@ -457,7 +457,7 @@ function PetEventManager.HandleGetPetStats(evt)
         count = count
     })
 
-    gg.log("宠物统计查询", player.uin, petName, "最小星级", minStar, "数量", count)
+    --gg.log("宠物统计查询", player.uin, petName, "最小星级", minStar, "数量", count)
 end
 
 --- 通知客户端宠物列表更新

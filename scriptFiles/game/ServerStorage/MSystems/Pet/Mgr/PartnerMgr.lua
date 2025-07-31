@@ -36,7 +36,7 @@ function SaveAllPlayerPARTNER_()
             end
         end
     end
-    -- gg.log("定时保存伙伴数据完成，保存了", count, "个玩家的伙伴")
+    -- --gg.log("定时保存伙伴数据完成，保存了", count, "个玩家的伙伴")
 end
 
 local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
@@ -53,12 +53,12 @@ saveTimer:Start()
 ---@param player MPlayer 玩家对象
 function PartnerMgr.OnPlayerJoin(player)
     if not player or not player.uin then
-        gg.log("伙伴系统：玩家上线处理失败：玩家对象无效")
+        --gg.log("伙伴系统：玩家上线处理失败：玩家对象无效")
         return
     end
 
     local uin = player.uin
-    gg.log("开始处理玩家伙伴上线", uin)
+    --gg.log("开始处理玩家伙伴上线", uin)
 
     -- 从云端加载玩家伙伴数据
     local playerPartnerData = CloudPartnerDataAccessor:LoadPlayerPartnerData(uin)
@@ -67,7 +67,7 @@ function PartnerMgr.OnPlayerJoin(player)
     local partnerManager = Partner.New(uin, playerPartnerData)
     PartnerMgr.server_player_partners[uin] = partnerManager
 
-    gg.log("玩家伙伴管理器加载完成", uin, "伙伴数量数据",playerPartnerData)
+    --gg.log("玩家伙伴管理器加载完成", uin, "伙伴数量数据",playerPartnerData)
 end
 
 ---玩家离线处理
@@ -83,7 +83,7 @@ function PartnerMgr.OnPlayerLeave(uin)
 
         -- 清理内存缓存
         PartnerMgr.server_player_partners[uin] = nil
-        gg.log("玩家伙伴数据已保存并清理", uin)
+        --gg.log("玩家伙伴数据已保存并清理", uin)
     end
 end
 
@@ -93,7 +93,7 @@ end
 function PartnerMgr.GetPlayerPartner(uin)
     local partnerManager = PartnerMgr.server_player_partners[uin]
     if not partnerManager then
-        gg.log("伙伴系统：在缓存中未找到玩家", uin, "的伙伴管理器，尝试动态加载。")
+        --gg.log("伙伴系统：在缓存中未找到玩家", uin, "的伙伴管理器，尝试动态加载。")
         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
         local player = serverDataMgr.getPlayerByUin(uin)
         if player then
@@ -102,9 +102,9 @@ function PartnerMgr.GetPlayerPartner(uin)
         end
 
         if partnerManager then
-            gg.log("伙伴系统：为玩家", uin, "动态加载伙伴管理器成功。")
+            --gg.log("伙伴系统：为玩家", uin, "动态加载伙伴管理器成功。")
         else
-            gg.log("伙伴系统：为玩家", uin, "动态加载伙伴管理器失败。")
+            --gg.log("伙伴系统：为玩家", uin, "动态加载伙伴管理器失败。")
         end
     end
     return partnerManager
@@ -124,18 +124,18 @@ function PartnerMgr.SetActivePartner(uin, slotIndex)
     local success, errorMsg = partnerManager:SetActivePartner(slotIndex)
 
     if success then
-        gg.log("伙伴激活状态设置成功", uin, slotIndex)
+        --gg.log("伙伴激活状态设置成功", uin, slotIndex)
         -- 在这里添加更新模型的逻辑
         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
         local player = serverDataMgr.getPlayerByUin(uin) ---@type MPlayer
         if not player or not player.actor then
-            gg.log("错误：找不到玩家Actor，无法更新伙伴模型", uin)
+            --gg.log("错误：找不到玩家Actor，无法更新伙伴模型", uin)
             return success, errorMsg
         end
 
         local partnerNode = player.actor:FindFirstChild("Partner1")
         if not partnerNode then
-            gg.log("警告：在玩家Actor下未找到名为'Partner1'的节点", uin)
+            --gg.log("警告：在玩家Actor下未找到名为'Partner1'的节点", uin)
             return success, errorMsg
         end
 
@@ -145,7 +145,7 @@ function PartnerMgr.SetActivePartner(uin, slotIndex)
             if activePartner then
                 local partnerConfigName = activePartner:GetConfigName()
                 if not partnerConfigName then
-                    gg.log("错误：无法获取伙伴配置名称，隐藏节点", uin)
+                    --gg.log("错误：无法获取伙伴配置名称，隐藏节点", uin)
                     partnerNode.Visible = false
                     return success, errorMsg
                 end
@@ -154,9 +154,9 @@ function PartnerMgr.SetActivePartner(uin, slotIndex)
                 if partnerConfig and partnerConfig.modelResource and partnerConfig.modelResource ~= "" then
                     partnerNode.ModelId = partnerConfig.modelResource
                     partnerNode.Visible = true
-                    gg.log("成功更新玩家伙伴模型并显示节点", uin, partnerConfig.modelResource)
+                    --gg.log("成功更新玩家伙伴模型并显示节点", uin, partnerConfig.modelResource)
                 else
-                    gg.log("警告：伙伴没有配置模型资源或配置不存在，隐藏节点", uin, partnerConfigName)
+                    --gg.log("警告：伙伴没有配置模型资源或配置不存在，隐藏节点", uin, partnerConfigName)
                     partnerNode.Visible = false
                 end
             else
@@ -166,7 +166,7 @@ function PartnerMgr.SetActivePartner(uin, slotIndex)
         else
             -- 卸下伙伴
             partnerNode.Visible = false
-            gg.log("成功卸下伙伴并隐藏节点", uin)
+            --gg.log("成功卸下伙伴并隐藏节点", uin)
         end
     end
 
@@ -364,15 +364,15 @@ end
 ---@return number|nil 实际使用的槽位
 function PartnerMgr.AddPartner(player, partnerName, slotIndex)
     if not player or not player.uin then
-        gg.log("PartnerMgr.AddPartner: 玩家对象无效")
+        --gg.log("PartnerMgr.AddPartner: 玩家对象无效")
         return false, nil
     end
 
     local success, errorMsg, actualSlot = PartnerMgr.AddPartnerToSlot(player.uin, partnerName, slotIndex)
     if success then
-        gg.log("PartnerMgr.AddPartner: 成功给玩家", player.uin, "添加伙伴", partnerName, "槽位", actualSlot)
+        --gg.log("PartnerMgr.AddPartner: 成功给玩家", player.uin, "添加伙伴", partnerName, "槽位", actualSlot)
     else
-        gg.log("PartnerMgr.AddPartner: 给玩家", player.uin, "添加伙伴失败", partnerName, "错误", errorMsg)
+        --gg.log("PartnerMgr.AddPartner: 给玩家", player.uin, "添加伙伴失败", partnerName, "错误", errorMsg)
     end
 
     return success, actualSlot
@@ -388,7 +388,7 @@ function PartnerMgr.AddPartnerByUin(uin, partnerName, slotIndex)
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local player = serverDataMgr.getPlayerByUin(uin)
     if not player then
-        gg.log("PartnerMgr.AddPartnerByUin: 玩家不存在", uin)
+        --gg.log("PartnerMgr.AddPartnerByUin: 玩家不存在", uin)
         return false, nil
     end
 
@@ -403,9 +403,9 @@ function PartnerMgr.ForceSyncToClient(uin)
         -- TODO: 需要 PartnerEventManager
         -- local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
         -- PartnerEventManager.NotifyPartnerListUpdate(uin, result.partnerList)
-        gg.log("PartnerMgr.ForceSyncToClient: 强制同步伙伴数据", uin)
+        --gg.log("PartnerMgr.ForceSyncToClient: 强制同步伙伴数据", uin)
     else
-        gg.log("PartnerMgr.ForceSyncToClient: 同步失败", uin, errorMsg)
+        --gg.log("PartnerMgr.ForceSyncToClient: 同步失败", uin, errorMsg)
     end
 end
 
@@ -417,7 +417,7 @@ function PartnerMgr.ForceSavePlayerData(uin)
         local playerPartnerData = partnerManager:GetSaveData()
         if playerPartnerData then
             CloudPartnerDataAccessor:SavePlayerPartnerData(uin, playerPartnerData)
-            gg.log("PartnerMgr.ForceSavePlayerData: 强制保存伙伴数据", uin)
+            --gg.log("PartnerMgr.ForceSavePlayerData: 强制保存伙伴数据", uin)
         end
     end
 end
@@ -454,20 +454,20 @@ end
 ---@param player MPlayer 玩家对象
 function PartnerMgr.UpdateAllEquippedPartnerModels(player)
     if not player or not player.uin then
-        gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 玩家对象无效")
+        --gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 玩家对象无效")
         return
     end
 
     local uin = player.uin
     local partnerManager = PartnerMgr.GetPlayerPartner(uin)
     if not partnerManager then
-        gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 找不到玩家伙伴数据", uin)
+        --gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 找不到玩家伙伴数据", uin)
         return
     end
 
     local player_actor = player.actor
     if not player_actor then
-        gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 找不到玩家Actor", uin)
+        --gg.log("PartnerMgr.UpdateAllEquippedPartnerModels: 找不到玩家Actor", uin)
         return
     end
 
@@ -501,24 +501,24 @@ function PartnerMgr.UpdateAllEquippedPartnerModels(player)
                         local animatorNode = partnerNode:FindFirstChild("Animator")
                         if animatorNode then
                             animatorNode.ControllerAsset = partnerConfig.animationResource
-                            gg.log("更新伙伴动画控制器成功:", uin, equipSlotId, partnerConfig.animationResource)
+                            --gg.log("更新伙伴动画控制器成功:", uin, equipSlotId, partnerConfig.animationResource)
                         end
 
-                        gg.log("更新伙伴模型成功:", uin, equipSlotId, partnerConfig.modelResource)
+                        --gg.log("更新伙伴模型成功:", uin, equipSlotId, partnerConfig.modelResource)
                     else
-                        gg.log("伙伴模型资源无效, 隐藏节点:", uin, equipSlotId)
+                        --gg.log("伙伴模型资源无效, 隐藏节点:", uin, equipSlotId)
                         partnerNode.Visible = false
                     end
                 else
-                     gg.log("找不到伙伴实例, 隐藏节点:", uin, companionSlotId)
+                     --gg.log("找不到伙伴实例, 隐藏节点:", uin, companionSlotId)
                      partnerNode.Visible = false
                 end
             else
-                gg.log("找不到伙伴节点:", uin, equipSlotId)
+                --gg.log("找不到伙伴节点:", uin, equipSlotId)
             end
         end
     end
-    gg.log("玩家所有伙伴模型更新完毕", uin)
+    --gg.log("玩家所有伙伴模型更新完毕", uin)
 end
 
 
@@ -536,7 +536,7 @@ function PartnerMgr.EquipPartner(uin, companionSlotId, equipSlotId)
     local success, errorMsg = partnerManager:EquipPartner(companionSlotId, equipSlotId)
 
     if success then
-        gg.log("伙伴装备数据更新成功, 开始更新模型", uin, companionSlotId, "->", equipSlotId)
+        --gg.log("伙伴装备数据更新成功, 开始更新模型", uin, companionSlotId, "->", equipSlotId)
         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
         local player = serverDataMgr.getPlayerByUin(uin) ---@type MPlayer
         if player then
@@ -561,7 +561,7 @@ function PartnerMgr.UnequipPartner(uin, equipSlotId)
     local success, errorMsg = partnerManager:UnequipPartner(equipSlotId)
 
     if success then
-        gg.log("伙伴卸下数据更新成功, 开始更新模型", uin, equipSlotId)
+        --gg.log("伙伴卸下数据更新成功, 开始更新模型", uin, equipSlotId)
         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
         local player = serverDataMgr.getPlayerByUin(uin) ---@type MPlayer
         if player then
@@ -579,7 +579,7 @@ end
 function PartnerMgr.GetActiveItemBonuses(uin)
     local partnerManager = PartnerMgr.GetPlayerPartner(uin)
     if not partnerManager then
-        gg.log("[PartnerMgr] GetActiveItemBonuses: 找不到玩家的伙伴管理器", uin)
+        --gg.log("[PartnerMgr] GetActiveItemBonuses: 找不到玩家的伙伴管理器", uin)
         return {}
     end
 

@@ -29,7 +29,7 @@ local Achievement = ClassMgr.Class("Achievement")
 ---@param playerId number 玩家ID
 ---@param achievementData AchievementDataTable|nil 玩家成就数据
 function Achievement:OnInit(playerId, achievementData)
-    gg.log("开始初始化Achievement实例", playerId)
+    --gg.log("开始初始化Achievement实例", playerId)
 
     self.playerId = playerId
     self.talentData = {} -- 天赋数据映射
@@ -50,7 +50,7 @@ function Achievement:OnInit(playerId, achievementData)
     self._rewardCalculator = AchievementRewardCal.New()
     self.talentVariableData = self:_ConvertTalentDataToVariableFormat()
 
-    -- gg.log("初始化玩家成就聚合实例", playerId,achievementData,self._rewardCalculator)
+    -- --gg.log("初始化玩家成就聚合实例", playerId,achievementData,self._rewardCalculator)
 
 end
 
@@ -157,7 +157,7 @@ function Achievement:_ApplyToPlayerVariableSystem(playerVariableData)
     local player = MServerDataManager.getPlayerInfoByUin(tonumber(self.playerId))
 
     if not player or not player.variableSystem then
-        gg.log("玩家或玩家变量系统不存在:", self.playerId)
+        --gg.log("玩家或玩家变量系统不存在:", self.playerId)
         return
     end
 
@@ -168,8 +168,7 @@ function Achievement:_ApplyToPlayerVariableSystem(playerVariableData)
         end
     end
 
-    gg.log(string.format("玩家[%s]应用了%d个天赋变量到玩家系统",
-        self.playerId, self:_CountVariables(playerVariableData)))
+    --gg.log(string.format("玩家[%s]应用了%d个天赋变量到玩家系统",self.playerId, self:_CountVariables(playerVariableData))
 end
 
 --- 统计变量数量
@@ -209,7 +208,7 @@ function Achievement:SetTalentLevel(talentId, level, unlockTime)
     self.talentData[talentId].currentLevel = level
     self.talentData[talentId].unlockTime = unlockTime or os.time()
 
-    gg.log(string.format("玩家[%s]天赋[%s]设置为L%d", tostring(self.playerId), tostring(talentId), level))
+    --gg.log(string.format("玩家[%s]天赋[%s]设置为L%d", tostring(self.playerId), tostring(talentId), level))
 end
 
 --- 检查天赋是否可以升级
@@ -240,7 +239,7 @@ end
 ---@return boolean 是否升级成功
 function Achievement:UpgradeTalent(talentId, player)
     if not self:CanUpgradeTalent(talentId, player) then
-        gg.log(string.format("玩家[%s]天赋[%s]升级条件不满足", self.playerId, talentId))
+        --gg.log(string.format("玩家[%s]天赋[%s]升级条件不满足", self.playerId, talentId))
         return false
     end
 
@@ -253,7 +252,7 @@ function Achievement:UpgradeTalent(talentId, player)
             currentLevel = 1,
             unlockTime = os.time()
         }
-        gg.log(string.format("玩家[%s]解锁天赋[%s]", self.playerId, talentId))
+        --gg.log(string.format("玩家[%s]解锁天赋[%s]", self.playerId, talentId))
     else
         -- 升级现有天赋
         self.talentData[talentId].currentLevel = newLevel
@@ -263,8 +262,7 @@ function Achievement:UpgradeTalent(talentId, player)
     self:_RemoveTalentEffect(talentId, oldLevel, player)
     self:ApplyTalentEffect(talentId, player)
 
-    gg.log(string.format("玩家[%s]天赋[%s]从L%d升级到L%d",
-        self.playerId, talentId, oldLevel, newLevel))
+    --gg.log(string.format("玩家[%s]天赋[%s]从L%d升级到L%d",self.playerId, talentId, oldLevel, newLevel))
 
     return true
 end
@@ -285,15 +283,14 @@ function Achievement:ResetTalent(talentId, player)
         -- 应用1级效果
         self:ApplyTalentEffect(talentId, player)
 
-        gg.log(string.format("玩家[%s]天赋[%s]从L%d重置到L1",
-            self.playerId, talentId, oldLevel))
+        --gg.log(string.format("玩家[%s]天赋[%s]从L%d重置到L1",self.playerId, talentId, oldLevel))
     end
 end
 
 --- 重置所有天赋
 ---@param player MPlayer 玩家实例
 function Achievement:ResetAllTalents(player)
-    gg.log(string.format("开始重置玩家[%s]的所有天赋", self.playerId))
+    --gg.log(string.format("开始重置玩家[%s]的所有天赋", self.playerId))
 
     -- 移除所有天赋效果
     if self.talentVariableSystem then
@@ -312,8 +309,7 @@ function Achievement:ResetAllTalents(player)
     -- 重新应用所有1级天赋效果
     self:ApplyAllTalentEffects(player)
 
-    gg.log(string.format("玩家[%s]天赋系统重置完成，重置了%d个天赋",
-        self.playerId, resetCount))
+    --gg.log(string.format("玩家[%s]天赋系统重置完成，重置了%d个天赋",self.playerId, resetCount))
 end
 
 -- 天赋效果应用 --------------------------------------------------------
@@ -330,14 +326,14 @@ function Achievement:ApplyTalentEffect(talentId, player)
     local AchievementTypeIns = ConfigLoader.GetAchievement(talentId)
 
     if not AchievementTypeIns or not AchievementTypeIns:IsTalentAchievement() then
-        gg.log("警告：天赋配置不存在或非天赋成就:", talentId)
+        --gg.log("警告：天赋配置不存在或非天赋成就:", talentId)
         return
     end
 
     -- 获取当前等级的效果配置
     local effectConfig = AchievementTypeIns:GetLevelEffect(talentInfo.currentLevel)
     if not effectConfig then
-        gg.log("警告：天赋等级效果配置不存在:", talentId, talentInfo.currentLevel)
+        --gg.log("警告：天赋等级效果配置不存在:", talentId, talentInfo.currentLevel)
         return
     end
 
@@ -349,7 +345,7 @@ function Achievement:ApplyTalentEffect(talentId, player)
     )
 
     if not effectValue then
-        gg.log("警告：天赋效果数值计算失败:", talentId, effectConfig["效果数值"])
+        --gg.log("警告：天赋效果数值计算失败:", talentId, effectConfig["效果数值"])
         return
     end
 
@@ -366,7 +362,7 @@ function Achievement:ApplyAllTalentEffects(player)
         count = count + 1
     end
 
-    gg.log("玩家[%s]应用了%d个天赋效果", self.playerId, count)
+    --gg.log("玩家[%s]应用了%d个天赋效果", self.playerId, count)
 end
 
 --- 应用效果到天赋变量系统
@@ -377,13 +373,13 @@ end
 ---@private
 function Achievement:_ApplyToTalentVariableSystem(talentId, effectConfig, effectValue, player)
     if not self.talentVariableSystem then
-        gg.log("天赋变量系统不存在:", self.playerId)
+        --gg.log("天赋变量系统不存在:", self.playerId)
         return
     end
 
     local fieldName = effectConfig["效果字段名称"]
     if not fieldName then
-        gg.log("效果字段名称未配置:", talentId)
+        --gg.log("效果字段名称未配置:", talentId)
         return
     end
 
@@ -400,8 +396,7 @@ function Achievement:_ApplyToTalentVariableSystem(talentId, effectConfig, effect
     -- 应用到天赋变量系统
     self.talentVariableSystem:SetSourceValue(fieldName, source, effectValue, valueType)
 
-    gg.log(string.format("天赋[%s-L%d]应用变量效果: %s = %s (%s, 来源:%s)",
-        talentId, currentLevel, fieldName, tostring(effectValue), valueType, source))
+    --gg.log(string.format("天赋[%s-L%d]应用变量效果: %s = %s (%s, 来源:%s)", talentId, currentLevel, fieldName, tostring(effectValue), valueType, source))
 end
 
 --- 移除天赋效果
@@ -418,7 +413,7 @@ function Achievement:_RemoveTalentEffect(talentId, level, player)
     local source = string.format("天赋_%s_L%d", talentId, level)
     self.talentVariableSystem:RemoveSourcesByPattern(source)
 
-    gg.log(string.format("移除天赋[%s-L%d]的效果", talentId, level))
+    --gg.log(string.format("移除天赋[%s-L%d]的效果", talentId, level))
 end
 
 -- 普通成就管理 --------------------------------------------------------
@@ -428,7 +423,7 @@ end
 ---@param unlockTime number|nil 解锁时间戳
 function Achievement:UnlockNormalAchievement(achievementId, unlockTime)
     if self.normalAchievements[achievementId] then
-        gg.log("成就已解锁:", achievementId)
+        --gg.log("成就已解锁:", achievementId)
         return false
     end
 
@@ -437,7 +432,7 @@ function Achievement:UnlockNormalAchievement(achievementId, unlockTime)
         unlockTime = unlockTime or os.time()
     }
 
-    gg.log(string.format("玩家[%s]解锁成就[%s]", self.playerId, achievementId))
+    --gg.log(string.format("玩家[%s]解锁成就[%s]", self.playerId, achievementId))
     return true
 end
 
@@ -519,7 +514,7 @@ end
 ---@param saveData AchievementDataTable 保存的数据
 function Achievement:RestoreFromSaveData(saveData)
     self:_RestoreFromAchievementData(saveData)
-    gg.log(string.format("玩家[%s]成就数据补充恢复完成", self.playerId))
+    --gg.log(string.format("玩家[%s]成就数据补充恢复完成", self.playerId))
 end
 
 -- 调试和工具方法 --------------------------------------------------------

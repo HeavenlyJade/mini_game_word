@@ -64,40 +64,40 @@ function TrailGui:OnInit(node, config)
     -- 3. 按钮点击事件注册
     self:RegisterButtonEvents()
 
-    --gg.log("TrailGui 尾迹界面初始化完成")
+    ----gg.log("TrailGui 尾迹界面初始化完成")
 end
 
 function TrailGui:RegisterEvents()
-    --gg.log("注册尾迹系统事件监听")
+    ----gg.log("注册尾迹系统事件监听")
 end
 
 function TrailGui:RegisterButtonEvents()
     self.closeButton.clickCb = function()
         self:Close()
-        --gg.log("尾迹界面已关闭")
+        ----gg.log("尾迹界面已关闭")
     end
 
     self.upgradeButton.clickCb = function()
-        --gg.log("升星按钮被点击")
+        ----gg.log("升星按钮被点击")
     end
 
     self.equipButton.clickCb = function()
-        --gg.log("装备按钮被点击")
+        ----gg.log("装备按钮被点击")
     end
 
     self.unequipButton.clickCb = function()
-        --gg.log("卸下按钮被点击")
+        ----gg.log("卸下按钮被点击")
     end
 
-    --gg.log("尾迹界面按钮事件注册完成")
+    ----gg.log("尾迹界面按钮事件注册完成")
 end
 
 function TrailGui:OnOpen()
-    --gg.log("TrailGui尾迹界面打开")
+    ----gg.log("TrailGui尾迹界面打开")
 end
 
 function TrailGui:OnClose()
-    --gg.log("TrailGui尾迹界面关闭")
+    ----gg.log("TrailGui尾迹界面关闭")
 end
 
 return TrailGui.New(script.Parent, uiConfig)

@@ -145,7 +145,7 @@ function ViewButton:OnTouchOut(vector2)
     -- 判断抬起时是否还在按钮上（使用内置的悬浮状态）
     local isHover = self.isHover
     if isHover then
- 
+
         -- 状态转换到悬浮
         self:_changeState(ButtonState.HOVER)
     else
@@ -284,10 +284,10 @@ function ViewButton:OnInit(node, ui, path, realButtonPath)
     self.lastTouchInTime = 0  -- 防抖：记录上次TouchIn时间
     self.lastTouchOutTime = 0 -- 防抖：记录上次TouchOut时间
     self.state = ButtonState.IDLE
-    
+
     -- 正确设置 self.node（ViewComponent基类需要）
     self.node = node
-    
+
     self.img = node ---@type UIImage
     if realButtonPath then
         self.img = self.img[realButtonPath]
@@ -505,7 +505,7 @@ function ViewButton:SetAttribute(key, value, childName)
     if targetNode then
         targetNode:SetAttribute(key, value)
     else
-        gg.log(string.format("ViewButton:SetAttribute 失败 - 无法找到节点。组件路径: %s, 子节点名: %s", self.path, tostring(childName)))
+        --gg.log(string.format("ViewButton:SetAttribute 失败 - 无法找到节点。组件路径: %s, 子节点名: %s", self.path, tostring(childName)))
     end
 end
 

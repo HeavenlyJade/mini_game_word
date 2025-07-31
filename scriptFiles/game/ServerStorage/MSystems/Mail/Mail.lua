@@ -52,7 +52,7 @@ function _Mail:OnInit(data)
     -- 扩展字段
     self.mail_type = data.mail_type or "personal"
 
-    -- gg.log("邮件对象初始化完成", self.id, self.title)
+    -- --gg.log("邮件对象初始化完成", self.id, self.title)
 end
 
 --------------------------------------------------
@@ -109,7 +109,7 @@ function _Mail:AddAttachment(attachment)
     table.insert(self.attachments, attachment)
     self.has_attachment = self:CalculateHasAttachment()
 
-    gg.log("添加邮件附件", self.id, attachment.name, attachment.amount)
+    --gg.log("添加邮件附件", self.id, attachment.name, attachment.amount)
 end
 
 --- 移除附件
@@ -119,7 +119,7 @@ function _Mail:RemoveAttachment(index)
         local removed = table.remove(self.attachments, index)
         self.has_attachment = self:CalculateHasAttachment()
 
-        gg.log("移除邮件附件", self.id, removed.name)
+        --gg.log("移除邮件附件", self.id, removed.name)
         return removed
     end
     return nil
@@ -135,7 +135,7 @@ end
 function _Mail:ClearAttachments()
     self.attachments = {}
     self.has_attachment = false
-    gg.log("清空邮件附件", self.id)
+    --gg.log("清空邮件附件", self.id)
 end
 
 --------------------------------------------------
@@ -146,7 +146,7 @@ end
 function _Mail:MarkAsClaimed()
     if self.has_attachment and self.status < _Mail.STATUS.CLAIMED then
         self.status = _Mail.STATUS.CLAIMED
-        gg.log("邮件附件已领取", self.id)
+        --gg.log("邮件附件已领取", self.id)
         return true
     end
     return false
@@ -156,7 +156,7 @@ end
 function _Mail:MarkAsDeleted()
     if self.status < _Mail.STATUS.DELETED then
         self.status = _Mail.STATUS.DELETED
-        gg.log("邮件标记为已删除", self.id)
+        --gg.log("邮件标记为已删除", self.id)
         return true
     end
     return false

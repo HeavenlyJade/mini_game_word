@@ -17,13 +17,13 @@ local ServerScheduler = {
     tasks = {},  -- All tasks by ID
     tasksByKey = {}, -- Tasks by key
     nextTaskId = 1,
-    
+
     -- Time wheel configuration
     wheelSlots = 60,  -- Number of slots in the wheel (1 slot per second for 60 seconds)
     wheelPrecision = 1,  -- 1 second precision
     timeWheel = {},    -- The actual time wheel
     currentSlot = 1,   -- Current position in the wheel
-    
+
     -- Timing statistics
     lastTime = gg.GetTimeStamp(),  -- 使用gg.GetTimeStamp()获取时间戳
     updateCount = 0,
@@ -50,17 +50,17 @@ function ServerScheduler.add(func, delay, repeatInterval, key)
 
     local taskId = ServerScheduler.nextTaskId
     ServerScheduler.nextTaskId = ServerScheduler.nextTaskId + 1
-    
+
     -- 移除乘以30的错误逻辑，直接使用秒为单位
     if not repeatInterval then
         repeatInterval = 0
     end
-    
+
     -- Calculate rounds and slot for the time wheel
     local totalDelay = delay
     local rounds = math.floor(totalDelay / (ServerScheduler.wheelSlots * ServerScheduler.wheelPrecision))
     local slot = (ServerScheduler.currentSlot + math.floor(totalDelay / ServerScheduler.wheelPrecision) - 1) % ServerScheduler.wheelSlots + 1
-    
+
     local task = {
         func = func,
         delay = delay,
@@ -70,13 +70,13 @@ function ServerScheduler.add(func, delay, repeatInterval, key)
         rounds = rounds,
         key = key
     }
-    
+
     ServerScheduler.tasks[taskId] = task
     if key then
         ServerScheduler.tasksByKey[key] = taskId
     end
     table.insert(ServerScheduler.timeWheel[slot], task)
-    
+
     return taskId
 end
 
@@ -101,22 +101,22 @@ function ServerScheduler.update()
     local tasks = ServerScheduler.timeWheel[ServerScheduler.currentSlot]
     local remainingTasks = {}
     local tasksToReschedule = {}  -- 新增：收集需要重新调度的任务
-    
+
     for _, task in ipairs(tasks) do
         if ServerScheduler.tasks[task.taskId] and not task.cancelled then  -- Check if task wasn't cancelled
             if task.rounds <= 0 then
                 -- Execute the task
                 local success, err = pcall(task.func)
                 if not success then
-                    gg.log("[ERROR] Scheduled task failed:", err)
+                    --gg.log("[ERROR] Scheduled task failed:", err)
                 end
-                
+
                 -- Handle repeating tasks
                 if task.repeatInterval > 0 then
                     -- 将需要重新调度的任务收集起来
                     local newRounds = math.floor(task.repeatInterval / (ServerScheduler.wheelSlots * ServerScheduler.wheelPrecision))
                     local newSlot = (ServerScheduler.currentSlot + math.floor(task.repeatInterval / ServerScheduler.wheelPrecision) - 1) % ServerScheduler.wheelSlots + 1
-                    
+
                     task.rounds = newRounds
                     table.insert(tasksToReschedule, {task = task, slot = newSlot})
                 else
@@ -134,15 +134,15 @@ function ServerScheduler.update()
         end
         -- 已取消的任务会被自动丢弃，不会加入remainingTasks
     end
-    
+
     -- 更新当前槽位的任务
     ServerScheduler.timeWheel[ServerScheduler.currentSlot] = remainingTasks
-    
+
     -- 处理需要重新调度的任务
     for _, rescheduleInfo in ipairs(tasksToReschedule) do
         table.insert(ServerScheduler.timeWheel[rescheduleInfo.slot], rescheduleInfo.task)
     end
-    
+
     ServerScheduler.currentSlot = ServerScheduler.currentSlot % ServerScheduler.wheelSlots + 1
 end
 

@@ -37,11 +37,11 @@ function MailEventManager.SendPersonalMail(recipientUin, title, content, attachm
     if not recipientUin or not title or not content then
         return false, "参数无效"
     end
-    
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local now = os.time()
     local finalExpireDays = expireDays or MailEventConfig.DEFAULT_EXPIRE_DAYS
-    
+
     local mailData = {
         type = MailEventConfig.MAIL_TYPE.PLAYER,
         title = title,
@@ -51,7 +51,7 @@ function MailEventManager.SendPersonalMail(recipientUin, title, content, attachm
         expire_time = now + finalExpireDays * 24 * 3600,
         create_time = now
     }
-    
+
     local result = MailMgr.SendNewMail(mailData, recipientUin)
     return result.success, result.mailId or result.message
 end
@@ -66,11 +66,11 @@ function MailEventManager.SendGlobalMail(title, content, attachments, expireDays
     if not title or not content then
         return false, "参数无效"
     end
-    
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
     local now = os.time()
     local finalExpireDays = expireDays or MailEventConfig.DEFAULT_EXPIRE_DAYS
-    
+
     local mailData = {
         type = MailEventConfig.MAIL_TYPE.SYSTEM,
         title = title,
@@ -80,7 +80,7 @@ function MailEventManager.SendGlobalMail(title, content, attachments, expireDays
         expire_time = now + finalExpireDays * 24 * 3600,
         create_time = now
     }
-    
+
     local result = MailMgr.SendNewMail(mailData)
     return result.success, result.mailId or result.message
 end
@@ -92,7 +92,7 @@ end
 -- 初始化事件管理器
 function MailEventManager.Init()
     -- 注册网络事件处理器
-    MailEventManager.RegisterNetworkHandlers()    
+    MailEventManager.RegisterNetworkHandlers()
 end
 
 -- 注册网络事件处理器
@@ -101,46 +101,46 @@ function MailEventManager.RegisterNetworkHandlers()
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.GET_LIST, function(event)
         MailEventManager.HandleGetMailList(event)
     end, 100)
-    
+
     -- 标记邮件为已读
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.MARK_READ, function(event)
         MailEventManager.HandleReadMail(event)
     end, 100)
-    
+
     -- 领取邮件附件
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.CLAIM_MAIL, function(event)
         MailEventManager.HandleClaimMail(event)
     end, 100)
-    
+
     -- 删除邮件
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.DELETE_MAIL, function(event)
         MailEventManager.HandleDeleteMail(event)
     end, 100)
-    
+
     -- 批量领取
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.BATCH_CLAIM, function(event)
         MailEventManager.HandleBatchClaim(event)
     end, 100)
-    
+
     -- 删除已读邮件
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.DELETE_READ_MAILS, function(event)
         MailEventManager.HandleDeleteReadMails(event)
     end, 100)
-    
-    -- gg.log("邮件网络事件处理器注册完成")
+
+    -- --gg.log("邮件网络事件处理器注册完成")
 end
 
 -- 处理获取邮件列表请求
 function MailEventManager.HandleGetMailList(event)
     local player = event.player
     if not player then
-        gg.log("获取邮件列表失败：玩家不存在")
+        --gg.log("获取邮件列表失败：玩家不存在")
         return
     end
-    
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local result = MailMgr.GetPlayerMailList(player.uin)
-    
+
     if result.success then
         gg.network_channel:fireClient(player.uin, {
             cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
@@ -160,15 +160,15 @@ end
 function MailEventManager.HandleReadMail(event)
     local player = event.player
     local mailId = event.mailId
-    
+
     if not player or not mailId then
-        gg.log("读取邮件失败：参数无效")
+        --gg.log("读取邮件失败：参数无效")
         return
     end
-    
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)     ---@type MailMgr
     local result = MailMgr.ReadMail(player.uin, mailId)
-    
+
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
         code = result.code,
@@ -181,15 +181,15 @@ end
 function MailEventManager.HandleClaimMail(event)
     local player = event.player
     local mailId = event.mailId
-    
+
     if not player or not mailId then
-        gg.log("领取邮件附件失败：参数无效")
+        --gg.log("领取邮件附件失败：参数无效")
         return
     end
-    
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local result = MailMgr.ClaimMailAttachment(player.uin, mailId)
-    
+
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.CLAIM_RESPONSE,
         code = result.code,
@@ -203,15 +203,15 @@ end
 function MailEventManager.HandleDeleteMail(event)
     local player = event.player
     local mailId = event.mailId
-    
+
     if not player or not mailId then
-        gg.log("删除邮件失败：参数无效")
+        --gg.log("删除邮件失败：参数无效")
         return
     end
-    
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
     local result = MailMgr.DeleteMail(player.uin, mailId)
-    
+
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.DELETE_RESPONSE,
         code = result.code,
@@ -224,15 +224,15 @@ end
 function MailEventManager.HandleBatchClaim(event)
     local player = event.player
     local mailIds = event.mailIds or {}
-    
+
     if not player then
-        gg.log("批量领取失败：玩家不存在")
+        --gg.log("批量领取失败：玩家不存在")
         return
     end
-    
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local result = MailMgr.BatchClaimMails(player.uin, mailIds)
-    
+
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.BATCH_CLAIM_SUCCESS,
         code = result.code,
@@ -244,15 +244,15 @@ end
 -- 处理删除已读邮件请求
 function MailEventManager.HandleDeleteReadMails(event)
     local player = event.player
-    
+
     if not player then
-        gg.log("删除已读邮件失败：玩家不存在")
+        --gg.log("删除已读邮件失败：玩家不存在")
         return
     end
-    
+
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
     local result = MailMgr.DeleteReadMails(player.uin)
-    
+
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.DELETE_READ_SUCCESS,
         code = result.code,
@@ -266,13 +266,13 @@ function MailEventManager.NotifyNewMail(uin, mailData)
     if not uin or not mailData then
         return
     end
-    
+
     gg.network_channel:fireClient(uin, {
         cmd = MailEventConfig.NOTIFY.NEW_MAIL,
         mailData = mailData
     })
-    
-    gg.log("发送新邮件通知", uin, mailData.title)
+
+    --gg.log("发送新邮件通知", uin, mailData.title)
 end
 
 -- 通知所有在线玩家新邮件（全服邮件）
@@ -280,14 +280,14 @@ function MailEventManager.BroadcastNewMail(mailData)
     if not mailData then
         return
     end
-    
+
     for _, player in pairs(gg.server_players_list or {}) do
         if player and player.uin then
             MailEventManager.NotifyNewMail(player.uin, mailData)
         end
     end
-    
-    gg.log("广播新邮件通知", mailData.title)
+
+    --gg.log("广播新邮件通知", mailData.title)
 end
 
 -- 通知邮件列表更新
@@ -295,14 +295,14 @@ function MailEventManager.NotifyMailListUpdate(uin, mailList)
     if not uin then
         return
     end
-    
+
     gg.network_channel:fireClient(uin, {
         cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
         code = MailEventConfig.ERROR_CODES.SUCCESS,
         mailList = mailList or {}
     })
-    
-    gg.log("发送邮件列表更新通知", uin)
+
+    --gg.log("发送邮件列表更新通知", uin)
 end
 
-return MailEventManager 
+return MailEventManager

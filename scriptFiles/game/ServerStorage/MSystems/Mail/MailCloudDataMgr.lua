@@ -44,9 +44,9 @@ function CloudMailDataAccessor:SavePlayerMail(uin, mailData)
     -- 保存到云存储
     cloudService:SetTableAsync('mail_player_' .. uin, mailData, function(success)
         if not success then
-            gg.log("保存玩家邮件失败", uin)
+            --gg.log("保存玩家邮件失败", uin)
         else
-            gg.log("保存玩家邮件成功", uin)
+            --gg.log("保存玩家邮件成功", uin)
         end
     end)
 
@@ -62,9 +62,9 @@ end
 function CloudMailDataAccessor:LoadGlobalMail()
     local success, data = cloudService:GetTableOrEmpty("mail_global")
 
-    -- gg.log("--- 开始加载全服邮件 ---")
-    -- gg.log("加载状态:", success)
-    -- gg.log("加载到的原始数据:", data)
+    -- --gg.log("--- 开始加载全服邮件 ---")
+    -- --gg.log("加载状态:", success)
+    -- --gg.log("加载到的原始数据:", data)
 
     -- 辅助函数：计算table中的元素数量
     local function table_count(t)
@@ -77,11 +77,11 @@ function CloudMailDataAccessor:LoadGlobalMail()
     end
 
     if success and data and data.mails then
-        gg.log("加载全服邮件成功，邮件数量:", table_count(data.mails))
+        --gg.log("加载全服邮件成功，邮件数量:", table_count(data.mails))
         return data
     else
         -- 初始化默认全服邮件缓存
-        gg.log("创建全服邮件默认数据")
+        --gg.log("创建全服邮件默认数据")
         return {
             mails = {},
             last_update = os.time()
@@ -100,9 +100,9 @@ function CloudMailDataAccessor:SaveGlobalMail(globalMailData)
     -- 保存到云存储
     cloudService:SetTableAsync("mail_global", globalMailData, function(success)
         if not success then
-            gg.log("保存全服邮件失败")
+            --gg.log("保存全服邮件失败")
         else
-            gg.log("保存全服邮件成功")
+            --gg.log("保存全服邮件成功")
         end
     end)
 
@@ -148,10 +148,10 @@ function CloudMailDataAccessor:SavePlayerGlobalMailData(uin, data)
     -- 保存到云存储
     cloudService:SetTableAsync("mail_global_status_" .. uin, data, function(success)
         if not success then
-            gg.log("保存玩家全服邮件状态失败", uin)
+            --gg.log("保存玩家全服邮件状态失败", uin)
             return false
         else
-            gg.log("保存玩家全服邮件状态成功", uin)
+            --gg.log("保存玩家全服邮件状态成功", uin)
             return true
         end
     end)
@@ -169,14 +169,14 @@ end
 ---@return PlayerMailBundle 玩家邮件数据包
 function CloudMailDataAccessor:LoadPlayerMailBundle(uin)
     local bundle = {}
-    
+
     -- 并行获取个人邮件数据
     local playerMailKey = 'mail_player_' .. uin
     local playerMailSuccess, playerMailData = cloudService:GetTableOrEmpty(playerMailKey)
-    
+
     if playerMailSuccess and playerMailData and playerMailData.mails then
         bundle.playerMail = playerMailData
-        gg.log("加载玩家个人邮件成功", uin)
+        --gg.log("加载玩家个人邮件成功", uin)
     else
         -- 创建默认个人邮件数据
         bundle.playerMail = {
@@ -184,16 +184,16 @@ function CloudMailDataAccessor:LoadPlayerMailBundle(uin)
             mails = {},
             last_update = os.time()
         }
-        gg.log("创建玩家个人邮件默认数据", uin)
+        --gg.log("创建玩家个人邮件默认数据", uin)
     end
-    
+
     -- 并行获取全服邮件状态数据
     local globalStatusKey = "mail_global_status_" .. uin
     local globalStatusSuccess, globalStatusData = cloudService:GetTableOrEmpty(globalStatusKey)
-    
+
     if globalStatusSuccess and globalStatusData and globalStatusData.statuses then
         bundle.globalMailStatus = globalStatusData
-        gg.log("加载玩家全服邮件状态成功", uin)
+        --gg.log("加载玩家全服邮件状态成功", uin)
     else
         -- 创建默认全服邮件状态数据
         bundle.globalMailStatus = {
@@ -201,9 +201,9 @@ function CloudMailDataAccessor:LoadPlayerMailBundle(uin)
             statuses = {},
             last_update = os.time()
         }
-        gg.log("创建玩家全服邮件状态默认数据", uin)
+        --gg.log("创建玩家全服邮件状态默认数据", uin)
     end
-    
+
     return bundle
 end
 
@@ -214,38 +214,38 @@ end
 ---@return boolean 是否成功
 function CloudMailDataAccessor:SavePlayerMailBundle(uin, bundle)
     if not bundle or not bundle.playerMail or not bundle.globalMailStatus then
-        gg.log("批量保存失败：数据包无效", uin)
+        --gg.log("批量保存失败：数据包无效", uin)
         return false
     end
-    
+
     local success = true
     local now = os.time()
-    
+
     -- 更新时间戳
     bundle.playerMail.last_update = now
     bundle.globalMailStatus.last_update = now
-    
+
     -- 异步保存个人邮件数据
     cloudService:SetTableAsync('mail_player_' .. uin, bundle.playerMail, function(saveSuccess)
         if not saveSuccess then
-            gg.log("批量保存玩家个人邮件失败", uin)
+            --gg.log("批量保存玩家个人邮件失败", uin)
             success = false
         else
-            gg.log("批量保存玩家个人邮件成功", uin)
+            --gg.log("批量保存玩家个人邮件成功", uin)
         end
     end)
-    
+
     -- 异步保存全服邮件状态数据
     cloudService:SetTableAsync("mail_global_status_" .. uin, bundle.globalMailStatus, function(saveSuccess)
         if not saveSuccess then
-            gg.log("批量保存玩家全服邮件状态失败", uin)
+            --gg.log("批量保存玩家全服邮件状态失败", uin)
             success = false
         else
-            gg.log("批量保存玩家全服邮件状态成功", uin)
+            --gg.log("批量保存玩家全服邮件状态成功", uin)
         end
     end)
-    
-    gg.log("批量保存玩家邮件数据完成", uin)
+
+    --gg.log("批量保存玩家邮件数据完成", uin)
     return success
 end
 

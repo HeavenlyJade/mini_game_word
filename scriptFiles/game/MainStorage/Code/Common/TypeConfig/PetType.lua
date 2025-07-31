@@ -123,7 +123,7 @@ function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
     local calculator = RewardManager.GetCalculator("宠物公式")
 
     if not calculator then
-        gg.log("错误: 无法获取宠物公式计算器")
+        --gg.log("错误: 无法获取宠物公式计算器")
         return calculatedEffects
     end
 
