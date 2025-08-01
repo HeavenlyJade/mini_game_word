@@ -249,11 +249,93 @@ function HudMoney:OnSyncPlayerVariables(data)
         return
     end
 
+    -- 检查战力值是否有变化
+    local powerData = data.variableData["数据_固定值_战力值"]
+    if powerData then
+        local newPowerValue = powerData.base or 0
+        local oldPowerValue = (self.playerVariableData and self.playerVariableData["数据_固定值_战力值"] and self.playerVariableData["数据_固定值_战力值"].base) or 0
+        
+        -- 如果战力值增加了，显示动画
+        if newPowerValue > oldPowerValue then
+            local energyButton = self.moneyButtonList:GetChildByName("能量")
+            if energyButton then
+                local textNode = energyButton:Get("Text").node ---@cast textNode UITextLabel
+                self:ShowVariableAddAnimation("数据_固定值_战力值", oldPowerValue, newPowerValue, textNode)
+            end
+        end
+    end
+
+    -- 检查重生次数是否有变化
+    local rebirthData = data.variableData["数据_固定值_重生次数"]
+    if rebirthData then
+        local newRebirthValue = rebirthData.base or 0
+        local oldRebirthValue = (self.playerVariableData and self.playerVariableData["数据_固定值_重生次数"] and self.playerVariableData["数据_固定值_重生次数"].base) or 0
+        
+        -- 如果重生次数增加了，显示动画
+        if newRebirthValue > oldRebirthValue then
+            local rebirthButton = self.moneyButtonList:GetChildByName("重生次数")
+            if rebirthButton then
+                local textNode = rebirthButton:Get("Text").node ---@cast textNode UITextLabel
+                self:ShowVariableAddAnimation("数据_固定值_重生次数", oldRebirthValue, newRebirthValue, textNode)
+            end
+        end
+    end
+
     -- 更新本地变量数据缓存
     self.playerVariableData = data.variableData
 
     -- 更新UI显示
     self:UpdateVariableDisplay()
+end
+
+--- 【新增】显示变量增加动画
+---@param variableName string 变量名
+---@param oldValue number 旧值
+---@param newValue number 新值
+---@param targetNode UITextLabel 目标文本节点
+function HudMoney:ShowVariableAddAnimation(variableName, oldValue, newValue, targetNode)
+    local moneyAdd = MoneyAddPool:Get()
+    if not moneyAdd then
+        --gg.log("警告：无法从对象池获取变量增加标签")
+        return
+    end
+
+    -- 计算增加值
+    local diff = newValue - oldValue
+    moneyAdd.Title = "+" .. gg.FormatLargeNumber(diff)
+
+    -- 根据变量名设置不同的图标（这里可以根据需要扩展）
+    if variableName == "数据_固定值_战力值" then
+        -- 可以设置战力值相关的图标
+        -- moneyAdd["资源图标"].Icon = "战力值图标路径"
+    elseif variableName == "数据_固定值_重生次数" then
+        -- 可以设置重生次数相关的图标
+        -- moneyAdd["资源图标"].Icon = "重生次数图标路径"
+    end
+
+    -- 设置初始状态
+    moneyAdd.Scale = Vector2.New(2, 2)
+    moneyAdd.Visible = true
+
+    local screenSize = gg.get_ui_size()
+    local randomOffsetX = (math.random() * 0.4 - 0.2) * screenSize.x
+    local randomOffsetY = (math.random() * 0.4 - 0.2) * screenSize.y
+    moneyAdd.Position = Vector2.New(
+        screenSize.x/2 + randomOffsetX,
+        screenSize.y/2 + randomOffsetY
+    )
+
+    -- 执行动画
+    local tweenInfo = TweenInfo.New(1, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+    local tween = TweenService:Create(moneyAdd, tweenInfo, {
+        Position = targetNode:GetGlobalPos(),
+        Scale = Vector2.New(1, 1)
+    })
+
+    tween:Play()
+    tween.Completed:Connect(function()
+        MoneyAddPool:Return(moneyAdd)
+    end)
 end
 
 --- 【修改后】更新变量相关的UI显示
