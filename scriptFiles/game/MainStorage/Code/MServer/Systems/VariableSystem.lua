@@ -178,6 +178,27 @@ function VariableSystem:GetVariable(key, defaultValue)
     return self:_CalculateFinalValue(key)
 end
 
+--- 获取变量的原始加成值（基础值+所有来源值的和）
+--- 用于计算一个“加成”类型变量本身代表的数值
+---@param key string 变量名
+---@return number 原始加成值
+function VariableSystem:GetRawBonusValue(key)
+    local varData = self.variables[key]
+    if not varData then
+        return 0
+    end
+    local baseValue = varData.base or 0
+    local totalSourceValue = 0
+
+    if varData.sources then
+        for _, sourceData in pairs(varData.sources) do
+            totalSourceValue = totalSourceValue + (sourceData.value or 0)
+        end
+    end
+
+    return baseValue + totalSourceValue
+end
+
 --- 计算最终值
 ---@param key string 变量名
 ---@return number 最终值
@@ -265,8 +286,8 @@ function VariableSystem:ParseVariableName(variableName)
 
     if #parts == 3 then
         return {
-            operation = parts[1],   -- 操作类型：解锁、加成、计数、状态等
-            method = parts[2],      -- 加成方式：百分比、绝对值、固定值等
+            operation = parts[1],   -- 操作类型：解锁、加成、计数、状态，数据等
+            method = parts[2],      -- 加成方式：百分比、固定值等
             name = parts[3]         -- 变量名称：攻击力、生命值、经验倍率等
         }
     end

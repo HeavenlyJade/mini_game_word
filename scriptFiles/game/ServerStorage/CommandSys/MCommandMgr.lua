@@ -54,14 +54,14 @@ function CommandManager.ExecuteCommand(commandStr, player, silent)
     -- 2. 分割命令和参数
     local command, jsonStr = commandStr:match("^(%S+)%s+(.+)$")
     if not command then
-        --gg.log("命令格式错误: " .. commandStr)
+        gg.log("命令格式错误: " .. commandStr)
         return false
     end
 
     -- 3. 查找命令处理器
     local handler = CommandManager.handlers[command]
     if not handler then
-        --gg.log("未知命令: " .. command)
+        gg.log("未知命令: " .. command)
         return false
     end
 
@@ -74,28 +74,28 @@ function CommandManager.ExecuteCommand(commandStr, player, silent)
     elseif params["玩家"] then
         player = serverDataMgr.getLivingByName(params["玩家"])
         if not player then
-            --gg.log("玩家不存在: " .. params["玩家"])
+            gg.log("玩家不存在: " .. params["玩家"])
             return false
         end
     elseif params["玩家UID"] then
         local targetUin = tonumber(params["玩家UID"])
         if not targetUin then
-            --gg.log("玩家UID格式错误: " .. params["玩家UID"])
+            gg.log("玩家UID格式错误: " .. params["玩家UID"])
             return false
         end
         player = serverDataMgr.getPlayerByUin(targetUin)
         if not player then
-            --gg.log("玩家不存在: " .. targetUin)
+            gg.log("玩家不存在: " .. targetUin)
             return false
         end
     end
     if not silent then
-        --gg.log("执行指令", player, command, params)
+        gg.log("执行指令", player, command, params)
     end
     -- 6. 调用处理器
     local success, result = pcall(handler, params, player)
     if not success then
-        --gg.log("命令执行错误: " .. command .. ", " .. tostring(result))
+        gg.log("命令执行错误: " .. command .. ", " .. tostring(result))
         return false
     end
 
