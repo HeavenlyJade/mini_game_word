@@ -190,7 +190,7 @@ end
 
 --- 处理宠物列表响应
 function PetGui:OnPetListResponse(data)
-    -- ----gg.log("收到宠物数据响应:", data)
+    gg.log("收到宠物数据响应:", data)
     -- 【修复】恢复正确的逻辑，以处理被 petList 包装的数据
     if data and data.petList and data.petList.companionList then
         self.petData = data.petList.companionList

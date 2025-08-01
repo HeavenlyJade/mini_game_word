@@ -158,7 +158,7 @@ end
 
 --- 处理伙伴列表响应
 function CompanionGui:OnCompanionListResponse(data)
-    ----gg.log("收到伙伴数据响应:", data)
+    gg.log("收到伙伴数据响应:", data)
     if data and data.companionList then
         self.companionData = data.companionList
         self.activeSlots = data.activeSlots or {}
