@@ -31,7 +31,7 @@ end
 --- 同步并保存玩家数据
 ---@param player MPlayer
 local function syncAndSave(player)
-    --gg.log("syncAndSave", player.variables)
+    gg.log("syncAndSave", player.variables)
     if player and player.variableSystem then
         player.variables = player.variableSystem.variables
         cloudDataMgr.SavePlayerData(player.uin, true)
@@ -43,7 +43,7 @@ local function syncAndSave(player)
             variableData = allVars,
         })
 
-        -- --gg.log("玩家 " .. player.name .. " 的变量数据已保存并同步到客户端。")
+        -- gg.log("玩家 " .. player.name .. " 的变量数据已保存并同步到客户端。")
     end
 end
 
@@ -73,7 +73,7 @@ function VariableCommand.handlers.add(params, player)
 
     local msg = string.format("成功为 %s 的变量 '%s' 新增 %s, 新值为: %s.%s", player.name, variableName, tostring(valueToAdd), tostring(newValue), bonusInfo)
     player:SendHoverText(msg)
-    --gg.log(msg)
+    gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -100,7 +100,7 @@ function VariableCommand.handlers.set(params, player)
 
     local msg = string.format("成功将玩家 %s 的变量 '%s' 设置为: %s", player.name, variableName, newValue)
     player:SendHoverText(msg)
-    --gg.log(msg)
+    gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -132,7 +132,7 @@ function VariableCommand.handlers.reduce(params, player)
 
     local msg = string.format("成功为玩家 %s 的变量 '%s' 减少 %s，新值为: %s.%s", player.name, variableName, tostring(valueToReduce), tostring(newValue), bonusInfo)
     player:SendHoverText(msg)
-    --gg.log(msg)
+    gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -153,7 +153,7 @@ function VariableCommand.handlers.view(params, player)
         if not details then
             local msg = string.format("玩家 %s 没有名为 '%s' 的变量。", player.name, variableName)
             player:SendHoverText(msg)
-            --gg.log(msg)
+            gg.log(msg)
             return false
         end
 
@@ -178,7 +178,7 @@ function VariableCommand.handlers.view(params, player)
 
         local fullMessage = table.concat(response, "\n")
         player:SendHoverText(fullMessage)
-        --gg.log(fullMessage)
+        gg.log(fullMessage)
     else
         -- 查看所有变量的最终值
         local allVars = variableSystem:GetAllVariables()
@@ -197,7 +197,7 @@ function VariableCommand.handlers.view(params, player)
 
         local fullMessage = table.concat(response, "\n")
         player:SendHoverText(fullMessage)
-        --gg.log(fullMessage)
+        gg.log(fullMessage)
     end
     return true
 end
@@ -230,13 +230,13 @@ function VariableCommand.main(params, player)
 
     if not player.variableSystem then
         player:SendHoverText("错误：找不到玩家的变量系统实例。")
-        --gg.log("错误：玩家 " .. player.name .. " 的variableSystem为空。")
+        gg.log("错误：玩家 " .. player.name .. " 的variableSystem为空。")
         return false
     end
 
     local handler = VariableCommand.handlers[handlerName]
     if handler then
-        --gg.log("变量命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
+        gg.log("变量命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
         return handler(params, player)
     else
         -- This case should not be reached due to the handlerName check above
