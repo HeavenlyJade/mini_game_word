@@ -8,6 +8,7 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
 local SceneNodeHandlerBase = require(ServerStorage.SceneInteraction.SceneNodeHandlerBase) ---@type SceneNodeHandlerBase
 local gg = require(MainStorage.Code.Untils.MGlobal)
 local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
 
 ---@class IdleSpotHandler : SceneNodeHandlerBase
 ---@field idlePlayerTimers table<string, table<Timer>> 每个玩家的挂机定时器列表
@@ -24,23 +25,20 @@ function IdleSpotHandler:OnInit(node, config, debugId)
     gg.log(string.format("挂机点处理器 '%s' 初始化完成", self.name))
 end
 
---- 执行指令字符串（支持统一加成）
+--- 执行指令字符串
 ---@param player MPlayer 目标玩家
 ---@param commandStr string 指令字符串
-local function executeCommand(player, commandStr)
+---@param handlerInstance IdleSpotHandler 处理器实例引用
+local function executeCommand(player, commandStr, handlerInstance)
     if not commandStr or commandStr == "" then
         return
     end
 
-    -- 检查是否包含统一加成配置
-    local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
-    
-    -- 尝试解析指令中的加成配置
-    local enhancedCommand = BonusManager.EnhanceCommandWithBonuses(commandStr, player)
-    
-    -- 执行增强后的指令
-    CommandManager.ExecuteCommand(enhancedCommand, player, true) -- silent=true 避免重复日志
+    -- 直接使用CommandManager执行所有指令
+    CommandManager.ExecuteCommand(commandStr, player, true)
 end
+
+
 
 --- 当玩家进入挂机点时
 ---@param entity Entity
@@ -60,7 +58,7 @@ function IdleSpotHandler:OnEntityEnter(entity)
 
     -- 执行进入指令
     if self.config.enterCommand and self.config.enterCommand ~= "" then
-        executeCommand(entity, self.config.enterCommand)
+        executeCommand(entity, self.config.enterCommand, self)
     end
 
     -- 启动定时奖励
@@ -88,7 +86,7 @@ function IdleSpotHandler:OnEntityLeave(entity)
 
     -- 执行离开指令（消耗指令）
     if self.config.leaveCommand and self.config.leaveCommand ~= "" then
-        executeCommand(entity, self.config.leaveCommand)
+        executeCommand(entity, self.config.leaveCommand, self)
     end
 end
 
@@ -139,8 +137,8 @@ function IdleSpotHandler:startIdleRewards(player)
                     return
                 end
 
-                -- 执行挂机奖励指令
-                executeCommand(player, command)
+                -- 执行挂机奖励指令，传递处理器实例引用
+                executeCommand(player, command, self)
             end
 
             timer:Start()

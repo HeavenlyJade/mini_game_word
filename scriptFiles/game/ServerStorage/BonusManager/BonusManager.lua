@@ -76,8 +76,13 @@ end
 ---@return number, string finalValue, bonusInfo
 function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variableBonuses, targetVariable)
     if not (player and player.variableSystem and variableBonuses and type(variableBonuses) == "table" and #variableBonuses > 0) then
+        gg.log(string.format("[调试] CalculatePlayerVariableBonuses 参数检查失败: player=%s, variableSystem=%s, variableBonuses count=%d", 
+            tostring(player ~= nil), tostring(player and player.variableSystem ~= nil), variableBonuses and #variableBonuses or 0))
         return baseValue, ""
     end
+
+    gg.log(string.format("[调试] 开始计算玩家变量加成: 玩家=%s, 基础值=%d, 目标变量=%s, 加成数量=%d", 
+        player.name, baseValue, tostring(targetVariable), #variableBonuses))
 
     local variableSystem = player.variableSystem
     local totalFlatBonus = 0
@@ -85,40 +90,61 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
     local finalMultipliers = {}
     local bonusDescriptions = {}
 
-    for _, bonusItem in ipairs(variableBonuses) do
+    for i, bonusItem in ipairs(variableBonuses) do
         local bonusVarName = bonusItem["名称"]
         local actionType = bonusItem["作用类型"]
-        local targetVar = bonusItem["目标变量"] -- 检查目标变量匹配
+        local targetVar = bonusItem["目标变量"]
+        
+        gg.log(string.format("[调试] 处理第%d个加成: 名称=%s, 作用类型=%s, 目标变量=%s", 
+            i, tostring(bonusVarName), tostring(actionType), tostring(targetVar)))
         
         -- 如果指定了目标变量，只对匹配的变量生效
-        if not (targetVariable and targetVar and targetVar ~= targetVariable) then
+        if targetVariable and targetVar and targetVar ~= targetVariable then
+            gg.log(string.format("[调试] 目标变量不匹配，跳过: 需要=%s, 当前=%s", targetVariable, targetVar))
+        else
             if bonusVarName and actionType then
                 local parsed = variableSystem:ParseVariableName(bonusVarName)
                 if parsed then
+                    gg.log(string.format("[调试] 变量名解析成功: %s -> operation=%s, method=%s, name=%s", 
+                        bonusVarName, parsed.operation, parsed.method, parsed.name))
+                        
                     local bonusValue = variableSystem:GetRawBonusValue(bonusVarName)
+                    gg.log(string.format("[调试] 获取到原始加成值: %s = %s", bonusVarName, tostring(bonusValue)))
                     
                     if actionType == "单独相加" then
                         if parsed.method == "百分比" then
                             totalPercentBonus = totalPercentBonus + bonusValue
                             table.insert(bonusDescriptions, string.format("'%s' (%s%%, 单独相加)", parsed.name, bonusValue * 100))
+                            gg.log(string.format("[调试] 累计百分比加成: +%s%%, 总计: %s%%", bonusValue * 100, totalPercentBonus * 100))
                         elseif parsed.method == "固定值" then
                             totalFlatBonus = totalFlatBonus + bonusValue
                             table.insert(bonusDescriptions, string.format("'%s' (+%s, 单独相加)", parsed.name, bonusValue))
+                            gg.log(string.format("[调试] 累计固定值加成: +%s, 总计: %s", bonusValue, totalFlatBonus))
                         end
                     elseif actionType == "最终乘法" and bonusValue > 0 then
                         table.insert(finalMultipliers, bonusValue)
                         table.insert(bonusDescriptions, string.format("'%s' (×%s, 最终乘法)", parsed.name, bonusValue))
+                        gg.log(string.format("[调试] 添加最终乘法: ×%s", bonusValue))
                     end
+                else
+                    gg.log(string.format("[调试] 变量名解析失败: %s", bonusVarName))
                 end
+            else
+                gg.log(string.format("[调试] 加成项缺少必要字段: 名称=%s, 作用类型=%s", tostring(bonusVarName), tostring(actionType)))
             end
         end
     end
 
     local finalBonusValue = totalFlatBonus + (baseValue * totalPercentBonus)
     
+    gg.log(string.format("[调试] 计算最终加成值: 固定值=%s, 基础值×百分比=%s×%s=%s, 合计=%s", 
+        totalFlatBonus, baseValue, totalPercentBonus, baseValue * totalPercentBonus, finalBonusValue))
+    
     -- 应用最终乘法
-    for _, multiplier in ipairs(finalMultipliers) do
+    for i, multiplier in ipairs(finalMultipliers) do
+        local oldValue = finalBonusValue
         finalBonusValue = finalBonusValue * multiplier
+        gg.log(string.format("[调试] 应用第%d个最终乘法: %s × %s = %s", i, oldValue, multiplier, finalBonusValue))
     end
 
     local bonusInfo = ""
@@ -133,6 +159,8 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
         )
     end
 
+    gg.log(string.format("[调试] 最终结果: 原始值=%d, 最终值=%s, 加成信息=%s", baseValue, tostring(finalBonusValue), bonusInfo))
+    
     return finalBonusValue, bonusInfo
 end
 
