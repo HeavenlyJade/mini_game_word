@@ -122,67 +122,28 @@ function BaseUntils.DeductCosts(player, costs)
     return true
 end
 
---- 计算玩家变量加成
+--- 计算玩家变量加成（重定向到BonusManager，保持向后兼容）
 ---@param player MPlayer 玩家对象
 ---@param baseValue number 基础操作数值
 ---@param variableBonuses table 玩家变量加成列表
----@return number, string totalBonusValue, bonusInfoString
+---@return number totalBonusValue, string bonusInfo
 function BaseUntils.CalculateBonuses(player, baseValue, variableBonuses)
-    if not (player and player.variableSystem and variableBonuses and type(variableBonuses) == "table" and #variableBonuses > 0) then
-        return 0, ""
-    end
+    local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
+    -- 兼容旧接口，targetVariable为nil表示应用所有加成
+    return BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variableBonuses, nil)
+end
 
-    local variableSystem = player.variableSystem
-    local totalFlatBonus = 0
-    local totalPercentBonus = 0
-    local finalMultipliers = {}
-    local bonusDescriptions = {}
-
-    for _, bonusItem in ipairs(variableBonuses) do
-        local bonusVarName = bonusItem["名称"]
-        local actionType = bonusItem["作用类型"]
-        
-        if bonusVarName and actionType then
-            local parsed = variableSystem:ParseVariableName(bonusVarName)
-            if parsed then
-                local bonusValue = variableSystem:GetRawBonusValue(bonusVarName)
-                
-                if actionType == "单独相加" then
-                    if parsed.method == "百分比" then
-                        totalPercentBonus = totalPercentBonus + bonusValue
-                        table.insert(bonusDescriptions, string.format("'%s' (%s%%, 单独相加)", parsed.name, bonusValue * 100))
-                    elseif parsed.method == "固定值" then
-                        totalFlatBonus = totalFlatBonus + bonusValue
-                        table.insert(bonusDescriptions, string.format("'%s' (+%s, 单独相加)", parsed.name, bonusValue))
-                    end
-                elseif actionType == "最终乘法" and bonusValue > 0 then
-                    table.insert(finalMultipliers, bonusValue)
-                    table.insert(bonusDescriptions, string.format("'%s' (×%s, 最终乘法)", parsed.name, bonusValue))
-                end
-            end
-        end
-    end
-
-    local finalBonusValue = totalFlatBonus + (baseValue * totalPercentBonus)
+--- 新增：统一奖励计算接口 - 直接调用BonusManager
+---@param player MPlayer 玩家对象
+---@param baseRewards table 基础奖励
+---@param bonusContext table 加成上下文
+---@return table 最终奖励
+function BaseUntils.CalculateUnifiedRewards(player, baseRewards, bonusContext)
+    local BonusManager = require(ServerStorage.BonusManager.BonusManager)
     
-    -- 应用最终乘法
-    for _, multiplier in ipairs(finalMultipliers) do
-        finalBonusValue = finalBonusValue * multiplier
-    end
-
-    local bonusInfo = ""
-    if #bonusDescriptions > 0 then
-        bonusInfo = string.format("\n> 加成来源: %s.\n> 基础值: %s, 总加成: %s (固定: %s, 百分比: %s%%, 最终乘法: %d个).",
-            table.concat(bonusDescriptions, ", "),
-            tostring(baseValue),
-            tostring(finalBonusValue),
-            tostring(totalFlatBonus),
-            tostring(totalPercentBonus * 100),
-            #finalMultipliers
-        )
-    end
-
-    return finalBonusValue, bonusInfo
+    --gg.log("[BaseUntils] CalculateUnifiedRewards被调用，重定向到BonusManager.CalculateUnifiedRewards")
+    
+    return BonusManager.CalculateUnifiedRewards(player, baseRewards, bonusContext)
 end
 
 return BaseUntils

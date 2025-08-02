@@ -24,7 +24,7 @@ function IdleSpotHandler:OnInit(node, config, debugId)
     gg.log(string.format("挂机点处理器 '%s' 初始化完成", self.name))
 end
 
---- 执行指令字符串
+--- 执行指令字符串（支持统一加成）
 ---@param player MPlayer 目标玩家
 ---@param commandStr string 指令字符串
 local function executeCommand(player, commandStr)
@@ -32,8 +32,14 @@ local function executeCommand(player, commandStr)
         return
     end
 
-    -- 直接使用CommandManager执行指令
-    CommandManager.ExecuteCommand(commandStr, player, true) -- silent=true 避免重复日志
+    -- 检查是否包含统一加成配置
+    local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
+    
+    -- 尝试解析指令中的加成配置
+    local enhancedCommand = BonusManager.EnhanceCommandWithBonuses(commandStr, player)
+    
+    -- 执行增强后的指令
+    CommandManager.ExecuteCommand(enhancedCommand, player, true) -- silent=true 避免重复日志
 end
 
 --- 当玩家进入挂机点时
