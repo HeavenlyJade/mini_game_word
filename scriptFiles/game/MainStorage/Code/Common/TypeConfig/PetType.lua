@@ -133,6 +133,8 @@ function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
         local effectValue = effect["效果数值"] or ""
         local bonusType = effect["加成类型"]
         local itemTarget = effect["物品目标"]
+        local targetVariable = effect["目标变量"]
+        local actionType = effect["作用类型"]
 
         if variableName ~= "" and effectValue ~= "" then
             -- 使用RewardCalc计算公式
@@ -149,7 +151,9 @@ function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
                     isPercentage = isPercentage, -- 新增标志位
                     originalFormula = effectValue,
                     bonusType = bonusType,
-                    itemTarget = itemTarget
+                    itemTarget = itemTarget,
+                    targetVariable = targetVariable, -- 新增目标变量字段
+                    actionType = actionType -- 新增作用类型字段
                 }
             end
         end

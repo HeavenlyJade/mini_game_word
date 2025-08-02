@@ -185,7 +185,6 @@ end
 function VariableSystem:GetRawBonusValue(key)
     local varData = self.variables[key]
     if not varData then
-        gg.log(string.format("[VariableSystem调试] GetRawBonusValue: 变量不存在 %s", key))
         return 0
     end
     
@@ -196,13 +195,10 @@ function VariableSystem:GetRawBonusValue(key)
         for sourceName, sourceData in pairs(varData.sources) do
             local sourceValue = sourceData.value or 0
             totalSourceValue = totalSourceValue + sourceValue
-            gg.log(string.format("[VariableSystem调试] GetRawBonusValue: %s 来源 %s = %s", key, sourceName, tostring(sourceValue)))
         end
     end
 
     local finalValue = baseValue + totalSourceValue
-    gg.log(string.format("[VariableSystem调试] GetRawBonusValue: %s = 基础值(%s) + 来源总和(%s) = %s", 
-        key, tostring(baseValue), tostring(totalSourceValue), tostring(finalValue)))
     
     return finalValue
 end

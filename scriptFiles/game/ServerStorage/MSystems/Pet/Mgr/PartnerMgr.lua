@@ -579,11 +579,11 @@ end
 function PartnerMgr.GetActiveItemBonuses(uin)
     local partnerManager = PartnerMgr.GetPlayerPartner(uin)
     if not partnerManager then
-        --gg.log("[PartnerMgr] GetActiveItemBonuses: 找不到玩家的伙伴管理器", uin)
         return {}
     end
 
-    return partnerManager:GetActiveItemBonuses()
+    local bonuses = partnerManager:GetActiveItemBonuses()
+    return bonuses
 end
 
 

@@ -121,7 +121,7 @@ function ActionCostType:ApplyEffectToPlayer(targetItem, player, playerId, execut
     if targetItem.TargetType == "玩家变量" then
         -- 应用最终效果值到玩家变量系统
         player.variableSystem:ApplyVariableValue(targetItem.TargetName, finalEffectValue, "天赋动作")
-        --gg.log(string.format("成功为玩家 %s 的变量 %s 应用了效果 %s (单次:%s × 次数:%s)",playerId, targetItem.TargetName, finalEffectValue, singleEffectValue, executionCount))
+        gg.log(string.format("成功为玩家 %s 的变量 %s 应用了效果 %s (单次:%s × 次数:%s)",playerId, targetItem.TargetName, finalEffectValue, singleEffectValue, executionCount))
         return true
     elseif targetItem.TargetType == "玩家属性" then
         -- TODO: 玩家属性系统还未实现，需要后续开发
