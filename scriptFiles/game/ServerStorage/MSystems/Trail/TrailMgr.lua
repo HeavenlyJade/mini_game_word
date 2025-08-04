@@ -396,6 +396,11 @@ function TrailMgr.UpdateAllEquippedTrailModels(player)
         return
     end
 
+    if not player.actor then
+        gg.log("【TrailMgr.UpdateAllEquippedTrailModels】错误：玩家Actor不存在，无法更新尾迹模型", player.uin)
+        return
+    end
+
     gg.log("【TrailMgr.UpdateAllEquippedTrailModels】开始更新玩家尾迹模型", player.uin, player.Name)
 
     local trailManager = TrailMgr.GetPlayerTrail(player.uin)

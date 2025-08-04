@@ -329,12 +329,13 @@ function Trail:EquipTrail(trailSlotId, equipSlotId)
     gg.log("【Trail.EquipTrail】装备数据更新完成", "装备栏", equipSlotId, "背包槽位", trailSlotId)
 
     -- 装备特效
-    local player = MServerDataManager.server_players_list[self.uin]
-    if player then
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local player = serverDataMgr.getPlayerByUin(self.uin) ---@type MPlayer
+    if player and player.actor then
         gg.log("【Trail.EquipTrail】开始更新尾迹模型", self.uin)
         self:UpdateAllEquippedTrailModels(player)
     else
-        gg.log("【Trail.EquipTrail】警告：在EquipTrail中无法获取玩家对象，无法更新尾迹特效", self.uin)
+        gg.log("【Trail.EquipTrail】警告：在EquipTrail中无法获取玩家对象或Actor，无法更新尾迹特效", self.uin)
     end
 
     gg.log("【Trail.EquipTrail】装备尾迹成功", self.uin, "背包槽位", trailSlotId, "装备栏", equipSlotId)
@@ -360,12 +361,13 @@ function Trail:UnequipTrail(equipSlotId)
         gg.log("【Trail.UnequipTrail】清空装备栏映射", equipSlotId)
 
         -- 删除对应的玩家尾迹特效节点
-        local player = MServerDataManager.server_players_list[self.uin]
-        if player then
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(self.uin) ---@type MPlayer
+        if player and player.actor then
             gg.log("【Trail.UnequipTrail】开始卸载尾迹特效", self.uin)
             self:UnequipTrailEffectForPlayer(player)
         else
-            gg.log("【Trail.UnequipTrail】警告：在UnequipTrail中无法获取玩家对象，无法卸载尾迹特效", self.uin)
+            gg.log("【Trail.UnequipTrail】警告：在UnequipTrail中无法获取玩家对象或Actor，无法卸载尾迹特效", self.uin)
         end
 
         gg.log("【Trail.UnequipTrail】卸下尾迹成功", self.uin, "装备栏", equipSlotId, "原背包槽位", trailSlotId)
@@ -377,13 +379,14 @@ function Trail:UnequipTrail(equipSlotId)
 end
 
 ---卸载指定玩家的尾迹特效
----@param player table 玩家对象
+---@param player MPlayer 玩家对象
 function Trail:UnequipTrailEffectForPlayer(player)
     -- 如果没有传入player参数，从MServerDataManager获取
     if not player then
-        player = MServerDataManager.server_players_list[self.uin]
-        if not player then
-            gg.log("错误：无法找到玩家对象", self.uin)
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        player = serverDataMgr.getPlayerByUin(self.uin) ---@type MPlayer
+        if not player or not player.actor then
+            gg.log("错误：无法找到玩家对象或Actor", self.uin)
             return
         end
     end
@@ -444,17 +447,24 @@ function Trail:SetUnlockedEquipSlots(count)
 end
 
 ---更新所有装备的尾迹模型
----@param player table 玩家对象
+---@param player MPlayer 玩家对象
 function Trail:UpdateAllEquippedTrailModels(player)
     gg.log("【Trail.UpdateAllEquippedTrailModels】开始更新尾迹模型", self.uin)
     
     -- 如果没有传入player参数，从MServerDataManager获取
     if not player then
-        player = MServerDataManager.server_players_list[self.uin]
-        if not player then
-            gg.log("【Trail.UpdateAllEquippedTrailModels】错误：无法找到玩家对象", self.uin)
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        player = serverDataMgr.getPlayerByUin(self.uin) ---@type MPlayer
+        if not player or not player.actor then
+            gg.log("【Trail.UpdateAllEquippedTrailModels】错误：无法找到玩家对象或Actor", self.uin)
             return
         end
+    end
+
+    local player_actor = player.actor
+    if not player_actor then
+        gg.log("【Trail.UpdateAllEquippedTrailModels】错误：玩家Actor不存在", self.uin)
+        return
     end
 
     gg.log("【Trail.UpdateAllEquippedTrailModels】玩家对象", player.Name, "激活槽位数量", table.getn(self.activeTrailSlots))
@@ -472,12 +482,12 @@ function Trail:UpdateAllEquippedTrailModels(player)
                 if trailConfig then
                     gg.log("【Trail.UpdateAllEquippedTrailModels】找到尾迹配置", trailName, "特效节点", trailConfig.effectNode)
                     
-                    if trailConfig.effectNode then
-                        gg.log("【Trail.UpdateAllEquippedTrailModels】开始装备尾迹特效", trailName)
-                        self:EquipTrailEffect(player, trailConfig.effectNode)
-                    else
-                        gg.log("【Trail.UpdateAllEquippedTrailModels】警告：尾迹配置没有特效节点", trailName)
-                    end
+                                         if trailConfig.effectNode then
+                         gg.log("【Trail.UpdateAllEquippedTrailModels】开始装备尾迹特效", trailName)
+                         self:EquipTrailEffect(player_actor, trailConfig.effectNode)
+                     else
+                         gg.log("【Trail.UpdateAllEquippedTrailModels】警告：尾迹配置没有特效节点", trailName)
+                     end
                 else
                     gg.log("【Trail.UpdateAllEquippedTrailModels】错误：找不到尾迹配置", trailName)
                 end
@@ -493,13 +503,13 @@ function Trail:UpdateAllEquippedTrailModels(player)
 end
 
 ---装备尾迹特效
----@param player table 玩家对象
+---@param player_actor SandboxNode 玩家Actor节点
 ---@param effectNodePath string 特效节点路径
-function Trail:EquipTrailEffect(player, effectNodePath)
-    gg.log("【Trail.EquipTrailEffect】开始装备尾迹特效", player.Name, "特效路径", effectNodePath)
+function Trail:EquipTrailEffect(player_actor, effectNodePath)
+    gg.log("【Trail.EquipTrailEffect】开始装备尾迹特效", "特效路径", effectNodePath)
     
-    if not player or not effectNodePath then
-        gg.log("【Trail.EquipTrailEffect】错误：参数无效", player and player.Name or "nil", effectNodePath)
+    if not player_actor or not effectNodePath then
+        gg.log("【Trail.EquipTrailEffect】错误：参数无效", player_actor and "Actor存在" or "Actor不存在", effectNodePath)
         return
     end
 
@@ -522,17 +532,11 @@ function Trail:EquipTrailEffect(player, effectNodePath)
     gg.log("【Trail.EquipTrailEffect】克隆特效节点成功")
 
     -- 2. 获取玩家对象的Actor下面的尾迹节点，然后获取它的LocalScale，Scale，LocalEuler，LocalPosition，Position，Euler
-    local playerActor = player.Actor
-    if not playerActor then
-        gg.log("【Trail.EquipTrailEffect】错误：玩家Actor不存在", player.Name)
-        return
-    end
+    gg.log("【Trail.EquipTrailEffect】找到玩家Actor")
 
-    gg.log("【Trail.EquipTrailEffect】找到玩家Actor", player.Name)
-
-    local trailNode = playerActor["尾迹"]
+    local trailNode = player_actor["尾迹"]
     if not trailNode then
-        gg.log("【Trail.EquipTrailEffect】错误：玩家Actor下没有尾迹节点", player.Name)
+        gg.log("【Trail.EquipTrailEffect】错误：玩家Actor下没有尾迹节点")
         return
     end
 
@@ -559,7 +563,7 @@ function Trail:EquipTrailEffect(player, effectNodePath)
     gg.log("【Trail.EquipTrailEffect】设置克隆节点变换属性完成")
 
     -- 4. 将克隆的节点挂载到玩家的Actor节点上面
-    clonedEffectNode.Parent = playerActor
+    clonedEffectNode.Parent = player_actor
 
     -- 保存克隆的节点引用，用于后续卸载
     if not self.equippedEffectNodes then
@@ -567,7 +571,7 @@ function Trail:EquipTrailEffect(player, effectNodePath)
     end
     self.equippedEffectNodes[self.uin] = clonedEffectNode
 
-    gg.log("【Trail.EquipTrailEffect】装备尾迹特效成功", player.Name, effectNodePath)
+    gg.log("【Trail.EquipTrailEffect】装备尾迹特效成功", effectNodePath)
 end
 
 ---从路径获取特效节点
@@ -608,9 +612,9 @@ function Trail:GetEffectNodeFromPath(effectNodePath)
 end
 
 ---卸载尾迹特效
----@param player table 玩家对象
+---@param player MPlayer 玩家对象
 function Trail:UnequipTrailEffect(player)
-    gg.log("【Trail.UnequipTrailEffect】开始卸载尾迹特效", player and player.Name or "nil")
+    gg.log("【Trail.UnequipTrailEffect】开始卸载尾迹特效")
     
     if not player or not self.equippedEffectNodes then
         gg.log("【Trail.UnequipTrailEffect】错误：参数无效或没有装备的特效节点")
@@ -624,7 +628,7 @@ function Trail:UnequipTrailEffect(player)
         -- 4. 卸载就是销毁这个节点
         effectNode:Destroy()
         self.equippedEffectNodes[self.uin] = nil
-        gg.log("【Trail.UnequipTrailEffect】卸载尾迹特效成功", player.Name)
+        gg.log("【Trail.UnequipTrailEffect】卸载尾迹特效成功")
     else
         gg.log("【Trail.UnequipTrailEffect】警告：没有找到要卸载的特效节点", self.uin)
     end
