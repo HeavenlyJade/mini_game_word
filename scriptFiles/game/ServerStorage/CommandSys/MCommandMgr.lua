@@ -14,6 +14,7 @@ local ClearDataCommand = require(ServerStorage.CommandSys.Commands.MClearDataCom
 -- local SkillCommands = require(ServerStorage.CommandSys.Commands.MskillCom)     ---@type SkillCommands
 local json = require(MainStorage.Code.Untils.json) ---@type json
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+local TrailCommand = require(ServerStorage.CommandSys.Commands.MTrailCom) ---@type TrailCommand
 
 
 ---@class CommandManager
@@ -35,6 +36,7 @@ CommandManager.handlers = {
     -- ["skillConf"] = SkillCommands.main,
     ["variable"] = VariableCommand.main,
     ["clearPlayerData"] = ClearDataCommand.main,
+    ["trail"] = TrailCommand.main,
 
 
 
