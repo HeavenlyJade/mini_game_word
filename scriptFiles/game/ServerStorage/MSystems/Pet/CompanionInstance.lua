@@ -50,6 +50,10 @@ function CompanionInstance:LoadCompanionConfig()
         self.companionTypeConfig = ConfigLoader.GetPet(configName)
     elseif self.companionType == "伙伴" then
         self.companionTypeConfig = ConfigLoader.GetPartner(configName)
+    elseif self.companionType == "翅膀" then
+        self.companionTypeConfig = ConfigLoader.GetWing(configName)
+    elseif self.companionType == "尾迹" then
+        self.companionTypeConfig = ConfigLoader.GetTrail(configName)
     end
 
     if not self.companionTypeConfig then
@@ -85,6 +89,10 @@ function CompanionInstance:GetConfigName()
         return self.companionData.petName or ""
     elseif self.companionType == "伙伴" then
         return self.companionData.partnerName or ""
+    elseif self.companionType == "翅膀" then
+        return self.companionData.wingName or ""
+    elseif self.companionType == "尾迹" then
+        return self.companionData.trailName or ""
     end
     return ""
 end

@@ -102,7 +102,7 @@ function ViewBase:Get(path, type, ...)
         if part ~= "" then
             lastPart = part
             if not node then
-                --gg.log(string.format("UI[%s]获取路径[%s]失败: 在[%s]处节点不存在", self.className, path,fullPath))
+                gg.log(string.format("UI[%s]获取路径[%s]失败: 在[%s]处节点不存在", self.className, path,fullPath))
                 return nil
             end
             node = node[part]
@@ -115,7 +115,7 @@ function ViewBase:Get(path, type, ...)
     end
 
     if not node then
-        --gg.log(string.format("UI[%s]获取路径[%s]失败: 最终节点[%s]不存在", self.className, path, lastPart))
+        gg.log(string.format("UI[%s]获取路径[%s]失败: 最终节点[%s]不存在", self.className, path, lastPart))
         return nil
     end
 

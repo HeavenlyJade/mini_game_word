@@ -11,6 +11,7 @@ local SkillTypes = require(MainStorage.Code.Common.TypeConfig.SkillTypes)
 local EffectType = require(MainStorage.Code.Common.TypeConfig.EffectType)
 local LevelType = require(MainStorage.Code.Common.TypeConfig.LevelType)
 local PetType = require(MainStorage.Code.Common.TypeConfig.PetType)
+local TrailType = require(MainStorage.Code.Common.TypeConfig.TrailType)
 local PlayerInitType = require(MainStorage.Code.Common.TypeConfig.PlayerInitType)
 local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType)
 local AchievementType = require(MainStorage.Code.Common.TypeConfig.AchievementType)
@@ -28,6 +29,7 @@ local AchievementConfig = require(MainStorage.Code.Common.Config.AchievementConf
 local PetConfig = require(MainStorage.Code.Common.Config.PetConfig)
 local PartnerConfig = require(MainStorage.Code.Common.Config.PartnerConfig)
 local WingConfig = require(MainStorage.Code.Common.Config.WingConfig)
+local TrailConfig = require(MainStorage.Code.Common.Config.TrailConfig)
 local PlayerInitConfig = require(MainStorage.Code.Common.Config.PlayerInitConfig)
 local VariableNameConfig = require(MainStorage.Code.Common.Config.VariableNameConfig)
 local GameModeConfig = require(MainStorage.Code.Common.Config.GameModeConfig)
@@ -51,6 +53,7 @@ ConfigLoader.Achievements = {}
 ConfigLoader.Pets = {}
 ConfigLoader.Partners = {} -- 新增伙伴配置存储
 ConfigLoader.Wings = {} -- 新增翅膀配置存储
+ConfigLoader.Trails = {} -- 新增尾迹配置存储
 ConfigLoader.ActionCosts = {}
 ConfigLoader.ItemTypes = {}
 ConfigLoader.PlayerInits = {}
@@ -89,6 +92,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(PartnerConfig, PetType, ConfigLoader.Partners, "Partner")
     ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
     ConfigLoader.LoadConfig(WingConfig, PetType, ConfigLoader.Wings, "Wing")
+    ConfigLoader.LoadConfig(TrailConfig, TrailType, ConfigLoader.Trails, "Trail")
     ConfigLoader.LoadConfig(PlayerInitConfig, PlayerInitType, ConfigLoader.PlayerInits, "PlayerInit")
     ConfigLoader.LoadConfig(SceneNodeConfig, SceneNodeType, ConfigLoader.SceneNodes, "SceneNode")
     ConfigLoader.LoadConfig(VariableNameConfig,nil,ConfigLoader.VariableNames,"VariableName")
@@ -198,6 +202,17 @@ end
 ---@return table<string, PetType> 翅膀配置与宠物格式相同，所以返回PetType表
 function ConfigLoader.GetAllWings()
     return ConfigLoader.Wings
+end
+
+---@param id string
+---@return TrailType 尾迹配置
+function ConfigLoader.GetTrail(id)
+    return ConfigLoader.Trails[id]
+end
+
+---@return table<string, TrailType> 尾迹配置表
+function ConfigLoader.GetAllTrails()
+    return ConfigLoader.Trails
 end
 
 ---@param id string
