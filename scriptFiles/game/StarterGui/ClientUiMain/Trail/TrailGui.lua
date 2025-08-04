@@ -406,7 +406,7 @@ function TrailGui:RefreshSelectedTrailDisplay()
     end
 
     if self.nameLabel then
-        local displayName = trail.customName ~= "" and trail.customName or trail.trailName
+        local displayName = trail.customName ~= "" and trail.customName or trailConfig.displayName or trail.trailName
         self.nameLabel.node.Title = displayName
     end
 
