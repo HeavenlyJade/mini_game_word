@@ -11,6 +11,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field rarity string 稀有度
 ---@field carryingEffects table 携带效果列表
 ---@field imageResource string| nil 图片资源
+---@field effectNode string| nil 特效节点
 ---@field New fun(data:table):TrailType
 local TrailType = ClassMgr.Class("TrailType")
 
@@ -26,6 +27,12 @@ function TrailType:OnInit(data)
 
     -- 资源配置
     self.imageResource = data["图片资源"] or nil
+    self.effectNode = data["特效节点"] or nil
+end
+
+-- 便利函数：获取特效节点
+function TrailType:GetEffectNode()
+    return self.effectNode
 end
 
 -- 便利函数：获取指定星级的携带效果
