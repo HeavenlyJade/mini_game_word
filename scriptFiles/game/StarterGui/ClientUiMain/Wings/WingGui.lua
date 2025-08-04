@@ -67,7 +67,7 @@ function WingGui:OnInit(node, config)
     -- 3. 按钮点击事件注册
     self:RegisterButtonEvents()
 
-    gg.log("WingGui 翅膀界面初始化完成")
+    --gg.log("WingGui 翅膀界面初始化完成")
 end
 
 -- =================================
@@ -75,7 +75,7 @@ end
 -- =================================
 
 function WingGui:RegisterEvents()
-    gg.log("注册翅膀系统事件监听")
+    --gg.log("注册翅膀系统事件监听")
 
     -- 监听翅膀列表响应
     ClientEventManager.Subscribe(WingEventConfig.NOTIFY.WING_LIST_UPDATE, function(data)
@@ -129,7 +129,7 @@ function WingGui:RegisterButtonEvents()
         self:OnClickUnequipWing()
     end
 
-    gg.log("翅膀界面按钮事件注册完成")
+    --gg.log("翅膀界面按钮事件注册完成")
 end
 
 -- =================================
@@ -137,12 +137,12 @@ end
 -- =================================
 
 function WingGui:OnOpen()
-    gg.log("WingGui翅膀界面打开")
+    --gg.log("WingGui翅膀界面打开")
     self:RequestWingData()
 end
 
 function WingGui:OnClose()
-    gg.log("WingGui翅膀界面关闭")
+    --gg.log("WingGui翅膀界面关闭")
 end
 
 -- =================================
@@ -155,13 +155,13 @@ function WingGui:RequestWingData()
         cmd = WingEventConfig.REQUEST.GET_WING_LIST,
         args = {}
     }
-    gg.log("请求翅膀数据同步")
+    --gg.log("请求翅膀数据同步")
     gg.network_channel:fireServer(requestData)
 end
 
 --- 处理翅膀列表响应
 function WingGui:OnWingListResponse(data)
-    gg.log("收到翅膀数据响应:", data)
+    -- --gg.log("收到翅膀数据响应:", data)
     -- 【修复】直接访问companionList，不需要wingList包装层
     if data and data.companionList then
         self.wingData = data.companionList
@@ -170,19 +170,19 @@ function WingGui:OnWingListResponse(data)
         self.wingBagCapacity = data.wingSlots or 30
         self.unlockedEquipSlots = data.unlockedEquipSlots or 1
 
-        gg.log("翅膀数据同步完成, 激活槽位:", self.activeSlots)
+        --gg.log("翅膀数据同步完成, 激活槽位:", self.activeSlots)
 
         -- 刷新界面显示
         self:RefreshWingList()
         self:SelectDefaultWing()
     else
-        gg.log("翅膀数据响应格式错误或列表为空")
+        --gg.log("翅膀数据响应格式错误或列表为空")
     end
 end
 
 --- 处理升星响应
 function WingGui:OnUpgradeStarResponse(data)
-    gg.log("收到升星响应:", data)
+    --gg.log("收到升星响应:", data)
     if data.success and data.wingSlot then
         local slotIndex = data.wingSlot
         local newStarLevel = data.newStarLevel
@@ -190,7 +190,7 @@ function WingGui:OnUpgradeStarResponse(data)
         -- 更新本地数据
         if self.wingData[slotIndex] then
             self.wingData[slotIndex].starLevel = newStarLevel
-            gg.log("翅膀升星成功:", slotIndex, "新星级:", newStarLevel)
+            --gg.log("翅膀升星成功:", slotIndex, "新星级:", newStarLevel)
 
             -- 刷新显示
             self:RefreshWingSlotDisplay(slotIndex)
@@ -199,13 +199,13 @@ function WingGui:OnUpgradeStarResponse(data)
             end
         end
     else
-        gg.log("翅膀升星失败:", data.errorMessage or "未知错误")
+        --gg.log("翅膀升星失败:", data.errorMessage or "未知错误")
     end
 end
 
 --- 处理翅膀更新通知
 function WingGui:OnWingUpdateNotify(data)
-    gg.log("收到翅膀更新通知:", data)
+    --gg.log("收到翅膀更新通知:", data)
     if data.wingSlot and data.wingInfo then
         local slotIndex = data.wingSlot
         self.wingData[slotIndex] = data.wingInfo
@@ -224,21 +224,21 @@ end
 
 --- 处理新获得翅膀通知
 function WingGui:OnWingObtainedNotify(data)
-    gg.log("收到新获得翅膀通知:", data)
+    --gg.log("收到新获得翅膀通知:", data)
     if data.wingSlot and data.wingInfo then
         local slotIndex = data.wingSlot
         self.wingData[slotIndex] = data.wingInfo
 
         if self:IsOpen() then
             self:CreateWingSlotItem(slotIndex, data.wingInfo)
-            gg.log("新翅膀已添加到界面显示:", data.wingInfo.companionName)
+            --gg.log("新翅膀已添加到界面显示:", data.wingInfo.companionName)
         end
     end
 end
 
 --- 处理翅膀移除通知
 function WingGui:OnWingRemovedNotify(data)
-    gg.log("收到翅膀移除通知:", data)
+    --gg.log("收到翅膀移除通知:", data)
     if data.wingSlot then
         local slotIndex = data.wingSlot
         self.wingData[slotIndex] = nil
@@ -254,9 +254,9 @@ end
 
 --- 处理错误响应
 function WingGui:OnWingErrorResponse(data)
-    gg.log("收到翅膀系统错误响应:", data)
+    --gg.log("收到翅膀系统错误响应:", data)
     local errorMessage = data.errorMessage or "操作失败"
-    gg.log("错误信息:", errorMessage)
+    --gg.log("错误信息:", errorMessage)
     -- TODO: 显示错误提示给玩家
 end
 
@@ -272,18 +272,18 @@ end
 --- 升星按钮点击
 function WingGui:OnClickUpgradeStar()
     if not self.selectedWing then
-        gg.log("未选中翅膀，无法升星")
+        --gg.log("未选中翅膀，无法升星")
         return
     end
 
     local slotIndex = self.selectedWing.slotIndex
     local currentStarLevel = self.selectedWing.starLevel or 1
 
-    gg.log("点击升星按钮:", "槽位", slotIndex, "当前星级", currentStarLevel)
+    --gg.log("点击升星按钮:", "槽位", slotIndex, "当前星级", currentStarLevel)
 
     local wingConfig = self:GetWingConfig(self.selectedWing.companionName)
     if wingConfig and currentStarLevel >= (wingConfig.maxStarLevel or 5) then
-        gg.log("翅膀已达最高星级")
+        --gg.log("翅膀已达最高星级")
         return
     end
 
@@ -293,7 +293,7 @@ end
 --- 装备按钮点击
 function WingGui:OnClickEquipWing()
     if not self.selectedWing then
-        gg.log("未选中翅膀，无法装备")
+        --gg.log("未选中翅膀，无法装备")
         return
     end
 
@@ -301,18 +301,18 @@ function WingGui:OnClickEquipWing()
     local equipSlotId = self:FindNextAvailableEquipSlot()
 
     if not equipSlotId then
-        gg.log("没有可用的装备栏")
+        --gg.log("没有可用的装备栏")
         return
     end
 
-    gg.log("点击装备按钮:", "背包槽位", wingSlotId, "目标装备栏", equipSlotId)
+    --gg.log("点击装备按钮:", "背包槽位", wingSlotId, "目标装备栏", equipSlotId)
     self:SendEquipWingRequest(wingSlotId, equipSlotId)
 end
 
 --- 卸下按钮点击
 function WingGui:OnClickUnequipWing()
     if not self.selectedWing then
-        gg.log("未选中翅膀，无法卸下")
+        --gg.log("未选中翅膀，无法卸下")
         return
     end
 
@@ -320,11 +320,11 @@ function WingGui:OnClickUnequipWing()
     local equipSlotId = self:GetEquipSlotByWingSlot(wingSlotId)
 
     if not equipSlotId then
-        gg.log("错误：该翅膀并未装备，但卸下按钮可见")
+        --gg.log("错误：该翅膀并未装备，但卸下按钮可见")
         return
     end
 
-    gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
+    --gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
     self:SendUnequipWingRequest(equipSlotId)
 end
 
@@ -338,7 +338,7 @@ function WingGui:SendUpgradeStarRequest(slotIndex)
         cmd = WingEventConfig.REQUEST.UPGRADE_WING_STAR,
         args = { slotIndex = slotIndex }
     }
-    gg.log("发送翅膀升星请求:", slotIndex)
+    --gg.log("发送翅膀升星请求:", slotIndex)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -351,7 +351,7 @@ function WingGui:SendEquipWingRequest(wingSlotId, equipSlotId)
             equipSlotId = equipSlotId
         }
     }
-    gg.log("发送装备翅膀请求:", requestData.args)
+    --gg.log("发送装备翅膀请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -362,7 +362,7 @@ function WingGui:SendUnequipWingRequest(equipSlotId)
             equipSlotId = equipSlotId
         }
     }
-    gg.log("发送卸下翅膀请求:", requestData.args)
+    --gg.log("发送卸下翅膀请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -372,7 +372,7 @@ end
 
 --- 刷新翅膀列表
 function WingGui:RefreshWingList()
-    gg.log("刷新翅膀列表显示")
+    --gg.log("刷新翅膀列表显示")
 
     self.wingSlotButtons = {}
     self.wingSlotList:ClearChildren()
@@ -384,16 +384,16 @@ function WingGui:RefreshWingList()
         self:CreateWingSlotItem(wingInfo.slotIndex, wingInfo)
     end
 
-    gg.log("翅膀列表刷新完成")
+    --gg.log("翅膀列表刷新完成")
 end
 
 --- 创建翅膀槽位项
 function WingGui:CreateWingSlotItem(slotIndex, companionInfo)
     if not self.slotTemplate or not self.slotTemplate.node then
-        gg.log("警告：翅膀槽位模板不存在")
+        --gg.log("警告：翅膀槽位模板不存在")
         return
     end
-    gg.log("创建翅膀槽位项", slotIndex, companionInfo)
+    --gg.log("创建翅膀槽位项", slotIndex, companionInfo)
 
     local slotNode = self.slotTemplate.node:Clone()
     slotNode.Visible = true
@@ -441,7 +441,7 @@ end
 --- 更新槽位中的星级显示
 function WingGui:UpdateStarDisplayInSlot(slotNode, starLevel)
     -- TODO: 根据UI结构更新槽位中的星级显示
-    gg.log("更新翅膀槽位星级显示:", starLevel)
+    --gg.log("更新翅膀槽位星级显示:", starLevel)
 end
 
 --- 更新激活状态显示
@@ -466,7 +466,7 @@ end
 
 --- 翅膀槽位点击事件
 function WingGui:OnWingSlotClick(slotIndex, wingInfo)
-    gg.log("点击翅膀槽位:", slotIndex, wingInfo.companionName)
+    --gg.log("点击翅膀槽位:", slotIndex, wingInfo.companionName)
 
     local isEquipped = self:IsWingEquipped(slotIndex)
 
@@ -489,7 +489,7 @@ function WingGui:RefreshSelectedWingDisplay()
     end
 
     local wing = self.selectedWing
-    gg.log("刷新选中翅膀显示:", wing.wingName)
+    --gg.log("刷新选中翅膀显示:", wing.wingName)
 
     local wingConfig = self:GetWingConfig(wing.wingName)
     if self.wingUI and wingConfig and wingConfig.avatarResource then
@@ -733,16 +733,16 @@ end
 
 --- 默认选择第一个翅膀
 function WingGui:SelectDefaultWing()
-    gg.log("尝试默认选择第一个翅膀")
+    --gg.log("尝试默认选择第一个翅膀")
 
     local sortedList = self:GetSortedWingList()
 
     if #sortedList > 0 then
         local firstWing = sortedList[1].info
-        gg.log("默认选择翅膀:", firstWing.companionName)
+        --gg.log("默认选择翅膀:", firstWing.companionName)
         self:OnWingSlotClick(firstWing.slotIndex, firstWing)
     else
-        gg.log("没有翅膀可供选择，清空详情")
+        --gg.log("没有翅膀可供选择，清空详情")
         self.selectedWing = nil
         self:RefreshSelectedWingDisplay()
     end

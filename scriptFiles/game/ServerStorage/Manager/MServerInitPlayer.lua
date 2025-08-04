@@ -20,6 +20,7 @@ local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
 local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
 local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
+local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
 local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
@@ -142,6 +143,7 @@ function MServerInitPlayer.player_enter_game(player)
     PetMgr.OnPlayerJoin(player_)
     PartnerMgr.OnPlayerJoin(player_)
     WingMgr.OnPlayerJoin(player_)
+    TrailMgr.OnPlayerJoin(player_)
     if isNewPlayer then
         PlayerInitMgr.InitializeNewPlayer(player_)
     end
@@ -151,6 +153,8 @@ function MServerInitPlayer.player_enter_game(player)
     PetMgr.UpdateAllEquippedPetModels(player_)
     -- 【新增】玩家上线时，调用翅膀管理器来更新模型显示
     WingMgr.UpdateAllEquippedWingModels(player_)
+    -- 【新增】玩家上线时，调用尾迹管理器来更新模型显示
+    TrailMgr.UpdateAllEquippedTrailModels(player_)
 
     MServerInitPlayer.syncPlayerDataToClient(player_)
 
@@ -208,6 +212,17 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
         --gg.log("警告: 玩家", uin, "的翅膀数据不存在，跳过翅膀数据同步")
     end
 
+    -- 【新增】同步尾迹数据
+    local trailManager = TrailMgr.GetPlayerTrail(uin)
+    if trailManager then
+        local trailListData = trailManager:GetPlayerTrailList()
+        local TrailEventManager = require(ServerStorage.MSystems.Trail.TrailEventManager) ---@type TrailEventManager
+        TrailEventManager.NotifyTrailListUpdate(uin, trailListData)
+        --gg.log("已主动同步尾迹数据到客户端:", uin, "尾迹数量:", trailManager:GetTrailCount())
+    else
+        --gg.log("警告: 玩家", uin, "的尾迹数据不存在，跳过尾迹数据同步")
+    end
+
     -- 获取变量数据
     if mplayer.variableSystem then
         local variableData = mplayer.variableSystem.variables
@@ -245,6 +260,7 @@ function MServerInitPlayer.player_leave_game(player)
         PetMgr.OnPlayerLeave(uin_)
         PartnerMgr.OnPlayerLeave(uin_)
         WingMgr.OnPlayerLeave(uin_)
+        TrailMgr.OnPlayerLeave(uin_)
         AchievementMgr.OnPlayerLeave(uin_)
         -- 其他管理器（如技能、任务等）的离线处理也可以在这里添加
         mplayer:leaveGame() -- 保存玩家基础数据

@@ -310,7 +310,7 @@ function TrailEventManager.NotifyTrailListUpdate(uin, trailData)
     --gg.log("通知客户端尾迹列表更新", uin, trailData)
     gg.network_channel:fireClient(uin, {
         cmd = TrailEventManager.NOTIFY.TRAIL_LIST_UPDATE,
-        trailList = trailData.trailList or {},         -- 尾迹列表
+        trailList = trailData.companionList or {},     -- 尾迹列表
         activeSlots = trailData.activeSlots or {},     -- 激活槽位映射
         equipSlotIds = trailData.equipSlotIds or {},   -- 可用装备栏ID
         trailSlots = trailData.trailSlots or 30,       -- 背包容量

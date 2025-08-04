@@ -124,21 +124,31 @@ end
 ---@param equipSlotId string 目标装备栏ID
 ---@return boolean, string|nil
 function TrailMgr.EquipTrail(uin, trailSlotId, equipSlotId)
+    gg.log("【TrailMgr.EquipTrail】开始装备尾迹", uin, "背包槽位", trailSlotId, "装备栏", equipSlotId)
+    
     local trailManager = TrailMgr.GetPlayerTrail(uin)
     if not trailManager then
+        gg.log("【TrailMgr.EquipTrail】错误：玩家尾迹数据不存在", uin)
         return false, "玩家尾迹数据不存在"
     end
 
     local success, errorMsg = trailManager:EquipTrail(trailSlotId, equipSlotId)
+    gg.log("【TrailMgr.EquipTrail】装备结果", success, errorMsg)
 
     if success then
         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
         local player = serverDataMgr.getPlayerByUin(uin)
         if player then
+            gg.log("【TrailMgr.EquipTrail】开始更新尾迹模型", uin)
             TrailMgr.UpdateAllEquippedTrailModels(player)
+        else
+            gg.log("【TrailMgr.EquipTrail】警告：找不到玩家对象", uin)
         end
         -- 通知客户端数据更新
         TrailMgr.NotifyTrailDataUpdate(uin)
+        gg.log("【TrailMgr.EquipTrail】装备尾迹完成", uin)
+    else
+        gg.log("【TrailMgr.EquipTrail】装备尾迹失败", uin, errorMsg)
     end
 
     return success, errorMsg
@@ -149,21 +159,31 @@ end
 ---@param equipSlotId string 目标装备栏ID
 ---@return boolean, string|nil
 function TrailMgr.UnequipTrail(uin, equipSlotId)
+    gg.log("【TrailMgr.UnequipTrail】开始卸下尾迹", uin, "装备栏", equipSlotId)
+    
     local trailManager = TrailMgr.GetPlayerTrail(uin)
     if not trailManager then
+        gg.log("【TrailMgr.UnequipTrail】错误：玩家尾迹数据不存在", uin)
         return false, "玩家尾迹数据不存在"
     end
 
     local success, errorMsg = trailManager:UnequipTrail(equipSlotId)
+    gg.log("【TrailMgr.UnequipTrail】卸下结果", success, errorMsg)
 
     if success then
         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
         local player = serverDataMgr.getPlayerByUin(uin)
         if player then
+            gg.log("【TrailMgr.UnequipTrail】开始更新尾迹模型", uin)
             TrailMgr.UpdateAllEquippedTrailModels(player)
+        else
+            gg.log("【TrailMgr.UnequipTrail】警告：找不到玩家对象", uin)
         end
         -- 通知客户端数据更新
         TrailMgr.NotifyTrailDataUpdate(uin)
+        gg.log("【TrailMgr.UnequipTrail】卸下尾迹完成", uin)
+    else
+        gg.log("【TrailMgr.UnequipTrail】卸下尾迹失败", uin, errorMsg)
     end
 
     return success, errorMsg
@@ -372,18 +392,21 @@ end
 ---@param player MPlayer 玩家对象
 function TrailMgr.UpdateAllEquippedTrailModels(player)
     if not player or not player.uin then
-        --gg.log("错误：玩家对象无效，无法更新尾迹模型")
+        gg.log("【TrailMgr.UpdateAllEquippedTrailModels】错误：玩家对象无效，无法更新尾迹模型")
         return
     end
 
+    gg.log("【TrailMgr.UpdateAllEquippedTrailModels】开始更新玩家尾迹模型", player.uin, player.Name)
+
     local trailManager = TrailMgr.GetPlayerTrail(player.uin)
     if not trailManager then
-        --gg.log("错误：找不到玩家尾迹管理器，无法更新尾迹模型", player.uin)
+        gg.log("【TrailMgr.UpdateAllEquippedTrailModels】错误：找不到玩家尾迹管理器，无法更新尾迹模型", player.uin)
         return
     end
 
     -- 调用尾迹管理器的更新方法
     trailManager:UpdateAllEquippedTrailModels(player)
+    gg.log("【TrailMgr.UpdateAllEquippedTrailModels】更新尾迹模型完成", player.uin)
 end
 
 ---设置尾迹背包容量

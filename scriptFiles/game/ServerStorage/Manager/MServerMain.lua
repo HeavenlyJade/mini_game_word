@@ -99,6 +99,7 @@ function MainServer.initModule()
     local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
     local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
     local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
+    local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
     local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
     local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
     serverDataMgr.BagMgr = BagMgr
@@ -106,6 +107,7 @@ function MainServer.initModule()
     serverDataMgr.PetMgr = PetMgr
     serverDataMgr.PartnerMgr = PartnerMgr
     serverDataMgr.WingMgr = WingMgr
+    serverDataMgr.TrailMgr = TrailMgr
     serverDataMgr.GameModeManager = GameModeManager
     serverDataMgr.AchievementMgr = AchievementMgr
 
@@ -116,6 +118,7 @@ function MainServer.initModule()
     local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
     local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
     local WingEventManager = require(ServerStorage.MSystems.Pet.EventManager.WingEventManager) ---@type WingEventManager
+    local TrailEventManager = require(ServerStorage.MSystems.Trail.TrailEventManager) ---@type TrailEventManager
     local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
     local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
@@ -128,6 +131,7 @@ function MainServer.initModule()
     PetEventManager.Init()
     PartnerEventManager.Init()
     WingEventManager.Init()
+    TrailEventManager.Init()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
 

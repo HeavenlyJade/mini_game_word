@@ -35,6 +35,12 @@ function TrailType:GetEffectNode()
     return self.effectNode
 end
 
+-- 便利函数：获取携带效果（兼容接口）
+function TrailType:GetEffects()
+    -- 默认使用1星级的效果
+    return self:CalculateCarryingEffectsByStarLevel(1)
+end
+
 -- 便利函数：获取指定星级的携带效果
 function TrailType:GetCarryingEffectsByStarLevel(starLevel)
     local effects = {}

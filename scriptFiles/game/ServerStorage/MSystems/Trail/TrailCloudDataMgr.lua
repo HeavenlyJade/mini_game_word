@@ -21,7 +21,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
 ---@class PlayerTrailData
 ---@field activeSlots table<string, number> 激活的尾迹槽位映射 {[装备栏ID] = 背包槽位ID}
----@field trailList table<number, TrailData> 尾迹数据列表 {slotIndex = trailData} 对应背包槽位的尾迹
+---@field companionList table<number, TrailData> 尾迹数据列表 {slotIndex = trailData} 对应背包槽位的尾迹
 ---@field trailSlots number 尾迹背包槽位数量
 ---@field unlockedEquipSlots number 玩家当前可携带(已解锁)的尾迹栏位数量
 
@@ -34,13 +34,13 @@ local CloudTrailDataAccessor = {}
 function CloudTrailDataAccessor:LoadPlayerTrailData(uin)
     local ret, data = cloudService:GetTableOrEmpty('trail_player_' .. uin)
 
-    if ret and data and data.trailList then
+    if ret and data and data.companionList then
         return data
     else
         -- 创建默认尾迹数据
         return {
             activeSlots = {},
-            trailList = {},
+            companionList = {},
             trailSlots = 30,
             unlockedEquipSlots = 1, -- 默认解锁1个栏位
         }
