@@ -27,6 +27,7 @@ local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig)
 local AchievementConfig = require(MainStorage.Code.Common.Config.AchievementConfig)
 local PetConfig = require(MainStorage.Code.Common.Config.PetConfig)
 local PartnerConfig = require(MainStorage.Code.Common.Config.PartnerConfig)
+local WingConfig = require(MainStorage.Code.Common.Config.WingConfig)
 local PlayerInitConfig = require(MainStorage.Code.Common.Config.PlayerInitConfig)
 local VariableNameConfig = require(MainStorage.Code.Common.Config.VariableNameConfig)
 local GameModeConfig = require(MainStorage.Code.Common.Config.GameModeConfig)
@@ -49,6 +50,7 @@ ConfigLoader.SceneNodes = {}
 ConfigLoader.Achievements = {}
 ConfigLoader.Pets = {}
 ConfigLoader.Partners = {} -- 新增伙伴配置存储
+ConfigLoader.Wings = {} -- 新增翅膀配置存储
 ConfigLoader.ActionCosts = {}
 ConfigLoader.ItemTypes = {}
 ConfigLoader.PlayerInits = {}
@@ -86,6 +88,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(LevelConfig, LevelType, ConfigLoader.Levels, "Level")
     ConfigLoader.LoadConfig(PartnerConfig, PetType, ConfigLoader.Partners, "Partner")
     ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
+    ConfigLoader.LoadConfig(WingConfig, PetType, ConfigLoader.Wings, "Wing")
     ConfigLoader.LoadConfig(PlayerInitConfig, PlayerInitType, ConfigLoader.PlayerInits, "PlayerInit")
     ConfigLoader.LoadConfig(SceneNodeConfig, SceneNodeType, ConfigLoader.SceneNodes, "SceneNode")
     ConfigLoader.LoadConfig(VariableNameConfig,nil,ConfigLoader.VariableNames,"VariableName")
@@ -184,6 +187,17 @@ end
 ---@return table<string, PetType> 伙伴配置与宠物格式相同，所以返回PetType表
 function ConfigLoader.GetAllPartners()
     return ConfigLoader.Partners
+end
+
+---@param id string
+---@return PetType 翅膀配置与宠物格式相同，所以返回PetType
+function ConfigLoader.GetWing(id)
+    return ConfigLoader.Wings[id]
+end
+
+---@return table<string, PetType> 翅膀配置与宠物格式相同，所以返回PetType表
+function ConfigLoader.GetAllWings()
+    return ConfigLoader.Wings
 end
 
 ---@param id string

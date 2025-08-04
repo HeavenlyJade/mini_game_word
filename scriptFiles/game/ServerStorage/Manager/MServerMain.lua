@@ -98,12 +98,14 @@ function MainServer.initModule()
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
     local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
+    local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
     local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
     local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
     serverDataMgr.BagMgr = BagMgr
     serverDataMgr.MailMgr = MailMgr
     serverDataMgr.PetMgr = PetMgr
     serverDataMgr.PartnerMgr = PartnerMgr
+    serverDataMgr.WingMgr = WingMgr
     serverDataMgr.GameModeManager = GameModeManager
     serverDataMgr.AchievementMgr = AchievementMgr
 
@@ -113,6 +115,7 @@ function MainServer.initModule()
     local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
     local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
     local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
+    local WingEventManager = require(ServerStorage.MSystems.Pet.EventManager.WingEventManager) ---@type WingEventManager
     local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
     local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
@@ -124,6 +127,7 @@ function MainServer.initModule()
     MailEventManager.Init()
     PetEventManager.Init()
     PartnerEventManager.Init()
+    WingEventManager.Init()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
 

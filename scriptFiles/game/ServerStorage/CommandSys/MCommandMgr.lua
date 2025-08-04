@@ -8,6 +8,7 @@ local MailCommand = require(ServerStorage.CommandSys.Commands.MmailCom) ---@type
 local BagCommand = require(ServerStorage.CommandSys.Commands.MbagCom) ---@type BagCommand
 local PetCommand = require(ServerStorage.CommandSys.Commands.MPetCom) ---@type PetCommand
 local PartnerCommand = require(ServerStorage.CommandSys.Commands.MPartnerCom) ---@type PartnerCommand
+local WingCommand = require(ServerStorage.CommandSys.Commands.MWingCom) ---@type WingCommand
 local VariableCommand = require(ServerStorage.CommandSys.Commands.MVariableCom) ---@type VariableCommand
 local ClearDataCommand = require(ServerStorage.CommandSys.Commands.MClearDataCom) ---@type ClearDataCommand
 -- local SkillCommands = require(ServerStorage.CommandSys.Commands.MskillCom)     ---@type SkillCommands
@@ -28,6 +29,8 @@ CommandManager.handlers = {
     ["pet"] = PetCommand.main,
     -- 伙伴相关命令
     ["partner"] = PartnerCommand.main,
+    -- 翅膀相关命令
+    ["wing"] = WingCommand.main,
     -- 装载默认的配置技能
     -- ["skillConf"] = SkillCommands.main,
     ["variable"] = VariableCommand.main,
