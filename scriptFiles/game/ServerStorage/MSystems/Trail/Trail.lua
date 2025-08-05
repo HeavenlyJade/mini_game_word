@@ -567,7 +567,7 @@ function Trail:EquipTrailEffect(player_actor, effectNodePath)
 
     -- 4. 将克隆的节点挂载到玩家的Actor节点上面
     clonedEffectNode.Parent = player_actor
-
+    clonedEffectNode.Visible = true
     -- 保存克隆的节点引用，用于后续卸载
     if not self.equippedEffectNodes then
         self.equippedEffectNodes = {}

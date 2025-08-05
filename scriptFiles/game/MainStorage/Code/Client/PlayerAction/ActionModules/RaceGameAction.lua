@@ -56,7 +56,8 @@ function RaceGameAction:OnStart(data)
         -- if actor:GetCurMoveState() == Enum.BehaviorState.Fly then
             -- 使用 Move 指令让角色相对于相机稳定前移
         actor.Animator:Play("Base Layer.fei", 0, 0)
-        actor:Move(Vector3.new(0, 0, 1), true)
+        -- 修改：使用 relativeToCamera = false，让移动方向不受摄像机旋转影响
+        actor:Move(Vector3.new(0, 0, 1), false)
         -- actor.Animator:Play("Base Layer.fei", 0, 0)
 
         -- actor.Animator:Play("Base Layer.fei", 0, 0)w

@@ -83,4 +83,30 @@ CardIcon.qualityListMap = {
     ["品质_6"] = "ALL"
 }
 
+-- 物品图标资源配置
+CardIcon.itemIconResources = {
+    ["128元"] = "sandboxId://FlyUi/迷你界面/物品图标/128元.png",
+    ["2一堆奖杯"] = "sandboxId://FlyUi/迷你界面/物品图标/2一堆奖杯.png",
+    ["30元"] = "sandboxId://FlyUi/迷你界面/物品图标/30元.png",
+    ["328元"] = "sandboxId://FlyUi/迷你界面/物品图标/328元.png",
+    ["3一大堆奖杯"] = "sandboxId://FlyUi/迷你界面/物品图标/3一大堆奖杯.png",
+    ["4非常多奖杯"] = "sandboxId://FlyUi/迷你界面/物品图标/4非常多奖杯.png",
+    ["5一大袋奖杯"] = "sandboxId://FlyUi/迷你界面/物品图标/5一大袋奖杯.png",
+    ["648元"] = "sandboxId://FlyUi/迷你界面/物品图标/648元.png",
+    ["68元"] = "sandboxId://FlyUi/迷你界面/物品图标/68元.png",
+    ["6一箱子奖杯"] = "sandboxId://FlyUi/迷你界面/物品图标/6一箱子奖杯.png",
+    ["6元"] = "sandboxId://FlyUi/迷你界面/物品图标/6元.png",
+    ["双倍训练"] = "sandboxId://FlyUi/迷你界面/物品图标/双倍训练.png",
+    ["奖杯速度"] = "sandboxId://FlyUi/迷你界面/物品图标/奖杯速度.png",
+    ["提升箭头"] = "sandboxId://FlyUi/迷你界面/物品图标/提升箭头.png",
+    ["移速加成"] = "sandboxId://FlyUi/迷你界面/物品图标/移速加成.png",
+    ["能力值"] = "sandboxId://FlyUi/迷你界面/物品图标/能力值.png",
+    ["训练加成"] = "sandboxId://FlyUi/迷你界面/物品图标/训练加成.png",
+    ["起飞速度"] = "sandboxId://FlyUi/迷你界面/物品图标/起飞速度.png",
+    ["迷你币"] = "sandboxId://FlyUi/迷你界面/物品图标/迷你币.png",
+    ["迷你豆"] = "sandboxId://FlyUi/迷你界面/物品图标/迷你豆.png",
+    ["重生档位"] = "sandboxId://FlyUi/迷你界面/物品图标/重生档位.png",
+    ["金币加成"] = "sandboxId://FlyUi/迷你界面/物品图标/金币加成.png"
+}
+
 return CardIcon
