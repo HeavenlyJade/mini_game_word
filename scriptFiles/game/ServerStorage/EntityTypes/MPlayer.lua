@@ -42,26 +42,8 @@ function _MPlayer:OnInit(info_)
     -- 网络状态
     self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
     self.loginTime = os.time() -- 登录时间
-
-
 end
 
---- 玩家切换场景
----@param new_scene SceneControllerHandler
-function _MPlayer:ChangeScene(new_scene)
-    -- 先处理旧场景的离开逻辑
-    if self.scene and self.scene.players then
-        self.scene.players[self.uin] = nil
-    end
-
-    -- 调用父类的ChangeScene来处理通用的实体场景切换
-    Entity.ChangeScene(self, new_scene)
-
-    -- 再处理新场景的进入逻辑
-    if self.scene and self.scene.players then
-        self.scene.players[self.uin] = self
-    end
-end
 
 --直接获得游戏中的actor的位置
 function _MPlayer:getPosition()

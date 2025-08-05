@@ -10,6 +10,7 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 ---@field uuid string 唯一ID
 ---@field nodePath string 场景节点路径
 ---@field sceneType string 场景类型
+---@field belongScene string 所属场景
 ---@field areaConfig table 区域节点配置
 ---@field respawnNodeName string 复活节点
 ---@field teleportNodeName string 传送节点
@@ -30,6 +31,7 @@ function SceneNodeType:OnInit(data)
     self.uuid = data["唯一ID"] or ""
     self.nodePath = data["场景节点路径"] or ""
     self.sceneType = data["场景类型"] or ""
+    self.belongScene = data["所属场景"] or ""
     self.areaConfig = data["区域节点配置"] or {}
     
     -- 为方便访问，同时将areaConfig中的嵌套属性赋给主对象
@@ -45,5 +47,32 @@ function SceneNodeType:OnInit(data)
     self.leaveCommand = data["离开指令"] or ""
     self.timedCommands = data["定时指令列表"] or {}
 end
+
+-- 通过所属场景找到场景类型为飞行比赛的配置节点
+---@param belongScene string 所属场景名称
+---@return SceneNodeType[] 找到的飞行比赛场景节点列表
+function SceneNodeType.FindRaceNodesByScene(belongScene)
+    local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig) ---@type SceneNodeConfig
+    local foundNodes = {}
+    
+    -- 遍历所有场景节点配置
+    for nodeName, nodeData in pairs(SceneNodeConfig.Data) do
+        -- 检查所属场景和场景类型
+        if nodeData["所属场景"] == belongScene and nodeData["场景类型"] == "飞行比赛" then
+            -- 创建SceneNodeType实例并添加到结果列表
+            local sceneNodeType = SceneNodeType.New(nodeData)
+            table.insert(foundNodes, sceneNodeType)
+        end
+    end
+    
+    return foundNodes
+end
+
+-- 检查场景节点配置是否为飞行比赛类型
+---@return boolean 是否为飞行比赛类型
+function SceneNodeType:IsRaceGame()
+    return self.sceneType == "飞行比赛"
+end
+
 
 return SceneNodeType 

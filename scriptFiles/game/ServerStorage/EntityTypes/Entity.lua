@@ -65,7 +65,7 @@ local TRIGGER_STAT_TYPES = {
 function _M:OnInit(info_)
     self.uuid = self:GenerateUUID()
     self.uin = info_.uin
-    self.scene = nil ---@type SceneControllerHandler
+    self.scene = nil 
     self.level = info_.level or 1
     self.exp = info_.exp or 0
     self.type = info_.npc_type
@@ -328,27 +328,7 @@ end
 
 -- 场景管理 --------------------------------------------------------
 
--- 玩家改变场景
----@param new_scene string|Scene
-function _M:ChangeScene(new_scene)
-    if type(new_scene) == "string" then
-        new_scene = gg.server_scene_list[new_scene]
-    end
-    if self.scene and self.scene == new_scene then
-        return
-    end
 
-    -- 离开旧场景
-    if self.scene then
-        self.scene.uuid2Entity[self.uuid] = nil
-    end
-
-    -- 进入新场景
-    self.scene = new_scene
-    if self.scene then
-        self.scene.uuid2Entity[self.uuid] = self
-    end
-end
 
 -- UI相关 --------------------------------------------------------
 

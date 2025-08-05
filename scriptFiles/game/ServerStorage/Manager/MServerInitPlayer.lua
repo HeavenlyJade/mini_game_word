@@ -137,6 +137,10 @@ function MServerInitPlayer.player_enter_game(player)
 
     ServerEventManager.Publish("PlayerInited", {player = player_})
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
+    
+    -- 【新增】初始化玩家场景为init_map
+    gg.player_scene_map[uin_] = 'init_map'
+    
     AchievementMgr.OnPlayerJoin(uin_)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
@@ -254,6 +258,9 @@ function MServerInitPlayer.player_leave_game(player)
 
     local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer
     if mplayer then
+        -- 【新增】清理玩家场景映射
+        gg.player_scene_map[uin_] = nil
+        
         -- 通知各个系统玩家已离开
         MailMgr.OnPlayerLeave(uin_)
         BagMgr.OnPlayerLeave(uin_)

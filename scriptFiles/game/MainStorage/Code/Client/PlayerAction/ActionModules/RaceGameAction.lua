@@ -45,9 +45,14 @@ function RaceGameAction:OnStart(data)
     self.originalJumpSpeed = actor.JumpBaseSpeed
     self.originalMoveSpeed = actor.Movespeed
     self.originalGravity = actor.Gravity -- 新增：保存原始重力
+    
+    -- 【新增】禁用玩家WASD移动控制
+    local Controller = require(MainStorage.Code.Client.MController) ---@type Controller
+    self.originalEnableMove = Controller.m_enableMove
+    Controller.m_enableMove = false
+    
     actor.Gravity =0  -- 应用新的重力值
-    --gg.log("启动了客户的动画222",actor:GetCurMoveState() )
-    --gg.log("启动了客户的动画222")
+
     actor.Movespeed = moveSpeed
     actor.Animator:Play("Base Layer.fei", 0, 0)
 
@@ -108,6 +113,10 @@ function RaceGameAction:OnEnd()
         actor.JumpBaseSpeed = self.originalJumpSpeed
         actor.Movespeed = self.originalMoveSpeed
         actor.Gravity = self.originalGravity
+
+        -- 恢复玩家WASD移动控制
+        local Controller = require(MainStorage.Code.Client.MController) ---@type Controller
+        Controller.m_enableMove = self.originalEnableMove
 
         -- 【核心改造】执行本地传送
         if self.respawnPosition then

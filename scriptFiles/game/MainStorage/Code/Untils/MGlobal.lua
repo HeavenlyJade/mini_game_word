@@ -29,28 +29,16 @@ local gg = {
     uuid_start = nil,
     CommandManager = nil, ---@type CommandManager
     GlobalMailManager = nil, ---@type GlobalMailManager
-    server_scenes_list = {}, ---@type table<string, Scene>
     network_channel = nil, ---@type NetworkChannel
     cloudMailData = nil, ---@type CloudMailDataAccessor
     -- 客户端使用(p1)
     client_scene_name = 'init_map', -- 当前客户端的场景
-    client_target_node = nil, -- 当前目标
-    client_selected = nil, -- 选中控件
-    client_aoe_cylinder = nil, -- aoe技能碰撞控件
+
+    -- 【新增】玩家场景节点映射表，存储玩家uin和对应的场景名字
+    player_scene_map = {}, -- {[uin] = scene_name}
 
     lockClientCharactor = false, -- 是否锁定玩家
-    ---@type table<number, table>
-    client_bag_index = {}, -- 服务器同步给客户端玩家的背包放置数据
-    ---@type table<string, table>
-    client_bag_items = {}, -- 服务器同步给玩家的背包物品详情
-    ---@type table
-    client_player_data = { -- 玩家数据 (需要从服务器同步)
-        battle_data = nil, -- 战斗数据
-        exp = 0,
-        level = 0,
-        user_name = nil,
-        user_id = nil
-    }
+
 }
 
 ---@param node SandboxNode
