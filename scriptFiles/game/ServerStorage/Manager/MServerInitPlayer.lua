@@ -159,8 +159,8 @@ function MServerInitPlayer.player_enter_game(player)
     WingMgr.UpdateAllEquippedWingModels(player_)
     -- 【新增】玩家上线时，调用尾迹管理器来更新模型显示
     TrailMgr.UpdateAllEquippedTrailModels(player_)
-
     MServerInitPlayer.syncPlayerDataToClient(player_)
+    gg.log("玩家进入了游戏", gg.player_scene_map,player)
 
 
 end

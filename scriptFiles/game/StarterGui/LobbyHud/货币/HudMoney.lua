@@ -252,7 +252,7 @@ function HudMoney:OnSyncPlayerVariables(data)
     -- 检查战力值是否有变化
     local powerData = data.variableData["数据_固定值_战力值"]
     if powerData then
-        local newPowerValue = powerData.base or 0
+        local newPowerValue = (powerData and powerData.base) or 0
         local oldPowerValue = (self.playerVariableData and self.playerVariableData["数据_固定值_战力值"] and self.playerVariableData["数据_固定值_战力值"].base) or 0
         
         -- 如果战力值增加了，显示动画
@@ -268,7 +268,7 @@ function HudMoney:OnSyncPlayerVariables(data)
     -- 检查重生次数是否有变化
     local rebirthData = data.variableData["数据_固定值_重生次数"]
     if rebirthData then
-        local newRebirthValue = rebirthData.base or 0
+        local newRebirthValue = (rebirthData and rebirthData.base) or 0
         local oldRebirthValue = (self.playerVariableData and self.playerVariableData["数据_固定值_重生次数"] and self.playerVariableData["数据_固定值_重生次数"].base) or 0
         
         -- 如果重生次数增加了，显示动画
@@ -355,7 +355,7 @@ function HudMoney:UpdateVariableDisplay()
     -- 更新战力值显示（对应能量节点）
     local powerData = self.playerVariableData["数据_固定值_战力值"]
     --gg.log("powerData", powerData)
-    local powerValue =  powerData.base or 0
+    local powerValue = (powerData and powerData.base) or 0
     local energyButton = self.moneyButtonList:GetChildByName("能量")
     if energyButton then
         local textNode = energyButton:Get("Text").node ---@cast textNode UITextLabel

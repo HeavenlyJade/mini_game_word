@@ -169,18 +169,9 @@ function MServerDataManager.removePlayer(uin, nickname)
     MServerDataManager.server_players_name_list[nickname] = nil
 end
 
--- 添加场景
----@param sceneName string 场景名称
----@param scene Scene 场景实例
-function MServerDataManager.addScene(sceneName, scene)
-    gg.server_scenes_list[sceneName] = scene
-end
 
--- 移除场景
----@param sceneName string 场景名称
-function MServerDataManager.removeScene(sceneName)
-    gg.server_scenes_list[sceneName] = nil
-end
+
+
 
 -- 添加场景节点处理器
 ---@param handler SceneNodeHandlerBase

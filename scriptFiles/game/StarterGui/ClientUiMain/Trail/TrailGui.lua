@@ -66,7 +66,7 @@ function TrailGui:OnInit(node, config)
     -- 3. 按钮点击事件注册
     self:RegisterButtonEvents()
 
-    --gg.log("TrailGui 尾迹界面初始化完成")
+    ----gg.log("TrailGui 尾迹界面初始化完成")
 end
 
 -- =================================
@@ -74,7 +74,7 @@ end
 -- =================================
 
 function TrailGui:RegisterEvents()
-    --gg.log("注册尾迹系统事件监听")
+    ----gg.log("注册尾迹系统事件监听")
 
     -- 监听尾迹列表响应
     ClientEventManager.Subscribe(TrailEventConfig.NOTIFY.TRAIL_LIST_UPDATE, function(data)
@@ -113,7 +113,7 @@ function TrailGui:RegisterButtonEvents()
         self:OnClickUnequipTrail()
     end
 
-    --gg.log("尾迹界面按钮事件注册完成")
+    ----gg.log("尾迹界面按钮事件注册完成")
 end
 
 -- =================================
@@ -121,12 +121,12 @@ end
 -- =================================
 
 function TrailGui:OnOpen()
-    --gg.log("TrailGui尾迹界面打开")
+    ----gg.log("TrailGui尾迹界面打开")
     self:RequestTrailData()
 end
 
 function TrailGui:OnClose()
-    --gg.log("TrailGui尾迹界面关闭")
+    ----gg.log("TrailGui尾迹界面关闭")
 end
 
 -- =================================
@@ -139,13 +139,13 @@ function TrailGui:RequestTrailData()
         cmd = TrailEventConfig.REQUEST.GET_TRAIL_LIST,
         args = {}
     }
-    --gg.log("请求尾迹数据同步")
+    ----gg.log("请求尾迹数据同步")
     gg.network_channel:fireServer(requestData)
 end
 
 --- 处理尾迹列表响应
 function TrailGui:OnTrailListResponse(data)
-    --gg.log("收到尾迹数据响应:", data)
+    ----gg.log("收到尾迹数据响应:", data)
     if data and data.trailList then
         self.trailData = data.trailList
         self.activeSlots = data.activeSlots or {}
@@ -153,19 +153,19 @@ function TrailGui:OnTrailListResponse(data)
         self.trailBagCapacity = data.trailSlots or 30
         self.unlockedEquipSlots = data.unlockedEquipSlots or 1
 
-        --gg.log("尾迹数据同步完成, 激活槽位:", self.activeSlots)
+        ----gg.log("尾迹数据同步完成, 激活槽位:", self.activeSlots)
 
         -- 刷新界面显示
         self:RefreshTrailList()
         self:SelectDefaultTrail()
     else
-        --gg.log("尾迹数据响应格式错误或列表为空")
+        ----gg.log("尾迹数据响应格式错误或列表为空")
     end
 end
 
 --- 处理尾迹更新通知
 function TrailGui:OnTrailUpdateNotify(data)
-    --gg.log("收到尾迹更新通知:", data)
+    ----gg.log("收到尾迹更新通知:", data)
     if data.trailData then
         local trailData = data.trailData
         local slotIndex = trailData.slotIndex
@@ -183,7 +183,7 @@ end
 
 --- 处理新获得尾迹通知
 function TrailGui:OnTrailObtainedNotify(data)
-    --gg.log("收到新获得尾迹通知:", data)
+    ----gg.log("收到新获得尾迹通知:", data)
     if data.slotIndex and data.trailName then
         local slotIndex = data.slotIndex
         local trailInfo = {
@@ -196,16 +196,16 @@ function TrailGui:OnTrailObtainedNotify(data)
 
         if self:IsOpen() then
             self:CreateTrailSlotItem(slotIndex, trailInfo)
-            --gg.log("新尾迹已添加到界面显示:", data.trailName)
+            ----gg.log("新尾迹已添加到界面显示:", data.trailName)
         end
     end
 end
 
 --- 处理错误响应
 function TrailGui:OnTrailErrorResponse(data)
-    --gg.log("收到尾迹系统错误响应:", data)
+    ----gg.log("收到尾迹系统错误响应:", data)
     local errorMessage = data.errorMsg or "操作失败"
-    --gg.log("错误信息:", errorMessage)
+    ----gg.log("错误信息:", errorMessage)
     -- TODO: 显示错误提示给玩家
 end
 
@@ -221,7 +221,7 @@ end
 --- 装备按钮点击
 function TrailGui:OnClickEquipTrail()
     if not self.selectedTrail then
-        --gg.log("未选中尾迹，无法装备")
+        ----gg.log("未选中尾迹，无法装备")
         return
     end
 
@@ -229,18 +229,18 @@ function TrailGui:OnClickEquipTrail()
     local equipSlotId = self:FindNextAvailableEquipSlot()
 
     if not equipSlotId then
-        --gg.log("没有可用的装备栏")
+        ----gg.log("没有可用的装备栏")
         return
     end
 
-    --gg.log("点击装备按钮:", "背包槽位", trailSlotId, "目标装备栏", equipSlotId)
+    ----gg.log("点击装备按钮:", "背包槽位", trailSlotId, "目标装备栏", equipSlotId)
     self:SendEquipTrailRequest(trailSlotId, equipSlotId)
 end
 
 --- 卸下按钮点击
 function TrailGui:OnClickUnequipTrail()
     if not self.selectedTrail then
-        --gg.log("未选中尾迹，无法卸下")
+        ----gg.log("未选中尾迹，无法卸下")
         return
     end
 
@@ -248,11 +248,11 @@ function TrailGui:OnClickUnequipTrail()
     local equipSlotId = self:GetEquipSlotByTrailSlot(trailSlotId)
 
     if not equipSlotId then
-        --gg.log("错误：该尾迹并未装备，但卸下按钮可见")
+        ----gg.log("错误：该尾迹并未装备，但卸下按钮可见")
         return
     end
 
-    --gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
+    ----gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
     self:SendUnequipTrailRequest(equipSlotId)
 end
 
@@ -269,7 +269,7 @@ function TrailGui:SendEquipTrailRequest(trailSlotId, equipSlotId)
             equipSlotId = equipSlotId
         }
     }
-    --gg.log("发送装备尾迹请求:", requestData.args)
+    ----gg.log("发送装备尾迹请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -280,7 +280,7 @@ function TrailGui:SendUnequipTrailRequest(equipSlotId)
             equipSlotId = equipSlotId
         }
     }
-    --gg.log("发送卸下尾迹请求:", requestData.args)
+    ----gg.log("发送卸下尾迹请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -290,7 +290,7 @@ end
 
 --- 刷新尾迹列表
 function TrailGui:RefreshTrailList()
-    --gg.log("刷新尾迹列表显示")
+    ----gg.log("刷新尾迹列表显示")
 
     self.trailSlotButtons = {}
     self.trailSlotList:ClearChildren()
@@ -302,16 +302,16 @@ function TrailGui:RefreshTrailList()
         self:CreateTrailSlotItem(trailInfo.slotIndex, trailInfo)
     end
 
-    --gg.log("尾迹列表刷新完成")
+    ----gg.log("尾迹列表刷新完成")
 end
 
 --- 创建尾迹槽位项
 function TrailGui:CreateTrailSlotItem(slotIndex, trailInfo)
     if not self.slotTemplate or not self.slotTemplate.node then
-        --gg.log("警告：尾迹槽位模板不存在")
+        ----gg.log("警告：尾迹槽位模板不存在")
         return
     end
-    --gg.log("创建尾迹槽位项", slotIndex, trailInfo)
+    ----gg.log("创建尾迹槽位项", slotIndex, trailInfo)
 
     local slotNode = self.slotTemplate.node:Clone()
     slotNode.Visible = true
@@ -370,7 +370,7 @@ end
 
 --- 尾迹槽位点击事件
 function TrailGui:OnTrailSlotClick(slotIndex, trailInfo)
-    --gg.log("点击尾迹槽位:", slotIndex, trailInfo.trailName)
+    ----gg.log("点击尾迹槽位:", slotIndex, trailInfo.trailName)
 
     local isEquipped = self:IsTrailEquipped(slotIndex)
 
@@ -393,11 +393,11 @@ function TrailGui:RefreshSelectedTrailDisplay()
     end
 
     local trail = self.selectedTrail
-    --gg.log("刷新选中尾迹显示:", trail.trailName)
+    ----gg.log("刷新选中尾迹显示:", trail.trailName)
 
     local trailConfig = self:GetTrailConfig(trail.trailName)
     if not trailConfig then
-        --gg.log("错误: 无法获取尾迹配置", trail.trailName)
+        ----gg.log("错误: 无法获取尾迹配置", trail.trailName)
         return
     end
 
@@ -569,7 +569,7 @@ function TrailGui:GetTrailConfig(trailName)
     if not self.trailConfigs[trailName] then
         self.trailConfigs[trailName] = ConfigLoader.GetTrail(trailName)
         if not self.trailConfigs[trailName] then
-            --gg.log("警告: 找不到尾迹配置", trailName)
+            ----gg.log("警告: 找不到尾迹配置", trailName)
         end
     end
 
@@ -587,16 +587,16 @@ end
 
 --- 默认选择第一个尾迹
 function TrailGui:SelectDefaultTrail()
-    --gg.log("尝试默认选择第一个尾迹")
+    ----gg.log("尝试默认选择第一个尾迹")
 
     local sortedList = self:GetSortedTrailList()
 
     if #sortedList > 0 then
         local firstTrail = sortedList[1].info
-        --gg.log("默认选择尾迹:", firstTrail.trailName)
+        ----gg.log("默认选择尾迹:", firstTrail.trailName)
         self:OnTrailSlotClick(firstTrail.slotIndex, firstTrail)
     else
-        --gg.log("没有尾迹可供选择，清空详情")
+        ----gg.log("没有尾迹可供选择，清空详情")
         self.selectedTrail = nil
         self:RefreshSelectedTrailDisplay()
     end

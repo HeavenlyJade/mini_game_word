@@ -206,9 +206,7 @@ function SceneNodeHandlerBase:OnInit(node, config, debugId)
     self.uuid2Entity = {}
     self.tick = 0
     self.entitiesInZone = {}
-    --【核心修正】不再在顶部require，以避免循环依赖
-    -- local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
-    -- ServerDataManager.addSceneNodeHandler(self)
+
 
     if config.timedCommands and #config.timedCommands > 0 then
         for _, cmd in ipairs(config.timedCommands) do
