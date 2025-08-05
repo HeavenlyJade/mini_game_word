@@ -65,6 +65,11 @@ function PlayerActionHandler:SubscribeServerEvents()
         -- 将事件分发到独立的方法中处理
         self:OnReceiveLaunchCommand(data)
     end)
+    
+    -- 订阅导航事件
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION, function(data)
+        self:OnNavigateToPosition(data)
+    end)
 end
 
 --- 处理来自服务端的通用"发射"或"开始特殊模式"指令
@@ -93,6 +98,56 @@ function PlayerActionHandler:OnReceiveLaunchCommand(data)
     self.activeModule = ModuleClass.New(self) -- 将自身作为 handler 传入
     if self.activeModule.OnStart then
         self.activeModule:OnStart(data)
+    end
+end
+
+--- 处理导航到指定位置的请求
+---@param data NavigateToPositionParams 导航数据
+function PlayerActionHandler:OnNavigateToPosition(data)
+    --gg.log("PlayerActionHandler: 接收到导航请求, 数据: ", gg.table2str(data))
+    if not data or not data.position then
+        --gg.log("PlayerActionHandler: 导航请求缺少位置信息")
+        return
+    end
+    
+    local actor = gg.getClientLocalPlayer()
+    if not actor then
+        --gg.log("PlayerActionHandler: 无法获取本地玩家Actor")
+        return
+    end
+    
+    -- 执行导航
+    actor:NavigateTo(data.position)
+    
+    if data.message then
+        --gg.log("PlayerActionHandler: " .. data.message)
+    else
+    --gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(data.position))
+    end
+end
+
+--- 客户端导航方法 - 供其他模块调用
+---@param targetPosition Vector3 目标位置
+---@param message string 可选的消息
+function PlayerActionHandler:NavigateToPosition(targetPosition, message)
+    if not targetPosition then
+        --gg.log("PlayerActionHandler: 导航目标位置为空")
+        return
+    end
+    
+    local actor = gg.getClientLocalPlayer()
+    if not actor then
+        --gg.log("PlayerActionHandler: 无法获取本地玩家Actor")
+        return
+    end
+    
+    -- 直接执行导航
+    actor:NavigateTo(targetPosition)
+    
+    if message then
+        --gg.log("PlayerActionHandler: " .. message)
+    else
+        --gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition))
     end
 end
 

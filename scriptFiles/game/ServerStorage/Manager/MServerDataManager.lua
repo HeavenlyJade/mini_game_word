@@ -19,6 +19,7 @@ local MServerDataManager = {
     BagMgr = nil, ---@type BagMgr | nil
     PartnerMgr = nil, ---@type PartnerMgr | nil
     WingMgr = nil, ---@type WingMgr | nil
+    TrailMgr = nil, ---@type TrailMgr | nil
     GameModeManager = nil, ---@type GameModeManager | nil
     CommandManager= nil, ---@type CommandManager | nil
     GlobalMailManager = nil, ---@type GlobalMailManager | nil

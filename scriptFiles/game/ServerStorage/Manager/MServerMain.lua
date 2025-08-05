@@ -88,7 +88,7 @@ end
 
 
 function MainServer.initModule()
-    --gg.log("初始化模块")
+    gg.log("初始化模块")
     -- 【新增】初始化全局任务调度器
     local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
     ScheduledTask.Init()
@@ -110,7 +110,7 @@ function MainServer.initModule()
     serverDataMgr.TrailMgr = TrailMgr
     serverDataMgr.GameModeManager = GameModeManager
     serverDataMgr.AchievementMgr = AchievementMgr
-
+    gg.log("初始化事件管理器和命令管理器")
     -- 初始化事件管理器和命令管理器
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
     local BagEventManager = require(ServerStorage.MSystems.Bag.BagEventManager) ---@type BagEventManager
@@ -122,8 +122,7 @@ function MainServer.initModule()
     local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
     local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
-    local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
-    local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
+
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
 
@@ -135,16 +134,18 @@ function MainServer.initModule()
     TrailEventManager.Init()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
-    AutoRaceEventManager.Init()
+    gg.log("初始化事件管理器和命令管理器1111")
+
+ 
+    SceneNodeManager.Init()
+    local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+    local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
     AutoRaceManager.Init()
-
-    -- 初始化场景交互系统
-    SceneNodeManager:Init()
+    AutoRaceEventManager.Init()
 
 
 
-
-    --gg.log("模块初始化完成")
+    gg.log("模块初始化完成")
 end
 
 -- --设置碰撞组

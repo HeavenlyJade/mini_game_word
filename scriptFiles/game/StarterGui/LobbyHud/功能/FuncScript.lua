@@ -19,7 +19,7 @@ local uiConfig = {
 
 ---@override 
 function FuncScript:OnInit(node, config)
-    --gg.log("FuncScript 功能模块初始化")
+    gg.log("FuncScript 功能模块初始化")
     
     -- 获取主要UI节点
     self.backgroundPanel = self:Get("底图", ViewComponent) ---@type ViewComponent
@@ -55,7 +55,7 @@ end
 
 -- 自动挂机功能处理
 function FuncScript:HandleAutoPlay()
-    --gg.log("触发自动挂机功能")
+    gg.log("触发自动挂机功能")
     
     -- 发送自动挂机请求到服务端
     gg.network_channel:FireServer({
@@ -74,7 +74,7 @@ end
 
 -- 自动比赛功能处理
 function FuncScript:HandleAutoRace()
-    --gg.log("触发自动比赛功能")
+    gg.log("触发自动比赛功能")
     
     -- 更新本地状态
     self.autoRaceState = not (self.autoRaceState or false)
@@ -94,7 +94,7 @@ end
 
 -- 脱离卡死功能处理
 function FuncScript:HandleUnstuck()
-    --gg.log("触发脱离卡死功能")
+    gg.log("触发脱离卡死功能")
     
     -- 发送脱离卡死请求到服务端
     gg.network_channel:FireServer({
@@ -102,7 +102,7 @@ function FuncScript:HandleUnstuck()
     })
     
     -- 显示提示信息
-    --gg.log("已发送脱离卡死请求")
+    gg.log("已发送脱离卡死请求")
 end
 
 -- 功能列表项点击处理

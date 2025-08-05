@@ -26,18 +26,18 @@ function AutoRaceManager.StartAutoRaceCheck()
         ScheduledTask.Remove(autoRaceCheckTimer)
     end
     
-    autoRaceCheckTimer = ScheduledTask.AddInterval(5, "AutoRaceCheck", function()
+    autoRaceCheckTimer = ScheduledTask.AddInterval(3, "AutoRaceCheck", function()
         AutoRaceManager.CheckAllPlayersAutoRace()
     end)
     
-    gg.log("自动比赛检查定时器已启动，每5秒检查一次")
+    --gg.log("自动比赛检查定时器已启动，每5秒检查一次")
 end
 
 -- 检查所有玩家的自动比赛状态
 function AutoRaceManager.CheckAllPlayersAutoRace()
     local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     
-    gg.log("playerAutoRaceState", playerAutoRaceState)
+    --gg.log("playerAutoRaceState", playerAutoRaceState)
     
     -- 检查是否有启用自动比赛的玩家
     local hasEnabledPlayers = false
@@ -87,7 +87,7 @@ function AutoRaceManager.StartAutoRace(mPlayer)
     -- 查找飞行比赛节点
     local raceNodes = SceneNodeType.FindRaceNodesByScene("init_map")
     if #raceNodes == 0 then
-        gg.log("未找到可用的飞行比赛节点")
+        --gg.log("未找到可用的飞行比赛节点")
         return
     end
     
@@ -98,30 +98,30 @@ function AutoRaceManager.StartAutoRace(mPlayer)
     -- 解析节点路径，获取场景节点
     local sceneNode = gg.GetChild(game.WorkSpace, nodePath)
     if not sceneNode then
-        gg.log("无法找到比赛节点:", nodePath)
+        --gg.log("无法找到比赛节点:", nodePath)
         return
     end
     
     -- 获取导航节点位置
     local navNodeName = raceNode.areaConfig["导航节点"]
     if not navNodeName or navNodeName == "" then
-        gg.log("比赛节点没有配置导航节点:", nodePath)
+        --gg.log("比赛节点没有配置导航节点:", nodePath)
         return
     end
     
     -- 查找导航节点
     local navNode = sceneNode[navNodeName]
     if not navNode then
-        gg.log("无法找到导航节点:", navNodeName)
+        --gg.log("无法找到导航节点:", navNodeName)
         return
     end
     
-    -- 使用导航功能让玩家自动导航到导航节点位置
-    if mPlayer.actor then
-        local targetPosition = navNode.Position
-        mPlayer.actor:NavigateTo(targetPosition)
-        gg.log("已让玩家", uin, "导航到比赛节点位置:", tostring(targetPosition))
-    end
+    -- 通过事件管理器发送导航指令到客户端
+    local targetPosition = navNode.Position
+    local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+    AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, "自动导航到比赛节点位置")
+    
+    --gg.log("已发送导航指令给玩家", uin, "，目标位置:", tostring(targetPosition))
 end
 
 -- 停止自动比赛
@@ -131,7 +131,7 @@ function AutoRaceManager.StopAutoRace(mPlayer)
     
     local uin = mPlayer.uin
     playerAutoRaceState[uin] = nil
-    gg.log("已停止玩家", uin, "的自动比赛")
+    --gg.log("已停止玩家", uin, "的自动比赛")
 end
 
 -- 设置玩家自动比赛状态

@@ -7,6 +7,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 ---@class AutoRaceEventManager
 local AutoRaceEventManager = {}
@@ -22,13 +23,13 @@ AutoRaceEventManager.RESPONSE = {
 
 AutoRaceEventManager.NOTIFY = {
     AUTO_RACE_STARTED = "AutoRaceStarted",
-    AUTO_RACE_STOPPED = "AutoRaceStopped"
+    AUTO_RACE_STOPPED = "AutoRaceStopped",
+    NAVIGATE_TO_POSITION = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION
 }
 
 -- 初始化自动比赛事件管理器
 function AutoRaceEventManager.Init()
     AutoRaceEventManager.RegisterEventHandlers()
-    --gg.log("AutoRaceEventManager 初始化完成")
 end
 
 -- 注册所有事件处理器
@@ -39,6 +40,25 @@ function AutoRaceEventManager.RegisterEventHandlers()
     end)
     
     --gg.log("已注册自动比赛事件处理器")
+end
+
+-- 发送导航指令到客户端
+---@param uin number 玩家UIN
+---@param targetPosition Vector3 目标位置
+---@param message string 可选的消息
+function AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, message)
+    if not uin or not targetPosition then
+        --gg.log("导航指令参数不完整")
+        return
+    end
+    
+    gg.network_channel:fireClient(uin, {
+        cmd = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION,
+        position = targetPosition,
+        message = message or "导航到指定位置"
+    })
+    
+    --gg.log("已发送导航指令给玩家", uin, "，目标位置:", tostring(targetPosition))
 end
 
 -- 验证玩家

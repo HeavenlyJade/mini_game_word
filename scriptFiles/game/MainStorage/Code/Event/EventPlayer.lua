@@ -12,6 +12,10 @@ local EventPlayerConfig = {}
 ---@field jumpDuration number
 ---@field gameMode string
 
+---@class NavigateToPositionParams
+---@field position Vector3 目标位置
+---@field message string 可选的消息
+
 --[[
 ===================================
 网络事件定义
@@ -32,6 +36,7 @@ EventPlayerConfig.NOTIFY = {
     PLAYER_DATA_SYNC_VARIABLE = "PlayerDataSync_Variable", -- 同步变量
     PLAYER_DATA_SYNC_QUEST = "PlayerDataSync_Quest", -- 同步任务
     PLAYER_DATA_LOADED = "PlayerDataLoaded", -- 玩家数据加载完成
+    NAVIGATE_TO_POSITION = "NavigateToPosition", -- 导航到指定位置
 }
 
 --[[

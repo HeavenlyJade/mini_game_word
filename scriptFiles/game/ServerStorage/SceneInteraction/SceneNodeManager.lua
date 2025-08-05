@@ -21,7 +21,7 @@ local HANDLER_TYPE_MAP = {
 }
 
 --- 初始化所有在配置中定义的场景节点
-function SceneNodeManager:Init()
+function SceneNodeManager.Init()
     --gg.log("SceneNodeManager: 开始初始化场景交互节点...")
     local allNodeConfigs = ConfigLoader.GetAllSceneNodes()
     if not allNodeConfigs or next(allNodeConfigs) == nil then
