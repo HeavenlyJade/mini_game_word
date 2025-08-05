@@ -122,7 +122,8 @@ function MainServer.initModule()
     local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
     local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
-
+    local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+    local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
 
@@ -134,9 +135,14 @@ function MainServer.initModule()
     TrailEventManager.Init()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
+    AutoRaceEventManager.Init()
+    AutoRaceManager.Init()
 
     -- 初始化场景交互系统
     SceneNodeManager:Init()
+
+
+
 
     --gg.log("模块初始化完成")
 end

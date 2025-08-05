@@ -87,6 +87,12 @@ function GameModeManager:RemovePlayerFromCurrentMode(mPlayer)
     end
 end
 
+--- 检查玩家是否在某个游戏模式中
+---@param uin number 玩家UIN
+---@return boolean 是否在模式中
+function GameModeManager:IsPlayerInMode(uin)
+    return self.playerModes[uin] ~= nil
+end
 
 -- 监听玩家离开事件，自动将其从模式中移除
 game:GetService("Players").PlayerRemoving:Connect(function(player)
