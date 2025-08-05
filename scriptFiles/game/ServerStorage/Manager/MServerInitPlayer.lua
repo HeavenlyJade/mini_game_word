@@ -75,7 +75,7 @@ function MServerInitPlayer.register_player_in_out()
                 break
             end
         end
-        MServerInitPlayer.player_leave_game(player)
+        -- MServerInitPlayer.player_leave_game(player)
     end)
 end
 
@@ -86,7 +86,7 @@ function MServerInitPlayer.player_enter_game(player)
 
     local uin_ = player.UserId
     if serverDataMgr.server_players_list[uin_] then
-        --gg.log('WARNING, Same uin enter game:', uin_)
+        gg.log('WARNING, Same uin enter game:', uin_)
 
         -- 清理旧的玩家实例（防止重复登录）
         local oldPlayer = serverDataMgr.server_players_list[uin_]
@@ -134,8 +134,9 @@ function MServerInitPlayer.player_enter_game(player)
     player_:setGameActor(player_actor_)     --player
     player_actor_.CollideGroupID = 4
 
+    -- 【新增】确保装饰性对象的同步设置正确
+    MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_)
 
-    ServerEventManager.Publish("PlayerInited", {player = player_})
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
     
     -- 【新增】初始化玩家场景为init_map
@@ -163,6 +164,32 @@ function MServerInitPlayer.player_enter_game(player)
     gg.log("玩家进入了游戏", gg.player_scene_map,player)
 
 
+end
+
+-- 【新增】确保装饰性对象的同步设置正确
+function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor)
+    if not player_actor then
+        return
+    end
+
+    -- 装饰性对象的名称列表
+    local decorativeObjectNames = {
+        "Pet1", "Pet2", "Pet3", "Pet4", "Pet5", "Pet6",
+        "Partner1", "Partner2",
+        "Wings1",
+        "尾迹"
+    }
+
+    for _, objectName in ipairs(decorativeObjectNames) do
+        local decorativeNode = player_actor:FindFirstChild(objectName)
+        if decorativeNode then
+            -- 确保同步设置正确
+            decorativeNode.IgnoreStreamSync = false
+            -- decorativeNode.SyncMode = Enum.NodeSyncMode.NORMAL
+            -- decorativeNode.Visible = true
+            --gg.log("已修复装饰性对象同步设置:", objectName)
+        end
+    end
 end
 
 -- 向客户端同步玩家数据
@@ -239,13 +266,6 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     end
 
     -- 获取任务数据
-    local questData = mplayer.questData or {}
-
-    gg.network_channel:fireClient(uin, {
-        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_QUEST,
-        questData = questData,
-    })
-
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)
 
@@ -253,7 +273,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
 end
 -- 玩家离开游戏
 function MServerInitPlayer.player_leave_game(player)
-    --gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
+    gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
     local uin_ = player.UserId
 
     local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer

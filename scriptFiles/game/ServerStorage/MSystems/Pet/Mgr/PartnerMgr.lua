@@ -496,6 +496,10 @@ function PartnerMgr.UpdateAllEquippedPartnerModels(player)
                     if partnerConfig and partnerConfig.modelResource and partnerConfig.modelResource ~= "" then
                         partnerNode.ModelId = partnerConfig.modelResource
                         partnerNode.Visible = true
+                        
+                        -- 【新增】确保同步设置正确
+                        partnerNode.IgnoreStreamSync = false
+                        partnerNode.SyncMode = Enum.NodeSyncMode.NORMAL
 
                         -- 【新增】更新动画控制器
                         local animatorNode = partnerNode:FindFirstChild("Animator")

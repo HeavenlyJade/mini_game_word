@@ -79,9 +79,6 @@ function MainServer.start_server()
     MainServer.bind_save_data_tick()      --开始定时存盘
     MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     MServerInitPlayer.setInitFinished(true)  -- 设置初始化完成
-    for _, child in pairs(MainStorage.Code.Common.Config.Children) do
-        require(child)
-    end
     --gg.log("结束服务器")
 
 end
@@ -227,17 +224,6 @@ end
 --定时器update
 function MainServer.update()
     serverDataMgr.tick = serverDataMgr.tick + 1
-
-    -- 更新场景的逻辑已移至 SceneControllerHandler:OnUpdate()
-    -- for _, scene_ in pairs(serverDataMgr.getAllScenes()) do
-    --     scene_:update()
-    -- end
-
-    -- 更新调度器（按秒为单位，而不是每tick）(已废弃)
-    -- ServerScheduler.tick = serverDataMgr.tick
-    -- if ServerScheduler.updateTiming() then
-    --     ServerScheduler.update()
-    -- end
 end
 
 return MainServer;
