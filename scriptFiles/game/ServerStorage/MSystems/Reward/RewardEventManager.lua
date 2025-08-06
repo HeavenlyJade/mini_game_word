@@ -71,8 +71,8 @@ function RewardEventManager.HandleGetOnlineRewardData(player, evt)
     end
     
     -- 发送成功响应
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    ServerEventManager.SendToClient(player.uin, RewardEvent.RESPONSE.ONLINE_REWARD_DATA, {
+    gg.network_channel:fireClient(player.uin, {
+        cmd = RewardEvent.RESPONSE.ONLINE_REWARD_DATA,
         success = true,
         data = status,
         errorMsg = nil
@@ -105,8 +105,8 @@ function RewardEventManager.HandleClaimOnlineReward(player, evt)
         local reward = rewardInstance and rewardInstance.onlineConfig:GetRewardByIndex(index)
         
         -- 发送成功响应
-        local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-        ServerEventManager.SendToClient(player.uin, RewardEvent.RESPONSE.CLAIM_REWARD_RESULT, {
+        gg.network_channel:fireClient(player.uin, {
+            cmd = RewardEvent.RESPONSE.CLAIM_REWARD_RESULT,
             success = true,
             index = index,
             reward = reward and reward.rewardItems,
@@ -152,8 +152,8 @@ function RewardEventManager.HandleClaimAllOnlineRewards(player, evt)
         end
         
         -- 发送成功响应
-        local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-        ServerEventManager.SendToClient(player.uin, RewardEvent.RESPONSE.CLAIM_ALL_RESULT, {
+        gg.network_channel:fireClient(player.uin, {
+            cmd = RewardEvent.RESPONSE.CLAIM_ALL_RESULT,
             success = true,
             count = successCount,
             rewards = allRewards,
@@ -178,8 +178,8 @@ function RewardEventManager.HandleGetRedDotStatus(player, evt)
     local hasAvailable = RewardMgr.HasAvailableReward(player.uin)
     
     -- 发送响应
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    ServerEventManager.SendToClient(player.uin, RewardEvent.RESPONSE.RED_DOT_STATUS, {
+    gg.network_channel:fireClient(player.uin, {
+        cmd = RewardEvent.RESPONSE.RED_DOT_STATUS,
         hasAvailable = hasAvailable
     })
 end
@@ -204,8 +204,8 @@ function RewardEventManager.HandleSwitchConfig(player, evt)
     
     if success then
         -- 发送成功响应
-        local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-        ServerEventManager.SendToClient(player.uin, RewardEvent.RESPONSE.SWITCH_CONFIG_RESULT, {
+        gg.network_channel:fireClient(player.uin, {
+            cmd = RewardEvent.RESPONSE.SWITCH_CONFIG_RESULT,
             success = true,
             newConfig = configName,
             errorMsg = nil
@@ -227,8 +227,9 @@ function RewardEventManager.NotifyDataSync(player, status)
         return
     end
     
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    ServerEventManager.SendToClient(player.uin, RewardEvent.NOTIFY.DATA_SYNC, {
+    -- 使用与 PartnerEventManager 相同的方式发送事件
+    gg.network_channel:fireClient(player.uin, {
+        cmd = RewardEvent.NOTIFY.DATA_SYNC,
         onlineStatus = status,
         hasAvailable = RewardMgr.HasAvailableReward(player.uin)
     })
@@ -243,12 +244,33 @@ function RewardEventManager.NotifyNewAvailable(player)
         return
     end
     
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    ServerEventManager.SendToClient(player.uin, RewardEvent.NOTIFY.NEW_AVAILABLE, {
-        hasAvailable = true
+    -- 获取可领取的奖励索引
+    local rewardInstance = RewardMgr.GetPlayerReward(player.uin)
+    local availableIndices = {}
+    
+    if rewardInstance then
+        availableIndices = rewardInstance:GetAvailableOnlineRewards()
+    end
+    
+    local eventData = {
+        hasAvailable = #availableIndices > 0,
+        availableIndices = availableIndices,
+        onlineTime = rewardInstance and rewardInstance.onlineData.roundOnlineTime or 0
+    }
+    
+    gg.log(string.format("服务端准备发送新奖励可领取通知给玩家 %d，事件名: %s，数据: %s", 
+        player.uin, RewardEvent.NOTIFY.NEW_AVAILABLE, table.concat(availableIndices, ", ")))
+    
+    -- 使用与 PartnerEventManager 相同的方式发送事件
+    gg.network_channel:fireClient(player.uin, {
+        cmd = RewardEvent.NOTIFY.NEW_AVAILABLE,
+        hasAvailable = eventData.hasAvailable,
+        availableIndices = eventData.availableIndices,
+        onlineTime = eventData.onlineTime
     })
     
-    gg.log(string.format("已发送新奖励可领取通知给玩家 %d", player.uin))
+    gg.log(string.format("已发送新奖励可领取通知给玩家 %d，可领取索引: %s", 
+        player.uin, table.concat(availableIndices, ", ")))
 end
 
 --- 通知奖励已领取（多端同步）
@@ -261,8 +283,9 @@ function RewardEventManager.NotifyRewardClaimed(player, rewardType, index, rewar
         return
     end
     
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    ServerEventManager.SendToClient(player.uin, RewardEvent.NOTIFY.REWARD_CLAIMED, {
+    -- 使用与 PartnerEventManager 相同的方式发送事件
+    gg.network_channel:fireClient(player.uin, {
+        cmd = RewardEvent.NOTIFY.REWARD_CLAIMED,
         type = rewardType,
         index = index,
         reward = reward
@@ -278,8 +301,8 @@ function RewardEventManager.NotifyRoundReset(player, newRound, reason)
         return
     end
     
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    ServerEventManager.SendToClient(player.uin, RewardEvent.NOTIFY.ROUND_RESET, {
+    gg.network_channel:fireClient(player.uin, {
+        cmd = RewardEvent.NOTIFY.ROUND_RESET,
         newRound = newRound,
         reason = reason or "all_claimed"
     })
@@ -294,8 +317,8 @@ function RewardEventManager.NotifyDailyReset(player, date, todayOnlineTime)
         return
     end
     
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    ServerEventManager.SendToClient(player.uin, RewardEvent.NOTIFY.DAILY_RESET, {
+    gg.network_channel:fireClient(player.uin, {
+        cmd = RewardEvent.NOTIFY.DAILY_RESET,
         date = date,
         todayOnlineTime = todayOnlineTime or 0
     })
@@ -308,8 +331,8 @@ end
 ---@param eventName string 事件名称
 ---@param errorMsg string 错误信息
 function RewardEventManager.SendErrorResponse(player, eventName, errorMsg)
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    ServerEventManager.SendToClient(player.uin, eventName, {
+    gg.network_channel:fireClient(player.uin, {
+        cmd = eventName,
         success = false,
         errorMsg = errorMsg
     })

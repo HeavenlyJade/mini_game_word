@@ -259,6 +259,7 @@ function OnlineRewardsGui:RegisterEvents()
     
     -- 监听新奖励可领取通知
     ClientEventManager.Subscribe(RewardEvent.NOTIFY.NEW_AVAILABLE, function(data)
+        gg.log("客户端收到 RewardEvent.NOTIFY.NEW_AVAILABLE 事件:", data)
         self:OnNewAvailable(data)
     end)
     
@@ -383,13 +384,15 @@ end
 -- =================================
 
 function OnlineRewardsGui:RequestRewardData()
-    ClientEventManager.FireServerEvent(RewardEvent.REQUEST.GET_ONLINE_REWARD_DATA, {
+    gg.network_channel:FireServer({
+        cmd = RewardEvent.REQUEST.GET_ONLINE_REWARD_DATA,
         configName = self.currentConfig
     })
 end
 
 function OnlineRewardsGui:ClaimReward(index)
-    ClientEventManager.FireServerEvent(RewardEvent.REQUEST.CLAIM_ONLINE_REWARD, {
+    gg.network_channel:FireServer({
+        cmd = RewardEvent.REQUEST.CLAIM_ONLINE_REWARD,
         index = index,
         configName = self.currentConfig
     })
@@ -398,7 +401,8 @@ function OnlineRewardsGui:ClaimReward(index)
 end
 
 function OnlineRewardsGui:ClaimAllRewards()
-    ClientEventManager.FireServerEvent(RewardEvent.REQUEST.CLAIM_ALL_ONLINE_REWARDS, {
+    gg.network_channel:FireServer({
+        cmd = RewardEvent.REQUEST.CLAIM_ALL_ONLINE_REWARDS,
         configName = self.currentConfig
     })
     
@@ -470,9 +474,17 @@ function OnlineRewardsGui:OnDataSync(data)
 end
 
 function OnlineRewardsGui:OnNewAvailable(data)
+    gg.log("客户端收到新奖励可领取通知:", data)
     if data.hasAvailable then
         -- 可以在这里添加红点提示或其他UI反馈
-        gg.log("有新的奖励可领取")
+        gg.log(string.format("有新的奖励可领取，在线时长: %d 秒，可领取索引: %s", 
+            data.onlineTime or 0, table.concat(data.availableIndices or {}, ", ")))
+        
+        -- 如果有具体的可领取索引，可以立即更新UI
+        if data.availableIndices and #data.availableIndices > 0 then
+            -- 可以在这里添加红点提示或其他视觉反馈
+            gg.log(string.format("发现 %d 个新可领取奖励", #data.availableIndices))
+        end
     end
 end
 

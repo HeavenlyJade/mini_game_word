@@ -214,8 +214,9 @@ function RewardType:GetAvailableRewards(onlineTime, claimedIndices)
         for _, index in ipairs(available) do
             local reward = self:GetRewardByIndex(index)
             if reward then
+                local formattedTime = self:FormatTime(reward.timeNode)
                 gg.log(string.format("  - 奖励 %d: 时间节点 %d 秒 (%s)", 
-                    index, reward.timeNode, self:FormatTime(reward.timeNode)))
+                    index, reward.timeNode, formattedTime))
             end
         end
     end
@@ -311,7 +312,14 @@ function RewardType:FormatTime(seconds)
     local minutes = math.floor(seconds / 60)
     local hours = math.floor(minutes / 60)
     minutes = minutes % 60
-    return string.format("%02d:%02d", hours, minutes)
+    local secs = seconds % 60
+    
+    -- 调试日志
+    gg.log(string.format("FormatTime 调试: 输入 %d 秒, 计算: 小时=%d, 分钟=%d, 秒=%d", 
+        seconds, hours, minutes, secs))
+    
+    -- 修复：应该显示分钟:秒，而不是小时:分钟
+    return string.format("%02d:%02d", minutes, secs)
 end
 
 --- 获取奖励预览数据（用于UI展示）
