@@ -3,6 +3,7 @@ local Vec2 = require(MainStorage.Code.Untils.Math.Vec2) ---@type Vec2
 local Vec3 = require(MainStorage.Code.Untils.Math.Vec3) ---@type Vec3
 local Vec4 = require(MainStorage.Code.Untils.Math.Vec4)
 local Quat = require(MainStorage.Code.Untils.Math.Quat)
+local json = require(MainStorage.Code.Untils.json) ---@type json
 
 local inputservice = game:GetService("UserInputService")
 local Players = game:GetService('Players')
@@ -26,6 +27,7 @@ local gg = {
     VECDOWN = Vector3.New(0, -1, 0), -- 向下方向 y-
 
     noise = require(MainStorage.Code.Untils.Math.PerlinNoise),
+    json = json, ---@type json
     uuid_start = nil,
     CommandManager = nil, ---@type CommandManager
     GlobalMailManager = nil, ---@type GlobalMailManager
@@ -1223,7 +1225,7 @@ if gg.isServer then
     -- 延迟加载服务端数据管理器以避免循环依赖
     local function getServerDataMgr()
         if not gg._serverDataMgr then
-            gg._serverDataMgr = require(game:GetService("ServerStorage").server.MServerDataManager)
+            gg._serverDataMgr = require(game:GetService("ServerStorage").Manager.MServerDataManager)
         end
         return gg._serverDataMgr
     end

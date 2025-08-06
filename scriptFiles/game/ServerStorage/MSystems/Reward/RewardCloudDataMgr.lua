@@ -60,14 +60,6 @@ end
 ---@param rewardData RewardCloudData 奖励数据
 ---@param force_ boolean 是否强制保存，不检查时间间隔
 function RewardCloudDataMgr.SavePlayerRewardData(uin, rewardData, force_)
-    if force_ == false then
-        local now_ = os.time()
-        if now_ - RewardCloudDataMgr.last_time_reward < CONST_CLOUD_SAVE_TIME then
-            return
-        else
-            RewardCloudDataMgr.last_time_reward = now_
-        end
-    end
 
     if uin and rewardData then
         -- 添加元数据

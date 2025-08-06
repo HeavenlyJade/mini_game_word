@@ -52,9 +52,9 @@ function Reward:LoadOnlineConfig()
     
     if configData then
         self.onlineConfig = RewardType.New(configData)
-        --gg.log(string.format("玩家 %d 加载在线奖励配置: %s", self.uin, self.onlineData.configName))
+        ----gg.log(string.format("玩家 %d 加载在线奖励配置: %s", self.uin, self.onlineData.configName))
     else
-        --gg.log(string.format("错误: 找不到在线奖励配置: %s", self.onlineData.configName))
+        ----gg.log(string.format("错误: 找不到在线奖励配置: %s", self.onlineData.configName))
     end
 end
 
@@ -80,7 +80,7 @@ function Reward:UpdateOnlineTime(deltaTime)
     if self.onlineData.lastLoginDate ~= currentDate then
         self.onlineData.todayOnlineTime = 0
         self.onlineData.lastLoginDate = currentDate
-        gg.log(string.format("玩家 %d 新的一天，重置每日在线时长", self.uin))
+        --gg.log(string.format("玩家 %d 新的一天，重置每日在线时长", self.uin))
     end
     
     -- 获取更新前的状态
@@ -97,21 +97,18 @@ function Reward:UpdateOnlineTime(deltaTime)
     
     -- 检查是否有新的奖励变为可领取
     if newAvailableCount > oldAvailableCount then
-        gg.log(string.format("玩家 %d 在线时长更新: %d -> %d, 新奖励可领取！可领取数量: %d -> %d", 
-            self.uin, oldRoundTime, newRoundTime, oldAvailableCount, newAvailableCount))
+  
         
         -- 打印可领取的奖励详情
         local availableRewards = self:GetAvailableOnlineRewards()
         for _, index in ipairs(availableRewards) do
             local reward = self.onlineConfig:GetRewardByIndex(index)
             if reward then
-                gg.log(string.format("  - 奖励 %d: 时间节点 %d 秒 (%s)", 
-                    index, reward.timeNode, self.onlineConfig:FormatTime(reward.timeNode)))
+     
             end
         end
     else
-        gg.log(string.format("玩家 %d 在线时长更新: %d -> %d, 可领取数量: %d (无变化)", 
-            self.uin, oldRoundTime, newRoundTime, newAvailableCount))
+
     end
     
     self.lastUpdateTime = gg.GetTimeStamp()
@@ -121,7 +118,7 @@ end
 ---@return table 可领取的奖励索引列表
 function Reward:GetAvailableOnlineRewards()
     if not self.onlineConfig then
-        gg.log(string.format("玩家 %d 在线奖励配置未加载", self.uin))
+        --gg.log(string.format("玩家 %d 在线奖励配置未加载", self.uin))
         return {}
     end
     
@@ -130,11 +127,6 @@ function Reward:GetAvailableOnlineRewards()
         self.onlineData.claimedIndices
     )
     
-    -- 调试日志：打印当前状态
-    if #availableRewards > 0 then
-        gg.log(string.format("玩家 %d 当前可领取奖励: 在线时长 %d 秒, 已领取 %d 个, 可领取 %d 个", 
-            self.uin, self.onlineData.roundOnlineTime, #self.onlineData.claimedIndices, #availableRewards))
-    end
     
     return availableRewards
 end
@@ -144,19 +136,19 @@ end
 ---@return table|nil 奖励内容
 ---@return string|nil 错误信息
 function Reward:ClaimOnlineReward(index)
-    gg.log("=== Reward:ClaimOnlineReward ===")
-    gg.log(string.format("玩家 %d 尝试领取奖励索引: %d", self.uin, index))
-    gg.log(string.format("当前在线时长: %d 秒", self.onlineData.roundOnlineTime))
+    --gg.log("=== Reward:ClaimOnlineReward ===")
+    --gg.log(string.format("玩家 %d 尝试领取奖励索引: %d", self.uin, index))
+    --gg.log(string.format("当前在线时长: %d 秒", self.onlineData.roundOnlineTime))
     
     if not self.onlineConfig then
-        gg.log("错误：配置未加载")
+        --gg.log("错误：配置未加载")
         return nil, "配置未加载"
     end
     
     -- 检查是否已领取
     for _, claimedIndex in ipairs(self.onlineData.claimedIndices) do
         if claimedIndex == index then
-            gg.log(string.format("错误：奖励索引 %d 已领取", index))
+            --gg.log(string.format("错误：奖励索引 %d 已领取", index))
             return nil, "奖励已领取"
         end
     end
@@ -164,34 +156,32 @@ function Reward:ClaimOnlineReward(index)
     -- 获取奖励配置
     local reward = self.onlineConfig:GetRewardByIndex(index)
     if not reward then
-        gg.log(string.format("错误：无效的奖励索引 %d", index))
+        --gg.log(string.format("错误：无效的奖励索引 %d", index))
         return nil, "无效的奖励索引"
     end
     
-    gg.log(string.format("奖励配置: 时间节点 %d 秒", reward.timeNode or 0))
+    --gg.log(string.format("奖励配置: 时间节点 %d 秒", reward.timeNode or 0))
     
     -- 严格检查时间是否满足
     if reward.timeNode then
         if self.onlineData.roundOnlineTime < reward.timeNode then
-            gg.log(string.format("错误：在线时长不足，需要 %d 秒，当前只有 %d 秒", 
-                reward.timeNode, self.onlineData.roundOnlineTime))
+   
             return nil, string.format("在线时长不足，需要 %d 秒，当前只有 %d 秒", 
                 reward.timeNode, self.onlineData.roundOnlineTime)
         else
-            gg.log(string.format("时间检查通过：当前时长 %d 秒 >= 需要时长 %d 秒", 
-                self.onlineData.roundOnlineTime, reward.timeNode))
+       
         end
     else
-        gg.log("警告：奖励没有设置时间节点")
+        --gg.log("警告：奖励没有设置时间节点")
     end
     
     -- 记录已领取
     table.insert(self.onlineData.claimedIndices, index)
-    gg.log(string.format("已将奖励索引 %d 添加到已领取列表", index))
+    --gg.log(string.format("已将奖励索引 %d 添加到已领取列表", index))
     
     -- 检查是否需要重置（全部领取完）
     if self.onlineConfig:IsAllClaimed(self.onlineData.claimedIndices) then
-        gg.log("所有奖励已领取完毕，开始重置")
+        --gg.log("所有奖励已领取完毕，开始重置")
         self:ResetOnlineReward()
     end
     
@@ -199,17 +189,17 @@ function Reward:ClaimOnlineReward(index)
     if reward.claimCommand and reward.claimCommand ~= "" then
         local player = self:GetPlayer()
         if player then
-            gg.log(string.format("执行临取指令: %s", reward.claimCommand))
+            --gg.log(string.format("执行临取指令: %s", reward.claimCommand))
             executeCommand(player, reward.claimCommand)
         else
-            gg.log("警告：找不到玩家对象，无法执行临取指令")
+            --gg.log("警告：找不到玩家对象，无法执行临取指令")
         end
     else
-        gg.log("该奖励没有临取指令")
+        --gg.log("该奖励没有临取指令")
     end
     
-    gg.log(string.format("玩家 %d 成功领取在线奖励 %d", self.uin, index))
-    gg.log("=== Reward:ClaimOnlineReward 结束 ===")
+    --gg.log(string.format("玩家 %d 成功领取在线奖励 %d", self.uin, index))
+    --gg.log("=== Reward:ClaimOnlineReward 结束 ===")
     
     return reward.rewardItems
 end
@@ -238,7 +228,7 @@ function Reward:ResetOnlineReward()
     self.onlineData.currentRound = self.onlineData.currentRound + 1
     self.onlineData.roundOnlineTime = 0
     self.onlineData.claimedIndices = {}
-    --gg.log(string.format("玩家 %d 在线奖励重置，进入第 %d 轮", self.uin, self.onlineData.currentRound))
+    ----gg.log(string.format("玩家 %d 在线奖励重置，进入第 %d 轮", self.uin, self.onlineData.currentRound))
 end
 
 --- 获取下一个奖励的剩余时间
@@ -375,7 +365,7 @@ function Reward:SwitchConfig(configName)
     -- 重新加载配置
     self:LoadOnlineConfig()
     
-    --gg.log(string.format("玩家 %d 切换在线奖励配置为: %s", self.uin, configName))
+    ----gg.log(string.format("玩家 %d 切换在线奖励配置为: %s", self.uin, configName))
 end
 
 --- 获取玩家对象

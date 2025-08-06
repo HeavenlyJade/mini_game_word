@@ -87,7 +87,7 @@ end
 function RewardEventManager.HandleClaimOnlineReward(player, evt)
     gg.log("=== 服务端处理领取奖励请求 ===")
     gg.log(string.format("玩家: %s (ID: %d)", player.name or "未知", player.uin or 0))
-    gg.log(string.format("事件数据: %s", gg.json.encode(evt or {})))
+    gg.log("evt",evt)
     
     if not player or not player.uin then
         gg.log("错误：玩家对象无效")

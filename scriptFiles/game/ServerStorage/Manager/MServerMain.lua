@@ -20,15 +20,12 @@ local ServerStorage = game:GetService("ServerStorage")
 local MS = require(MainStorage.Code.Untils.MS) ---@type MS
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
-local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
--- local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene -- 不再需要
 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local MServerInitPlayer = require(ServerStorage.Manager.MServerInitPlayer) ---@type MServerInitPlayer
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local SceneNodeManager = require(ServerStorage.SceneInteraction.SceneNodeManager) ---@type SceneNodeManager
-local cloudDataMgr = require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type MCloudDataMgr
 
 -- 总入口
 
@@ -71,8 +68,9 @@ function MainServer.start_server()
     ConfigLoader.Init()
     math.randomseed(os.time() + gg.GetTimeStamp())
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
-    MainServer.initModule()
     MServerInitPlayer.register_player_in_out()   --玩家进出游戏
+
+    MainServer.initModule()
 
     MainServer.createNetworkChannel()     --建立网络通道
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
@@ -139,7 +137,6 @@ function MainServer.initModule()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
     RewardEventManager.Init()
-    gg.log("初始化事件管理器和命令管理器1111")
 
  
     SceneNodeManager.Init()

@@ -209,11 +209,21 @@ function RewardMgr.ClaimOnlineReward(player, index)
         return false, errorMsg or "领取失败"
     end
     
-    gg.log("奖励领取成功，开始发放奖励物品")
-    gg.log(string.format("奖励物品: %s", gg.json.encode(rewardItem or {})))
+    gg.log("奖励领取成功，开始发放奖励物品",rewardItem)
     
     -- 发放奖励物品
     local success = RewardMgr.GiveRewardToPlayer(player, rewardItem)
+    
+    if success then
+        -- 立即保存奖励数据
+        local rewardInstance = RewardMgr.playerRewards[player.uin]
+        if rewardInstance then
+            local saveData = rewardInstance:GetSaveData()
+            local RewardCloudDataMgr = require(ServerStorage.MSystems.Reward.RewardCloudDataMgr) ---@type RewardCloudDataMgr
+            RewardCloudDataMgr.SavePlayerRewardData(player.uin, saveData)
+            gg.log(string.format("奖励领取成功，已立即保存奖励数据: 玩家 %d, 奖励索引 %d", player.uin, index))
+        end
+    end
     
     gg.log("奖励发放成功，开始同步数据到客户端")
     
@@ -251,6 +261,17 @@ function RewardMgr.ClaimAllOnlineRewards(player)
         end
     end
     
+    -- 一键领取成功后立即保存奖励数据
+    if #successRewards > 0 then
+        local rewardInstance = RewardMgr.playerRewards[player.uin]
+        if rewardInstance then
+            local saveData = rewardInstance:GetSaveData()
+            local RewardCloudDataMgr = require(ServerStorage.MSystems.Reward.RewardCloudDataMgr) ---@type RewardCloudDataMgr
+            RewardCloudDataMgr.SavePlayerRewardData(player.uin, saveData)
+            gg.log(string.format("一键领取成功，已立即保存奖励数据: 玩家 %d, 领取数量 %d", player.uin, #successRewards))
+        end
+    end
+    
     ----gg.log(string.format("玩家 %s 一键领取 %d 个在线奖励", player.name, #successRewards))
     
     -- 同步数据到客户端
@@ -282,7 +303,7 @@ function RewardMgr.GiveRewardToPlayer(player, rewardItem)
         
         -- 调用背包系统添加物品
         local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-        return BagMgr.AddItem(player.uin, itemName, amount)
+        return BagMgr.AddItem(player, itemName, amount)
         
     elseif rewardType == "宠物" then
         -- 发放宠物
@@ -293,7 +314,7 @@ function RewardMgr.GiveRewardToPlayer(player, rewardItem)
         
         -- 调用宠物系统
         local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
-        return PetMgr.AddPet(player.uin, petConfig, amount)
+        return PetMgr.AddPet(player, petConfig, amount)
         
     elseif rewardType == "伙伴" then
         -- 发放伙伴
@@ -304,7 +325,7 @@ function RewardMgr.GiveRewardToPlayer(player, rewardItem)
         
         -- 调用伙伴系统
         local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
-        return PartnerMgr.AddPartner(player.uin, partnerConfig, amount)
+        return PartnerMgr.AddPartner(player, partnerConfig, amount)
         
     elseif rewardType == "翅膀" then
         -- 发放翅膀
@@ -315,7 +336,7 @@ function RewardMgr.GiveRewardToPlayer(player, rewardItem)
         
         -- 调用翅膀系统
         local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
-        return WingMgr.AddWing(player.uin, wingConfig, amount)
+        return WingMgr.AddWing(player, wingConfig, amount)
     end
     
     return false
@@ -368,11 +389,16 @@ function RewardMgr.SyncDataToClient(player)
         return
     end
     
-    -- 通过RewardEventManager发送数据同步事件
-    local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
-    RewardEventManager.NotifyDataSync(player, status)
+    -- 直接发送 ONLINE_REWARD_DATA 响应事件
+    local RewardEvent = require(MainStorage.Code.Event.RewardEvent) ---@type RewardEvent
+    gg.network_channel:fireClient(player.uin, {
+        cmd = RewardEvent.RESPONSE.ONLINE_REWARD_DATA,
+        success = true,
+        data = status,
+        errorMsg = nil
+    })
     
-    --gg.log(string.format("已同步奖励数据给玩家 %d", player.uin))
+    gg.log(string.format("已同步奖励数据给玩家 %d", player.uin))
 end
 
 --- 通知客户端有新的可领取奖励

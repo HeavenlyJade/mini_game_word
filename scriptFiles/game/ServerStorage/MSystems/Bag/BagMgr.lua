@@ -183,7 +183,7 @@ end
 ---@return boolean 是否添加成功
 function BagMgr.AddItem(player, itemName, amount)
     if not player or not itemName or not amount or amount <= 0 then
-        --gg.log("BagMgr.AddItem: 参数无效", player and player.uin or "nil", itemName, amount)
+        --gg.log("BagMgr.AddItem: 参数无效", player and (type(player) == "table" and player.uin or tostring(player)) or "nil", itemName, amount)
         return false
     end
 

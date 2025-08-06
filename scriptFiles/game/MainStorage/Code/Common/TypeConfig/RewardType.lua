@@ -209,14 +209,14 @@ function RewardType:GetAvailableRewards(onlineTime, claimedIndices)
     
     -- 调试日志：如果找到可领取的奖励，打印详细信息
     if #available > 0 then
-        gg.log(string.format("配置 %s: 在线时长 %d 秒, 已领取 %d 个, 找到 %d 个可领取奖励", 
-            self.configName, onlineTime, #claimedIndices, #available))
+        -- gg.log(string.format("配置 %s: 在线时长 %d 秒, 已领取 %d 个, 找到 %d 个可领取奖励", 
+        --     self.configName, onlineTime, #claimedIndices, #available))
         for _, index in ipairs(available) do
             local reward = self:GetRewardByIndex(index)
             if reward then
                 local formattedTime = self:FormatTime(reward.timeNode)
-                gg.log(string.format("  - 奖励 %d: 时间节点 %d 秒 (%s)", 
-                    index, reward.timeNode, formattedTime))
+                -- gg.log(string.format("  - 奖励 %d: 时间节点 %d 秒 (%s)", 
+                --     index, reward.timeNode, formattedTime))
             end
         end
     end

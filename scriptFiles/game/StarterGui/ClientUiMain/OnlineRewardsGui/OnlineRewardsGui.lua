@@ -25,6 +25,8 @@ local OnlineRewardsGui = ClassMgr.Class("OnlineRewardsGui", ViewBase)
 
 
 function OnlineRewardsGui:OnInit(node, config)
+    gg.log("=== OnlineRewardsGui 开始初始化 ===")
+    
     -- UI组件初始化
     self.closeButton = self:Get("在线奖励界面/关闭", ViewButton) ---@type ViewButton
     
@@ -75,7 +77,7 @@ function OnlineRewardsGui:OnInit(node, config)
     -- 初始化UI状态
     self:InitializeUI()
     
-    ----gg.log("OnlineRewardsGui 在线奖励界面初始化完成")
+    gg.log("=== OnlineRewardsGui 在线奖励界面初始化完成 ===")
 end
 
 
@@ -258,10 +260,11 @@ end
 -- =================================
 
 function OnlineRewardsGui:RegisterEvents()
-    ----gg.log("注册在线奖励系统事件监听")
+    gg.log("=== 注册在线奖励系统事件监听 ===")
     
     -- 监听在线奖励数据响应
     ClientEventManager.Subscribe(RewardEvent.RESPONSE.ONLINE_REWARD_DATA, function(data)
+        gg.log("客户端收到 ONLINE_REWARD_DATA 事件:", data)
         self:OnRewardDataResponse(data)
     end)
     
@@ -280,14 +283,11 @@ function OnlineRewardsGui:RegisterEvents()
         self:OnSwitchConfigResponse(data)
     end)
     
-    -- 监听数据同步通知
-    ClientEventManager.Subscribe(RewardEvent.NOTIFY.DATA_SYNC, function(data)
-        self:OnDataSync(data)
-    end)
+
     
     -- 监听新奖励可领取通知
     ClientEventManager.Subscribe(RewardEvent.NOTIFY.NEW_AVAILABLE, function(data)
-        ----gg.log("客户端收到 RewardEvent.NOTIFY.NEW_AVAILABLE 事件:", data)
+        gg.log("客户端收到 NEW_AVAILABLE 事件:", data)
         self:OnNewAvailable(data)
     end)
     
@@ -305,6 +305,8 @@ function OnlineRewardsGui:RegisterEvents()
     ClientEventManager.Subscribe(RewardEvent.NOTIFY.DAILY_RESET, function(data)
         self:OnDailyReset(data)
     end)
+    
+    gg.log("=== 在线奖励系统事件监听注册完成 ===")
 end
 
 -- =================================
@@ -493,29 +495,35 @@ end
 
 function OnlineRewardsGui:OnRewardDataResponse(data)
     if not data or not data.success then
-        ----gg.log("获取奖励数据失败:", data and data.errorMsg or "未知错误")
+        gg.log("获取奖励数据失败:", data and data.errorMsg or "未知错误")
         return
     end
-    --gg.log("奖励数据响应:", data)
+    
+    gg.log("=== 收到奖励数据响应 ===")
+    gg.log("响应数据:", data)
+    
     self.rewardData = data.data
+    gg.log("已设置 rewardData:", self.rewardData)
     
     -- 同步在线时长
     if self.rewardData and self.rewardData.roundOnlineTime then
         self.onlineTime = self.rewardData.roundOnlineTime
         self.lastUpdateTime = gg.GetTimeStamp()
-        ----gg.log(string.format("初始化在线时长: %d 秒", self.onlineTime))
+        gg.log(string.format("同步在线时长: %d 秒", self.onlineTime))
     end
     
-    -- 确保奖励槽位已初始化
+    -- 检查奖励槽位是否已初始化
     if not self.rewardConfig then
+        gg.log("奖励配置未初始化，开始初始化...")
         self:InitRewardConfig()
         self:InitRewardSlots()
         self:InitConfigSlots()
     end
     
+    gg.log("开始更新奖励显示...")
     self:UpdateRewardDisplay()
     
-    ----gg.log("奖励数据已更新")
+    gg.log("=== 奖励数据响应处理完成 ===")
 end
 
 function OnlineRewardsGui:OnClaimRewardResponse(data)
@@ -576,12 +584,7 @@ function OnlineRewardsGui:OnSwitchConfigResponse(data)
     ----gg.log(string.format("配置切换成功: %s", data.newConfig))
 end
 
-function OnlineRewardsGui:OnDataSync(data)
-    if data.onlineStatus then
-        self.rewardData = data.onlineStatus
-        self:UpdateRewardDisplay()
-    end
-end
+
 
 function OnlineRewardsGui:OnNewAvailable(data)
     ----gg.log("客户端收到新奖励可领取通知:", data)
