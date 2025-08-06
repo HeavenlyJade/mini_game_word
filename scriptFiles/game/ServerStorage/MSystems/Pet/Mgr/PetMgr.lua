@@ -570,11 +570,11 @@ end
 function PetMgr.GetActiveItemBonuses(uin)
     local petManager = PetMgr.GetPlayerPet(uin)
     if not petManager then
+        --gg.log("[PetMgr] GetActiveItemBonuses: 找不到玩家的宠物管理器", uin)
         return {}
     end
 
-    local bonuses = petManager:GetActiveItemBonuses()
-    return bonuses
+    return petManager:GetActiveItemBonuses()
 end
 
 ---【新增】设置玩家可携带栏位数量

@@ -79,9 +79,6 @@ function MainServer.start_server()
     MainServer.bind_save_data_tick()      --开始定时存盘
     MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     MServerInitPlayer.setInitFinished(true)  -- 设置初始化完成
-    for _, child in pairs(MainStorage.Code.Common.Config.Children) do
-        require(child)
-    end
     --gg.log("结束服务器")
 
 end
@@ -102,6 +99,7 @@ function MainServer.initModule()
     local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
     local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
     local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
+    local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
     serverDataMgr.BagMgr = BagMgr
     serverDataMgr.MailMgr = MailMgr
     serverDataMgr.PetMgr = PetMgr
@@ -110,6 +108,7 @@ function MainServer.initModule()
     serverDataMgr.TrailMgr = TrailMgr
     serverDataMgr.GameModeManager = GameModeManager
     serverDataMgr.AchievementMgr = AchievementMgr
+    serverDataMgr.RewardMgr = RewardMgr
     gg.log("初始化事件管理器和命令管理器")
     -- 初始化事件管理器和命令管理器
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
@@ -122,6 +121,7 @@ function MainServer.initModule()
     local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
     local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
+    local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
 
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
@@ -134,6 +134,7 @@ function MainServer.initModule()
     TrailEventManager.Init()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
+    RewardEventManager.Init()
     gg.log("初始化事件管理器和命令管理器1111")
 
  
@@ -227,17 +228,6 @@ end
 --定时器update
 function MainServer.update()
     serverDataMgr.tick = serverDataMgr.tick + 1
-
-    -- 更新场景的逻辑已移至 SceneControllerHandler:OnUpdate()
-    -- for _, scene_ in pairs(serverDataMgr.getAllScenes()) do
-    --     scene_:update()
-    -- end
-
-    -- 更新调度器（按秒为单位，而不是每tick）(已废弃)
-    -- ServerScheduler.tick = serverDataMgr.tick
-    -- if ServerScheduler.updateTiming() then
-    --     ServerScheduler.update()
-    -- end
 end
 
 return MainServer;

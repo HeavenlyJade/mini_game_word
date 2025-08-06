@@ -196,10 +196,13 @@ function _M:setGameActor(actor_)
     self.actor = actor_
     _M.node2Entity[actor_] = self
 
-    if actor_:IsA("Actor") then
-        actor_.PhysXRoleType = Enum.PhysicsRoleType.BOX
-        actor_.IgnoreStreamSync = false
-    end
+    -- if actor_:IsA("Actor") then
+    --     -- 对于玩家Actor，保持原有的同步设置，避免干扰
+    --     if not self.isPlayer then
+    --         actor_.PhysXRoleType = Enum.PhysicsRoleType.BOX
+    --         actor_.IgnoreStreamSync = false
+    --     end
+    -- end
 end
 
 
