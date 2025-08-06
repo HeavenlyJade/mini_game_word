@@ -20,7 +20,11 @@ local RewardMgr = {
 }
 
 -- ==================== 初始化 ====================
-
+function RewardMgr.Init()
+    gg.log("初始化奖励系统管理器")
+    RewardMgr.StartUpdateTimer()
+    RewardMgr.StartSaveTimer()
+end
 
 --- 启动更新定时器
 function RewardMgr.StartUpdateTimer()
@@ -475,8 +479,6 @@ function RewardMgr.Cleanup()
     ----gg.log("奖励系统管理器已清理")
 end
 
-RewardMgr.StartUpdateTimer()
-RewardMgr.StartSaveTimer()
 
 
 return RewardMgr

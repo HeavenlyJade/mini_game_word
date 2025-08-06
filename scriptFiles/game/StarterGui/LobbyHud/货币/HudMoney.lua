@@ -87,7 +87,6 @@ function HudMoney:OnInit(node, config)
 end
 
 function HudMoney:OnSyncInventoryItems(data)
-    gg.log("HudMoney:OnSyncInventoryItems", data)
     local items = data.items
     if not items then
         return

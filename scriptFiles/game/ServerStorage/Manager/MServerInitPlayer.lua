@@ -13,15 +13,7 @@ local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type g
 local ClassMgr          = require(MainStorage.Code.Untils.ClassMgr)    ---@type ClassMgr
 local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)     ---@type common_const
 -- local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene -- [REMOVED]
-local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
-local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
-local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
-local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
-local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
-local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
-local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 local PlayerInitMgr = require(ServerStorage.MSystems.PlayerInitMgr) ---@type PlayerInitMgr
@@ -43,7 +35,7 @@ function MServerInitPlayer.setInitFinished(finished)
     -- 如果初始化完成，处理等待的玩家
     if finished then
         for _, player in ipairs(waitingPlayers) do
-            --gg.log('====player_enter_game', player)
+            gg.log('====player_enter_game', player)
             MServerInitPlayer.player_enter_game(player)
         end
         waitingPlayers = {} -- 清空等待列表
@@ -55,8 +47,7 @@ function MServerInitPlayer.register_player_in_out()
     local players = game:GetService("Players")
 
     players.PlayerAdded:Connect(function(player)
-        --gg.log('====PlayerAdded', player.UserId)
-        -- MServerInitPlayer.player_enter_game(player)
+
 
         if initFinished then
             MServerInitPlayer.player_enter_game(player)
@@ -75,13 +66,13 @@ function MServerInitPlayer.register_player_in_out()
                 break
             end
         end
-        -- MServerInitPlayer.player_leave_game(player)
+        MServerInitPlayer.player_leave_game(player)
     end)
 end
 
 -- 玩家进入游戏，数据加载
 function MServerInitPlayer.player_enter_game(player)
-    --gg.log("player_enter_game====", player.UserId, player.Name, player.Nickname)
+    gg.log("player_enter_game====", player.UserId, player.Name, player.Nickname)
     player.DefaultDie = false   --取消默认死亡
 
     local uin_ = player.UserId
@@ -135,64 +126,41 @@ function MServerInitPlayer.player_enter_game(player)
     player_actor_.CollideGroupID = 4
 
     -- 【新增】确保装饰性对象的同步设置正确
-
+    gg.log(3333)
     serverDataMgr.addPlayer(uin_, player_, player.Nickname)
     
     -- 【新增】初始化玩家场景为init_map
     gg.player_scene_map[uin_] = 'init_map'
     
-    AchievementMgr.OnPlayerJoin(uin_)
-    MailMgr.OnPlayerJoin(player_)
-    BagMgr.OnPlayerJoin(player_)
-    PetMgr.OnPlayerJoin(player_)
-    PartnerMgr.OnPlayerJoin(player_)
-    WingMgr.OnPlayerJoin(player_)
-    TrailMgr.OnPlayerJoin(player_)
+    serverDataMgr.AchievementMgr.OnPlayerJoin(uin_)
+    serverDataMgr.MailMgr.OnPlayerJoin(player_)
+    serverDataMgr.BagMgr.OnPlayerJoin(player_)
+    serverDataMgr.PetMgr.OnPlayerJoin(player_)
+    serverDataMgr.PartnerMgr.OnPlayerJoin(player_)
+    serverDataMgr.WingMgr.OnPlayerJoin(player_)
+    serverDataMgr.TrailMgr.OnPlayerJoin(player_)
 
     if isNewPlayer then
         PlayerInitMgr.InitializeNewPlayer(player_)
     end
     -- 【重构】玩家上线时，调用伙伴管理器来更新模型显示
-    PartnerMgr.UpdateAllEquippedPartnerModels(player_)
+    serverDataMgr.PartnerMgr.UpdateAllEquippedPartnerModels(player_)
     -- 【新增】玩家上线时，调用宠物管理器来更新模型显示
-    PetMgr.UpdateAllEquippedPetModels(player_)
+    serverDataMgr.PetMgr.UpdateAllEquippedPetModels(player_)
     -- 【新增】玩家上线时，调用翅膀管理器来更新模型显示
-    WingMgr.UpdateAllEquippedWingModels(player_)
+    serverDataMgr.WingMgr.UpdateAllEquippedWingModels(player_)
     -- 【新增】玩家上线时，调用尾迹管理器来更新模型显示
-    TrailMgr.UpdateAllEquippedTrailModels(player_)
-    local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
+    serverDataMgr.TrailMgr.UpdateAllEquippedTrailModels(player_)
 
-    RewardMgr.OnPlayerJoin(player_)
     MServerInitPlayer.syncPlayerDataToClient(player_)
-    MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_)
-
+    -- gg.log(2222)
+    -- serverDataMgr.RewardMgr.OnPlayerJoin(player_)
     gg.log("玩家进入了游戏", gg.player_scene_map,player)
 
 
 end
 
--- 【新增】确保装饰性对象的同步设置正确
-function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor)
-    if not player_actor then
-        return
-    end
 
-    -- 装饰性对象的名称列表
-    local decorativeObjectNames = {
-        "Pet1", "Pet2", "Pet3", "Pet4", "Pet5", "Pet6",
-        "Partner1", "Partner2",
-        "Wings1",
-        "尾迹"
-    }
-
-    for _, objectName in ipairs(decorativeObjectNames) do
-        local decorativeNode = player_actor:FindFirstChild(objectName)
-        if decorativeNode then
-            -- 确保同步设置正确
-            decorativeNode.IgnoreStreamSync = false
-        end
-    end
-end
 
 -- 向客户端同步玩家数据
 function MServerInitPlayer.syncPlayerDataToClient(mplayer)
@@ -205,7 +173,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
 
             -- 获取背包数据 - 修改这里
 
-    local bag = BagMgr.GetPlayerBag(uin)
+    local bag = serverDataMgr.BagMgr.GetPlayerBag(uin)
     if bag then
         -- 标记为全量同步，确保发送完整的背包数据
         bag:MarkDirty(true)  -- true 表示全量同步
@@ -216,7 +184,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     end
 
     -- 【新增】同步宠物数据
-    local petManager = PetMgr.GetPlayerPet(uin)
+    local petManager = serverDataMgr.PetMgr.GetPlayerPet(uin)
     if petManager then
         local petListData = petManager:GetPlayerPetList()
         local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
@@ -227,7 +195,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     end
 
     -- 【新增】同步伙伴数据
-    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    local partnerManager = serverDataMgr.PartnerMgr.GetPlayerPartner(uin)
     if partnerManager then
         local partnerListData = partnerManager:GetPlayerPartnerList()
         local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
@@ -237,7 +205,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     end
 
     -- 【新增】同步翅膀数据
-    local wingManager = WingMgr.GetPlayerWing(uin)
+    local wingManager = serverDataMgr.WingMgr.GetPlayerWing(uin)
     if wingManager then
         local wingListData = wingManager:GetPlayerWingList()
         local WingEventManager = require(ServerStorage.MSystems.Pet.EventManager.WingEventManager) ---@type WingEventManager
@@ -247,7 +215,7 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     end
 
     -- 【新增】同步尾迹数据
-    local trailManager = TrailMgr.GetPlayerTrail(uin)
+    local trailManager = serverDataMgr.TrailMgr.GetPlayerTrail(uin)
     if trailManager then
         local trailListData = trailManager:GetPlayerTrailList()
         local TrailEventManager = require(ServerStorage.MSystems.Trail.TrailEventManager) ---@type TrailEventManager
@@ -271,19 +239,6 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     -- 获取任务数据
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)
-    -- local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
-
-    -- -- 【新增】同步在线奖励数据
-    -- local rewardInstance = RewardMgr.GetPlayerReward(uin)
-    -- if rewardInstance then
-    --     local rewardStatus = rewardInstance:GetOnlineRewardStatus()
-    --     if rewardStatus then
-    --         local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
-    --         RewardEventManager.NotifyDataSync(mplayer, rewardStatus)
-    --     end
-
-    -- end
-
     gg.log("已向客户端", uin, "同步完整玩家数据")
 end
 -- 玩家离开游戏
@@ -299,14 +254,14 @@ function MServerInitPlayer.player_leave_game(player)
         gg.player_scene_map[uin_] = nil
         
         -- 通知各个系统玩家已离开
-        MailMgr.OnPlayerLeave(uin_)
-        BagMgr.OnPlayerLeave(uin_)
-        PetMgr.OnPlayerLeave(uin_)
-        PartnerMgr.OnPlayerLeave(uin_)
-        WingMgr.OnPlayerLeave(uin_)
-        TrailMgr.OnPlayerLeave(uin_)
-        AchievementMgr.OnPlayerLeave(uin_)
-        RewardMgr.OnPlayerLeave(uin_)
+        serverDataMgr.MailMgr.OnPlayerLeave(uin_)
+        serverDataMgr.BagMgr.OnPlayerLeave(uin_)
+        serverDataMgr.PetMgr.OnPlayerLeave(uin_)
+        serverDataMgr.PartnerMgr.OnPlayerLeave(uin_)
+        serverDataMgr.WingMgr.OnPlayerLeave(uin_)
+        serverDataMgr.TrailMgr.OnPlayerLeave(uin_)
+        serverDataMgr.AchievementMgr.OnPlayerLeave(uin_)
+        serverDataMgr.RewardMgr.OnPlayerLeave(uin_)
         -- 其他管理器（如技能、任务等）的离线处理也可以在这里添加
         mplayer:leaveGame() -- 保存玩家基础数据
         serverDataMgr.removePlayer(uin_, player.Name)

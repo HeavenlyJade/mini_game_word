@@ -19,7 +19,6 @@ local uiConfig = {
 
 ---@override 
 function FuncScript:OnInit(node, config)
-    gg.log("FuncScript 功能模块初始化")
     
     -- 获取主要UI节点
     self.backgroundPanel = self:Get("底图", ViewComponent) ---@type ViewComponent
