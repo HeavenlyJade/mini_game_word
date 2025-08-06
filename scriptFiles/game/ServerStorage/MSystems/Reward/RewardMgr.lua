@@ -164,39 +164,43 @@ end
 ---@return boolean 是否成功
 ---@return string|nil 错误信息
 function RewardMgr.ClaimOnlineReward(player, index)
+    gg.log("=== RewardMgr.ClaimOnlineReward ===")
+    gg.log(string.format("玩家: %s (ID: %d)", player.name or "未知", player.uin or 0))
+    gg.log(string.format("奖励索引: %d", index))
+    
     if not player or not player.uin then
+        gg.log("错误：玩家对象无效")
         return false, "玩家对象无效"
     end
     
     local rewardInstance = RewardMgr.playerRewards[player.uin]
     if not rewardInstance then
+        gg.log("错误：奖励数据未加载")
         return false, "奖励数据未加载"
     end
+    
+    gg.log("开始调用Reward实例的ClaimOnlineReward方法")
     
     -- 领取奖励
     local rewardItem, errorMsg = rewardInstance:ClaimOnlineReward(index)
     if not rewardItem then
+        gg.log(string.format("奖励领取失败: %s", errorMsg or "未知错误"))
         return false, errorMsg or "领取失败"
     end
     
+    gg.log("奖励领取成功，开始发放奖励物品")
+    gg.log(string.format("奖励物品: %s", gg.json.encode(rewardItem or {})))
+    
     -- 发放奖励物品
     local success = RewardMgr.GiveRewardToPlayer(player, rewardItem)
-    if not success then
-        -- 回滚（从已领取列表中移除）
-        local claimedList = rewardInstance.onlineData.claimedIndices
-        for i = #claimedList, 1, -1 do
-            if claimedList[i] == index then
-                table.remove(claimedList, i)
-                break
-            end
-        end
-        return false, "发放奖励失败"
-    end
     
-    ----gg.log(string.format("玩家 %s 领取在线奖励 %d", player.name, index))
+    gg.log("奖励发放成功，开始同步数据到客户端")
     
     -- 同步数据到客户端
     RewardMgr.SyncDataToClient(player)
+    
+    gg.log(string.format("玩家 %s 领取在线奖励 %d 完成", player.name, index))
+    gg.log("=== RewardMgr.ClaimOnlineReward 结束 ===")
     
     return true
 end

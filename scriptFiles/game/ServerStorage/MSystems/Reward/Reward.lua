@@ -145,13 +145,19 @@ end
 ---@return table|nil 奖励内容
 ---@return string|nil 错误信息
 function Reward:ClaimOnlineReward(index)
+    gg.log("=== Reward:ClaimOnlineReward ===")
+    gg.log(string.format("玩家 %d 尝试领取奖励索引: %d", self.uin, index))
+    gg.log(string.format("当前在线时长: %d 秒", self.onlineData.roundOnlineTime))
+    
     if not self.onlineConfig then
+        gg.log("错误：配置未加载")
         return nil, "配置未加载"
     end
     
     -- 检查是否已领取
     for _, claimedIndex in ipairs(self.onlineData.claimedIndices) do
         if claimedIndex == index then
+            gg.log(string.format("错误：奖励索引 %d 已领取", index))
             return nil, "奖励已领取"
         end
     end
@@ -159,19 +165,34 @@ function Reward:ClaimOnlineReward(index)
     -- 获取奖励配置
     local reward = self.onlineConfig:GetRewardByIndex(index)
     if not reward then
+        gg.log(string.format("错误：无效的奖励索引 %d", index))
         return nil, "无效的奖励索引"
     end
     
-    -- 检查时间是否满足
-    if reward.timeNode and self.onlineData.roundOnlineTime < reward.timeNode then
-        return nil, "在线时长不足"
+    gg.log(string.format("奖励配置: 时间节点 %d 秒", reward.timeNode or 0))
+    
+    -- 严格检查时间是否满足
+    if reward.timeNode then
+        if self.onlineData.roundOnlineTime < reward.timeNode then
+            gg.log(string.format("错误：在线时长不足，需要 %d 秒，当前只有 %d 秒", 
+                reward.timeNode, self.onlineData.roundOnlineTime))
+            return nil, string.format("在线时长不足，需要 %d 秒，当前只有 %d 秒", 
+                reward.timeNode, self.onlineData.roundOnlineTime)
+        else
+            gg.log(string.format("时间检查通过：当前时长 %d 秒 >= 需要时长 %d 秒", 
+                self.onlineData.roundOnlineTime, reward.timeNode))
+        end
+    else
+        gg.log("警告：奖励没有设置时间节点")
     end
     
     -- 记录已领取
     table.insert(self.onlineData.claimedIndices, index)
+    gg.log(string.format("已将奖励索引 %d 添加到已领取列表", index))
     
     -- 检查是否需要重置（全部领取完）
     if self.onlineConfig:IsAllClaimed(self.onlineData.claimedIndices) then
+        gg.log("所有奖励已领取完毕，开始重置")
         self:ResetOnlineReward()
     end
     
@@ -179,12 +200,18 @@ function Reward:ClaimOnlineReward(index)
     if reward.claimCommand and reward.claimCommand ~= "" then
         local player = self:GetPlayer()
         if player then
+            gg.log(string.format("执行临取指令: %s", reward.claimCommand))
             executeCommand(player, reward.claimCommand)
-            --gg.log(string.format("玩家 %d 执行临取指令: %s", self.uin, reward.claimCommand))
+        else
+            gg.log("警告：找不到玩家对象，无法执行临取指令")
         end
+    else
+        gg.log("该奖励没有临取指令")
     end
     
-    --gg.log(string.format("玩家 %d 领取在线奖励 %d", self.uin, index))
+    gg.log(string.format("玩家 %d 成功领取在线奖励 %d", self.uin, index))
+    gg.log("=== Reward:ClaimOnlineReward 结束 ===")
+    
     return reward.rewardItems
 end
 

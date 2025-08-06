@@ -85,21 +85,31 @@ end
 ---@param player MPlayer 玩家对象
 ---@param evt table 事件数据
 function RewardEventManager.HandleClaimOnlineReward(player, evt)
+    gg.log("=== 服务端处理领取奖励请求 ===")
+    gg.log(string.format("玩家: %s (ID: %d)", player.name or "未知", player.uin or 0))
+    gg.log(string.format("事件数据: %s", gg.json.encode(evt or {})))
+    
     if not player or not player.uin then
+        gg.log("错误：玩家对象无效")
         RewardEventManager.SendErrorResponse(player, RewardEvent.RESPONSE.CLAIM_REWARD_RESULT, "玩家对象无效")
         return
     end
     
     local index = evt and evt.index
     if not index or type(index) ~= "number" then
+        gg.log(string.format("错误：无效的奖励索引，类型: %s, 值: %s", type(index), tostring(index)))
         RewardEventManager.SendErrorResponse(player, RewardEvent.RESPONSE.CLAIM_REWARD_RESULT, "无效的奖励索引")
         return
     end
+    
+    gg.log(string.format("开始处理奖励索引: %d", index))
     
     -- 领取奖励
     local success, errorMsg = RewardMgr.ClaimOnlineReward(player, index)
     
     if success then
+        gg.log("奖励领取成功")
+        
         -- 获取奖励内容用于响应
         local rewardInstance = RewardMgr.GetPlayerReward(player.uin)
         local reward = rewardInstance and rewardInstance.onlineConfig:GetRewardByIndex(index)
@@ -116,10 +126,13 @@ function RewardEventManager.HandleClaimOnlineReward(player, evt)
         -- 通知其他客户端（多端同步）
         RewardEventManager.NotifyRewardClaimed(player, "online", index, reward and reward.rewardItems)
         
-        gg.log(string.format("玩家 %s 领取在线奖励 %d", player.name, index))
+        gg.log(string.format("玩家 %s 领取在线奖励 %d 成功", player.name, index))
     else
+        gg.log(string.format("奖励领取失败: %s", errorMsg or "未知错误"))
         RewardEventManager.SendErrorResponse(player, RewardEvent.RESPONSE.CLAIM_REWARD_RESULT, errorMsg or "领取失败")
     end
+    
+    gg.log("=== 服务端处理领取奖励请求结束 ===")
 end
 
 --- 处理一键领取所有在线奖励请求
@@ -249,12 +262,7 @@ function RewardEventManager.NotifyNewAvailable(player)
         onlineTime = rewardInstance and rewardInstance.onlineData.roundOnlineTime or 0
     }
     
-    gg.log(string.format("服务端准备发送新奖励可领取通知给玩家 %d，事件名: %s", 
-        player.uin, RewardEvent.NOTIFY.NEW_AVAILABLE))
-    gg.log(string.format("可领取索引: %s", table.concat(statusIndices.available, ", ")))
-    gg.log(string.format("已领取索引: %s", table.concat(statusIndices.claimed, ", ")))
-    gg.log(string.format("不可领取索引: %s", table.concat(statusIndices.unavailable, ", ")))
-    
+
     -- 使用与 PartnerEventManager 相同的方式发送事件
     gg.network_channel:fireClient(player.uin, {
         cmd = RewardEvent.NOTIFY.NEW_AVAILABLE,
