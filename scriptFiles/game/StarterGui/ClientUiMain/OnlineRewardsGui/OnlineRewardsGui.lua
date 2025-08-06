@@ -74,10 +74,17 @@ function OnlineRewardsGui:OnInit(node, config)
 end
 
 
-function OnlineRewardsGui:InitRewardSlots()
+function OnlineRewardsGui:InitRewardConfig()
     self.rewardConfig = ConfigLoader.GetReward(self.currentConfig)
     if not self.rewardConfig then
         gg.log("奖励配置未加载，无法初始化奖励槽位")
+        return false
+    end
+    return true
+end
+
+function OnlineRewardsGui:InitRewardSlots()
+    if not self:InitRewardConfig() then
         return
     end
     
@@ -391,6 +398,9 @@ function OnlineRewardsGui:RequestRewardData()
 end
 
 function OnlineRewardsGui:ClaimReward(index)
+    -- 立即隐藏对应的领取按钮，防止重复点击
+    self:HideClaimButton(index)
+    
     gg.network_channel:FireServer({
         cmd = RewardEvent.REQUEST.CLAIM_ONLINE_REWARD,
         index = index,
@@ -401,6 +411,15 @@ function OnlineRewardsGui:ClaimReward(index)
 end
 
 function OnlineRewardsGui:ClaimAllRewards()
+    -- 立即隐藏所有可领取的按钮，防止重复点击
+    if self.rewardData and self.rewardData.rewards then
+        for index, rewardStatus in ipairs(self.rewardData.rewards) do
+            if rewardStatus.status == 1 then  -- 可领取状态
+                self:HideClaimButton(index)
+            end
+        end
+    end
+    
     gg.network_channel:FireServer({
         cmd = RewardEvent.REQUEST.CLAIM_ALL_ONLINE_REWARDS,
         configName = self.currentConfig
@@ -436,11 +455,19 @@ end
 function OnlineRewardsGui:OnClaimRewardResponse(data)
     if not data or not data.success then
         gg.log("领取奖励失败:", data and data.errorMsg or "未知错误")
+        
+        -- 领取失败时，恢复按钮状态
+        if data and data.index then
+            self:ShowClaimButton(data.index)  -- 重新显示按钮
+            self:UpdateSingleRewardStatus(data.index, 1)  -- 恢复为可领取状态
+        end
         return
     end
     
-    -- 重新请求数据以更新显示
-    self:RequestRewardData()
+    -- 领取成功，立即更新状态
+    if data.index then
+        self:UpdateSingleRewardStatus(data.index, 2)  -- 标记为已领取
+    end
     
     gg.log(string.format("奖励领取成功: %d", data.index))
 end
@@ -448,11 +475,28 @@ end
 function OnlineRewardsGui:OnClaimAllResponse(data)
     if not data or not data.success then
         gg.log("一键领取失败:", data and data.errorMsg or "未知错误")
+        
+        -- 一键领取失败时，恢复所有按钮状态
+        if self.rewardData and self.rewardData.rewards then
+            for index, rewardStatus in ipairs(self.rewardData.rewards) do
+                if rewardStatus.status == 1 then  -- 可领取状态
+                    self:ShowClaimButton(index)  -- 重新显示按钮
+                    self:UpdateSingleRewardStatus(index, 1)  -- 恢复为可领取状态
+                end
+            end
+        end
         return
     end
     
-    -- 重新请求数据以更新显示
-    self:RequestRewardData()
+    -- 一键领取成功，更新所有已领取的按钮状态
+    if data.rewards and #data.rewards > 0 then
+        for _, rewardData in ipairs(data.rewards) do
+            local index = rewardData.index
+            if index then
+                self:UpdateSingleRewardStatus(index, 2)  -- 标记为已领取
+            end
+        end
+    end
     
     gg.log(string.format("一键领取成功，共领取 %d 个奖励", data.count))
 end
@@ -475,23 +519,42 @@ end
 
 function OnlineRewardsGui:OnNewAvailable(data)
     gg.log("客户端收到新奖励可领取通知:", data)
-    if data.hasAvailable then
-        -- 可以在这里添加红点提示或其他UI反馈
-        gg.log(string.format("有新的奖励可领取，在线时长: %d 秒，可领取索引: %s", 
-            data.onlineTime or 0, table.concat(data.availableIndices or {}, ", ")))
-        
-        -- 如果有具体的可领取索引，可以立即更新UI
-        if data.availableIndices and #data.availableIndices > 0 then
-            -- 可以在这里添加红点提示或其他视觉反馈
-            gg.log(string.format("发现 %d 个新可领取奖励", #data.availableIndices))
+    
+    -- 更新所有奖励的状态
+    if data.availableIndices then
+        for _, index in ipairs(data.availableIndices) do
+            self:UpdateSingleRewardStatus(index, 1)  -- 标记为可领取
+            gg.log(string.format("已更新奖励 %d 为可领取状态", index))
         end
+        gg.log(string.format("更新了 %d 个可领取奖励", #data.availableIndices))
+    end
+    
+    if data.claimedIndices then
+        for _, index in ipairs(data.claimedIndices) do
+            self:UpdateSingleRewardStatus(index, 2)  -- 标记为已领取
+            gg.log(string.format("已更新奖励 %d 为已领取状态", index))
+        end
+        gg.log(string.format("更新了 %d 个已领取奖励", #data.claimedIndices))
+    end
+    
+    if data.unavailableIndices then
+        for _, index in ipairs(data.unavailableIndices) do
+            self:UpdateSingleRewardStatus(index, 0)  -- 标记为不可领取
+            gg.log(string.format("已更新奖励 %d 为不可领取状态", index))
+        end
+        gg.log(string.format("更新了 %d 个不可领取奖励", #data.unavailableIndices))
+    end
+    
+    -- 显示总体信息
+    if data.hasAvailable then
+        gg.log(string.format("有新的奖励可领取，在线时长: %d 秒", data.onlineTime or 0))
     end
 end
 
 function OnlineRewardsGui:OnRewardClaimed(data)
-    if data.type == "online" then
-        -- 重新请求数据以更新显示
-        self:RequestRewardData()
+    if data.type == "online" and data.index then
+        -- 立即更新状态为已领取
+        self:UpdateSingleRewardStatus(data.index, 2)
     end
 end
 
@@ -523,6 +586,8 @@ function OnlineRewardsGui:UpdateRewardDisplay()
             self:UpdateRewardSlotStatus(slotNode, rewardStatus, index)
         end
     end
+    
+    gg.log("奖励显示更新完成")
 end
 
 function OnlineRewardsGui:UpdateRewardSlotStatus(slotNode, rewardStatus, index)
@@ -543,8 +608,112 @@ function OnlineRewardsGui:UpdateRewardSlotStatus(slotNode, rewardStatus, index)
         slotButton:SetTouchEnable(canClaim, nil)
     end
     
+    -- 特殊处理：已领取的奖励隐藏按钮，其他状态显示按钮
+    if rewardStatus.status == 2 then
+        self:HideClaimButton(index)
+    else
+        self:ShowClaimButton(index)
+    end
+    
     -- 可以添加其他视觉反馈，比如背景颜色变化等
 
+end
+
+--- 立即更新单个奖励槽位的状态
+---@param index number 奖励索引
+---@param status number 状态: 0=未达成, 1=可领取, 2=已领取
+function OnlineRewardsGui:UpdateSingleRewardStatus(index, status)
+    -- 更新本地数据
+    if self.rewardData and self.rewardData.rewards then
+        local rewardStatus = self.rewardData.rewards[index]
+        if rewardStatus then
+            rewardStatus.status = status
+        end
+    end
+    
+    -- 更新UI显示
+    local slotNode = self.rewardNodeMap[index]
+    if slotNode then
+        local rewardStatus = {
+            status = status
+        }
+        self:UpdateRewardSlotStatus(slotNode, rewardStatus, index)
+        
+        -- 特殊处理：已领取的奖励隐藏按钮
+        if status == 2 then
+            self:HideClaimButton(index)
+        end
+    end
+    
+    gg.log(string.format("已更新奖励 %d 的状态为: %d", index, status))
+end
+
+--- 隐藏领取按钮
+---@param index number 奖励索引
+function OnlineRewardsGui:HideClaimButton(index)
+    local slotNode = self.rewardNodeMap[index]
+    if not slotNode then
+        gg.log(string.format("警告：找不到奖励 %d 的节点", index))
+        return
+    end
+    
+    -- 查找并隐藏领取按钮
+    local backgroundNode = slotNode:FindFirstChild("背景")
+    if backgroundNode then
+        local claimButton = backgroundNode:FindFirstChild("领取")
+        if claimButton then
+            claimButton.Visible = false
+            gg.log(string.format("已隐藏奖励 %d 的领取按钮", index))
+        else
+            gg.log(string.format("警告：找不到奖励 %d 的领取按钮", index))
+        end
+    else
+        gg.log(string.format("警告：找不到奖励 %d 的背景节点", index))
+    end
+    
+    -- 同时禁用ViewButton
+    local slotButton = self.rewardButtons[index]
+    if slotButton then
+        slotButton:SetGray(true)
+        slotButton:SetTouchEnable(false, nil)
+        gg.log(string.format("已禁用奖励 %d 的ViewButton", index))
+    else
+        gg.log(string.format("警告：找不到奖励 %d 的ViewButton", index))
+    end
+end
+
+--- 显示领取按钮（用于恢复状态）
+---@param index number 奖励索引
+function OnlineRewardsGui:ShowClaimButton(index)
+    local slotNode = self.rewardNodeMap[index]
+    if not slotNode then
+        return
+    end
+    
+    -- 查找并显示领取按钮
+    local backgroundNode = slotNode:FindFirstChild("背景")
+    if backgroundNode then
+        local claimButton = backgroundNode:FindFirstChild("领取")
+        if claimButton then
+            claimButton.Visible = true
+            gg.log(string.format("已显示奖励 %d 的领取按钮", index))
+        end
+    end
+    
+    -- 同时启用ViewButton（根据状态决定是否可点击）
+    local slotButton = self.rewardButtons[index]
+    if slotButton then
+        -- 检查当前状态
+        if self.rewardData and self.rewardData.rewards then
+            local rewardStatus = self.rewardData.rewards[index]
+            if rewardStatus then
+                local canClaim = rewardStatus.status == 1
+                slotButton:SetGray(not canClaim)
+                slotButton:SetTouchEnable(canClaim, nil)
+                gg.log(string.format("已启用奖励 %d 的ViewButton，可点击: %s", index, tostring(canClaim)))
+            end
+        end
+    end
 end
 
 
@@ -620,18 +789,19 @@ function OnlineRewardsGui:FormatTime(seconds)
     else
         -- 备用实现，当rewardConfig未加载时使用
         if not seconds or seconds < 0 then
-            return "00:00"
+            return "00:00:00"
         end
         
-        local minutes = math.floor(seconds / 60)
+        local hours = math.floor(seconds / 3600)
+        local minutes = math.floor((seconds % 3600) / 60)
         local secs = seconds % 60
         
-        if minutes >= 60 then
-            local hours = math.floor(minutes / 60)
-            minutes = minutes % 60
-            return string.format("%02d:%02d:%02d", hours, minutes, secs)
-        else
+        -- 如果小时为0，只显示分:秒
+        if hours == 0 then
             return string.format("%02d:%02d", minutes, secs)
+        else
+            -- 否则显示时:分:秒
+            return string.format("%02d:%02d:%02d", hours, minutes, secs)
         end
     end
 end

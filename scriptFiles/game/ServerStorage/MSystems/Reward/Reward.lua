@@ -287,6 +287,44 @@ function Reward:HasAvailableReward()
     return #self:GetAvailableOnlineRewards() > 0
 end
 
+--- 获取所有奖励的状态分类
+---@return table 包含可领取、已领取、不可领取索引的分类表
+function Reward:GetAllRewardStatusIndices()
+    local availableIndices = {}  -- 可领取的索引
+    local claimedIndices = {}    -- 已领取的索引
+    local unavailableIndices = {} -- 不可领取的索引
+    
+    if not self.onlineConfig then
+        return {
+            available = availableIndices,
+            claimed = claimedIndices,
+            unavailable = unavailableIndices
+        }
+    end
+    
+    -- 遍历所有奖励
+    for index, reward in ipairs(self.onlineConfig.rewardList) do
+        local status = self:GetRewardStatus(index)
+        
+        if status == 1 then
+            -- 可领取
+            table.insert(availableIndices, index)
+        elseif status == 2 then
+            -- 已领取
+            table.insert(claimedIndices, index)
+        else
+            -- 不可领取（未达成）
+            table.insert(unavailableIndices, index)
+        end
+    end
+    
+    return {
+        available = availableIndices,
+        claimed = claimedIndices,
+        unavailable = unavailableIndices
+    }
+end
+
 --- 获取保存数据
 ---@return table 用于云存储的数据
 function Reward:GetSaveData()

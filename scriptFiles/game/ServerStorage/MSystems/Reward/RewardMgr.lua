@@ -203,35 +203,35 @@ end
 
 --- 一键领取所有在线奖励
 ---@param player MPlayer 玩家对象
----@return number 成功领取的数量
+---@return table 成功领取的奖励列表
 function RewardMgr.ClaimAllOnlineRewards(player)
     if not player or not player.uin then
-        return 0
+        return {}
     end
     
     local rewardInstance = RewardMgr.playerRewards[player.uin]
     if not rewardInstance then
-        return 0
+        return {}
     end
     
     -- 获取所有可领取的奖励
     local allRewards = rewardInstance:ClaimAllOnlineRewards()
-    local successCount = 0
+    local successRewards = {}
     
     -- 发放所有奖励
     for _, rewardData in ipairs(allRewards) do
         local success = RewardMgr.GiveRewardToPlayer(player, rewardData.reward)
         if success then
-            successCount = successCount + 1
+            table.insert(successRewards, rewardData)
         end
     end
     
-    ----gg.log(string.format("玩家 %s 一键领取 %d 个在线奖励", player.name, successCount))
+    ----gg.log(string.format("玩家 %s 一键领取 %d 个在线奖励", player.name, #successRewards))
     
     -- 同步数据到客户端
     RewardMgr.SyncDataToClient(player)
     
-    return successCount
+    return successRewards
 end
 
 -- ==================== 奖励发放 ====================

@@ -301,25 +301,25 @@ function RewardType:FormatRewardDescription(reward)
     return desc
 end
 
---- 格式化时间显示（秒转换为时:分）
+--- 格式化时间显示（秒转换为时:分:秒）
 ---@param seconds number 秒数
 ---@return string 格式化的时间字符串
 function RewardType:FormatTime(seconds)
     if not seconds or seconds < 0 then
-        return "00:00"
+        return "00:00:00"
     end
     
-    local minutes = math.floor(seconds / 60)
-    local hours = math.floor(minutes / 60)
-    minutes = minutes % 60
+    local hours = math.floor(seconds / 3600)
+    local minutes = math.floor((seconds % 3600) / 60)
     local secs = seconds % 60
     
-    -- 调试日志
-    gg.log(string.format("FormatTime 调试: 输入 %d 秒, 计算: 小时=%d, 分钟=%d, 秒=%d", 
-        seconds, hours, minutes, secs))
-    
-    -- 修复：应该显示分钟:秒，而不是小时:分钟
-    return string.format("%02d:%02d", minutes, secs)
+    -- 如果小时为0，只显示分:秒
+    if hours == 0 then
+        return string.format("%02d:%02d", minutes, secs)
+    else
+        -- 否则显示时:分:秒
+        return string.format("%02d:%02d:%02d", hours, minutes, secs)
+    end
 end
 
 --- 获取奖励预览数据（用于UI展示）
