@@ -22,7 +22,6 @@ local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type P
 local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
 local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
 local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
-local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 local PlayerInitMgr = require(ServerStorage.MSystems.PlayerInitMgr) ---@type PlayerInitMgr
@@ -149,7 +148,7 @@ function MServerInitPlayer.player_enter_game(player)
     PartnerMgr.OnPlayerJoin(player_)
     WingMgr.OnPlayerJoin(player_)
     TrailMgr.OnPlayerJoin(player_)
-    RewardMgr.OnPlayerJoin(player_)
+
     if isNewPlayer then
         PlayerInitMgr.InitializeNewPlayer(player_)
     end
@@ -161,6 +160,9 @@ function MServerInitPlayer.player_enter_game(player)
     WingMgr.UpdateAllEquippedWingModels(player_)
     -- 【新增】玩家上线时，调用尾迹管理器来更新模型显示
     TrailMgr.UpdateAllEquippedTrailModels(player_)
+    local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
+
+    RewardMgr.OnPlayerJoin(player_)
     MServerInitPlayer.syncPlayerDataToClient(player_)
     MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_)
 
@@ -194,6 +196,7 @@ end
 
 -- 向客户端同步玩家数据
 function MServerInitPlayer.syncPlayerDataToClient(mplayer)
+    gg.log("syncPlayerDataToClient====", mplayer)
     local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
     local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
@@ -268,11 +271,25 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     -- 获取任务数据
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)
+    -- local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
 
-    --gg.log("已向客户端", uin, "同步完整玩家数据")
+    -- -- 【新增】同步在线奖励数据
+    -- local rewardInstance = RewardMgr.GetPlayerReward(uin)
+    -- if rewardInstance then
+    --     local rewardStatus = rewardInstance:GetOnlineRewardStatus()
+    --     if rewardStatus then
+    --         local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
+    --         RewardEventManager.NotifyDataSync(mplayer, rewardStatus)
+    --     end
+
+    -- end
+
+    gg.log("已向客户端", uin, "同步完整玩家数据")
 end
 -- 玩家离开游戏
 function MServerInitPlayer.player_leave_game(player)
+    local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
+
     gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
     local uin_ = player.UserId
 

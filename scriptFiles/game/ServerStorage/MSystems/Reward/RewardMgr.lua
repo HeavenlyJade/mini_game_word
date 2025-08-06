@@ -64,24 +64,41 @@ end
 ---@param player MPlayer 玩家对象
 function RewardMgr.OnPlayerJoin(player)
     if not player or not player.uin then
-        ----gg.log("错误: 玩家对象无效")
+        gg.log("错误: 玩家对象无效")
         return
     end
     
     local uin = player.uin
-    ----gg.log(string.format("玩家 %d 上线，加载奖励数据...", uin))
+    gg.log(string.format("=== 奖励系统初始化开始 ==="))
+    gg.log(string.format("玩家 %s (UIN:%d) 上线，开始加载奖励数据...", player.name or "未知", uin))
     
     -- 从云端加载数据
     local ret, savedData = RewardCloudDataMgr.ReadPlayerRewardData(uin)
+    gg.log(string.format("云端数据读取结果: ret=%d, 数据=%s", ret, gg.json.encode(savedData or {})))
     
     -- 创建奖励实例
     local rewardInstance = Reward.New(uin, savedData)
     RewardMgr.playerRewards[uin] = rewardInstance
+    gg.log(string.format("奖励实例创建完成，实例ID: %s", tostring(rewardInstance)))
+    
+    -- 打印初始数据状态
+    if rewardInstance and rewardInstance.onlineData then
+        local data = rewardInstance.onlineData
+        gg.log(string.format("玩家 %d 初始奖励数据:", uin))
+        gg.log(string.format("  - 配置名称: %s", data.configName or "未知"))
+        gg.log(string.format("  - 当前轮次: %d", data.currentRound or 0))
+        gg.log(string.format("  - 今日在线时长: %d 秒", data.todayOnlineTime or 0))
+        gg.log(string.format("  - 本轮在线时长: %d 秒", data.roundOnlineTime or 0))
+        gg.log(string.format("  - 已领取奖励数量: %d", #(data.claimedIndices or {})))
+        gg.log(string.format("  - 最后登录日期: %s", data.lastLoginDate or "未知"))
+    end
     
     -- 发送初始数据给客户端
     RewardMgr.SyncDataToClient(player)
+    gg.log(string.format("已同步初始数据给客户端"))
     
-    ----gg.log(string.format("玩家 %d 奖励系统初始化完成", uin))
+    gg.log(string.format("玩家 %s (UIN:%d) 奖励系统初始化完成", player.name or "未知", uin))
+    gg.log(string.format("=== 奖励系统初始化结束 ==="))
 end
 
 --- 玩家离线处理

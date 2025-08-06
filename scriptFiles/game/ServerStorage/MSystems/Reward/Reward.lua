@@ -6,8 +6,6 @@ local ServerStorage = game:GetService("ServerStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local RewardType = require(MainStorage.Code.Common.TypeConfig.RewardType) ---@type RewardType
-local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
-
 ---@class Reward : Class
 ---@field uin number 玩家ID
 ---@field onlineData table 在线奖励数据
@@ -23,7 +21,8 @@ local function executeCommand(player, commandStr)
         return
     end
 
-    -- 直接使用CommandManager执行所有指令
+    -- 延迟加载CommandManager以避免循环引用
+    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
     CommandManager.ExecuteCommand(commandStr, player, true)
 end
 

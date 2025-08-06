@@ -15,6 +15,7 @@ local ClearDataCommand = require(ServerStorage.CommandSys.Commands.MClearDataCom
 local json = require(MainStorage.Code.Untils.json) ---@type json
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local TrailCommand = require(ServerStorage.CommandSys.Commands.MTrailCom) ---@type TrailCommand
+local RewardCommand = require(ServerStorage.CommandSys.Commands.RewardCommand) ---@type RewardCommand
 
 
 ---@class CommandManager
@@ -37,6 +38,8 @@ CommandManager.handlers = {
     ["variable"] = VariableCommand.main,
     ["clearPlayerData"] = ClearDataCommand.main,
     ["trail"] = TrailCommand.main,
+    ["reward"] = RewardCommand.main,
+
 
 
 
@@ -71,7 +74,11 @@ function CommandManager.ExecuteCommand(commandStr, player, silent)
     end
 
     -- 4. 解析JSON参数
-    local params = json.decode(jsonStr)
+    local success, params = pcall(json.decode, jsonStr)
+    if not success then
+        gg.log("JSON解析错误: " .. tostring(params) .. ", 原始字符串: " .. jsonStr)
+        return false
+    end
     if params["在线"] == "不在线" then
         --- 用来处理玩家不在线的情况
         --- 获取玩家
