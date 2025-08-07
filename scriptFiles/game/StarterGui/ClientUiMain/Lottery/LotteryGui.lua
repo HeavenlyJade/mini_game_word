@@ -30,8 +30,8 @@ function LotteryGui:OnInit(node, config)
     self.fiveDrawButton = self:Get("黑色底图/抽奖界面/五连抽", ViewButton) ---@type ViewButton
 
     -- 价格显示
-    self.singlePriceComponent = self:Get("黑色底图/抽奖界面/单抽/价格圈/价格框", ViewComponent) ---@type ViewComponent
-    self.fivePriceComponent = self:Get("黑色底图/抽奖界面/五连抽/价格图/价格框", ViewComponent) ---@type ViewComponent
+    self.singlePriceComponent = self:Get("黑色底图/抽奖界面/单抽", ViewComponent) ---@type ViewComponent
+    self.fivePriceComponent = self:Get("黑色底图/抽奖界面/五连抽", ViewComponent) ---@type ViewComponent
 
     -- 抽奖档位
     self.lotteryTierComponent = self:Get("黑色底图/抽奖档位", ViewList) ---@type ViewList
@@ -46,7 +46,7 @@ function LotteryGui:OnInit(node, config)
 
     -- 概率显示
     self.normalProbabilityComponent = self:Get("黑色底图/普通概率/价格图", ViewComponent) ---@type ViewComponent
-    self.advancedProbabilityComponent = self:Get("黑色底图/高级概率/价格圈", ViewComponent) ---@type ViewComponent
+    self.advancedProbabilityComponent = self:Get("黑色底图/高级概率/价格图", ViewComponent) ---@type ViewComponent
 
     -- 奖励模板
     self.rewardTemplate = self:Get("黑色底图/抽奖界面/模版界面/奖励模版", ViewComponent) ---@type ViewComponent
