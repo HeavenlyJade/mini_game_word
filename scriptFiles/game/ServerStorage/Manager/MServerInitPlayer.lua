@@ -332,7 +332,7 @@ function MServerInitPlayer.OnPlayerSave(uin_)
         -- 保存各个系统的数据
     MailMgr.SavePlayerMailData(uin_)
     BagMgr.SaveAllOnlinePlayerBags(uin_)
-    PetMgr.SavePlayerPetData(uin_)
+    PetMgr.ForceSavePlayerData(uin_)
     PartnerMgr.SavePlayerPartnerData(uin_)
     WingMgr.SavePlayerWingData(uin_)
     TrailMgr.SavePlayerTrailData(uin_)
