@@ -156,6 +156,15 @@ function LotteryType:GetRewardPoolSize()
     return #self.rewardPool
 end
 
+--- 获取总权重
+---@return number 总权重
+function LotteryType:GetTotalWeight()
+    local totalWeight = 0
+    for _, reward in ipairs(self.rewardPool) do
+        totalWeight = totalWeight + (reward.weight or 0)
+    end
+    return totalWeight
+end
 
 
 --- 获取抽奖类型

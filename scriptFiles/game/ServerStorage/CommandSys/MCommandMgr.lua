@@ -16,6 +16,7 @@ local json = require(MainStorage.Code.Untils.json) ---@type json
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local TrailCommand = require(ServerStorage.CommandSys.Commands.MTrailCom) ---@type TrailCommand
 local RewardCommand = require(ServerStorage.CommandSys.Commands.RewardCommand) ---@type RewardCommand
+local OpenUICommand = require(ServerStorage.CommandSys.Commands.OpenUICommand) ---@type OpenUICommand
 
 
 ---@class CommandManager
@@ -39,6 +40,8 @@ CommandManager.handlers = {
     ["clearPlayerData"] = ClearDataCommand.main,
     ["trail"] = TrailCommand.main,
     ["reward"] = RewardCommand.main,
+	["openui"] = OpenUICommand.main,
+
 
 
 

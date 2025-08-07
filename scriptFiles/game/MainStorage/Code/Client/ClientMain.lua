@@ -103,7 +103,6 @@ end
 function ClientMain.OnClientNotify(args)
     if type(args) ~= 'table' then return end
     if not args.cmd then return end
-
     if args.__cb then
         args.Return = function(returnData)
             gg.network_channel:FireServer({
