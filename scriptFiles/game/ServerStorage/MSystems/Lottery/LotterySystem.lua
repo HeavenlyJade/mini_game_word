@@ -54,7 +54,7 @@ end
 ---@return boolean, string 是否可以抽奖，错误信息
 function LotterySystem:CanDraw(poolName, drawType)
     -- 获取抽奖配置
-    local lotteryConfig = ConfigLoader.GetLotteryConfig(poolName)
+    local lotteryConfig = ConfigLoader.GetLottery(poolName)
     if not lotteryConfig then
         return false, "抽奖池配置不存在"
     end
@@ -146,7 +146,7 @@ function LotterySystem:PerformDraw(poolName, drawType)
     end
     
     -- 获取抽奖配置
-    local lotteryConfig = ConfigLoader.GetLotteryConfig(poolName)
+    local lotteryConfig = ConfigLoader.GetLottery(poolName)
     local poolData = self:GetPoolData(poolName)
     
     -- 确定抽奖次数

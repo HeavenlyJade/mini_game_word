@@ -352,7 +352,7 @@ function LotteryEventManager.NotifyAllDataToClient(uin)
     end
     
     -- 获取所有抽奖池数据
-    local lotteryData = lotterySystem:GetAllLotteryData()
+    local lotteryData = lotterySystem:GetData()
     
     -- 发送完整抽奖数据给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.LOTTERY_DATA, {

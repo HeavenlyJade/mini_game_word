@@ -32,7 +32,6 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field isEnabled boolean 是否启用
 ---@field cooldownTime number 冷却时间
 ---@field dailyLimit number 每日次数限制
----@field totalWeight number 总权重
 ---@field New fun(data:table):LotteryType
 local LotteryType = ClassMgr.Class("LotteryType")
 
@@ -46,7 +45,6 @@ function LotteryType:OnInit(data)
     
     -- 解析奖励池
     self.rewardPool = {}
-    self.totalWeight = 0
     self:ParseRewardPool(data["奖励池"] or {})
     
     -- 解析消耗配置
@@ -76,7 +74,6 @@ function LotteryType:ParseRewardPool(rawPool)
         }
         
         table.insert(self.rewardPool, reward)
-        self.totalWeight = self.totalWeight + reward.weight
     end
 end
 
@@ -93,11 +90,21 @@ end
 --- 根据权重随机选择奖励
 ---@return LotteryRewardItem|nil 选中的奖励
 function LotteryType:RandomSelectReward()
-    if self.totalWeight <= 0 then
+    if #self.rewardPool == 0 then
         return nil
     end
     
-    local randomWeight = math.random() * self.totalWeight
+    -- 计算总权重
+    local totalWeight = 0
+    for _, reward in ipairs(self.rewardPool) do
+        totalWeight = totalWeight + reward.weight
+    end
+    
+    if totalWeight <= 0 then
+        return nil
+    end
+    
+    local randomWeight = math.random() * totalWeight
     local currentWeight = 0
     
     for _, reward in ipairs(self.rewardPool) do
@@ -149,11 +156,7 @@ function LotteryType:GetRewardPoolSize()
     return #self.rewardPool
 end
 
---- 获取总权重
----@return number 总权重
-function LotteryType:GetTotalWeight()
-    return self.totalWeight
-end
+
 
 --- 获取抽奖类型
 ---@return string 抽奖类型
@@ -177,6 +180,24 @@ end
 ---@return string 描述
 function LotteryType:GetDescription()
     return self.description
+end
+
+--- 计算并格式化奖励项的概率显示
+---@param rewardItem LotteryRewardItem 奖励项
+---@return string 格式化后的概率文本
+function LotteryType:GetFormattedProbability(rewardItem)
+    if not rewardItem then
+        return "0%"
+    end
+    
+    local weight = rewardItem.weight or 0
+    local probability = weight
+    -- 格式化概率显示：如果是整数则去掉小数点
+    if math.floor(probability) == probability then
+        return string.format("%d%%", probability)
+    else
+        return string.format("%.2f%%", probability)
+    end
 end
 
 return LotteryType

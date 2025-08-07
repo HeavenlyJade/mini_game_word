@@ -25,7 +25,7 @@ local OnlineRewardsGui = ClassMgr.Class("OnlineRewardsGui", ViewBase)
 
 
 function OnlineRewardsGui:OnInit(node, config)
-    gg.log("=== OnlineRewardsGui 开始初始化 ===")
+    --gg.log("=== OnlineRewardsGui 开始初始化 ===")
     
     -- UI组件初始化
     self.closeButton = self:Get("在线奖励界面/关闭", ViewButton) ---@type ViewButton
@@ -77,14 +77,14 @@ function OnlineRewardsGui:OnInit(node, config)
     -- 初始化UI状态
     self:InitializeUI()
     
-    gg.log("=== OnlineRewardsGui 在线奖励界面初始化完成 ===")
+    --gg.log("=== OnlineRewardsGui 在线奖励界面初始化完成 ===")
 end
 
 
 function OnlineRewardsGui:InitRewardConfig()
     self.rewardConfig = ConfigLoader.GetReward(self.currentConfig)
     if not self.rewardConfig then
-        ----gg.log("奖励配置未加载，无法初始化奖励槽位")
+        ------gg.log("奖励配置未加载，无法初始化奖励槽位")
         return false
     end
     return true
@@ -97,7 +97,7 @@ function OnlineRewardsGui:InitRewardSlots()
     
     -- 检查primarySlot是否存在
     if not self.primarySlot then
-        ----gg.log("警告：primarySlot未找到，无法初始化奖励槽位")
+        ------gg.log("警告：primarySlot未找到，无法初始化奖励槽位")
         return
     end
     
@@ -108,7 +108,7 @@ function OnlineRewardsGui:InitRewardSlots()
     -- 获取奖励列表
     local rewardList = self.rewardConfig.rewardList
     if not rewardList then
-        ----gg.log("奖励列表为空")
+        ------gg.log("奖励列表为空")
         return
     end
     
@@ -135,7 +135,7 @@ function OnlineRewardsGui:InitRewardSlots()
         end
     end
     
-    ----gg.log("奖励槽位初始化完成，共加载 " .. #rewardList .. " 个奖励")
+    ------gg.log("奖励槽位初始化完成，共加载 " .. #rewardList .. " 个奖励")
 end
 
 function OnlineRewardsGui:InitConfigSlots()
@@ -147,7 +147,7 @@ function OnlineRewardsGui:InitConfigSlots()
     
     -- 检查primarySlot是否存在
     if not self.primarySlot then
-        ----gg.log("警告：primarySlot未找到，无法初始化配置槽位")
+        ------gg.log("警告：primarySlot未找到，无法初始化配置槽位")
         return
     end
     
@@ -160,7 +160,7 @@ function OnlineRewardsGui:InitConfigSlots()
         end
     end
     
-    ----gg.log("配置槽位初始化完成，可用配置:", table.concat(availableConfigs, ", "))
+    ------gg.log("配置槽位初始化完成，可用配置:", table.concat(availableConfigs, ", "))
 end
 
 function OnlineRewardsGui:SetupRewardSlot(slotNode, reward, index)
@@ -224,10 +224,10 @@ function OnlineRewardsGui:SetupRewardSlot(slotNode, reward, index)
 end
 
 function OnlineRewardsGui:OnRewardSlotClick(index, reward)
-    --gg.log("=== 点击奖励槽位 ===")
-    --gg.log(string.format("奖励索引: %d, 时间节点: %d", index, reward.timeNode or 0))
-    --gg.log(string.format("当前在线时长: %d 秒", self.onlineTime or 0))
-    --gg.log(string.format("奖励配置: %s", gg.json.encode(reward or {})))
+    ----gg.log("=== 点击奖励槽位 ===")
+    ----gg.log(string.format("奖励索引: %d, 时间节点: %d", index, reward.timeNode or 0))
+    ----gg.log(string.format("当前在线时长: %d 秒", self.onlineTime or 0))
+    ----gg.log(string.format("奖励配置: %s", gg.json.encode(reward or {})))
     
     -- 客户端时间检查：如果在线时长不足，直接拒绝
     if reward.timeNode and self.onlineTime < reward.timeNode then
@@ -238,21 +238,21 @@ function OnlineRewardsGui:OnRewardSlotClick(index, reward)
     if self.rewardData and self.rewardData.rewards then
         local rewardStatus = self.rewardData.rewards[index]
         if rewardStatus then
-            --gg.log(string.format("奖励状态: %d (0=未达成, 1=可领取, 2=已领取)", rewardStatus.status))
+            ----gg.log(string.format("奖励状态: %d (0=未达成, 1=可领取, 2=已领取)", rewardStatus.status))
             
             if rewardStatus.status == 1 then
-                --gg.log("奖励可领取，开始领取流程")
+                ----gg.log("奖励可领取，开始领取流程")
                 self:ClaimReward(index)
             else
-                --gg.log(string.format("该奖励暂不可领取，状态: %d", rewardStatus.status))
+                ----gg.log(string.format("该奖励暂不可领取，状态: %d", rewardStatus.status))
             end
         else
-            --gg.log("警告：找不到奖励状态数据")
+            ----gg.log("警告：找不到奖励状态数据")
         end
     else
-        --gg.log("警告：奖励数据未加载")
+        ----gg.log("警告：奖励数据未加载")
     end
-    --gg.log("=== 点击奖励槽位结束 ===")
+    ----gg.log("=== 点击奖励槽位结束 ===")
 end
 
 -- =================================
@@ -260,11 +260,10 @@ end
 -- =================================
 
 function OnlineRewardsGui:RegisterEvents()
-    gg.log("=== 注册在线奖励系统事件监听 ===")
+    --gg.log("=== 注册在线奖励系统事件监听 ===")
     
     -- 监听在线奖励数据响应
     ClientEventManager.Subscribe(RewardEvent.RESPONSE.ONLINE_REWARD_DATA, function(data)
-        gg.log("客户端收到 ONLINE_REWARD_DATA 事件:", data)
         self:OnRewardDataResponse(data)
     end)
     
@@ -287,7 +286,7 @@ function OnlineRewardsGui:RegisterEvents()
     
     -- 监听新奖励可领取通知
     ClientEventManager.Subscribe(RewardEvent.NOTIFY.NEW_AVAILABLE, function(data)
-        gg.log("客户端收到 NEW_AVAILABLE 事件:", data)
+        --gg.log("客户端收到 NEW_AVAILABLE 事件:", data)
         self:OnNewAvailable(data)
     end)
     
@@ -306,7 +305,7 @@ function OnlineRewardsGui:RegisterEvents()
         self:OnDailyReset(data)
     end)
     
-    gg.log("=== 在线奖励系统事件监听注册完成 ===")
+    --gg.log("=== 在线奖励系统事件监听注册完成 ===")
 end
 
 -- =================================
@@ -347,7 +346,7 @@ function OnlineRewardsGui:InitializeUI()
     -- 启动倒计时定时器
     self:StartCountdownTimer()
     
-    ----gg.log("在线奖励界面UI初始化完成")
+    ------gg.log("在线奖励界面UI初始化完成")
 end
 
 -- =================================
@@ -375,7 +374,7 @@ function OnlineRewardsGui:Show()
     -- 请求服务器数据
     self:RequestRewardData()
     
-    ----gg.log("在线奖励界面已显示")
+    ------gg.log("在线奖励界面已显示")
 end
 
 function OnlineRewardsGui:Hide()
@@ -389,7 +388,7 @@ function OnlineRewardsGui:Hide()
     -- 停止倒计时定时器
     self:StopCountdownTimer()
     
-    ----gg.log("在线奖励界面已隐藏")
+    ------gg.log("在线奖励界面已隐藏")
 end
 
 -- =================================
@@ -413,7 +412,7 @@ function OnlineRewardsGui:SwitchConfig(configName)
     -- 请求新配置的数据
     self:RequestRewardData()
     
-    ----gg.log(string.format("切换到配置: %s", configName))
+    ------gg.log(string.format("切换到配置: %s", configName))
 end
 
 
@@ -430,15 +429,15 @@ function OnlineRewardsGui:RequestRewardData()
 end
 
 function OnlineRewardsGui:ClaimReward(index)
-    --gg.log("=== 开始领取奖励 ===")
-    --gg.log(string.format("奖励索引: %d, 配置: %s", index, self.currentConfig))
+    ----gg.log("=== 开始领取奖励 ===")
+    ----gg.log(string.format("奖励索引: %d, 配置: %s", index, self.currentConfig))
     
     -- 再次检查时间条件
     local reward = self:GetRewardByIndex(index)
     if reward and reward.timeNode then
-        --gg.log(string.format("最终时间检查：需要 %d 秒，当前 %d 秒", reward.timeNode, self.onlineTime))
+        ----gg.log(string.format("最终时间检查：需要 %d 秒，当前 %d 秒", reward.timeNode, self.onlineTime))
         if self.onlineTime < reward.timeNode then
-            --gg.log("错误：时间不足，但按钮仍然可点击！这是一个bug")
+            ----gg.log("错误：时间不足，但按钮仍然可点击！这是一个bug")
             return
         end
     end
@@ -447,13 +446,13 @@ function OnlineRewardsGui:ClaimReward(index)
     if self.rewardData and self.rewardData.rewards then
         local rewardStatus = self.rewardData.rewards[index]
         if rewardStatus then
-            --gg.log(string.format("最终状态检查：状态=%d", rewardStatus.status))
+            ----gg.log(string.format("最终状态检查：状态=%d", rewardStatus.status))
             if rewardStatus.status ~= 1 then
-                --gg.log("错误：状态不是可领取，但按钮仍然可点击！这是一个bug")
+                ----gg.log("错误：状态不是可领取，但按钮仍然可点击！这是一个bug")
                 return
             end
         else
-            --gg.log("错误：找不到奖励状态数据")
+            ----gg.log("错误：找不到奖励状态数据")
             return
         end
     end
@@ -461,14 +460,14 @@ function OnlineRewardsGui:ClaimReward(index)
     -- 立即隐藏对应的领取按钮，防止重复点击
     self:HideClaimButton(index)
     
-    --gg.log("发送领取请求到服务端")
+    ----gg.log("发送领取请求到服务端")
     gg.network_channel:FireServer({
         cmd = RewardEvent.REQUEST.CLAIM_ONLINE_REWARD,
         index = index,
         configName = self.currentConfig
     })
     
-    --gg.log("=== 领取奖励请求已发送 ===")
+    ----gg.log("=== 领取奖励请求已发送 ===")
 end
 
 function OnlineRewardsGui:ClaimAllRewards()
@@ -486,7 +485,7 @@ function OnlineRewardsGui:ClaimAllRewards()
         configName = self.currentConfig
     })
     
-    ----gg.log("请求一键领取所有奖励")
+    ------gg.log("请求一键领取所有奖励")
 end
 
 -- =================================
@@ -495,40 +494,40 @@ end
 
 function OnlineRewardsGui:OnRewardDataResponse(data)
     if not data or not data.success then
-        gg.log("获取奖励数据失败:", data and data.errorMsg or "未知错误")
+        --gg.log("获取奖励数据失败:", data and data.errorMsg or "未知错误")
         return
     end
     
-    gg.log("=== 收到奖励数据响应 ===")
-    gg.log("响应数据:", data)
+    --gg.log("=== 收到奖励数据响应 ===")
+    -- --gg.log("响应数据:", data)
     
     self.rewardData = data.data
-    gg.log("已设置 rewardData:", self.rewardData)
+    --gg.log("已设置 rewardData:", self.rewardData)
     
     -- 同步在线时长
     if self.rewardData and self.rewardData.roundOnlineTime then
         self.onlineTime = self.rewardData.roundOnlineTime
         self.lastUpdateTime = gg.GetTimeStamp()
-        gg.log(string.format("同步在线时长: %d 秒", self.onlineTime))
+        --gg.log(string.format("同步在线时长: %d 秒", self.onlineTime))
     end
     
     -- 检查奖励槽位是否已初始化
     if not self.rewardConfig then
-        gg.log("奖励配置未初始化，开始初始化...")
+        --gg.log("奖励配置未初始化，开始初始化...")
         self:InitRewardConfig()
         self:InitRewardSlots()
         self:InitConfigSlots()
     end
     
-    gg.log("开始更新奖励显示...")
+    --gg.log("开始更新奖励显示...")
     self:UpdateRewardDisplay()
     
-    gg.log("=== 奖励数据响应处理完成 ===")
+    --gg.log("=== 奖励数据响应处理完成 ===")
 end
 
 function OnlineRewardsGui:OnClaimRewardResponse(data)
     if not data or not data.success then
-        ----gg.log("领取奖励失败:", data and data.errorMsg or "未知错误")
+        ------gg.log("领取奖励失败:", data and data.errorMsg or "未知错误")
         
         -- 领取失败时，恢复按钮状态
         if data and data.index then
@@ -543,12 +542,12 @@ function OnlineRewardsGui:OnClaimRewardResponse(data)
         self:UpdateSingleRewardStatus(data.index, 2)  -- 标记为已领取
     end
     
-    ----gg.log(string.format("奖励领取成功: %d", data.index))
+    ------gg.log(string.format("奖励领取成功: %d", data.index))
 end
 
 function OnlineRewardsGui:OnClaimAllResponse(data)
     if not data or not data.success then
-        ----gg.log("一键领取失败:", data and data.errorMsg or "未知错误")
+        ------gg.log("一键领取失败:", data and data.errorMsg or "未知错误")
         
         -- 一键领取失败时，恢复所有按钮状态
         if self.rewardData and self.rewardData.rewards then
@@ -572,58 +571,58 @@ function OnlineRewardsGui:OnClaimAllResponse(data)
         end
     end
     
-    ----gg.log(string.format("一键领取成功，共领取 %d 个奖励", data.count))
+    ------gg.log(string.format("一键领取成功，共领取 %d 个奖励", data.count))
 end
 
 function OnlineRewardsGui:OnSwitchConfigResponse(data)
     if not data or not data.success then
-        ----gg.log("切换配置失败:", data and data.errorMsg or "未知错误")
+        ------gg.log("切换配置失败:", data and data.errorMsg or "未知错误")
         return
     end
     
-    ----gg.log(string.format("配置切换成功: %s", data.newConfig))
+    ------gg.log(string.format("配置切换成功: %s", data.newConfig))
 end
 
 
 
 function OnlineRewardsGui:OnNewAvailable(data)
-    ----gg.log("客户端收到新奖励可领取通知:", data)
+    ------gg.log("客户端收到新奖励可领取通知:", data)
     
     -- 更新在线时长（从服务端同步）
     if data.onlineTime then
         self.onlineTime = data.onlineTime
         self.lastUpdateTime = gg.GetTimeStamp()
-        ----gg.log(string.format("同步在线时长: %d 秒", self.onlineTime))
+        ------gg.log(string.format("同步在线时长: %d 秒", self.onlineTime))
     end
     
     -- 更新所有奖励的状态
     if data.availableIndices then
         for _, index in ipairs(data.availableIndices) do
             self:UpdateSingleRewardStatus(index, 1)  -- 标记为可领取
-            ----gg.log(string.format("已更新奖励 %d 为可领取状态", index))
+            ------gg.log(string.format("已更新奖励 %d 为可领取状态", index))
         end
-        ----gg.log(string.format("更新了 %d 个可领取奖励", #data.availableIndices))
+        ------gg.log(string.format("更新了 %d 个可领取奖励", #data.availableIndices))
     end
     
     if data.claimedIndices then
         for _, index in ipairs(data.claimedIndices) do
             self:UpdateSingleRewardStatus(index, 2)  -- 标记为已领取
-            ----gg.log(string.format("已更新奖励 %d 为已领取状态", index))
+            ------gg.log(string.format("已更新奖励 %d 为已领取状态", index))
         end
-        ----gg.log(string.format("更新了 %d 个已领取奖励", #data.claimedIndices))
+        ------gg.log(string.format("更新了 %d 个已领取奖励", #data.claimedIndices))
     end
     
     if data.unavailableIndices then
         for _, index in ipairs(data.unavailableIndices) do
             self:UpdateSingleRewardStatus(index, 0)  -- 标记为不可领取
-            ----gg.log(string.format("已更新奖励 %d 为不可领取状态", index))
+            ------gg.log(string.format("已更新奖励 %d 为不可领取状态", index))
         end
-        ----gg.log(string.format("更新了 %d 个不可领取奖励", #data.unavailableIndices))
+        ------gg.log(string.format("更新了 %d 个不可领取奖励", #data.unavailableIndices))
     end
     
     -- 显示总体信息
     if data.hasAvailable then
-        ----gg.log(string.format("有新的奖励可领取，在线时长: %d 秒", data.onlineTime or 0))
+        ------gg.log(string.format("有新的奖励可领取，在线时长: %d 秒", data.onlineTime or 0))
     end
 end
 
@@ -635,13 +634,13 @@ function OnlineRewardsGui:OnRewardClaimed(data)
 end
 
 function OnlineRewardsGui:OnRoundReset(data)
-    ----gg.log(string.format("轮次重置: 第 %d 轮", data.newRound))
+    ------gg.log(string.format("轮次重置: 第 %d 轮", data.newRound))
     -- 重新请求数据
     self:RequestRewardData()
 end
 
 function OnlineRewardsGui:OnDailyReset(data)
-    ----gg.log(string.format("每日重置: %s", data.date))
+    ------gg.log(string.format("每日重置: %s", data.date))
     -- 重新请求数据
     self:RequestRewardData()
 end
@@ -663,7 +662,7 @@ function OnlineRewardsGui:UpdateRewardDisplay()
         end
     end
     
-    ----gg.log("奖励显示更新完成")
+    ------gg.log("奖励显示更新完成")
 end
 
 function OnlineRewardsGui:UpdateRewardSlotStatus(slotNode, rewardStatus, index)
@@ -721,7 +720,7 @@ function OnlineRewardsGui:UpdateSingleRewardStatus(index, status)
         end
     end
     
-    ----gg.log(string.format("已更新奖励 %d 的状态为: %d", index, status))
+    ------gg.log(string.format("已更新奖励 %d 的状态为: %d", index, status))
 end
 
 --- 隐藏领取按钮
@@ -729,7 +728,7 @@ end
 function OnlineRewardsGui:HideClaimButton(index)
     local slotNode = self.rewardNodeMap[index]
     if not slotNode then
-        ----gg.log(string.format("警告：找不到奖励 %d 的节点", index))
+        ------gg.log(string.format("警告：找不到奖励 %d 的节点", index))
         return
     end
     
@@ -739,12 +738,12 @@ function OnlineRewardsGui:HideClaimButton(index)
         local claimButton = backgroundNode:FindFirstChild("领取")
         if claimButton then
             claimButton.Visible = false
-            ----gg.log(string.format("已隐藏奖励 %d 的领取按钮", index))
+            ------gg.log(string.format("已隐藏奖励 %d 的领取按钮", index))
         else
-            ----gg.log(string.format("警告：找不到奖励 %d 的领取按钮", index))
+            ------gg.log(string.format("警告：找不到奖励 %d 的领取按钮", index))
         end
     else
-        ----gg.log(string.format("警告：找不到奖励 %d 的背景节点", index))
+        ------gg.log(string.format("警告：找不到奖励 %d 的背景节点", index))
     end
     
     -- 同时禁用ViewButton
@@ -752,9 +751,9 @@ function OnlineRewardsGui:HideClaimButton(index)
     if slotButton then
         slotButton:SetGray(true)
         slotButton:SetTouchEnable(false, nil)
-        ----gg.log(string.format("已禁用奖励 %d 的ViewButton", index))
+        ------gg.log(string.format("已禁用奖励 %d 的ViewButton", index))
     else
-        ----gg.log(string.format("警告：找不到奖励 %d 的ViewButton", index))
+        ------gg.log(string.format("警告：找不到奖励 %d 的ViewButton", index))
     end
 end
 
@@ -772,7 +771,7 @@ function OnlineRewardsGui:ShowClaimButton(index)
         local claimButton = backgroundNode:FindFirstChild("领取")
         if claimButton then
             claimButton.Visible = true
-            ----gg.log(string.format("已显示奖励 %d 的领取按钮", index))
+            ------gg.log(string.format("已显示奖励 %d 的领取按钮", index))
         end
     end
     
@@ -786,7 +785,7 @@ function OnlineRewardsGui:ShowClaimButton(index)
                 local canClaim = rewardStatus.status == 1
                 slotButton:SetGray(not canClaim)
                 slotButton:SetTouchEnable(canClaim, nil)
-                ----gg.log(string.format("已启用奖励 %d 的ViewButton，可点击: %s", index, tostring(canClaim)))
+                ------gg.log(string.format("已启用奖励 %d 的ViewButton，可点击: %s", index, tostring(canClaim)))
             end
         end
     end
@@ -903,7 +902,7 @@ function OnlineRewardsGui:StartCountdownTimer()
     end
     self.countdownTimer:Start()
     
-    ----gg.log("在线奖励倒计时定时器已启动")
+    ------gg.log("在线奖励倒计时定时器已启动")
 end
 
 --- 停止倒计时定时器
@@ -912,7 +911,7 @@ function OnlineRewardsGui:StopCountdownTimer()
         self.countdownTimer:Stop()
         self.countdownTimer:Destroy()
         self.countdownTimer = nil
-        ----gg.log("在线奖励倒计时定时器已停止")
+        ------gg.log("在线奖励倒计时定时器已停止")
     end
 end
 
@@ -988,7 +987,7 @@ function OnlineRewardsGui:CheckForNewAvailableRewards()
 
             
             if currentStatus == 0 then  -- 如果当前是未达成状态
-                --gg.log(string.format("奖励 %d 变为可领取状态", index))
+                ----gg.log(string.format("奖励 %d 变为可领取状态", index))
                 self:UpdateRewardButtonState(index, 1)  -- 更新为可领取
                 newAvailableCount = newAvailableCount + 1
             end
@@ -996,7 +995,7 @@ function OnlineRewardsGui:CheckForNewAvailableRewards()
     end
     
     if newAvailableCount > 0 then
-        --gg.log(string.format("有 %d 个新奖励变为可领取", newAvailableCount))
+        ----gg.log(string.format("有 %d 个新奖励变为可领取", newAvailableCount))
     end
 end
 
@@ -1004,7 +1003,7 @@ end
 ---@param index number 奖励索引
 ---@param status number 状态: 0=未达成, 1=可领取, 2=已领取
 function OnlineRewardsGui:UpdateRewardButtonState(index, status)
-    --gg.log(string.format("=== 更新奖励 %d 按钮状态: %d ===", index, status))
+    ----gg.log(string.format("=== 更新奖励 %d 按钮状态: %d ===", index, status))
     
     -- 更新本地数据
     if self.rewardData and self.rewardData.rewards then
@@ -1012,7 +1011,7 @@ function OnlineRewardsGui:UpdateRewardButtonState(index, status)
         if rewardStatus then
             local oldStatus = rewardStatus.status
             rewardStatus.status = status
-            --gg.log(string.format("本地数据状态更新: %d -> %d", oldStatus, status))
+            ----gg.log(string.format("本地数据状态更新: %d -> %d", oldStatus, status))
         end
     end
     
@@ -1020,9 +1019,9 @@ function OnlineRewardsGui:UpdateRewardButtonState(index, status)
     if status == 1 then
         local reward = self.rewardConfig and self.rewardConfig:GetRewardByIndex(index)
         if reward and reward.timeNode then
-            --gg.log(string.format("时间检查：需要 %d 秒，当前 %d 秒", reward.timeNode, self.onlineTime))
+            ----gg.log(string.format("时间检查：需要 %d 秒，当前 %d 秒", reward.timeNode, self.onlineTime))
             if self.onlineTime < reward.timeNode then
-                --gg.log(string.format("警告：奖励 %d 时间未到，强制设置为不可领取", index))
+                ----gg.log(string.format("警告：奖励 %d 时间未到，强制设置为不可领取", index))
                 status = 0  -- 强制设置为未达成
             end
         end
@@ -1034,7 +1033,7 @@ function OnlineRewardsGui:UpdateRewardButtonState(index, status)
         local canClaim = status == 1
         slotButton:SetGray(not canClaim)
         slotButton:SetTouchEnable(canClaim, nil)
-        --gg.log(string.format("按钮 %d 设置为可点击: %s", index, tostring(canClaim)))
+        ----gg.log(string.format("按钮 %d 设置为可点击: %s", index, tostring(canClaim)))
     end
     
     -- 根据状态显示或隐藏按钮
@@ -1044,7 +1043,7 @@ function OnlineRewardsGui:UpdateRewardButtonState(index, status)
         self:ShowClaimButton(index)
     end
     
-    --gg.log(string.format("=== 奖励 %d 按钮状态更新完成 ===", index))
+    ----gg.log(string.format("=== 奖励 %d 按钮状态更新完成 ===", index))
 end
 
 --- 获取奖励状态（本地计算）
