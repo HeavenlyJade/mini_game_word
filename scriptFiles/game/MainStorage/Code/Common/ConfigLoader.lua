@@ -17,6 +17,7 @@ local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType)
 local AchievementType = require(MainStorage.Code.Common.TypeConfig.AchievementType)
 local ActionCostType = require(MainStorage.Code.Common.TypeConfig.ActionCostType) ---@type ActionCostType
 local RewardType = require(MainStorage.Code.Common.TypeConfig.RewardType) ---@type RewardType
+local LotteryType = require(MainStorage.Code.Common.TypeConfig.LotteryType) ---@type LotteryType
 
 -- 引用所有 Config 的原始数据
 local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig)
@@ -35,6 +36,7 @@ local PlayerInitConfig = require(MainStorage.Code.Common.Config.PlayerInitConfig
 local VariableNameConfig = require(MainStorage.Code.Common.Config.VariableNameConfig)
 local GameModeConfig = require(MainStorage.Code.Common.Config.GameModeConfig)
 local RewardConfig = require(MainStorage.Code.Common.Config.RewardConfig)
+local LotteryConfig = require(MainStorage.Code.Common.Config.LotteryConfig)
 
 -- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) -- 已移除
 -- local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) -- 已移除
@@ -62,6 +64,7 @@ ConfigLoader.PlayerInits = {}
 ConfigLoader.VariableNames = {}
 ConfigLoader.GameModes = {}
 ConfigLoader.Rewards = {} -- 新增奖励配置存储
+ConfigLoader.Lotteries = {} -- 新增抽奖配置存储
 
 --- 一个通用的加载函数，避免重复代码
 ---@param configData table 从Config目录加载的原始数据
@@ -103,6 +106,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(SkillConfig, SkillTypes, ConfigLoader.Skills, "Skill")
     ConfigLoader.LoadConfig(AchievementConfig, AchievementType, ConfigLoader.Achievements, "Achievement")
     ConfigLoader.LoadConfig(RewardConfig, RewardType, ConfigLoader.Rewards, "Reward")
+    ConfigLoader.LoadConfig(LotteryConfig, LotteryType, ConfigLoader.Lotteries, "Lottery")
     -- ConfigLoader.LoadConfig(ItemQualityConfig, nil, ConfigLoader.ItemQualities, "ItemQuality") -- 暂无ItemQualityType
     -- ConfigLoader.LoadConfig(MailConfig, nil, ConfigLoader.Mails, "Mail") -- 暂无MailType
     -- ConfigLoader.LoadConfig(NpcConfig, nil, ConfigLoader.Npcs, "Npc") -- 暂无NpcType
@@ -234,6 +238,17 @@ end
 ---@return table<string, RewardType>
 function ConfigLoader.GetAllRewards()
     return ConfigLoader.Rewards
+end
+
+---@param id string
+---@return LotteryType
+function ConfigLoader.GetLottery(id)
+    return ConfigLoader.Lotteries[id]
+end
+
+---@return table<string, LotteryType>
+function ConfigLoader.GetAllLotteries()
+    return ConfigLoader.Lotteries
 end
 
 return ConfigLoader 

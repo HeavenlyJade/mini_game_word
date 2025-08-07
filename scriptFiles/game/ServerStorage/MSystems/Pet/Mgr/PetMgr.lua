@@ -616,33 +616,45 @@ function PetMgr.UpdateAllPlayerPetBuffs()
     end
 end
 
----定时保存所有在线玩家的宠物数据
-function PetMgr.SaveAllPlayerData()
-    for uin, petManager in pairs(PetMgr.server_player_pets) do
+-- 移除定时存盘功能，现在使用统一的定时存盘机制
+-- function SaveAllPlayerData()
+--     for uin, petManager in pairs(PetMgr.server_player_pets) do
+--         local playerPetData = petManager:GetSaveData()
+--         if playerPetData then
+--             CloudPetDataAccessor:SavePlayerPetData(uin, playerPetData)
+--         end
+--     end
+--     -- --gg.log("PetMgr.SaveAllPlayerData: 批量保存所有玩家宠物数据") -- 日志已移至定时器启动时
+-- end
+
+-- -- 定时器回调函数
+-- local function SaveAllPlayerPets_()
+--     PetMgr.SaveAllPlayerData()
+-- end
+
+-- -- 创建并启动定时器
+-- local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+-- saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+-- saveTimer.Name = 'PET_SAVE_ALL'
+-- saveTimer.Delay = PetMgr.SAVE_INTERVAL
+-- saveTimer.Loop = true
+-- saveTimer.Interval = PetMgr.SAVE_INTERVAL
+-- saveTimer.Callback = SaveAllPlayerPets_
+-- saveTimer:Start()
+-- --gg.log("宠物数据定时保存任务已启动，间隔:", PetMgr.SAVE_INTERVAL, "秒")
+
+---保存指定玩家的宠物数据（供统一存盘机制调用）
+---@param uin number 玩家ID
+function PetMgr.SavePlayerPetData(uin)
+    local petManager = PetMgr.server_player_pets[uin]
+    if petManager then
         local playerPetData = petManager:GetSaveData()
         if playerPetData then
             CloudPetDataAccessor:SavePlayerPetData(uin, playerPetData)
+            --gg.log("统一存盘：已保存玩家", uin, "的宠物数据")
         end
     end
-    -- --gg.log("PetMgr.SaveAllPlayerData: 批量保存所有玩家宠物数据") -- 日志已移至定时器启动时
 end
-
-
--- 定时器回调函数
-local function SaveAllPlayerPets_()
-    PetMgr.SaveAllPlayerData()
-end
-
--- 创建并启动定时器
-local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-saveTimer.Name = 'PET_SAVE_ALL'
-saveTimer.Delay = PetMgr.SAVE_INTERVAL
-saveTimer.Loop = true
-saveTimer.Interval = PetMgr.SAVE_INTERVAL
-saveTimer.Callback = SaveAllPlayerPets_
-saveTimer:Start()
---gg.log("宠物数据定时保存任务已启动，间隔:", PetMgr.SAVE_INTERVAL, "秒")
 
 
 return PetMgr

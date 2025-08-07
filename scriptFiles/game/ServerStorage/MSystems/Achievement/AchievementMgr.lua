@@ -128,25 +128,35 @@ function AchievementMgr.HasAchievement(playerId, achievementId)
     return false
 end
 
--- 定时保存 --------------------------------------------------------
+-- 移除定时存盘功能，现在使用统一的定时存盘机制
+-- local function SaveAllPlayerAchievements()
+--     local count = 0
+--     for playerId in pairs(AchievementMgr.server_player_achievement_data) do
+--         AchievementMgr.SavePlayerAchievements(playerId)
+--         count = count + 1
+--     end
+--     -- --gg.log("定时保存成就数据完成，保存了", count, "个玩家的数据")
+-- end
 
-local function SaveAllPlayerAchievements()
-    local count = 0
-    for playerId in pairs(AchievementMgr.server_player_achievement_data) do
-        AchievementMgr.SavePlayerAchievements(playerId)
-        count = count + 1
+-- -- 定时器
+-- local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+-- saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+-- saveTimer.Name = 'ACHIEVEMENT_SAVE_ALL'
+-- saveTimer.Delay = 60
+-- saveTimer.Loop = true
+-- saveTimer.Interval = 60
+-- saveTimer.Callback = SaveAllPlayerAchievements
+-- saveTimer:Start()
+
+---保存指定玩家的成就数据（供统一存盘机制调用）
+---@param uin number 玩家ID
+function AchievementMgr.SavePlayerAchievementData(uin)
+    local playerAchievement = AchievementMgr.server_player_achievement_data[uin]
+    if playerAchievement then
+        local saveData = playerAchievement:GetSaveData()
+        AchievementCloudDataMgr.SavePlayerAchievements(uin, saveData)
+        --gg.log("统一存盘：已保存玩家", uin, "的成就数据")
     end
-    -- --gg.log("定时保存成就数据完成，保存了", count, "个玩家的数据")
 end
-
--- 定时器
-local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-saveTimer.Name = 'ACHIEVEMENT_SAVE_ALL'
-saveTimer.Delay = 60
-saveTimer.Loop = true
-saveTimer.Interval = 60
-saveTimer.Callback = SaveAllPlayerAchievements
-saveTimer:Start()
 
 return AchievementMgr

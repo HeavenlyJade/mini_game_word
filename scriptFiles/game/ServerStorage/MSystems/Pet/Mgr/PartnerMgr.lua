@@ -25,28 +25,42 @@ local PartnerMgr = {
     SAVE_INTERVAL = 60
 }
 
-function SaveAllPlayerPARTNER_()
-    local count = 0
-    for uin, partnerManager in pairs(PartnerMgr.server_player_partners) do
-        if partnerManager then
-            -- 提取数据并保存到云端
-            local playerPartnerData = partnerManager:GetSaveData()
-            if playerPartnerData then
-                CloudPartnerDataAccessor:SavePlayerPartnerData(uin, playerPartnerData)
-            end
+-- 移除定时存盘功能，现在使用统一的定时存盘机制
+-- function SaveAllPlayerPARTNER_()
+--     local count = 0
+--     for uin, partnerManager in pairs(PartnerMgr.server_player_partners) do
+--         if partnerManager then
+--             -- 提取数据并保存到云端
+--             local playerPartnerData = partnerManager:GetSaveData()
+--             if playerPartnerData then
+--                 CloudPartnerDataAccessor:SavePlayerPartnerData(uin, playerPartnerData)
+--             end
+--         end
+--     end
+--     -- --gg.log("定时保存伙伴数据完成，保存了", count, "个玩家的伙伴")
+-- end
+
+-- local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+-- saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+-- saveTimer.Name = 'PARTNER_SAVE_ALL'
+-- saveTimer.Delay = 60
+-- saveTimer.Loop = true
+-- saveTimer.Interval = 60
+-- saveTimer.Callback = SaveAllPlayerPARTNER_
+-- saveTimer:Start()
+
+---保存指定玩家的伙伴数据（供统一存盘机制调用）
+---@param uin number 玩家ID
+function PartnerMgr.SavePlayerPartnerData(uin)
+    local partnerManager = PartnerMgr.server_player_partners[uin]
+    if partnerManager then
+        local playerPartnerData = partnerManager:GetSaveData()
+        if playerPartnerData then
+            CloudPartnerDataAccessor:SavePlayerPartnerData(uin, playerPartnerData)
+            --gg.log("统一存盘：已保存玩家", uin, "的伙伴数据")
         end
     end
-    -- --gg.log("定时保存伙伴数据完成，保存了", count, "个玩家的伙伴")
 end
-
-local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-saveTimer.Name = 'PARTNER_SAVE_ALL'
-saveTimer.Delay = 60
-saveTimer.Loop = true
-saveTimer.Interval = 60
-saveTimer.Callback = SaveAllPlayerPARTNER_
-saveTimer:Start()
 
 
 ---玩家上线处理

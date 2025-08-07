@@ -23,7 +23,8 @@ local RewardMgr = {
 function RewardMgr.Init()
     gg.log("初始化奖励系统管理器")
     RewardMgr.StartUpdateTimer()
-    RewardMgr.StartSaveTimer()
+    -- 移除定时存盘功能，现在使用统一的定时存盘机制
+    -- RewardMgr.StartSaveTimer()
 end
 
 --- 启动更新定时器
@@ -44,23 +45,24 @@ function RewardMgr.StartUpdateTimer()
     RewardMgr.updateTimer:Start()
 end
 
---- 启动保存定时器
-function RewardMgr.StartSaveTimer()
-    if RewardMgr.saveTimer then
-        return
-    end
-    
-    RewardMgr.saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-    RewardMgr.saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-    RewardMgr.saveTimer.Name = "RewardMgr_SaveTimer"
-    RewardMgr.saveTimer.Delay = 60
-    RewardMgr.saveTimer.Loop = true
-    RewardMgr.saveTimer.Interval = 60  -- 每60秒保存
-    RewardMgr.saveTimer.Callback = function()
-        RewardMgr.SaveAllPlayerData()
-    end
-    RewardMgr.saveTimer:Start()
-end
+-- 移除定时存盘功能，现在使用统一的定时存盘机制
+-- --- 启动保存定时器
+-- function RewardMgr.StartSaveTimer()
+--     if RewardMgr.saveTimer then
+--         return
+--     end
+--     
+--     RewardMgr.saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+--     RewardMgr.saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+--     RewardMgr.saveTimer.Name = "RewardMgr_SaveTimer"
+--     RewardMgr.saveTimer.Delay = 60
+--     RewardMgr.saveTimer.Loop = true
+--     RewardMgr.saveTimer.Interval = 60  -- 每60秒保存
+--     RewardMgr.saveTimer.Callback = function()
+--         RewardMgr.SaveAllPlayerData()
+--     end
+--     RewardMgr.saveTimer:Start()
+-- end
 
 -- ==================== 玩家管理 ====================
 
@@ -420,20 +422,32 @@ end
 
 -- ==================== 数据保存 ====================
 
---- 保存所有玩家数据
-function RewardMgr.SaveAllPlayerData()
-    local count = 0
-    local dataToSave = {}
-    
-    for uin, rewardInstance in pairs(RewardMgr.playerRewards) do
-        dataToSave[uin] = rewardInstance:GetSaveData()
-        count = count + 1
-    end
-    
-    -- 批量保存
-    if count > 0 then
-        RewardCloudDataMgr.BatchSave(dataToSave)
-        ----gg.log(string.format("定时保存: 已保存 %d 个玩家的奖励数据", count))
+-- 移除定时存盘功能，现在使用统一的定时存盘机制
+-- --- 保存所有玩家数据
+-- function RewardMgr.SaveAllPlayerData()
+--     local count = 0
+--     local dataToSave = {}
+--     
+--     for uin, rewardInstance in pairs(RewardMgr.playerRewards) do
+--         dataToSave[uin] = rewardInstance:GetSaveData()
+--         count = count + 1
+--     end
+--     
+--     -- 批量保存
+--     if count > 0 then
+--         RewardCloudDataMgr.BatchSave(dataToSave)
+--         ----gg.log(string.format("定时保存: 已保存 %d 个玩家的奖励数据", count))
+--     end
+-- end
+
+---保存指定玩家的奖励数据（供统一存盘机制调用）
+---@param uin number 玩家ID
+function RewardMgr.SavePlayerRewardData(uin)
+    local rewardInstance = RewardMgr.playerRewards[uin]
+    if rewardInstance then
+        local saveData = rewardInstance:GetSaveData()
+        RewardCloudDataMgr.SavePlayerRewardData(uin, saveData)
+        --gg.log("统一存盘：已保存玩家", uin, "的奖励数据")
     end
 end
 
@@ -483,8 +497,10 @@ end
 
 --- 清理管理器（服务器关闭时调用）
 function RewardMgr.Cleanup()
-    -- 保存所有数据
-    RewardMgr.SaveAllPlayerData()
+    -- 保存所有数据（使用新的统一存盘机制）
+    for uin, _ in pairs(RewardMgr.playerRewards) do
+        RewardMgr.SavePlayerRewardData(uin)
+    end
     
     -- 停止定时器
     if RewardMgr.updateTimer then
@@ -493,11 +509,12 @@ function RewardMgr.Cleanup()
         RewardMgr.updateTimer = nil
     end
     
-    if RewardMgr.saveTimer then
-        RewardMgr.saveTimer:Stop()
-        RewardMgr.saveTimer:Destroy()
-        RewardMgr.saveTimer = nil
-    end
+    -- 移除定时存盘功能，现在使用统一的定时存盘机制
+    -- if RewardMgr.saveTimer then
+    --     RewardMgr.saveTimer:Stop()
+    --     RewardMgr.saveTimer:Destroy()
+    --     RewardMgr.saveTimer = nil
+    -- end
     
     -- 清空缓存
     RewardMgr.playerRewards = {}

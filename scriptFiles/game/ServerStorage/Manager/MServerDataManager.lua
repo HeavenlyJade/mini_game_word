@@ -25,6 +25,7 @@ local MServerDataManager = {
     GlobalMailManager = nil, ---@type GlobalMailManager | nil
     AchievementMgr = nil, ---@type AchievementMgr | nil
     RewardMgr=nil, ---@type RewardMgr | nil 
+    LotteryMgr=nil, ---@type LotteryMgr | nil
     uuid_start = 0,
     tick = 0
 }

@@ -25,28 +25,42 @@ local WingMgr = {
     SAVE_INTERVAL = 60
 }
 
-function SaveAllPlayerWING_()
-    local count = 0
-    for uin, wingManager in pairs(WingMgr.server_player_wings) do
-        if wingManager then
-            -- 提取数据并保存到云端
-            local playerWingData = wingManager:GetSaveData()
-            if playerWingData then
-                CloudWingDataAccessor:SavePlayerWingData(uin, playerWingData)
-            end
+-- 移除定时存盘功能，现在使用统一的定时存盘机制
+-- function SaveAllPlayerWING_()
+--     local count = 0
+--     for uin, wingManager in pairs(WingMgr.server_player_wings) do
+--         if wingManager then
+--             -- 提取数据并保存到云端
+--             local playerWingData = wingManager:GetSaveData()
+--             if playerWingData then
+--                 CloudWingDataAccessor:SavePlayerWingData(uin, playerWingData)
+--             end
+--         end
+--     end
+--     -- --gg.log("定时保存翅膀数据完成，保存了", count, "个玩家的翅膀")
+-- end
+
+-- local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+-- saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+-- saveTimer.Name = 'WING_SAVE_ALL'
+-- saveTimer.Delay = 60
+-- saveTimer.Loop = true
+-- saveTimer.Interval = 60
+-- saveTimer.Callback = SaveAllPlayerWING_
+-- saveTimer:Start()
+
+---保存指定玩家的翅膀数据（供统一存盘机制调用）
+---@param uin number 玩家ID
+function WingMgr.SavePlayerWingData(uin)
+    local wingManager = WingMgr.server_player_wings[uin]
+    if wingManager then
+        local playerWingData = wingManager:GetSaveData()
+        if playerWingData then
+            CloudWingDataAccessor:SavePlayerWingData(uin, playerWingData)
+            --gg.log("统一存盘：已保存玩家", uin, "的翅膀数据")
         end
     end
-    -- --gg.log("定时保存翅膀数据完成，保存了", count, "个玩家的翅膀")
 end
-
-local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-saveTimer.Name = 'WING_SAVE_ALL'
-saveTimer.Delay = 60
-saveTimer.Loop = true
-saveTimer.Interval = 60
-saveTimer.Callback = SaveAllPlayerWING_
-saveTimer:Start()
 
 ---玩家上线处理
 ---@param player MPlayer 玩家对象

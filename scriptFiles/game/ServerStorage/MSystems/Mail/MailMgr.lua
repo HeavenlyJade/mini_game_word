@@ -194,6 +194,17 @@ function MailMgr.OnPlayerLeave(uin)
     end
 end
 
+---保存指定玩家的邮件数据（供统一存盘机制调用）
+---@param uin number 玩家ID
+function MailMgr.SavePlayerMailData(uin)
+    local mailData = MailMgr.server_player_mail_data[uin]
+    if mailData then
+        -- 保存邮件数据到云端
+        MailMgr.SavePlayerMailToCloud(uin, mailData)
+        --gg.log("统一存盘：已保存玩家", uin, "的邮件数据")
+    end
+end
+
 ---------------------------------------------------------------------------------------------------
 --                                      业务逻辑层 (原MailManager功能)
 ---------------------------------------------------------------------------------------------------

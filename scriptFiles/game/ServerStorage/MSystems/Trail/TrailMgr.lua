@@ -26,29 +26,43 @@ local TrailMgr = {
     SAVE_INTERVAL = 60
 }
 
-function SaveAllPlayerTRAIL_()
-    local count = 0
-    for uin, trailManager in pairs(TrailMgr.server_player_trails) do
-        if trailManager then
-            -- 提取数据并保存到云端
-            local playerTrailData = trailManager:GetSaveData()
-            if playerTrailData then
-                CloudTrailDataAccessor:SavePlayerTrailData(uin, playerTrailData)
-                count = count + 1
-            end
+-- 移除定时存盘功能，现在使用统一的定时存盘机制
+-- function SaveAllPlayerTRAIL_()
+--     local count = 0
+--     for uin, trailManager in pairs(TrailMgr.server_player_trails) do
+--         if trailManager then
+--             -- 提取数据并保存到云端
+--             local playerTrailData = trailManager:GetSaveData()
+--             if playerTrailData then
+--                 CloudTrailDataAccessor:SavePlayerTrailData(uin, playerTrailData)
+--                 count = count + 1
+--             end
+--         end
+--     end
+--     --gg.log("定时保存尾迹数据完成，保存了", count, "个玩家的尾迹")
+-- end
+
+-- local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
+-- saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+-- saveTimer.Name = 'TRAIL_SAVE_ALL'
+-- saveTimer.Delay = 60
+-- saveTimer.Loop = true
+-- saveTimer.Interval = 60
+-- saveTimer.Callback = SaveAllPlayerTRAIL_
+-- saveTimer:Start()
+
+---保存指定玩家的尾迹数据（供统一存盘机制调用）
+---@param uin number 玩家ID
+function TrailMgr.SavePlayerTrailData(uin)
+    local trailManager = TrailMgr.server_player_trails[uin]
+    if trailManager then
+        local playerTrailData = trailManager:GetSaveData()
+        if playerTrailData then
+            CloudTrailDataAccessor:SavePlayerTrailData(uin, playerTrailData)
+            --gg.log("统一存盘：已保存玩家", uin, "的尾迹数据")
         end
     end
-    --gg.log("定时保存尾迹数据完成，保存了", count, "个玩家的尾迹")
 end
-
-local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-saveTimer.Name = 'TRAIL_SAVE_ALL'
-saveTimer.Delay = 60
-saveTimer.Loop = true
-saveTimer.Interval = 60
-saveTimer.Callback = SaveAllPlayerTRAIL_
-saveTimer:Start()
 
 ---玩家上线处理
 ---@param player MPlayer 玩家对象

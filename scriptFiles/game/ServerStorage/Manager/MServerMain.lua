@@ -99,6 +99,8 @@ function MainServer.initModule()
     local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
     local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
     local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
+    local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
+
     RewardMgr.Init()
     -- 延迟加载RewardMgr以避免循环引用
     serverDataMgr.BagMgr = BagMgr
@@ -110,6 +112,7 @@ function MainServer.initModule()
     serverDataMgr.GameModeManager = GameModeManager
     serverDataMgr.AchievementMgr = AchievementMgr
     serverDataMgr.RewardMgr = RewardMgr  -- 延迟加载
+    serverDataMgr.LotteryMgr = LotteryMgr
 
     gg.log("初始化事件管理器和命令管理器")
     -- 初始化事件管理器和命令管理器
@@ -124,6 +127,7 @@ function MainServer.initModule()
     local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
     local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
+    local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
 
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
@@ -137,6 +141,7 @@ function MainServer.initModule()
     RaceGameEventManager.Init()
     AchievementEventManager.Init()
     RewardEventManager.Init()
+    LotteryEventManager.Init()
 
  
     SceneNodeManager.Init()
@@ -219,7 +224,7 @@ function MainServer.bind_save_data_tick()
     timer.Interval = 120   -- 循环间隔多少秒
     timer.Callback = function()
         for uin, player in pairs(serverDataMgr.getAllPlayers()) do
-            player:leaveGame()
+            MServerInitPlayer.OnPlayerSave(uin)
         end
     end
     timer:Start()

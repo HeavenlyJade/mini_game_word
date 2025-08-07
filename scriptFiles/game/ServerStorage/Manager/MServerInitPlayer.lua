@@ -20,8 +20,9 @@ local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
 local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
 local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
-local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
-local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
+    local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
+    local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
+    local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 local PlayerInitMgr = require(ServerStorage.MSystems.PlayerInitMgr) ---@type PlayerInitMgr
@@ -150,6 +151,7 @@ function MServerInitPlayer.player_enter_game(player)
     TrailMgr.OnPlayerJoin(player_)
     local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
     RewardMgr.OnPlayerJoin(player_)
+    LotteryMgr.OnPlayerJoin(player_)
     if isNewPlayer then
         PlayerInitMgr.InitializeNewPlayer(player_)
     end
@@ -255,6 +257,16 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
         --gg.log("警告: 玩家", uin, "的尾迹数据不存在，跳过尾迹数据同步")
     end
 
+    -- 【新增】同步抽奖数据
+    local lotteryManager = LotteryMgr.GetPlayerLottery(uin)
+    if lotteryManager then
+        local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
+        LotteryEventManager.NotifyAllDataToClient(uin)
+        --gg.log("已主动同步抽奖数据到客户端:", uin)
+    else
+        --gg.log("警告: 玩家", uin, "的抽奖数据不存在，跳过抽奖数据同步")
+    end
+
     -- 获取变量数据
     if mplayer.variableSystem then
         local variableData = mplayer.variableSystem.variables
@@ -286,14 +298,14 @@ end
 -- 玩家离开游戏
 function MServerInitPlayer.player_leave_game(player)
     gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
-    local uin_ = player.UserId
+    local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
 
+    local uin_ = player.UserId
     local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer
     if mplayer then
         -- 【新增】清理玩家场景映射
         gg.player_scene_map[uin_] = nil
-        
-        -- 通知各个系统玩家已离开
+
         MailMgr.OnPlayerLeave(uin_)
         BagMgr.OnPlayerLeave(uin_)
         PetMgr.OnPlayerLeave(uin_)
@@ -302,11 +314,39 @@ function MServerInitPlayer.player_leave_game(player)
         TrailMgr.OnPlayerLeave(uin_)
         AchievementMgr.OnPlayerLeave(uin_)
         RewardMgr.OnPlayerLeave(uin_)
-        -- 其他管理器（如技能、任务等）的离线处理也可以在这里添加
-        mplayer:leaveGame() -- 保存玩家基础数据
+        LotteryMgr.OnPlayerLeave(uin_)
+        mplayer:leaveGame()
+
         serverDataMgr.removePlayer(uin_, player.Name)
     end
 end
+
+function MServerInitPlayer.OnPlayerSave(uin_)
+    local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
+    local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer
+    
+    if not mplayer then
+        return
+    end
+    
+        -- 保存各个系统的数据
+    MailMgr.SavePlayerMailData(uin_)
+    BagMgr.SaveAllOnlinePlayerBags(uin_)
+    PetMgr.SavePlayerPetData(uin_)
+    PartnerMgr.SavePlayerPartnerData(uin_)
+    WingMgr.SavePlayerWingData(uin_)
+    TrailMgr.SavePlayerTrailData(uin_)
+    AchievementMgr.SavePlayerAchievementData(uin_)
+    RewardMgr.SavePlayerRewardData(uin_)
+    LotteryMgr.SavePlayerLotteryData(uin_)
+    
+    -- 保存玩家基础数据
+    mplayer:leaveGame()
+    
+    --gg.log("统一存盘：玩家", uin_, "数据已保存")
+end
+
+
 
 -- 获取等待中的玩家列表（用于调试）
 function MServerInitPlayer.getWaitingPlayers()

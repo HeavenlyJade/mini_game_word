@@ -18,26 +18,7 @@ local BagMgr = {
     need_sync_bag = {} ---@type table<Bag, boolean>
 }
 
-function SaveAllPlayerBags()
-    local count = 0
-    for uin, bag in pairs(BagMgr.server_player_bag_data) do
-        if bag then
-            BagCloudDataMgr.SavePlayerBag(uin, bag, false)
-            count = count + 1
-        end
 
-    end
-    -- --gg.log("定时保存背包数据完成，保存了", count, "个玩家的背包")
-end
-
-local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-saveTimer.Name = 'BAG_SAVE_ALL'
-saveTimer.Delay = 60
-saveTimer.Loop = true
-saveTimer.Interval = 60
-saveTimer.Callback = SaveAllPlayerBags
-saveTimer:Start()
 
 ---使用物品
 ---@param uin_ number 玩家ID
@@ -166,6 +147,16 @@ function BagMgr.BatchSaveAllPlayerBags(players)
                 BagCloudDataMgr.SavePlayerBag(player.uin, bag, true) -- 强制保存
             end
         end
+    end
+end
+
+---保存指定玩家的背包数据（供统一存盘机制调用）
+---@param uin number 玩家ID
+function BagMgr.SaveAllOnlinePlayerBags(uin)
+    local bag = BagMgr.server_player_bag_data[uin]
+    if bag then
+        BagCloudDataMgr.SavePlayerBag(uin, bag, false)
+        --gg.log("统一存盘：已保存玩家", uin, "的背包数据")
     end
 end
 
