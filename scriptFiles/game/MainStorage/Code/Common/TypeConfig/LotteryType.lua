@@ -113,7 +113,7 @@ end
 
 --- 获取指定类型的消耗
 ---@param drawType string 抽奖类型（single/five/ten）
----@return LotteryCost|nil 对应的消耗配置
+---@return LotteryCost 对应的消耗配置
 function LotteryType:GetCost(drawType)
     if drawType == "single" then
         return self.singleCost
