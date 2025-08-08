@@ -28,12 +28,12 @@ local LotteryMgr = {
 ---@param player MPlayer 玩家对象
 function LotteryMgr.OnPlayerJoin(player)
     if not player or not player.uin then
-        --gg.log("抽奖系统：玩家上线处理失败，玩家对象无效")
+        gg.log("抽奖系统：玩家上线处理失败，玩家对象无效")
         return
     end
 
     local uin = player.uin
-    --gg.log("抽奖系统：开始处理玩家上线", uin)
+    gg.log("抽奖系统：开始处理玩家上线", uin)
 
     -- 从云端加载玩家抽奖数据
     local playerLotteryData = LotteryCloudDataMgr.LoadPlayerLotteryData(uin)
@@ -42,7 +42,7 @@ function LotteryMgr.OnPlayerJoin(player)
     local lotterySystem = LotterySystem.New(uin, playerLotteryData)
     LotteryMgr.server_player_lottery[uin] = lotterySystem
 
-    --gg.log("抽奖系统：玩家抽奖管理器加载完成", uin, "总抽奖次数", lotterySystem.totalDrawCount)
+    gg.log("抽奖系统：玩家抽奖管理器加载完成", uin, "总抽奖次数", lotterySystem.totalDrawCount)
 end
 
 --- 玩家离线处理
@@ -58,7 +58,7 @@ function LotteryMgr.OnPlayerLeave(uin)
 
         -- 清理内存缓存
         LotteryMgr.server_player_lottery[uin] = nil
-        --gg.log("抽奖系统：玩家抽奖数据已保存并清理", uin)
+        gg.log("抽奖系统：玩家抽奖数据已保存并清理", uin)
     end
 end
 
@@ -68,7 +68,7 @@ end
 function LotteryMgr.GetPlayerLottery(uin)
     local lotterySystem = LotteryMgr.server_player_lottery[uin]
     if not lotterySystem then
-        --gg.log("抽奖系统：在缓存中未找到玩家", uin, "的抽奖管理器，尝试动态加载")
+        gg.log("抽奖系统：在缓存中未找到玩家", uin, "的抽奖管理器，尝试动态加载")
         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
         local player = serverDataMgr.getPlayerByUin(uin)
         
@@ -76,7 +76,7 @@ function LotteryMgr.GetPlayerLottery(uin)
             LotteryMgr.OnPlayerJoin(player)
             return LotteryMgr.server_player_lottery[uin]
         else
-            --gg.log("抽奖系统：未找到玩家", uin, "无法动态加载抽奖管理器")
+            gg.log("抽奖系统：未找到玩家", uin, "无法动态加载抽奖管理器")
         end
     end
     
@@ -88,8 +88,12 @@ end
 ---@param poolName string 抽奖池名称
 ---@return table 抽奖结果
 function LotteryMgr.SingleDraw(uin, poolName)
+    gg.log("=== 开始单次抽奖 ===")
+    gg.log("玩家UIN:", uin, "抽奖池:", poolName)
+    
     local lotterySystem = LotteryMgr.GetPlayerLottery(uin)
     if not lotterySystem then
+        gg.log("错误：抽奖系统未初始化")
         return {
             success = false,
             errorMsg = "抽奖系统未初始化"
@@ -97,8 +101,10 @@ function LotteryMgr.SingleDraw(uin, poolName)
     end
 
     -- 检查消耗
+    gg.log("开始检查抽奖消耗...")
     local canConsume, consumeError = LotteryMgr.CheckAndConsumeCost(uin, poolName, "single")
     if not canConsume then
+        gg.log("消耗检查失败:", consumeError)
         return {
             success = false,
             errorMsg = consumeError
@@ -106,13 +112,18 @@ function LotteryMgr.SingleDraw(uin, poolName)
     end
 
     -- 执行抽奖
+    gg.log("开始执行抽奖逻辑...")
     local result = lotterySystem:PerformDraw(poolName, "single")
     
     -- 发放奖励
     if result.success then
+        gg.log("抽奖成功，开始发放奖励...")
         LotteryMgr.GrantRewards(uin, result.rewards)
+    else
+        gg.log("抽奖失败:", result.errorMsg)
     end
 
+    gg.log("=== 单次抽奖完成 ===")
     return result
 end
 
@@ -121,8 +132,12 @@ end
 ---@param poolName string 抽奖池名称
 ---@return table 抽奖结果
 function LotteryMgr.FiveDraw(uin, poolName)
+    gg.log("=== 开始五连抽 ===")
+    gg.log("玩家UIN:", uin, "抽奖池:", poolName)
+    
     local lotterySystem = LotteryMgr.GetPlayerLottery(uin)
     if not lotterySystem then
+        gg.log("错误：抽奖系统未初始化")
         return {
             success = false,
             errorMsg = "抽奖系统未初始化"
@@ -130,8 +145,10 @@ function LotteryMgr.FiveDraw(uin, poolName)
     end
 
     -- 检查消耗
+    gg.log("开始检查抽奖消耗...")
     local canConsume, consumeError = LotteryMgr.CheckAndConsumeCost(uin, poolName, "five")
     if not canConsume then
+        gg.log("消耗检查失败:", consumeError)
         return {
             success = false,
             errorMsg = consumeError
@@ -139,13 +156,18 @@ function LotteryMgr.FiveDraw(uin, poolName)
     end
 
     -- 执行抽奖
+    gg.log("开始执行抽奖逻辑...")
     local result = lotterySystem:PerformDraw(poolName, "five")
     
     -- 发放奖励
     if result.success then
+        gg.log("抽奖成功，开始发放奖励...")
         LotteryMgr.GrantRewards(uin, result.rewards)
+    else
+        gg.log("抽奖失败:", result.errorMsg)
     end
 
+    gg.log("=== 五连抽完成 ===")
     return result
 end
 
@@ -188,42 +210,55 @@ end
 ---@param drawType string 抽奖类型
 ---@return boolean, string 是否成功，错误信息
 function LotteryMgr.CheckAndConsumeCost(uin, poolName, drawType)
+    gg.log("=== 开始检查抽奖消耗 ===")
+    gg.log("玩家UIN:", uin, "抽奖池:", poolName, "抽奖类型:", drawType)
+    
     -- 获取抽奖配置
-    local lotteryConfig = ConfigLoader.GetLotteryConfig(poolName)
+    gg.log("正在获取抽奖配置，ConfigLoader类型:", type(ConfigLoader))
+    local lotteryConfig = ConfigLoader.GetLottery(poolName)
+    gg.log("GetLottery调用结果:", lotteryConfig)
+    
     if not lotteryConfig then
+        gg.log("错误：抽奖池配置不存在，poolName:", poolName)
         return false, "抽奖池配置不存在"
     end
 
     local cost = lotteryConfig:GetCost(drawType)
     if not cost then
+        gg.log("错误：抽奖消耗配置不存在，drawType:", drawType)
         return false, "抽奖消耗配置不存在"
     end
 
     -- 检查背包系统中的货币
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
-    local BagMgr = serverDataMgr.BagMgr
+    local BagMgr = serverDataMgr.BagMgr ---@type BagMgr
     
     if not BagMgr then
+        gg.log("错误：背包系统未初始化")
         return false, "背包系统未初始化"
     end
 
     local playerBag = BagMgr.GetPlayerBag(uin)
     if not playerBag then
+        gg.log("错误：玩家背包未找到，UIN:", uin)
         return false, "玩家背包未找到"
     end
 
     -- 检查是否有足够的货币
-    local hasEnough = playerBag:HasEnoughItem(cost.costItem, cost.costAmount)
+    local hasEnough = playerBag:HasItems({ [cost.costItem] = cost.costAmount })
     if not hasEnough then
+        gg.log("错误：货币不足，需要:", cost.costAmount, "当前货币:", cost.costItem)
         return false, "货币不足"
     end
 
     -- 扣除货币
-    local success = playerBag:ConsumeItem(cost.costItem, cost.costAmount)
+    local success = playerBag:RemoveItems({ [cost.costItem] = cost.costAmount })
     if not success then
+        gg.log("错误：扣除货币失败")
         return false, "扣除货币失败"
     end
 
+    gg.log("=== 抽奖消耗检查完成，扣除成功 ===")
     return true, ""
 end
 
@@ -231,17 +266,32 @@ end
 ---@param uin number 玩家ID
 ---@param rewards LotteryRecord[] 奖励列表
 function LotteryMgr.GrantRewards(uin, rewards)
+    gg.log("=== 开始发放抽奖奖励 ===")
+    gg.log("玩家UIN:", uin, "奖励数量:", #rewards)
+    
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     
-    for _, reward in ipairs(rewards) do
+    for i, reward in ipairs(rewards) do
+        gg.log("奖励", i, "详情:")
+        gg.log("  - 奖励类型:", reward.rewardType)
+        gg.log("  - 奖励名称:", reward.rewardName)
+        gg.log("  - 数量:", reward.quantity)
+        gg.log("  - 稀有度:", reward.rarity)
+        gg.log("  - 是否保底:", reward.isPity)
+        
         if reward.rewardType == "物品" then
             -- 发放物品到背包
             local BagMgr = serverDataMgr.BagMgr
             if BagMgr then
                 local playerBag = BagMgr.GetPlayerBag(uin)
                 if playerBag then
-                    playerBag:AddItem(reward.rewardName, reward.quantity)
+                    local success = playerBag:AddItem(reward.rewardName, reward.quantity)
+                    gg.log("  - 发放物品结果:", success)
+                else
+                    gg.log("  - 错误：玩家背包未找到")
                 end
+            else
+                gg.log("  - 错误：背包系统未初始化")
             end
             
         elseif reward.rewardType == "宠物" then
@@ -250,8 +300,13 @@ function LotteryMgr.GrantRewards(uin, rewards)
             if PetMgr then
                 local playerPet = PetMgr.GetPlayerPet(uin)
                 if playerPet then
-                    playerPet:AddPet(reward.rewardName)
+                    local success = playerPet:AddPet(reward.rewardName)
+                    gg.log("  - 发放宠物结果:", success)
+                else
+                    gg.log("  - 错误：玩家宠物系统未找到")
                 end
+            else
+                gg.log("  - 错误：宠物系统未初始化")
             end
             
         elseif reward.rewardType == "伙伴" then
@@ -260,8 +315,13 @@ function LotteryMgr.GrantRewards(uin, rewards)
             if PartnerMgr then
                 local playerPartner = PartnerMgr.GetPlayerPartner(uin)
                 if playerPartner then
-                    playerPartner:AddPartner(reward.rewardName)
+                    local success = playerPartner:AddPartner(reward.rewardName)
+                    gg.log("  - 发放伙伴结果:", success)
+                else
+                    gg.log("  - 错误：玩家伙伴系统未找到")
                 end
+            else
+                gg.log("  - 错误：伙伴系统未初始化")
             end
             
         elseif reward.rewardType == "翅膀" then
@@ -270,8 +330,13 @@ function LotteryMgr.GrantRewards(uin, rewards)
             if WingMgr then
                 local playerWing = WingMgr.GetPlayerWing(uin)
                 if playerWing then
-                    playerWing:AddWing(reward.rewardName)
+                    local success = playerWing:AddWing(reward.rewardName)
+                    gg.log("  - 发放翅膀结果:", success)
+                else
+                    gg.log("  - 错误：玩家翅膀系统未找到")
                 end
+            else
+                gg.log("  - 错误：翅膀系统未初始化")
             end
             
         elseif reward.rewardType == "尾迹" then
@@ -280,13 +345,21 @@ function LotteryMgr.GrantRewards(uin, rewards)
             if TrailMgr then
                 local playerTrail = TrailMgr.GetPlayerTrail(uin)
                 if playerTrail then
-                    playerTrail:AddTrail(reward.rewardName)
+                    local success = playerTrail:AddTrail(reward.rewardName)
+                    gg.log("  - 发放尾迹结果:", success)
+                else
+                    gg.log("  - 错误：玩家尾迹系统未找到")
                 end
+            else
+                gg.log("  - 错误：尾迹系统未初始化")
             end
+        else
+            gg.log("  - 警告：未知的奖励类型:", reward.rewardType)
         end
     end
     
-    --gg.log("抽奖系统：为玩家", uin, "发放了", #rewards, "个奖励")
+    gg.log("=== 抽奖奖励发放完成 ===")
+    gg.log("抽奖系统：为玩家", uin, "发放了", #rewards, "个奖励")
 end
 
 --- 获取玩家抽奖数据
@@ -347,7 +420,7 @@ end
 ---@param poolName string 抽奖池名称
 ---@return boolean 是否可用
 function LotteryMgr.IsPoolAvailable(poolName)
-    local lotteryConfig = ConfigLoader.GetLotteryConfig(poolName)
+    local lotteryConfig = ConfigLoader.GetLottery(poolName)
     return lotteryConfig ~= nil and lotteryConfig:IsEnabled()
 end
 
@@ -355,7 +428,7 @@ end
 ---@return string[] 抽奖池名称列表
 function LotteryMgr.GetAvailablePools()
     local pools = {}
-    local allConfigs = ConfigLoader.GetAllLotteryConfigs()
+    local allConfigs = ConfigLoader.GetAllLotteries()
     
     for poolName, config in pairs(allConfigs) do
         if config:IsEnabled() then
@@ -373,7 +446,7 @@ end
 --         local playerData = lotterySystem:GetData()
 --         LotteryCloudDataMgr.SavePlayerLotteryData(uin, playerData)
 --     end
---     --gg.log("抽奖系统：定时保存完成，保存了", table.getn(LotteryMgr.server_player_lottery), "个玩家的数据")
+--     gg.log("抽奖系统：定时保存完成，保存了", table.getn(LotteryMgr.server_player_lottery), "个玩家的数据")
 -- end
 
 ---保存指定玩家的抽奖数据（供统一存盘机制调用）
@@ -384,7 +457,7 @@ function LotteryMgr.SavePlayerLotteryData(uin)
         local playerData = lotterySystem:GetData()
         if playerData then
             LotteryCloudDataMgr.SavePlayerLotteryData(uin, playerData)
-            --gg.log("统一存盘：已保存玩家", uin, "的抽奖数据")
+            gg.log("统一存盘：已保存玩家", uin, "的抽奖数据")
         end
     end
 end

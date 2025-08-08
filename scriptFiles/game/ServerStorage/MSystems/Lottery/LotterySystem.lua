@@ -53,14 +53,22 @@ end
 ---@param drawType string 抽奖类型（single/five/ten）
 ---@return boolean, string 是否可以抽奖，错误信息
 function LotterySystem:CanDraw(poolName, drawType)
+    --gg.log("=== LotterySystem:CanDraw 开始 ===")
+    --gg.log("抽奖池:", poolName, "抽奖类型:", drawType)
+    
     -- 获取抽奖配置
+    --gg.log("开始获取抽奖配置，ConfigLoader类型:", type(ConfigLoader))
     local lotteryConfig = ConfigLoader.GetLottery(poolName)
+    --gg.log("ConfigLoader.GetLottery调用结果:", lotteryConfig)
+    
     if not lotteryConfig then
+        --gg.log("错误：抽奖池配置不存在，poolName:", poolName)
         return false, "抽奖池配置不存在"
     end
     
     -- 检查是否启用
     if not lotteryConfig:IsEnabled() then
+        --gg.log("错误：抽奖池未启用")
         return false, "抽奖池未启用"
     end
     
@@ -69,6 +77,7 @@ function LotterySystem:CanDraw(poolName, drawType)
         local poolData = self:GetPoolData(poolName)
         local currentTime = os.time()
         if currentTime - poolData.lastDrawTime < lotteryConfig.cooldownTime then
+            --gg.log("错误：抽奖冷却中")
             return false, "抽奖冷却中"
         end
     end
@@ -86,10 +95,13 @@ function LotterySystem:CanDraw(poolName, drawType)
         
         local drawCount = drawType == "single" and 1 or (drawType == "five" and 5 or 10)
         if (poolData.dailyDrawCount or 0) + drawCount > lotteryConfig.dailyLimit then
+            --gg.log("错误：超过每日抽奖限制")
             return false, "超过每日抽奖限制"
         end
     end
     
+    --gg.log("抽奖检查通过")
+    --gg.log("=== LotterySystem:CanDraw 完成 ===")
     return true, ""
 end
 
@@ -100,16 +112,25 @@ function LotterySystem:RandomDraw(lotteryConfig)
     local totalWeight = lotteryConfig:GetTotalWeight()
     local randomWeight = gg.rand_int(totalWeight)
     
+    gg.log("随机抽奖详情:")
+    gg.log("  - 总权重:", totalWeight)
+    gg.log("  - 随机权重:", randomWeight)
+    
     local currentWeight = 0
-    for _, rewardItem in ipairs(lotteryConfig.rewardPool) do
+    for i, rewardItem in ipairs(lotteryConfig.rewardPool) do
         currentWeight = currentWeight + rewardItem.weight
+        gg.log("  - 奖励", i, ":", rewardItem.rewardType, rewardItem.partnerConfig or rewardItem.petConfig or rewardItem.wingConfig or rewardItem.item, "权重:", rewardItem.weight, "累计权重:", currentWeight)
+        
         if randomWeight <= currentWeight then
+            gg.log("  - 命中奖励", i, ":", rewardItem.rewardType, rewardItem.partnerConfig or rewardItem.petConfig or rewardItem.wingConfig or rewardItem.item)
             return rewardItem
         end
     end
     
     -- 兜底返回最后一个奖励
-    return lotteryConfig.rewardPool[#lotteryConfig.rewardPool]
+    local lastReward = lotteryConfig.rewardPool[#lotteryConfig.rewardPool]
+    gg.log("  - 兜底返回最后一个奖励:", lastReward.rewardType, lastReward.partnerConfig or lastReward.petConfig or lastReward.wingConfig or lastReward.item)
+    return lastReward
 end
 
 --- 检查保底机制
@@ -136,23 +157,41 @@ end
 ---@param drawType string 抽奖类型（single/five/ten）
 ---@return table 抽奖结果
 function LotterySystem:PerformDraw(poolName, drawType)
+    gg.log("=== LotterySystem:PerformDraw 开始 ===")
+    gg.log("抽奖池:", poolName, "抽奖类型:", drawType)
+    
     -- 检查是否可以抽奖
+    gg.log("开始检查是否可以抽奖...")
     local canDraw, errorMsg = self:CanDraw(poolName, drawType)
     if not canDraw then
+        gg.log("抽奖检查失败:", errorMsg)
         return {
             success = false,
             errorMsg = errorMsg
         }
     end
+    gg.log("抽奖检查通过")
     
     -- 获取抽奖配置
+    gg.log("开始获取抽奖配置...")
     local lotteryConfig = ConfigLoader.GetLottery(poolName)
+    if not lotteryConfig then
+        gg.log("错误：抽奖配置不存在，poolName:", poolName)
+        return {
+            success = false,
+            errorMsg = "抽奖配置不存在"
+        }
+    end
+    gg.log("抽奖配置获取成功")
+    
     local poolData = self:GetPoolData(poolName)
     
     -- 确定抽奖次数
     local drawCount = drawType == "single" and 1 or (drawType == "five" and 5 or 10)
     local rewards = {}
     local currentTime = os.time()
+    
+    gg.log("开始执行", drawCount, "次抽奖...")
     
     -- 执行多次抽奖
     for i = 1, drawCount do
@@ -162,11 +201,21 @@ function LotterySystem:PerformDraw(poolName, drawType)
         local pityReward = self:CheckPity(poolName, lotteryConfig)
         if pityReward then
             reward = pityReward
+            gg.log("第", i, "次抽奖触发保底")
         else
             -- 正常随机抽奖
             reward = self:RandomDraw(lotteryConfig)
             poolData.pityCount = poolData.pityCount + 1
+            gg.log("第", i, "次抽奖正常随机")
         end
+        
+        -- 打印抽中的奖励详情
+        gg.log("第", i, "次抽奖结果:")
+        gg.log("  - 奖励类型:", reward.rewardType)
+        gg.log("  - 奖励名称:", self:GetRewardName(reward))
+        gg.log("  - 数量:", reward.amount)
+        gg.log("  - 权重:", reward.weight)
+        gg.log("  - 稀有度:", reward.rarity or "N")
         
         -- 构建奖励记录
         local record = {
@@ -195,6 +244,9 @@ function LotterySystem:PerformDraw(poolName, drawType)
     
     -- 更新统计数据
     LotteryCloudDataMgr.UpdatePoolStats(self.playerUin, poolName, totalCost, rewards)
+    
+    gg.log("抽奖完成，获得", #rewards, "个奖励，总消耗:", totalCost)
+    gg.log("=== LotterySystem:PerformDraw 完成 ===")
     
     return {
         success = true,

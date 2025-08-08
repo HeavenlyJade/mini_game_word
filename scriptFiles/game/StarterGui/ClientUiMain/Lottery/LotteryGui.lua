@@ -83,7 +83,7 @@ function LotteryGui:OnInit(node, config)
     -- 4. 初始化抽奖物品列表
     self:InitializeLotteryItemLists()
 
-    gg.log("LotteryGui 抽奖界面初始化完成，事件监听器已注册")
+    --gg.log("LotteryGui 抽奖界面初始化完成，事件监听器已注册")
 end
 
 -- =================================
@@ -91,7 +91,7 @@ end
 -- =================================
 
 function LotteryGui:RegisterEvents()
-    gg.log("注册抽奖系统事件监听")
+    --gg.log("注册抽奖系统事件监听")
 
     -- 监听抽奖数据响应
     ClientEventManager.Subscribe(LotteryEventConfig.RESPONSE.LOTTERY_DATA, function(data)
@@ -130,11 +130,11 @@ function LotteryGui:RegisterEvents()
 
     -- 【新增】监听OpenLotteryUI事件
     ClientEventManager.Subscribe("OpenLotteryUI", function(args)
-        gg.log("收到OpenLotteryUI事件:", args)
+        --gg.log("收到OpenLotteryUI事件:", args)
         if args and args.lotteryType then
             self:OpenWithType(args.lotteryType)
         else
-            gg.log("OpenLotteryUI事件数据格式错误:", args)
+            --gg.log("OpenLotteryUI事件数据格式错误:", args)
         end
     end)
 end
@@ -174,7 +174,7 @@ function LotteryGui:RegisterButtonEvents()
 
 
 
-    gg.log("抽奖界面按钮事件注册完成")
+    --gg.log("抽奖界面按钮事件注册完成")
 end
 
 -- =================================
@@ -182,12 +182,12 @@ end
 -- =================================
 
 function LotteryGui:OnOpen()
-    gg.log("LotteryGui抽奖界面打开")
+    --gg.log("LotteryGui抽奖界面打开")
     self:RequestLotteryData()
 end
 
 function LotteryGui:OnClose()
-    gg.log("LotteryGui抽奖界面关闭")
+    --gg.log("LotteryGui抽奖界面关闭")
 end
 
 -- =================================
@@ -200,7 +200,7 @@ function LotteryGui:RequestLotteryData()
         cmd = LotteryEventConfig.REQUEST.GET_LOTTERY_DATA,
         args = {}
     }
-    gg.log("请求抽奖数据同步")
+    --gg.log("请求抽奖数据同步")
     gg.network_channel:fireServer(requestData)
 end
 
@@ -210,7 +210,7 @@ function LotteryGui:RequestAvailablePools()
         cmd = LotteryEventConfig.REQUEST.GET_AVAILABLE_POOLS,
         args = {}
     }
-    gg.log("请求可用抽奖池")
+    --gg.log("请求可用抽奖池")
     gg.network_channel:fireServer(requestData)
 end
 
@@ -220,18 +220,18 @@ function LotteryGui:RequestPoolStats(poolName)
         cmd = LotteryEventConfig.REQUEST.GET_POOL_STATS,
         args = { poolName = poolName }
     }
-    gg.log("请求抽奖池统计:", poolName)
+    --gg.log("请求抽奖池统计:", poolName)
     gg.network_channel:fireServer(requestData)
 end
 
 --- 处理抽奖数据响应
 function LotteryGui:OnLotteryDataResponse(data)
-    gg.log("收到抽奖数据响应:", data)
+    --gg.log("收到抽奖数据响应:", data)
     if data.success and data.data then
         self.lotteryData = data.data
         self.currentPoolName = data.data.currentPoolName or "初级翅膀初级"
         
-        gg.log("抽奖数据同步完成")
+        --gg.log("抽奖数据同步完成")
 
         -- 刷新界面显示
         self:RefreshLotteryDisplay()
@@ -239,15 +239,15 @@ function LotteryGui:OnLotteryDataResponse(data)
         self:UpdateProbabilityDisplay()
         self:UpdatePityProgress()
     else
-        gg.log("抽奖数据响应格式错误:", data.errorMsg)
+        --gg.log("抽奖数据响应格式错误:", data.errorMsg)
     end
 end
 
 --- 处理抽奖结果响应
 function LotteryGui:OnLotteryResultResponse(data)
-    gg.log("收到抽奖结果响应:", data)
+    --gg.log("收到抽奖结果响应:", data)
     if data.success and data.rewards then
-        gg.log("抽奖成功，获得奖励:", data.rewards)
+        --gg.log("抽奖成功，获得奖励:", data.rewards)
         
         -- 更新保底进度
         if data.pityProgress then
@@ -257,19 +257,19 @@ function LotteryGui:OnLotteryResultResponse(data)
         -- 刷新抽奖数据
         self:RequestLotteryData()
     else
-        gg.log("抽奖失败:", data.errorMsg or "未知错误")
+        --gg.log("抽奖失败:", data.errorMsg or "未知错误")
     end
 end
 
 --- 处理抽奖成功通知
 function LotteryGui:OnLotterySuccessNotify(data)
-    gg.log("收到抽奖成功通知:", data)
+    --gg.log("收到抽奖成功通知:", data)
     -- 可以在这里添加额外的成功提示或动画效果
 end
 
 --- 处理保底进度更新通知
 function LotteryGui:OnPityUpdateNotify(data)
-    gg.log("收到保底进度更新:", data)
+    --gg.log("收到保底进度更新:", data)
     if data.poolName and data.pityProgress then
         self:UpdatePityProgress(data.pityProgress, data.poolName)
     end
@@ -277,7 +277,7 @@ end
 
 --- 处理新抽奖池可用通知
 function LotteryGui:OnNewPoolAvailableNotify(data)
-    gg.log("收到新抽奖池可用通知:", data)
+    --gg.log("收到新抽奖池可用通知:", data)
     if data.poolName then
         -- 可以在这里添加新抽奖池的提示
         self:RequestAvailablePools()
@@ -286,7 +286,7 @@ end
 
 --- 处理数据同步通知
 function LotteryGui:OnDataSyncNotify(data)
-    gg.log("收到数据同步通知:", data)
+    --gg.log("收到数据同步通知:", data)
     if data.lotteryData then
         self.lotteryData = data.lotteryData
         self:RefreshLotteryDisplay()
@@ -295,9 +295,9 @@ end
 
 --- 处理错误响应
 function LotteryGui:OnLotteryErrorResponse(data)
-    gg.log("收到抽奖系统错误响应:", data)
+    --gg.log("收到抽奖系统错误响应:", data)
     local errorMessage = data.errorMessage or "操作失败"
-    gg.log("错误信息:", errorMessage)
+    --gg.log("错误信息:", errorMessage)
     -- TODO: 显示错误提示给玩家
 end
 
@@ -312,23 +312,23 @@ end
 
 --- 单抽按钮点击
 function LotteryGui:OnClickSingleDraw()
-    gg.log("点击单抽按钮")
+    --gg.log("点击单抽按钮")
     self:SendLotteryRequest(LotteryEventConfig.REQUEST.SINGLE_DRAW)
 end
 
 --- 五连抽按钮点击
 function LotteryGui:OnClickFiveDraw()
-    gg.log("点击五连抽按钮")
+    --gg.log("点击五连抽按钮")
     self:SendLotteryRequest(LotteryEventConfig.REQUEST.FIVE_DRAW)
 end
 
 --- 档位选择按钮点击
 function LotteryGui:OnClickTierSelect(tier)
-    gg.log("选择档位:", tier)
+    --gg.log("选择档位:", tier)
     -- 根据当前抽奖类型和档位组合成抽奖池名称
     local lotteryType = self:GetCurrentLotteryType()
     self.currentPoolName = lotteryType .. tier
-    gg.log("更新抽奖池名称:", self.currentPoolName)
+    --gg.log("更新抽奖池名称:", self.currentPoolName)
     
     -- 更新档位选择状态和显示对应的ViewList
     self:UpdateTierSelection()
@@ -353,7 +353,7 @@ function LotteryGui:SendLotteryRequest(cmd)
             poolName = self.currentPoolName or "初级翅膀初级"
         }
     }
-    gg.log("发送抽奖请求:", requestData.args)
+    --gg.log("发送抽奖请求:", requestData.args)
     gg.network_channel:fireServer(requestData)
 end
 
@@ -363,7 +363,7 @@ end
 
 --- 刷新抽奖界面显示
 function LotteryGui:RefreshLotteryDisplay()
-    gg.log("刷新抽奖界面显示")
+    --gg.log("刷新抽奖界面显示")
     
     -- 更新档位选择状态
     self:UpdateTierSelection()
@@ -384,7 +384,7 @@ function LotteryGui:UpdateTierSelection()
     -- 根据当前抽奖类型和档位显示对应的ViewList
     self:ShowCurrentLotteryList()
     
-    gg.log("更新档位选择:", currentTier, "当前抽奖类型:", self:GetCurrentLotteryType())
+    --gg.log("更新档位选择:", currentTier, "当前抽奖类型:", self:GetCurrentLotteryType())
 end
 
 --- 显示当前抽奖类型和档位对应的ViewList
@@ -399,39 +399,39 @@ function LotteryGui:ShowCurrentLotteryList()
     if currentLotteryType == "初级宠物" then
         if currentTier == "初级" and self.petBeginnerLotteryList then
             self.petBeginnerLotteryList:SetVisible(true)
-            gg.log("显示宠物初级ViewList")
+            --gg.log("显示宠物初级ViewList")
         elseif currentTier == "中级" and self.petIntermediateLotteryList then
             self.petIntermediateLotteryList:SetVisible(true)
-            gg.log("显示宠物中级ViewList")
+            --gg.log("显示宠物中级ViewList")
         elseif currentTier == "高级" and self.petAdvancedLotteryList then
             self.petAdvancedLotteryList:SetVisible(true)
-            gg.log("显示宠物高级ViewList")
+            --gg.log("显示宠物高级ViewList")
         end
     elseif currentLotteryType == "初级翅膀" then
         if currentTier == "初级" and self.wingBeginnerLotteryList then
             self.wingBeginnerLotteryList:SetVisible(true)
-            gg.log("显示翅膀初级ViewList")
+            --gg.log("显示翅膀初级ViewList")
         elseif currentTier == "中级" and self.wingIntermediateLotteryList then
             self.wingIntermediateLotteryList:SetVisible(true)
-            gg.log("显示翅膀中级ViewList")
+            --gg.log("显示翅膀中级ViewList")
         elseif currentTier == "高级" and self.wingAdvancedLotteryList then
             self.wingAdvancedLotteryList:SetVisible(true)
-            gg.log("显示翅膀高级ViewList")
+            --gg.log("显示翅膀高级ViewList")
         end
     elseif currentLotteryType == "初级伙伴" then
         if currentTier == "初级" and self.partnerBeginnerLotteryList then
             self.partnerBeginnerLotteryList:SetVisible(true)
-            gg.log("显示伙伴初级ViewList")
+            --gg.log("显示伙伴初级ViewList")
         elseif currentTier == "中级" and self.partnerIntermediateLotteryList then
             self.partnerIntermediateLotteryList:SetVisible(true)
-            gg.log("显示伙伴中级ViewList")
+            --gg.log("显示伙伴中级ViewList")
         elseif currentTier == "高级" and self.partnerAdvancedLotteryList then
             self.partnerAdvancedLotteryList:SetVisible(true)
-            gg.log("显示伙伴高级ViewList")
+            --gg.log("显示伙伴高级ViewList")
         end
     end
     
-    gg.log("显示抽奖列表:", currentLotteryType, currentTier)
+    --gg.log("显示抽奖列表:", currentLotteryType, currentTier)
 end
 
 --- 隐藏所有抽奖ViewList
@@ -469,7 +469,7 @@ function LotteryGui:HideAllLotteryLists()
         self.partnerAdvancedLotteryList:SetVisible(false)
     end
     
-    gg.log("隐藏所有抽奖ViewList")
+    --gg.log("隐藏所有抽奖ViewList")
 end
 
 
@@ -521,7 +521,7 @@ function LotteryGui:UpdatePityProgress(progress, poolName)
     end
     
     local currentProgress = self.pityProgress[targetPool] or 0
-    gg.log("更新保底进度:", targetPool, currentProgress)
+    --gg.log("更新保底进度:", targetPool, currentProgress)
     
     -- TODO: 在UI上显示保底进度
     -- 例如：self.pityProgressLabel.node.Title = string.format("保底进度: %d/100", currentProgress)
@@ -648,7 +648,7 @@ end
 
 --- 初始化所有抽奖物品列表
 function LotteryGui:InitializeLotteryItemLists()
-    gg.log("开始初始化抽奖物品列表")
+    --gg.log("开始初始化抽奖物品列表")
     
     -- 翅膀抽奖列表
     self:LoadLotteryItemsToList("初级翅膀初级", self.wingBeginnerLotteryList)
@@ -665,7 +665,7 @@ function LotteryGui:InitializeLotteryItemLists()
     self:LoadLotteryItemsToList("初级伙伴中级", self.partnerIntermediateLotteryList)
     self:LoadLotteryItemsToList("初级伙伴高级", self.partnerAdvancedLotteryList)
     
-    gg.log("抽奖物品列表初始化完成")
+    --gg.log("抽奖物品列表初始化完成")
 end
 
 --- 加载指定抽奖池的物品到对应ViewList
@@ -673,18 +673,18 @@ end
 ---@param viewList ViewList 目标ViewList
 function LotteryGui:LoadLotteryItemsToList(poolName, viewList)
     if not viewList then
-        gg.log("警告：ViewList为空，跳过抽奖池", poolName)
+        --gg.log("警告：ViewList为空，跳过抽奖池", poolName)
         return
     end
     
     -- 获取抽奖配置
     local lotteryConfig = ConfigLoader.GetLottery(poolName)
     if not lotteryConfig or not lotteryConfig.rewardPool then
-        gg.log("警告：抽奖池配置不存在或无奖励池", poolName)
+        --gg.log("警告：抽奖池配置不存在或无奖励池", poolName)
         return
     end
     
-    gg.log("加载抽奖池物品:", poolName, "奖励数量:", #lotteryConfig.rewardPool)
+    --gg.log("加载抽奖池物品:", poolName, "奖励数量:", #lotteryConfig.rewardPool)
     
     -- 清空现有物品
     viewList:ClearChildren()
@@ -704,22 +704,22 @@ function LotteryGui:CreateLotteryItemNode(viewList, rewardItem, index, poolName)
     -- 获取奖励信息
     local rewardInfo = self:GetRewardInfo(rewardItem)
     if not rewardInfo then
-        gg.log("警告：无法获取奖励信息", rewardItem)
+        --gg.log("警告：无法获取奖励信息", rewardItem)
         return
     end
     
-    -- gg.log("创建奖励物品节点:", rewardInfo.name, "稀有度:", rewardInfo.rarity)
+    -- --gg.log("创建奖励物品节点:", rewardInfo.name, "稀有度:", rewardInfo.rarity)
     
     -- 克隆奖励模版节点
     if not self.rewardTemplate or not self.rewardTemplate.node then
-        gg.log("警告：找不到奖励模版节点")
+        --gg.log("警告：找不到奖励模版节点")
         return
     end
     
     -- 克隆模版节点
     local itemNode = self.rewardTemplate.node:Clone()
     if not itemNode then
-        gg.log("警告：克隆奖励模版节点失败")
+        --gg.log("警告：克隆奖励模版节点失败")
         return
     end
     
@@ -732,7 +732,7 @@ function LotteryGui:CreateLotteryItemNode(viewList, rewardItem, index, poolName)
     if iconNode and rewardInfo.icon then
         -- 设置图片资源
         iconNode.Icon = rewardInfo.icon
-        -- gg.log("设置奖励图片:", rewardInfo.name, "图片资源:", rewardInfo.icon)
+        -- --gg.log("设置奖励图片:", rewardInfo.name, "图片资源:", rewardInfo.icon)
     end
     
     -- 查找并设置概率显示
@@ -744,7 +744,7 @@ function LotteryGui:CreateLotteryItemNode(viewList, rewardItem, index, poolName)
         if lotteryConfig then
             local probabilityText = lotteryConfig:GetFormattedProbability(rewardItem)
             probabilityNode.Title = probabilityText
-            -- gg.log("设置奖励概率:", rewardInfo.name, "概率:", probabilityText)
+            -- --gg.log("设置奖励概率:", rewardInfo.name, "概率:", probabilityText)
         end
     end
     
@@ -755,12 +755,12 @@ function LotteryGui:CreateLotteryItemNode(viewList, rewardItem, index, poolName)
         -- 根据稀有度设置加成显示
         local bonusText = self:GetRarityBonusText(rewardInfo.rarity)
         bonusNode.Title = bonusText
-        -- gg.log("设置奖励加成:", rewardInfo.name, "加成:", bonusText)
+        -- --gg.log("设置奖励加成:", rewardInfo.name, "加成:", bonusText)
     end
     
     -- 将节点添加到ViewList
     viewList:AppendChild(itemNode)
-    -- gg.log("成功添加奖励物品节点到ViewList:", rewardInfo.name)
+    -- --gg.log("成功添加奖励物品节点到ViewList:", rewardInfo.name)
 end
 
 --- 获取奖励信息
@@ -786,7 +786,7 @@ function LotteryGui:GetRewardInfo(rewardItem)
     end
     
     if not rewardName then
-        gg.log("警告：奖励配置中缺少奖励名称", rewardItem)
+        --gg.log("警告：奖励配置中缺少奖励名称", rewardItem)
         return nil
     end
     
@@ -864,7 +864,7 @@ function LotteryGui:RefreshCurrentLotteryItems()
     local currentLotteryType = self:GetCurrentLotteryType()
     local poolName = currentLotteryType .. currentTier
     
-    gg.log("刷新抽奖池物品列表:", poolName)
+    --gg.log("刷新抽奖池物品列表:", poolName)
     
     -- 根据当前抽奖类型选择对应的ViewList
     local targetViewList = nil
@@ -902,10 +902,10 @@ end
 --- 根据抽奖类型打开界面
 ---@param lotteryType string 抽奖类型（翅膀/宠物/伙伴）
 function LotteryGui:OpenWithType(lotteryType)
-    gg.log("打开抽奖界面，类型:", lotteryType)
+    --gg.log("打开抽奖界面，类型:", lotteryType)
     self:Open()
     self:SetLotteryType(lotteryType)
-    gg.log("打开抽奖界面，类型:", lotteryType)
+    --gg.log("打开抽奖界面，类型:", lotteryType)
 end
 
 --- 设置抽奖类型
@@ -921,7 +921,7 @@ function LotteryGui:SetLotteryType(lotteryType)
     else
         -- 默认使用翅膀
         self.currentPoolName = "初级翅膀初级"
-        gg.log("未知的抽奖类型:", lotteryType, "，使用默认类型：翅膀")
+        --gg.log("未知的抽奖类型:", lotteryType, "，使用默认类型：翅膀")
     end
     
     -- 刷新界面显示
@@ -931,7 +931,7 @@ function LotteryGui:SetLotteryType(lotteryType)
     self:UpdatePityProgress()
     self:RefreshCurrentLotteryItems()
     
-    gg.log("设置抽奖类型完成:", lotteryType, "当前池:", self.currentPoolName)
+    --gg.log("设置抽奖类型完成:", lotteryType, "当前池:", self.currentPoolName)
 end
 
 return LotteryGui.New(script.Parent, uiConfig)
