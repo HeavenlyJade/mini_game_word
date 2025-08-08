@@ -45,7 +45,6 @@ function PlayerActionHandler:ListenToPlayerEvents()
 
     -- 新增：监听飞行状态变化，并转发给当前模块
     actor.Flying:Connect(function(isFlying)
-        gg.log("PlayerActionHandler: 监听到飞行状态变化，isFlying: ", tostring(isFlying))
         -- EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION
         if isFlying and self.gameMode == EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION then
             actor.Animator:Play("Base Layer.fei", 0, 0)
