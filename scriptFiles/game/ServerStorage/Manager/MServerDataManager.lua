@@ -62,6 +62,7 @@ function MServerDataManager.getLivingByName(name_)
             end
         end
     end
+    print("MServerDataManager.server_players_name_list", MServerDataManager.server_players_name_list)
     return MServerDataManager.server_players_name_list[name_]
 end
 

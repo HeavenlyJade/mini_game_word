@@ -40,7 +40,7 @@ CommandManager.handlers = {
     ["clearPlayerData"] = ClearDataCommand.main,
     ["trail"] = TrailCommand.main,
     ["reward"] = RewardCommand.main,
-	["openui"] = OpenUICommand.main,
+	    ["openui"] = OpenUICommand.main,
 
 
 
