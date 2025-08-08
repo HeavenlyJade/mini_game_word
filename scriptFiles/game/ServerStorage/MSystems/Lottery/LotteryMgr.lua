@@ -268,96 +268,51 @@ end
 function LotteryMgr.GrantRewards(uin, rewards)
     gg.log("=== 开始发放抽奖奖励 ===")
     gg.log("玩家UIN:", uin, "奖励数量:", #rewards)
-    
+
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
-    
-    for i, reward in ipairs(rewards) do
-        gg.log("奖励", i, "详情:")
-        gg.log("  - 奖励类型:", reward.rewardType)
-        gg.log("  - 奖励名称:", reward.rewardName)
-        gg.log("  - 数量:", reward.quantity)
-        gg.log("  - 稀有度:", reward.rarity)
-        gg.log("  - 是否保底:", reward.isPity)
-        
+
+    -- 各系统管理器引用（假设均已初始化，不做过度检查）
+    local BagMgr = serverDataMgr.BagMgr ---@type BagMgr
+    local PetMgr = serverDataMgr.PetMgr --
+    local PartnerMgr = serverDataMgr.PartnerMgr ---@type PartnerMgr
+    local WingMgr = serverDataMgr.WingMgr ---@type WingMgr
+    local TrailMgr = serverDataMgr.TrailMgr ---@type TrailMgr
+
+    local playerBag = BagMgr.GetPlayerBag(uin) ---@type Bag
+    local playerPet = PetMgr.GetPlayerPet(uin) ---@type Pet
+    local playerPartner = PartnerMgr.GetPlayerPartner(uin) ---@type Partner
+    local playerWing = WingMgr.GetPlayerWing(uin) ---@type Wing
+    local playerTrail = TrailMgr.GetPlayerTrail(uin) ---@type Trail
+
+    -- 按类型统计，用于决定是否同步
+    local stats = { bag = 0, pet = 0, partner = 0, wing = 0, trail = 0 }
+
+    for _, reward in ipairs(rewards) do
         if reward.rewardType == "物品" then
-            -- 发放物品到背包
-            local BagMgr = serverDataMgr.BagMgr
-            if BagMgr then
-                local playerBag = BagMgr.GetPlayerBag(uin)
-                if playerBag then
-                    local success = playerBag:AddItem(reward.rewardName, reward.quantity)
-                    gg.log("  - 发放物品结果:", success)
-                else
-                    gg.log("  - 错误：玩家背包未找到")
-                end
-            else
-                gg.log("  - 错误：背包系统未初始化")
-            end
-            
+            -- playerBag:AddItem(reward.rewardName, reward.quantity)
+            -- stats.bag = stats.bag + 1
         elseif reward.rewardType == "宠物" then
-            -- 发放宠物
-            local PetMgr = serverDataMgr.PetMgr
-            if PetMgr then
-                local playerPet = PetMgr.GetPlayerPet(uin)
-                if playerPet then
-                    local success = playerPet:AddPet(reward.rewardName)
-                    gg.log("  - 发放宠物结果:", success)
-                else
-                    gg.log("  - 错误：玩家宠物系统未找到")
-                end
-            else
-                gg.log("  - 错误：宠物系统未初始化")
-            end
-            
+            playerPet:AddPet(reward.rewardName)
+            stats.pet = stats.pet + 1
         elseif reward.rewardType == "伙伴" then
-            -- 发放伙伴
-            local PartnerMgr = serverDataMgr.PartnerMgr
-            if PartnerMgr then
-                local playerPartner = PartnerMgr.GetPlayerPartner(uin)
-                if playerPartner then
-                    local success = playerPartner:AddPartner(reward.rewardName)
-                    gg.log("  - 发放伙伴结果:", success)
-                else
-                    gg.log("  - 错误：玩家伙伴系统未找到")
-                end
-            else
-                gg.log("  - 错误：伙伴系统未初始化")
-            end
-            
+            playerPartner:AddPartner(reward.rewardName)
+            stats.partner = stats.partner + 1
         elseif reward.rewardType == "翅膀" then
-            -- 发放翅膀
-            local WingMgr = serverDataMgr.WingMgr
-            if WingMgr then
-                local playerWing = WingMgr.GetPlayerWing(uin)
-                if playerWing then
-                    local success = playerWing:AddWing(reward.rewardName)
-                    gg.log("  - 发放翅膀结果:", success)
-                else
-                    gg.log("  - 错误：玩家翅膀系统未找到")
-                end
-            else
-                gg.log("  - 错误：翅膀系统未初始化")
-            end
-            
+            playerWing:AddWing(reward.rewardName)
+            stats.wing = stats.wing + 1
         elseif reward.rewardType == "尾迹" then
-            -- 发放尾迹
-            local TrailMgr = serverDataMgr.TrailMgr
-            if TrailMgr then
-                local playerTrail = TrailMgr.GetPlayerTrail(uin)
-                if playerTrail then
-                    local success = playerTrail:AddTrail(reward.rewardName)
-                    gg.log("  - 发放尾迹结果:", success)
-                else
-                    gg.log("  - 错误：玩家尾迹系统未找到")
-                end
-            else
-                gg.log("  - 错误：尾迹系统未初始化")
-            end
-        else
-            gg.log("  - 警告：未知的奖励类型:", reward.rewardType)
+            playerTrail:AddTrail(reward.rewardName)
+            stats.trail = stats.trail + 1
         end
     end
-    
+
+    -- 统一按需同步（仅在对应类型发放过奖励时同步一次）
+    if stats.bag > 0 then BagMgr.ForceSyncToClient(uin) end
+    if stats.pet > 0 then PetMgr.ForceSyncToClient(uin) end
+    if stats.partner > 0 then PartnerMgr.ForceSyncToClient(uin) end
+    if stats.wing > 0 then WingMgr.ForceSyncToClient(uin) end
+    if stats.trail > 0 then TrailMgr.ForceSyncToClient(uin) end
+
     gg.log("=== 抽奖奖励发放完成 ===")
     gg.log("抽奖系统：为玩家", uin, "发放了", #rewards, "个奖励")
 end

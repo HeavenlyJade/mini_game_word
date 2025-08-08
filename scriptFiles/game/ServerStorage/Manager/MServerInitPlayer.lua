@@ -190,7 +190,7 @@ function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor)
         local decorativeNode = player_actor:FindFirstChild(objectName)
         if decorativeNode then
             -- 确保同步设置正确
-            decorativeNode.IgnoreStreamSync = false
+            decorativeNode.IgnoreStreamSync = true
         end
     end
 end
@@ -202,60 +202,13 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
 
     local uin = mplayer.uin
+    BagMgr.ForceSyncToClient(uin)
+    PetMgr.ForceSyncToClient(uin)
 
-            -- 获取背包数据 - 修改这里
-
-    local bag = BagMgr.GetPlayerBag(uin)
-    if bag then
-        -- 标记为全量同步，确保发送完整的背包数据
-        bag:MarkDirty(true)  -- true 表示全量同步
-        bag:SyncToClient()   -- 直接调用背包的同步方法
-        --gg.log("已使用 Bag:SyncToClient() 同步背包数据到客户端:", uin)
-    else
-        --gg.log("警告: 玩家", uin, "的背包数据不存在，跳过背包同步")
-    end
-
-    -- 【新增】同步宠物数据
-    local petManager = PetMgr.GetPlayerPet(uin)
-    if petManager then
-        local petListData = petManager:GetPlayerPetList()
-        local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
-        PetEventManager.NotifyPetListUpdate(uin, petListData)
-        --gg.log("已主动同步宠物数据到客户端:", uin, "宠物数量:", petManager:GetPetCount())
-    else
-        --gg.log("警告: 玩家", uin, "的宠物数据不存在，跳过宠物数据同步")
-    end
-
-    -- 【新增】同步伙伴数据
-    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
-    if partnerManager then
-        local partnerListData = partnerManager:GetPlayerPartnerList()
-        local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
-        PartnerEventManager.NotifyPartnerListUpdate(uin, partnerListData)
-    else
-        --gg.log("警告: 玩家", uin, "的伙伴数据不存在，跳过伙伴数据同步")
-    end
-
-    -- 【新增】同步翅膀数据
-    local wingManager = WingMgr.GetPlayerWing(uin)
-    if wingManager then
-        local wingListData = wingManager:GetPlayerWingList()
-        local WingEventManager = require(ServerStorage.MSystems.Pet.EventManager.WingEventManager) ---@type WingEventManager
-        WingEventManager.NotifyWingListUpdate(uin, wingListData)
-    else
-        --gg.log("警告: 玩家", uin, "的翅膀数据不存在，跳过翅膀数据同步")
-    end
-
+    PartnerMgr.ForceSyncToClient(uin)
+    WingMgr.ForceSyncToClient(uin)
     -- 【新增】同步尾迹数据
-    local trailManager = TrailMgr.GetPlayerTrail(uin)
-    if trailManager then
-        local trailListData = trailManager:GetPlayerTrailList()
-        local TrailEventManager = require(ServerStorage.MSystems.Trail.TrailEventManager) ---@type TrailEventManager
-        TrailEventManager.NotifyTrailListUpdate(uin, trailListData)
-        --gg.log("已主动同步尾迹数据到客户端:", uin, "尾迹数量:", trailManager:GetTrailCount())
-    else
-        --gg.log("警告: 玩家", uin, "的尾迹数据不存在，跳过尾迹数据同步")
-    end
+    TrailMgr.ForceSyncToClient(uin)
 
     -- 【新增】同步抽奖数据
     local lotteryManager = LotteryMgr.GetPlayerLottery(uin)

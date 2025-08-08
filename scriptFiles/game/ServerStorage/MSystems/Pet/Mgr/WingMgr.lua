@@ -411,14 +411,13 @@ end
 ---强制同步玩家翅膀数据到客户端
 ---@param uin number 玩家UIN
 function WingMgr.ForceSyncToClient(uin)
-    local result, errorMsg = WingMgr.GetPlayerWingList(uin)
-    if result then
-        -- TODO: 需要 WingEventManager
-        -- local WingEventManager = require(ServerStorage.MSystems.Pet.EventManager.WingEventManager) ---@type WingEventManager
-        -- WingEventManager.NotifyWingListUpdate(uin, result.wingList)
-        --gg.log("WingMgr.ForceSyncToClient: 强制同步翅膀数据", uin)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if wingManager then
+        local wingListData = wingManager:GetPlayerWingList()
+        local WingEventManager = require(ServerStorage.MSystems.Pet.EventManager.WingEventManager) ---@type WingEventManager
+        WingEventManager.NotifyWingListUpdate(uin, wingListData)
     else
-        --gg.log("WingMgr.ForceSyncToClient: 同步失败", uin, errorMsg)
+        --gg.log("警告: 玩家", uin, "的翅膀数据不存在，跳过翅膀数据同步")
     end
 end
 

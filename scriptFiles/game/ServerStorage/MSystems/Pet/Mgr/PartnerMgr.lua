@@ -412,14 +412,13 @@ end
 ---强制同步玩家伙伴数据到客户端
 ---@param uin number 玩家UIN
 function PartnerMgr.ForceSyncToClient(uin)
-    local result, errorMsg = PartnerMgr.GetPlayerPartnerList(uin)
-    if result then
-        -- TODO: 需要 PartnerEventManager
-        -- local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
-        -- PartnerEventManager.NotifyPartnerListUpdate(uin, result.partnerList)
-        --gg.log("PartnerMgr.ForceSyncToClient: 强制同步伙伴数据", uin)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if partnerManager then
+        local partnerListData = partnerManager:GetPlayerPartnerList()
+        local PartnerEventManager = require(ServerStorage.MSystems.Pet.EventManager.PartnerEventManager) ---@type PartnerEventManager
+        PartnerEventManager.NotifyPartnerListUpdate(uin, partnerListData)
     else
-        --gg.log("PartnerMgr.ForceSyncToClient: 同步失败", uin, errorMsg)
+        --gg.log("警告: 玩家", uin, "的伙伴数据不存在，跳过伙伴数据同步")
     end
 end
 

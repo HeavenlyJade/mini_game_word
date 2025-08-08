@@ -379,13 +379,14 @@ end
 ---强制同步玩家尾迹数据到客户端
 ---@param uin number 玩家UIN
 function TrailMgr.ForceSyncToClient(uin)
-    local result, errorMsg = TrailMgr.GetPlayerTrailList(uin)
-    if result then
+    local trailManager = TrailMgr.GetPlayerTrail(uin)
+    if trailManager then
+        local trailListData = trailManager:GetPlayerTrailList()
         local TrailEventManager = require(ServerStorage.MSystems.Trail.TrailEventManager) ---@type TrailEventManager
-        TrailEventManager.NotifyTrailListUpdate(uin, result)
-        --gg.log("强制同步尾迹数据到客户端", uin)
+        TrailEventManager.NotifyTrailListUpdate(uin, trailListData)
+        --gg.log("已主动同步尾迹数据到客户端:", uin, "尾迹数量:", trailManager:GetTrailCount())
     else
-        --gg.log("强制同步尾迹数据失败", uin, errorMsg)
+        --gg.log("警告: 玩家", uin, "的尾迹数据不存在，跳过尾迹数据同步")
     end
 end
 

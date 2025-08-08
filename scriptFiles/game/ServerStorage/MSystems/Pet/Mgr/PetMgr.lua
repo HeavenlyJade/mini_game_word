@@ -167,10 +167,10 @@ end
 function PetMgr.GetPlayerPetList(uin)
     local petManager = PetMgr.GetPlayerPet(uin)
     if not petManager then
-        return nil, "玩家数据不存在"
+        return nil
     end
 
-    return petManager:GetPlayerPetList(), nil
+    return petManager:GetPlayerPetList()
 end
 
 ---获取宠物数量
@@ -509,11 +509,11 @@ end
 ---强制同步玩家宠物数据到客户端
 ---@param uin number 玩家UIN
 function PetMgr.ForceSyncToClient(uin)
-    local result, errorMsg = PetMgr.GetPlayerPetList(uin)
+    local result = PetMgr.GetPlayerPetList(uin)
     if result then
         local PetEventManager = require(ServerStorage.MSystems.Pet.EventManager.PetEventManager) ---@type PetEventManager
-        PetEventManager.NotifyPetListUpdate(uin, result.petList)
-        --gg.log("PetMgr.ForceSyncToClient: 强制同步宠物数据", uin)
+        
+        PetEventManager.NotifyPetListUpdate(uin, result)
     else
         --gg.log("PetMgr.ForceSyncToClient: 同步失败", uin, errorMsg)
     end

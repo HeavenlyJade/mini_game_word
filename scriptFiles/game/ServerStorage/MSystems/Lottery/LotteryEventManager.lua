@@ -19,7 +19,7 @@ local LotteryEventManager = {}
 --- 初始化事件监听器
 function LotteryEventManager.Init()
     gg.log("抽奖系统事件管理器初始化")
-    
+
     -- 订阅客户端请求事件
     ServerEventManager.Subscribe(LotteryEvent.REQUEST.GET_LOTTERY_DATA, LotteryEventManager.OnGetLotteryData)
     ServerEventManager.Subscribe(LotteryEvent.REQUEST.SINGLE_DRAW, LotteryEventManager.OnSingleDraw)
@@ -28,7 +28,7 @@ function LotteryEventManager.Init()
     ServerEventManager.Subscribe(LotteryEvent.REQUEST.GET_DRAW_HISTORY, LotteryEventManager.OnGetDrawHistory)
     ServerEventManager.Subscribe(LotteryEvent.REQUEST.GET_AVAILABLE_POOLS, LotteryEventManager.OnGetAvailablePools)
     ServerEventManager.Subscribe(LotteryEvent.REQUEST.GET_POOL_STATS, LotteryEventManager.OnGetPoolStats)
-    
+
     gg.log("抽奖系统事件监听器注册完成")
 end
 
@@ -43,9 +43,9 @@ function LotteryEventManager.OnGetLotteryData(event)
     if not player or not uin then
         return
     end
-    
+
     local result = LotteryMgr.GetPlayerLotteryData(uin, poolName)
-    
+
     -- 发送响应给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.LOTTERY_DATA, {
         success = result.success,
@@ -68,26 +68,26 @@ function LotteryEventManager.OnSingleDraw(event)
     local uin = player.uin
     local args = event.args or {}
     local poolName = args.poolName
-    
+
     gg.log("玩家信息:", player and player.Name or "nil", "UIN:", uin)
     gg.log("请求参数:", args)
     gg.log("抽奖池名称:", poolName)
-    
+
     if not player or not uin then
         gg.log("错误：玩家对象或UIN无效")
         return
     end
-    
+
     if not poolName then
         gg.log("错误：抽奖池名称不能为空")
         LotteryEventManager.SendErrorResponse(uin, "抽奖池名称不能为空")
         return
     end
-    
+
     gg.log("开始调用LotteryMgr.SingleDraw...")
     local result = LotteryMgr.SingleDraw(uin, poolName)
     gg.log("LotteryMgr.SingleDraw返回结果:", result)
-    
+
     -- 发送抽奖结果给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.DRAW_RESULT, {
         success = result.success,
@@ -99,7 +99,7 @@ function LotteryEventManager.OnSingleDraw(event)
         pityProgress = result.pityProgress,
         errorMsg = result.errorMsg
     })
-    
+
     -- 如果抽奖成功，发送成功通知
     if result.success then
         gg.log("抽奖成功，发送成功通知")
@@ -111,7 +111,7 @@ function LotteryEventManager.OnSingleDraw(event)
     else
         gg.log("抽奖失败:", result.errorMsg)
     end
-    
+
     gg.log("=== 单次抽奖请求处理完成 ===")
 end
 
@@ -123,26 +123,26 @@ function LotteryEventManager.OnFiveDraw(event)
     local uin = player.uin
     local args = event.args or {}
     local poolName = args.poolName
-    
+
     gg.log("玩家信息:", player and player.Name or "nil", "UIN:", uin)
     gg.log("请求参数:", args)
     gg.log("抽奖池名称:", poolName)
-    
+
     if not player or not uin then
         gg.log("错误：玩家对象或UIN无效")
         return
     end
-    
+
     if not poolName then
         gg.log("错误：抽奖池名称不能为空")
         LotteryEventManager.SendErrorResponse(uin, "抽奖池名称不能为空")
         return
     end
-    
+
     gg.log("开始调用LotteryMgr.FiveDraw...")
     local result = LotteryMgr.FiveDraw(uin, poolName)
     gg.log("LotteryMgr.FiveDraw返回结果:", result)
-    
+
     -- 发送抽奖结果给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.DRAW_RESULT, {
         success = result.success,
@@ -154,7 +154,7 @@ function LotteryEventManager.OnFiveDraw(event)
         pityProgress = result.pityProgress,
         errorMsg = result.errorMsg
     })
-    
+
     -- 如果抽奖成功，发送成功通知
     if result.success then
         gg.log("抽奖成功，发送成功通知")
@@ -166,7 +166,7 @@ function LotteryEventManager.OnFiveDraw(event)
     else
         gg.log("抽奖失败:", result.errorMsg)
     end
-    
+
     gg.log("=== 五连抽请求处理完成 ===")
 end
 
@@ -177,18 +177,18 @@ function LotteryEventManager.OnTenDraw(event)
     local uin = player.uin
     local args = event.args or {}
     local poolName = args.poolName
-    
+
     if not player or not uin then
         return
     end
-    
+
     if not poolName then
         LotteryEventManager.SendErrorResponse(uin, "抽奖池名称不能为空")
         return
     end
-    
+
     local result = LotteryMgr.TenDraw(uin, poolName)
-    
+
     -- 发送抽奖结果给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.DRAW_RESULT, {
         success = result.success,
@@ -200,7 +200,7 @@ function LotteryEventManager.OnTenDraw(event)
         pityProgress = result.pityProgress,
         errorMsg = result.errorMsg
     })
-    
+
     -- 如果抽奖成功，发送成功通知
     if result.success then
         LotteryEventManager.SendNotification(uin, LotteryEvent.NOTIFY.DRAW_SUCCESS, {
@@ -219,13 +219,13 @@ function LotteryEventManager.OnGetDrawHistory(event)
     local args = event.args or {}
     local poolName = args.poolName
     local limit = args.limit or 50
-    
+
     if not player or not uin then
         return
     end
-    
+
     local result = LotteryMgr.GetPlayerDrawHistory(uin, poolName, limit)
-    
+
     -- 发送历史记录给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.DRAW_HISTORY, {
         success = result.success,
@@ -241,13 +241,13 @@ end
 function LotteryEventManager.OnGetAvailablePools(event)
     local player = event.player
     local uin = player.uin
-    
+
     if not player or not uin then
         return
     end
-    
+
     local pools = LotteryMgr.GetAvailablePools()
-    
+
     -- 发送可用抽奖池列表给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.AVAILABLE_POOLS, {
         success = true,
@@ -263,24 +263,24 @@ function LotteryEventManager.OnGetPoolStats(event)
     local uin = player.uin
     local args = event.args or {}
     local poolName = args.poolName
-    
+
     if not player or not uin then
         return
     end
-    
+
     if not poolName then
         LotteryEventManager.SendErrorResponse(uin, "抽奖池名称不能为空")
         return
     end
-    
+
     local lotterySystem = LotteryMgr.GetPlayerLottery(uin)
     if not lotterySystem then
         LotteryEventManager.SendErrorResponse(uin, "抽奖系统未初始化")
         return
     end
-    
+
     local stats = lotterySystem:GetPoolStats(poolName)
-    
+
     -- 发送统计数据给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.POOL_STATS, {
         success = true,
@@ -363,7 +363,7 @@ function LotteryEventManager.BroadcastRareReward(playerName, poolName, rewardNam
     if rarity == "SSR" or rarity == "UR" then
         -- 这里可以实现全服广播逻辑
         gg.log("全服广播：玩家", playerName, "在", poolName, "中获得了", rarity, "级奖励", rewardName)
-        
+
         -- 可以通过其他系统发送全服消息
         -- 例如：ChatMgr.BroadcastSystemMessage(message)
     end
@@ -373,21 +373,21 @@ end
 ---@param uin number 玩家UIN
 function LotteryEventManager.NotifyAllDataToClient(uin)
     local lotterySystem = LotteryMgr.GetPlayerLottery(uin)
-    
+
     if not lotterySystem then
         gg.log("警告: 玩家", uin, "的抽奖数据不存在，跳过抽奖数据同步")
         return
     end
-    
+
     -- 获取所有抽奖池数据
     local lotteryData = lotterySystem:GetData()
-    
+
     -- 发送完整抽奖数据给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.LOTTERY_DATA, {
         success = true,
         data = lotteryData
     })
-    
+
     gg.log("已主动同步抽奖数据到客户端:", uin)
 end
 

@@ -399,7 +399,7 @@ function Bag:SetItemAmount(position, amount)
         return
     end
     item.amount = amount
-    self:MarkDirty()
+    self:MarkDirty(position)
 end
 
 ---@param position BagPosition 背包位置
@@ -447,7 +447,7 @@ function Bag:RemoveItem(position)
 
     -- 记录删除的槽位
     table.insert(self.deletedSlots, {c = position.c, s = position.s})
-    self:MarkDirty()
+    self:MarkDirty(position)
 end
 
 function Bag:MarkDirty(slot)
