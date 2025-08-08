@@ -17,6 +17,7 @@ local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventMan
 local TrailCommand = require(ServerStorage.CommandSys.Commands.MTrailCom) ---@type TrailCommand
 local RewardCommand = require(ServerStorage.CommandSys.Commands.RewardCommand) ---@type RewardCommand
 local OpenUICommand = require(ServerStorage.CommandSys.Commands.OpenUICommand) ---@type OpenUICommand
+local AnimationCommand = require(ServerStorage.CommandSys.Commands.MAnimationCom) ---@type AnimationCommand
 
 
 ---@class CommandManager
@@ -40,7 +41,9 @@ CommandManager.handlers = {
     ["clearPlayerData"] = ClearDataCommand.main,
     ["trail"] = TrailCommand.main,
     ["reward"] = RewardCommand.main,
-	    ["openui"] = OpenUICommand.main,
+	["openui"] = OpenUICommand.main,
+    ["animation"] = AnimationCommand.main,
+
 
 
 

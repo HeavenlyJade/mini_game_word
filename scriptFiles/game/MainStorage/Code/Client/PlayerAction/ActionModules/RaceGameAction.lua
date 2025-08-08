@@ -48,6 +48,7 @@ function RaceGameAction:OnStart(data)
     
     -- 【新增】禁用玩家WASD移动控制
     local Controller = require(MainStorage.Code.Client.MController) ---@type Controller
+    gg.log("RaceGameAction: 禁用玩家WASD移动控制", Controller.m_enableMove)
     self.originalEnableMove = Controller.m_enableMove
     Controller.m_enableMove = false
     
@@ -83,7 +84,7 @@ function RaceGameAction:OnStart(data)
     end)
 
 
-    local forceGravityDelay = math.min(recoveryDelay ,70) -- 80%的时间后或45秒后恢复重力
+    local forceGravityDelay = math.min(recoveryDelay ,70) 
     self.forceGravityTimer = ScheduledTask.AddDelay(forceGravityDelay, "RaceGameAction_ForceGravity", function()
         if actor and not self.isEnding then
             actor.Gravity = -50 -- 恢复正常重力，确保玩家能落地

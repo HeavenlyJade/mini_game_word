@@ -104,7 +104,7 @@ end
 
 -- 【新增】初始化方法中添加货币数据缓存初始化
 function HudMoney:OnInit(node, config)
-    gg.log("菜单按钮HudMoney初始化")
+    --gg.log("菜单按钮HudMoney初始化")
     self.selectingCard = 0
 
     -- 【新增】初始化货币数据缓存
@@ -122,7 +122,7 @@ function HudMoney:OnInit(node, config)
 
     self.moneyButtonList = self:Get("货币底图/货币",ViewList) ---@type ViewList<ViewButton>
 
-    gg.log("self.moneyButtonList ",self.moneyButtonList ,self.moneyButtonList.node["金币"])
+    --gg.log("self.moneyButtonList ",self.moneyButtonList ,self.moneyButtonList.node["金币"])
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
         self:OnSyncInventoryItems(data)
     end)
@@ -132,7 +132,7 @@ function HudMoney:OnInit(node, config)
         self:OnSyncPlayerVariables(data)
     end)
 
-    gg.log("按钮初始化结束")
+    --gg.log("按钮初始化结束")
 end
 
 function HudMoney:OnSyncInventoryItems(data)
@@ -140,7 +140,7 @@ function HudMoney:OnSyncInventoryItems(data)
     if not items then
         return
     end
-    gg.log("物品相关数据",data)
+    --gg.log("物品相关数据",data)
     local currencyType = MConfig.ItemTypeEnum["货币"]
 
     -- 1. 检查更新中是否包含货币数据
@@ -268,7 +268,7 @@ end
 function HudMoney:ShowMoneyAddAnimation(currencyItem, currentAmount, targetNode)
     local moneyAdd = MoneyAddPool:Get()
     if not moneyAdd then
-        gg.log("警告：无法从对象池获取货币增加标签")
+        --gg.log("警告：无法从对象池获取货币增加标签")
         return
     end
 
@@ -284,7 +284,7 @@ function HudMoney:ShowMoneyAddAnimation(currencyItem, currentAmount, targetNode)
 
     -- 设置图标
     local itemType = ConfigLoader.GetItem(currencyItem.name) ---@type ItemType
-    gg.log("itemType.icon",itemType.icon)
+    --gg.log("itemType.icon",itemType.icon)
     if itemType and itemType.icon then
         moneyAdd["资源图标"].Icon = itemType.icon
     end
@@ -328,10 +328,10 @@ end
 --- 【新增】接收并处理玩家变量数据同步
 ---@param data table 包含variableData的数据表
 function HudMoney:OnSyncPlayerVariables(data)
-    gg.log("HudMoney收到玩家变量数据同步:", data)
+    --gg.log("HudMoney收到玩家变量数据同步:", data)
 
     if not data or not data.variableData then
-        gg.log("警告：玩家变量数据为空")
+        --gg.log("警告：玩家变量数据为空")
         return
     end
 
@@ -375,7 +375,7 @@ end
 function HudMoney:ShowVariableAddAnimation(variableName, oldValue, newValue, targetNode)
     local moneyAdd = MoneyAddPool:Get()
     if not moneyAdd then
-        gg.log("警告：无法从对象池获取变量增加标签")
+        --gg.log("警告：无法从对象池获取变量增加标签")
         return
     end
 
@@ -436,10 +436,10 @@ function HudMoney:UpdateVariableDisplay()
                     -- 根据变量类型设置不同的显示格式
                     if variableName == "数据_固定值_战力值" then
                         textNode.Title = gg.FormatLargeNumber(value)
-                        gg.log("更新战力值显示:", value)
+                        --gg.log("更新战力值显示:", value)
                     elseif variableName == "数据_固定值_重生次数" then
                         textNode.Title = tostring(math.floor(value))
-                        gg.log("更新重生次数显示:", value)
+                        --gg.log("更新重生次数显示:", value)
                     else
                         -- 默认显示格式
                         textNode.Title = gg.FormatLargeNumber(value)

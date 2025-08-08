@@ -456,7 +456,7 @@ function BaseCompanion:UpgradeCompanionStar(slotIndex)
 
     -- 检查并消耗材料
     for _, material in ipairs(upgradeCost["消耗材料"] or {}) do
-        if material["消耗类型"] == "宠物" or material["消耗类型"] == "伙伴" then
+        if material["消耗类型"] == "宠物" or material["消耗类型"] == "伙伴" or material["消耗类型"] == "翅膀" then
             local companionName = material["消耗名称"]
             local needCount = material["需要数量"] or 1
             local needStar = material["消耗星级"] or 1

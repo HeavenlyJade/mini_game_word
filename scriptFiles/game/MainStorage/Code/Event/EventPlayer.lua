@@ -103,5 +103,7 @@ EventPlayerConfig.GAME_MODES = {
     NONE = nil, -- 无特殊模式
     RACE_GAME = "飞车挑战赛" -- 飞车挑战赛
 }
-
+EventPlayerConfig.PLAYER_ACTION = {
+    PLAYER_ANIMATION = "PLAYER_ANIMATION",
+}
 return EventPlayerConfig
