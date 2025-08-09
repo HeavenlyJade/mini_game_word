@@ -5,6 +5,8 @@ local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
 local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
+local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
+local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
@@ -18,7 +20,7 @@ local BonusManager = {}
 ---@param baseValue number 基础操作数值
 ---@param variableBonuses table 玩家变量加成列表
 ---@param targetVariable string|nil 目标变量名称（用于匹配加成，nil表示应用所有加成）
----@return number, string finalValue, bonusInfo
+---@return number finalValue, string bonusInfo
 function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variableBonuses, targetVariable)
     if not (player and player.variableSystem and variableBonuses and type(variableBonuses) == "table" and #variableBonuses > 0) then
         return baseValue, ""
@@ -29,12 +31,16 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
     local totalPercentBonus = 0
     local finalMultipliers = {}
     local bonusDescriptions = {}
+    -- 基础值改造量：先对 baseValue 做“基础相加/基础相乘”，再计算其余加成
+    local baseFlatAdd = 0
+    local baseMultiplier = 1
 
     for i, bonusItem in ipairs(variableBonuses) do
         local bonusVarName = bonusItem["名称"]
         local actionType = bonusItem["作用类型"]
         local targetVar = bonusItem["目标变量"]
-        
+        local scalingRate = bonusItem["缩放倍率"] or 1
+
         -- 如果指定了目标变量，只对匹配的变量生效
         if targetVariable and targetVar and targetVar ~= targetVariable then
             -- 跳过不匹配的加成
@@ -43,7 +49,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
                 local parsed = variableSystem:ParseVariableName(bonusVarName)
                 if parsed then
                     local bonusValue = variableSystem:GetRawBonusValue(bonusVarName)
-                    
+
                     if actionType == "单独相加" then
                         if parsed.method == "百分比" then
                             totalPercentBonus = totalPercentBonus + bonusValue
@@ -55,13 +61,26 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
                     elseif actionType == "最终乘法" and bonusValue > 0 then
                         table.insert(finalMultipliers, bonusValue)
                         table.insert(bonusDescriptions, string.format("'%s' (×%s, 最终乘法)", parsed.name, bonusValue))
+                    elseif actionType == "基础相乘" then
+                        -- 基础相乘：先作用到基础值 baseValue 上
+                        local multiplier = 1 + (bonusValue * scalingRate)
+                        baseMultiplier = baseMultiplier * math.max(0, multiplier)
+                        table.insert(bonusDescriptions, string.format("'%s' (基础×%s)", parsed.name, multiplier))
+                    elseif actionType == "基础相加" then
+                        -- 基础相加：直接累加到基础值 baseValue 上
+                        local addValue = bonusValue * scalingRate
+                        baseFlatAdd = baseFlatAdd + addValue
+                        table.insert(bonusDescriptions, string.format("'%s' (基础+%s)", parsed.name, addValue))
                     end
                 end
             end
         end
     end
 
-    local finalBonusValue = totalFlatBonus + (baseValue * totalPercentBonus)
+    -- 先对基础值应用“基础相加/基础相乘”
+    local baseAfterFoundation = baseValue * baseMultiplier + baseFlatAdd
+    -- 在改造后的基础值上应用“单独相加”（百分比、固定）
+    local finalBonusValue = baseAfterFoundation + (baseAfterFoundation * totalPercentBonus) + totalFlatBonus
     
     -- 应用最终乘法
     for i, multiplier in ipairs(finalMultipliers) do
@@ -70,16 +89,18 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
 
     local bonusInfo = ""
     if #bonusDescriptions > 0 then
-        bonusInfo = string.format("\n> 加成来源: %s.\n> 基础值: %s, 总加成: %s (固定: %s, 百分比: %s%%, 最终乘法: %d个).",
+        bonusInfo = string.format(
+            "\n> 加成来源: %s.\n> 原始基础: %s, 基础改造后: %s, 最终值: %s (固定: %s, 百分比: %s%%, 最终乘法: %d个).",
             table.concat(bonusDescriptions, ", "),
             tostring(baseValue),
+            tostring(baseAfterFoundation),
             tostring(finalBonusValue),
             tostring(totalFlatBonus),
             tostring(totalPercentBonus * 100),
             #finalMultipliers
         )
     end
-    
+    gg.log("加成计算信息",bonusInfo)
     return finalBonusValue, bonusInfo
 end
 
@@ -87,35 +108,57 @@ end
 
 --- 获取宠物物品加成
 ---@param player MPlayer 玩家实例
----@return table<string, {fixed: number, percentage: number}> 宠物加成数据
+---@return table<string, any> 宠物加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPetItemBonuses(player)
     if not player or not player.uin then
-        --gg.log("[BonusManager调试] GetPetItemBonuses: 玩家对象无效")
+        gg.log("[BonusManager调试] GetPetItemBonuses: 玩家对象无效")
         return {}
     end
 
     local bonuses = PetMgr.GetActiveItemBonuses(player.uin)
-    --gg.log("[BonusManager调试] GetPetItemBonuses: 玩家", player.uin, "宠物加成数据:", bonuses)
+    gg.log("[BonusManager调试] GetPetItemBonuses: 玩家", player.uin, "宠物加成数据:", bonuses)
     return bonuses
 end
 
 --- 获取伙伴物品加成
 ---@param player MPlayer 玩家实例
----@return table<string, {fixed: number, percentage: number}> 伙伴加成数据
+---@return table<string, any> 伙伴加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPartnerItemBonuses(player)
     if not player or not player.uin then
-        --gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家对象无效")
+        gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家对象无效")
         return {}
     end
 
     local bonuses = PartnerMgr.GetActiveItemBonuses(player.uin)
-    --gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家", player.uin, "伙伴加成数据:", bonuses)
+    gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家", player.uin, "伙伴加成数据:", bonuses)
     return bonuses
+end
+
+--- 获取翅膀物品/玩家变量加成
+---@param player MPlayer 玩家实例
+---@return table<string, any> 翅膀加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
+function BonusManager.GetWingItemBonuses(player)
+    if not player or not player.uin then
+        return {}
+    end
+    local bonuses = WingMgr.GetActiveItemBonuses(player.uin)
+    return bonuses or {}
+end
+
+--- 获取尾迹物品/玩家变量加成
+---@param player MPlayer 玩家实例
+---@return table<string, any> 尾迹加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
+function BonusManager.GetTrailItemBonuses(player)
+    if not player or not player.uin then
+        return {}
+    end
+    local bonuses = TrailMgr.GetActiveItemBonuses(player.uin)
+    return bonuses or {}
 end
 
 --- 计算玩家所有物品加成
 ---@param player MPlayer 玩家实例
----@return table<string, {fixed: number, percentage: number}> 按物品目标分组的加成数据
+---@return table<string, { fixed: number, percentage: number, [any]: any }> 按物品目标分组的加成数据
 function BonusManager.CalculatePlayerItemBonuses(player)
     if not player then
         return {}
@@ -130,6 +173,14 @@ function BonusManager.CalculatePlayerItemBonuses(player)
     -- 2. 获取伙伴加成
     local partnerBonuses = BonusManager.GetPartnerItemBonuses(player)
     BonusManager.MergeBonuses(totalBonuses, partnerBonuses)
+
+    -- 3. 获取翅膀加成
+    local wingBonuses = BonusManager.GetWingItemBonuses(player)
+    BonusManager.MergeBonuses(totalBonuses, wingBonuses)
+
+    -- 4. 获取尾迹加成
+    local trailBonuses = BonusManager.GetTrailItemBonuses(player)
+    BonusManager.MergeBonuses(totalBonuses, trailBonuses)
 
     return totalBonuses
 end
@@ -163,8 +214,8 @@ end
 -- ============================= 工具方法 =============================
 
 --- 合并加成数据
----@param target table<string, {fixed: number, percentage: number}> 目标加成表
----@param source table<string, {fixed: number, percentage: number}> 源加成表
+---@param target table<string, { fixed: number, percentage: number, [any]: any }> 目标加成表
+---@param source table<string, any> 源加成表
 function BonusManager.MergeBonuses(target, source)
     if not source then
         return

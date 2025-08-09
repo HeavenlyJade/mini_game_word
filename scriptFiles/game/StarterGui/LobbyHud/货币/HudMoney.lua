@@ -187,8 +187,8 @@ function HudMoney:OnSyncInventoryItems(data)
                 
                 -- 【修复】只对同步包中存在的货币进行动画检查和更新
                 if currencyItem then
-                    local newAmount = currencyItem.amount or 0
-                    local oldAmount = self.lastMoneyValues[currencyName] or 0
+                    local newAmount = math.floor(currencyItem.amount or 0)
+                    local oldAmount = math.floor(self.lastMoneyValues[currencyName] or 0)
                     
                     -- 【关键修复】在更新缓存前先检查动画
                     if newAmount > oldAmount then
@@ -252,7 +252,8 @@ end
 
 function HudMoney:GenerateDisplayText(currencyItem)
     local mainAmount = currencyItem.amount or 0
-    return gg.FormatLargeNumber(mainAmount)
+    local intAmount = math.floor(mainAmount)
+    return gg.FormatLargeNumber(intAmount)
   
 end
 
@@ -261,8 +262,8 @@ function HudMoney:ShouldShowMoneyAddition(itemName, currentAmount)
         return false
     end
 
-    local lastAmount = self.lastMoneyValues[itemName] or 0
-    return currentAmount > lastAmount
+    local lastAmount = math.floor(self.lastMoneyValues[itemName] or 0)
+    return math.floor(currentAmount) > lastAmount
 end
 
 function HudMoney:ShowMoneyAddAnimation(currencyItem, currentAmount, targetNode)
@@ -278,10 +279,9 @@ function HudMoney:ShowMoneyAddAnimation(currencyItem, currentAmount, targetNode)
     end
 
     -- 计算增加值
-    local lastAmount = self.lastMoneyValues[currencyItem.name] or 0
-    local diff = currentAmount - lastAmount
-    moneyAdd.Title = "+" .. gg.FormatLargeNumber(diff)
-
+    local lastAmount = math.floor(self.lastMoneyValues[currencyItem.name] or 0)
+    local diff = math.floor(currentAmount) - lastAmount
+    moneyAdd.Title = "+" .. gg.FormatLargeNumber(math.floor(diff))
     -- 设置图标
     local itemType = ConfigLoader.GetItem(currencyItem.name) ---@type ItemType
     --gg.log("itemType.icon",itemType.icon)
@@ -321,7 +321,7 @@ function HudMoney:UpdateLastMoneyValues(currencyItems)
 
     -- 使用物品名称作为键来记录
     for _, currencyItem in ipairs(currencyItems) do
-        self.lastMoneyValues[currencyItem.name] = currencyItem.amount or 0
+        self.lastMoneyValues[currencyItem.name] = math.floor(currencyItem.amount or 0)
     end
 end
 
@@ -380,8 +380,8 @@ function HudMoney:ShowVariableAddAnimation(variableName, oldValue, newValue, tar
     end
 
     -- 计算增加值
-    local diff = newValue - oldValue
-    moneyAdd.Title = "+" .. gg.FormatLargeNumber(diff)
+    local diff = math.floor(newValue) - math.floor(oldValue)
+    moneyAdd.Title = "+" .. gg.FormatLargeNumber(math.floor(diff))
 
     -- 【修改】根据变量名设置对应的图标
     if variableName == "数据_固定值_战力值" then
@@ -435,14 +435,14 @@ function HudMoney:UpdateVariableDisplay()
                     
                     -- 根据变量类型设置不同的显示格式
                     if variableName == "数据_固定值_战力值" then
-                        textNode.Title = gg.FormatLargeNumber(value)
+                        textNode.Title = gg.FormatLargeNumber(math.floor(value))
                         --gg.log("更新战力值显示:", value)
                     elseif variableName == "数据_固定值_重生次数" then
                         textNode.Title = tostring(math.floor(value))
                         --gg.log("更新重生次数显示:", value)
                     else
                         -- 默认显示格式
-                        textNode.Title = gg.FormatLargeNumber(value)
+                        textNode.Title = gg.FormatLargeNumber(math.floor(value))
                     end
                 end
             end

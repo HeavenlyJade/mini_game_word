@@ -476,4 +476,56 @@ function TrailMgr.FindTrailSlotsByName(uin, trailName)
     return trailManager:FindTrailSlotsByName(trailName)
 end
 
+--- 获取当前激活尾迹的物品/玩家变量加成
+---@param uin number 玩家ID
+---@return table<string, any> 加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
+function TrailMgr.GetActiveItemBonuses(uin)
+    local trailManager = TrailMgr.GetPlayerTrail(uin)
+    if not trailManager then
+        return {}
+    end
+
+    local bonuses = {}
+    local activeSlots = trailManager.activeTrailSlots or {}
+
+    for _, trailSlotId in pairs(activeSlots) do
+        local trailData = trailManager:GetTrailBySlot(trailSlotId)
+        if trailData and trailData.trailName then
+            local cfg = ConfigLoader.GetTrail(trailData.trailName)
+            if cfg and cfg['携带效果'] then
+                for _, effect in ipairs(cfg['携带效果']) do
+                    local key = trailData.trailName
+                    if not bonuses[key] then
+                        bonuses[key] = { fixed = 0, percentage = 0 }
+                    end
+
+                    local varName = effect['变量名称']
+                    local value = effect['效果数值'] or 0
+                    local addType = effect['加成类型'] -- '物品' 或 '玩家属性'
+
+                    -- 目标匹配信息
+                    if addType == '物品' then
+                        bonuses[key].itemTarget = effect['物品目标']
+                    elseif addType == '玩家属性' then
+                        local targetVar = effect['目标变量']
+                        if targetVar and targetVar ~= '' then
+                            bonuses[key].targetVariable = targetVar
+                        end
+                    end
+
+                    -- 数值类型判断：名称中包含“百分比”按百分比处理，否则按固定值
+                    local isPercent = type(varName) == 'string' and string.find(varName, '百分比', 1, true) ~= nil
+                    if isPercent then
+                        bonuses[key].percentage = (bonuses[key].percentage or 0) + value
+                    else
+                        bonuses[key].fixed = (bonuses[key].fixed or 0) + value
+                    end
+                end
+            end
+        end
+    end
+
+    return bonuses
+end
+
 return TrailMgr 
