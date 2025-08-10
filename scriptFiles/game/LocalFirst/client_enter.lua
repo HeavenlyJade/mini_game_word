@@ -8,3 +8,7 @@
 local MainClient = require(game:GetService("MainStorage"):WaitForChild('Code').Client.ClientMain).New()
 MainClient.start_client()
 
+-- 导入并初始化赛道系统
+local RaceTrack = require(game:GetService("MainStorage"):WaitForChild('Code').Client.SceneNode.RaceTrack) ---@type RaceTrack
+RaceTrack.InitializeRaceTrack()
+

@@ -203,12 +203,96 @@ function PetCommand.handlers.setslots(params, player)
     return true
 end
 
+--- 新增宠物栏位
+---@param params table
+---@param player MPlayer
+function PetCommand.handlers.addslots(params, player)
+    local carryCount = params["新增可携带"] and tonumber(params["新增可携带"])
+    local bagCapacity = params["新增背包"] and tonumber(params["新增背包"])
+
+    if not carryCount and not bagCapacity then
+        player:SendHoverText("请至少提供 '可携带' 或 '背包' 字段中的一个")
+        return false
+    end
+
+    local uin = player.uin
+    local anythingChanged = false
+
+    if carryCount then
+        if PetMgr.AddUnlockedEquipSlots(uin, carryCount) then
+            player:SendHoverText("成功新增可携带宠物栏位: " .. carryCount)
+            anythingChanged = true
+        else
+            player:SendHoverText("新增可携带栏位失败, 可能是玩家数据未加载")
+        end
+    end
+
+    if bagCapacity then
+        if PetMgr.AddPetBagCapacity(uin, bagCapacity) then
+            player:SendHoverText("成功新增宠物背包容量: " .. bagCapacity)
+            anythingChanged = true
+        else
+            player:SendHoverText("新增背包容量失败, 可能是玩家数据未加载")
+        end
+    end
+
+    if anythingChanged then
+        _syncToClient(player)
+        PetMgr.ForceSavePlayerData(uin)
+    end
+
+    return true
+end
+
+--- 减少宠物栏位
+---@param params table
+---@param player MPlayer
+function PetCommand.handlers.reduceslots(params, player)
+    local carryCount = params["减少可携带"] and tonumber(params["减少可携带"])
+    local bagCapacity = params["减少背包"] and tonumber(params["减少背包"])
+
+    if not carryCount and not bagCapacity then
+        player:SendHoverText("请至少提供 '可携带' 或 '背包' 字段中的一个")
+        return false
+    end
+
+    local uin = player.uin
+    local anythingChanged = false
+
+    if carryCount then
+        if PetMgr.ReduceUnlockedEquipSlots(uin, carryCount) then
+            player:SendHoverText("成功减少可携带宠物栏位: " .. carryCount)
+            anythingChanged = true
+        else
+            player:SendHoverText("减少可携带栏位失败, 可能是玩家数据未加载")
+        end
+    end
+
+    if bagCapacity then
+        if PetMgr.ReducePetBagCapacity(uin, bagCapacity) then
+            player:SendHoverText("成功减少宠物背包容量: " .. bagCapacity)
+            anythingChanged = true
+        else
+            player:SendHoverText("减少背包容量失败, 可能是玩家数据未加载")
+        end
+    end
+
+    if anythingChanged then
+        _syncToClient(player)
+        PetMgr.ForceSavePlayerData(uin)
+    end
+
+    return true
+end
+
 -- 中文到英文的映射
 local operationMap = {
     ["新增"] = "add",
     ["删除"] = "remove",
     ["设置"] = "set",
-    ["栏位设置"] = "setslots"
+    ["栏位设置"] = "setslots",
+    ["栏位新增"] = "addslots",
+    ["栏位减少"] = "reduceslots"
 }
 
 --- 宠物操作指令入口
@@ -219,14 +303,14 @@ function PetCommand.main(params, player)
     local operationType = params["操作类型"]
 
     if not operationType then
-        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '删除', '设置', '栏位设置'")
+        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '删除', '设置', '栏位设置', '栏位新增', '栏位减少'")
         return false
     end
 
     -- 将中文指令映射到英文处理器
     local handlerName = operationMap[operationType]
     if not handlerName then
-        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '删除', '设置', '栏位设置'")
+        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '删除', '设置', '栏位设置', '栏位新增', '栏位减少'")
         return false
     end
 

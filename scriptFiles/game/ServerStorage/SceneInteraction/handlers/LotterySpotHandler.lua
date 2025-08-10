@@ -17,7 +17,6 @@ function LotterySpotHandler:OnInit(node, config, debugId)
     -- 调用父类初始化
     SceneNodeHandlerBase.OnInit(self, node, config, debugId)
     
-    gg.log(string.format("抽奖点处理器 '%s' 初始化完成", self.name))
 end
 
 --- 执行指令字符串
@@ -44,7 +43,7 @@ function LotterySpotHandler:OnEntityEnter(entity)
     end
     
     ---@cast entity MPlayer
-    gg.log(string.format("玩家 '%s' 进入抽奖点 '%s'", entity.name, self.name))
+    --gg.log(string.format("玩家 '%s' 进入抽奖点 '%s'", entity.name, self.name))
     
     -- 执行进入指令（打开抽奖界面）
     if self.config.enterCommand and self.config.enterCommand ~= "" then
@@ -69,7 +68,7 @@ function LotterySpotHandler:OnEntityLeave(entity)
     end
     
     ---@cast entity MPlayer
-    gg.log(string.format("玩家 '%s' 离开抽奖点 '%s'", entity.name, self.name))
+    --gg.log(string.format("玩家 '%s' 离开抽奖点 '%s'", entity.name, self.name))
     
     -- 执行离开指令（如果有配置）
     if self.config.leaveCommand and self.config.leaveCommand ~= "" then
@@ -82,7 +81,6 @@ function LotterySpotHandler:OnDestroy()
     -- 调用父类销毁方法
     SceneNodeHandlerBase.OnDestroy(self)
     
-    gg.log(string.format("抽奖点处理器 '%s' 已销毁", self.name))
 end
 
 return LotterySpotHandler

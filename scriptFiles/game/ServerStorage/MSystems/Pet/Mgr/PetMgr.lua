@@ -609,6 +609,70 @@ function PetMgr.SetPetBagCapacity(uin, capacity)
     end
 end
 
+---【新增】增加玩家可携带栏位数量
+---@param uin number 玩家ID
+---@param count number 增加的数量
+---@return boolean
+function PetMgr.AddUnlockedEquipSlots(uin, count)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if petManager then
+        petManager:AddUnlockedEquipSlots(count)
+        --gg.log("通过 PetMgr 为玩家", uin, "增加可携带栏位数量", count)
+        return true
+    else
+        --gg.log("增加可携带栏位失败，找不到玩家", uin, "的宠物管理器")
+        return false
+    end
+end
+
+---【新增】减少玩家可携带栏位数量
+---@param uin number 玩家ID
+---@param count number 减少的数量
+---@return boolean
+function PetMgr.ReduceUnlockedEquipSlots(uin, count)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if petManager then
+        petManager:ReduceUnlockedEquipSlots(count)
+        --gg.log("通过 PetMgr 为玩家", uin, "减少可携带栏位数量", count)
+        return true
+    else
+        --gg.log("减少可携带栏位失败，找不到玩家", uin, "的宠物管理器")
+        return false
+    end
+end
+
+---【新增】增加玩家宠物背包容量
+---@param uin number 玩家ID
+---@param capacity number 增加的容量
+---@return boolean
+function PetMgr.AddPetBagCapacity(uin, capacity)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if petManager then
+        petManager:AddPetBagCapacity(capacity)
+        --gg.log("通过 PetMgr 为玩家", uin, "增加背包容量", capacity)
+        return true
+    else
+        --gg.log("增加背包容量失败，找不到玩家", uin, "的宠物管理器")
+        return false
+    end
+end
+
+---【新增】减少玩家宠物背包容量
+---@param uin number 玩家ID
+---@param capacity number 减少的容量
+---@return boolean
+function PetMgr.ReducePetBagCapacity(uin, capacity)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if petManager then
+        petManager:ReducePetBagCapacity(capacity)
+        --gg.log("通过 PetMgr 为玩家", uin, "减少背包容量", capacity)
+        return true
+    else
+        --gg.log("减少背包容量失败，找不到玩家", uin, "的宠物管理器")
+        return false
+    end
+end
+
 ---定时更新所有在线玩家的宠物buff
 function PetMgr.UpdateAllPlayerPetBuffs()
     for uin, petManager in pairs(PetMgr.server_player_pets) do

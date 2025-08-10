@@ -151,7 +151,7 @@ end
 ---@return table<string, table> 物品加成 {[物品目标] = {fixed = number, percentage = number}}
 function BaseCompanion:GetActiveItemBonuses()
     local totalBonuses = {}
-    local BonusManager = require(ServerStorage.BonusManager.BonusManager) -- 懒加载以避免循环依赖
+    local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager -- 懒加载以避免循环依赖
 
     local activeCompanions = self:GetActiveCompanions()
     --gg.log(string.format("[BaseCompanion调试] GetActiveItemBonuses: 找到 %d 个激活的 %s", #activeCompanions, self.companionType))

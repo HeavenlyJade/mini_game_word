@@ -810,4 +810,5 @@ function CompanionGui:SelectDefaultCompanion()
     end
 end
 
-return CompanionGui.New(script.Parent, uiConfig)
+
+

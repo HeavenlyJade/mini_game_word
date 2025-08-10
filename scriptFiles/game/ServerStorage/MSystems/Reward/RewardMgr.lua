@@ -21,7 +21,7 @@ local RewardMgr = {
 
 -- ==================== 初始化 ====================
 function RewardMgr.Init()
-    gg.log("初始化奖励系统管理器")
+    --gg.log("初始化奖励系统管理器")
     RewardMgr.StartUpdateTimer()
     -- 移除定时存盘功能，现在使用统一的定时存盘机制
     -- RewardMgr.StartSaveTimer()
@@ -70,41 +70,41 @@ end
 ---@param player MPlayer 玩家对象
 function RewardMgr.OnPlayerJoin(player)
     if not player or not player.uin then
-        gg.log("错误: 玩家对象无效")
+        --gg.log("错误: 玩家对象无效")
         return
     end
     
     local uin = player.uin
-    gg.log(string.format("=== 奖励系统初始化开始 ==="))
-    gg.log(string.format("玩家 %s (UIN:%d) 上线，开始加载奖励数据...", player.name or "未知", uin))
+    --gg.log(string.format("=== 奖励系统初始化开始 ==="))
+    --gg.log(string.format("玩家 %s (UIN:%d) 上线，开始加载奖励数据...", player.name or "未知", uin))
     
     -- 从云端加载数据
     local ret, savedData = RewardCloudDataMgr.ReadPlayerRewardData(uin)
-    gg.log(string.format("云端数据读取结果: ret=%d, 数据=%s", ret, gg.json.encode(savedData or {})))
+    --gg.log(string.format("云端数据读取结果: ret=%d, 数据=%s", ret, gg.json.encode(savedData or {})))
     
     -- 创建奖励实例
     local rewardInstance = Reward.New(uin, savedData)
     RewardMgr.playerRewards[uin] = rewardInstance
-    gg.log(string.format("奖励实例创建完成，实例ID: %s", tostring(rewardInstance)))
+    --gg.log(string.format("奖励实例创建完成，实例ID: %s", tostring(rewardInstance)))
     
     -- 打印初始数据状态
     if rewardInstance and rewardInstance.onlineData then
         local data = rewardInstance.onlineData
-        gg.log(string.format("玩家 %d 初始奖励数据:", uin))
-        gg.log(string.format("  - 配置名称: %s", data.configName or "未知"))
-        gg.log(string.format("  - 当前轮次: %d", data.currentRound or 0))
-        gg.log(string.format("  - 今日在线时长: %d 秒", data.todayOnlineTime or 0))
-        gg.log(string.format("  - 本轮在线时长: %d 秒", data.roundOnlineTime or 0))
-        gg.log(string.format("  - 已领取奖励数量: %d", #(data.claimedIndices or {})))
-        gg.log(string.format("  - 最后登录日期: %s", data.lastLoginDate or "未知"))
+        --gg.log(string.format("玩家 %d 初始奖励数据:", uin))
+        --gg.log(string.format("  - 配置名称: %s", data.configName or "未知"))
+        --gg.log(string.format("  - 当前轮次: %d", data.currentRound or 0))
+        --gg.log(string.format("  - 今日在线时长: %d 秒", data.todayOnlineTime or 0))
+        --gg.log(string.format("  - 本轮在线时长: %d 秒", data.roundOnlineTime or 0))
+        --gg.log(string.format("  - 已领取奖励数量: %d", #(data.claimedIndices or {})))
+        --gg.log(string.format("  - 最后登录日期: %s", data.lastLoginDate or "未知"))
     end
     
     -- 发送初始数据给客户端
     RewardMgr.SyncDataToClient(player)
-    gg.log(string.format("已同步初始数据给客户端"))
+    --gg.log(string.format("已同步初始数据给客户端"))
     
-    gg.log(string.format("玩家 %s (UIN:%d) 奖励系统初始化完成", player.name or "未知", uin))
-    gg.log(string.format("=== 奖励系统初始化结束 ==="))
+    --gg.log(string.format("玩家 %s (UIN:%d) 奖励系统初始化完成", player.name or "未知", uin))
+    --gg.log(string.format("=== 奖励系统初始化结束 ==="))
 end
 
 --- 玩家离线处理
@@ -115,7 +115,7 @@ function RewardMgr.OnPlayerLeave(uin)
         return
     end
     
-    ----gg.log(string.format("玩家 %d 离线，保存奖励数据...", uin))
+    ------gg.log(string.format("玩家 %d 离线，保存奖励数据...", uin))
     
     -- 保存数据到云端
     local saveData = rewardInstance:GetSaveData()
@@ -124,7 +124,7 @@ function RewardMgr.OnPlayerLeave(uin)
     -- 清除缓存
     RewardMgr.playerRewards[uin] = nil
     
-    ----gg.log(string.format("玩家 %d 奖励数据已保存", uin))
+    ------gg.log(string.format("玩家 %d 奖励数据已保存", uin))
 end
 
 -- ==================== 在线时长更新 ====================
@@ -162,9 +162,9 @@ function RewardMgr.UpdateAllOnlineTime()
                 local player = RewardMgr.GetPlayer(uin)
                 if player then
                     RewardMgr.NotifyAvailableReward(player)
-                    --gg.log(string.format("已通知玩家 %d 有新的可领取奖励", uin))
+                    ----gg.log(string.format("已通知玩家 %d 有新的可领取奖励", uin))
                 else
-                    --gg.log(string.format("警告：找不到玩家 %d 的对象，无法发送通知", uin))
+                    ----gg.log(string.format("警告：找不到玩家 %d 的对象，无法发送通知", uin))
                 end
             else
      
@@ -175,7 +175,7 @@ function RewardMgr.UpdateAllOnlineTime()
     end
     
     if updateCount > 0 then
-        --gg.log(string.format("在线时长更新完成：处理了 %d 个玩家，其中 %d 个有可领取奖励", updateCount, availableCount))
+        ----gg.log(string.format("在线时长更新完成：处理了 %d 个玩家，其中 %d 个有可领取奖励", updateCount, availableCount))
     end
 end
 
@@ -187,31 +187,31 @@ end
 ---@return boolean 是否成功
 ---@return string|nil 错误信息
 function RewardMgr.ClaimOnlineReward(player, index)
-    gg.log("=== RewardMgr.ClaimOnlineReward ===")
-    gg.log(string.format("玩家: %s (ID: %d)", player.name or "未知", player.uin or 0))
-    gg.log(string.format("奖励索引: %d", index))
+    --gg.log("=== RewardMgr.ClaimOnlineReward ===")
+    --gg.log(string.format("玩家: %s (ID: %d)", player.name or "未知", player.uin or 0))
+    --gg.log(string.format("奖励索引: %d", index))
     
     if not player or not player.uin then
-        gg.log("错误：玩家对象无效")
+        --gg.log("错误：玩家对象无效")
         return false, "玩家对象无效"
     end
     
     local rewardInstance = RewardMgr.playerRewards[player.uin]
     if not rewardInstance then
-        gg.log("错误：奖励数据未加载")
+        --gg.log("错误：奖励数据未加载")
         return false, "奖励数据未加载"
     end
     
-    gg.log("开始调用Reward实例的ClaimOnlineReward方法")
+    --gg.log("开始调用Reward实例的ClaimOnlineReward方法")
     
     -- 领取奖励
     local rewardItem, errorMsg = rewardInstance:ClaimOnlineReward(index)
     if not rewardItem then
-        gg.log(string.format("奖励领取失败: %s", errorMsg or "未知错误"))
+        --gg.log(string.format("奖励领取失败: %s", errorMsg or "未知错误"))
         return false, errorMsg or "领取失败"
     end
     
-    gg.log("奖励领取成功，开始发放奖励物品",rewardItem)
+    --gg.log("奖励领取成功，开始发放奖励物品",rewardItem)
     
     -- 发放奖励物品
     local success = RewardMgr.GiveRewardToPlayer(player, rewardItem)
@@ -223,17 +223,17 @@ function RewardMgr.ClaimOnlineReward(player, index)
             local saveData = rewardInstance:GetSaveData()
             local RewardCloudDataMgr = require(ServerStorage.MSystems.Reward.RewardCloudDataMgr) ---@type RewardCloudDataMgr
             RewardCloudDataMgr.SavePlayerRewardData(player.uin, saveData)
-            gg.log(string.format("奖励领取成功，已立即保存奖励数据: 玩家 %d, 奖励索引 %d", player.uin, index))
+            --gg.log(string.format("奖励领取成功，已立即保存奖励数据: 玩家 %d, 奖励索引 %d", player.uin, index))
         end
     end
     
-    gg.log("奖励发放成功，开始同步数据到客户端")
+    --gg.log("奖励发放成功，开始同步数据到客户端")
     
     -- 同步数据到客户端
     RewardMgr.SyncDataToClient(player)
     
-    gg.log(string.format("玩家 %s 领取在线奖励 %d 完成", player.name, index))
-    gg.log("=== RewardMgr.ClaimOnlineReward 结束 ===")
+    --gg.log(string.format("玩家 %s 领取在线奖励 %d 完成", player.name, index))
+    --gg.log("=== RewardMgr.ClaimOnlineReward 结束 ===")
     
     return true
 end
@@ -270,11 +270,11 @@ function RewardMgr.ClaimAllOnlineRewards(player)
             local saveData = rewardInstance:GetSaveData()
             local RewardCloudDataMgr = require(ServerStorage.MSystems.Reward.RewardCloudDataMgr) ---@type RewardCloudDataMgr
             RewardCloudDataMgr.SavePlayerRewardData(player.uin, saveData)
-            gg.log(string.format("一键领取成功，已立即保存奖励数据: 玩家 %d, 领取数量 %d", player.uin, #successRewards))
+            --gg.log(string.format("一键领取成功，已立即保存奖励数据: 玩家 %d, 领取数量 %d", player.uin, #successRewards))
         end
     end
     
-    ----gg.log(string.format("玩家 %s 一键领取 %d 个在线奖励", player.name, #successRewards))
+    ------gg.log(string.format("玩家 %s 一键领取 %d 个在线奖励", player.name, #successRewards))
     
     -- 同步数据到客户端
     RewardMgr.SyncDataToClient(player)
@@ -400,24 +400,24 @@ function RewardMgr.SyncDataToClient(player)
         errorMsg = nil
     })
     
-    gg.log(string.format("已同步奖励数据给玩家 %d", player.uin))
+    --gg.log(string.format("已同步奖励数据给玩家 %d", player.uin))
 end
 
 --- 通知客户端有新的可领取奖励
 ---@param player MPlayer 玩家对象
 function RewardMgr.NotifyAvailableReward(player)
     if not player then
-        --gg.log("警告：NotifyAvailableReward 收到空的玩家对象")
+        ----gg.log("警告：NotifyAvailableReward 收到空的玩家对象")
         return
     end
     
-    --gg.log(string.format("正在通知玩家 %d 有新的可领取奖励", player.uin))
+    ----gg.log(string.format("正在通知玩家 %d 有新的可领取奖励", player.uin))
     
     -- 通过RewardEventManager发送新奖励可领取通知
     local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
     RewardEventManager.NotifyNewAvailable(player)
     
-    --gg.log(string.format("已发送通知给玩家 %d", player.uin))
+    ----gg.log(string.format("已发送通知给玩家 %d", player.uin))
 end
 
 -- ==================== 数据保存 ====================
@@ -436,7 +436,7 @@ end
 --     -- 批量保存
 --     if count > 0 then
 --         RewardCloudDataMgr.BatchSave(dataToSave)
---         ----gg.log(string.format("定时保存: 已保存 %d 个玩家的奖励数据", count))
+--         ------gg.log(string.format("定时保存: 已保存 %d 个玩家的奖励数据", count))
 --     end
 -- end
 
@@ -447,7 +447,7 @@ function RewardMgr.SavePlayerRewardData(uin)
     if rewardInstance then
         local saveData = rewardInstance:GetSaveData()
         RewardCloudDataMgr.SavePlayerRewardData(uin, saveData)
-        --gg.log("统一存盘：已保存玩家", uin, "的奖励数据")
+        ----gg.log("统一存盘：已保存玩家", uin, "的奖励数据")
     end
 end
 
@@ -519,7 +519,7 @@ function RewardMgr.Cleanup()
     -- 清空缓存
     RewardMgr.playerRewards = {}
     
-    ----gg.log("奖励系统管理器已清理")
+    ------gg.log("奖励系统管理器已清理")
 end
 
 

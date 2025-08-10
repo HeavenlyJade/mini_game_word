@@ -22,7 +22,7 @@ function IdleSpotHandler:OnInit(node, config, debugId)
     -- 初始化玩家挂机状态跟踪
     self.idlePlayerTimers = {}
 
-    gg.log(string.format("挂机点处理器 '%s' 初始化完成", self.name))
+    --gg.log(string.format("挂机点处理器 '%s' 初始化完成", self.name))
 end
 
 --- 执行指令字符串
@@ -54,7 +54,7 @@ function IdleSpotHandler:OnEntityEnter(entity)
     ---@cast entity MPlayer
     local playerId = entity.uuid
 
-    gg.log(string.format("玩家 '%s' 进入挂机点 '%s'", entity.name, self.name))
+    --gg.log(string.format("玩家 '%s' 进入挂机点 '%s'", entity.name, self.name))
 
     -- 执行进入指令
     if self.config.enterCommand and self.config.enterCommand ~= "" then
@@ -79,7 +79,7 @@ function IdleSpotHandler:OnEntityLeave(entity)
     ---@cast entity MPlayer
     local playerId = entity.uuid
 
-    gg.log(string.format("玩家 '%s' 离开挂机点 '%s'", entity.name, self.name))
+    --gg.log(string.format("玩家 '%s' 离开挂机点 '%s'", entity.name, self.name))
 
     -- 停止定时奖励
     self:stopIdleRewards(entity)
@@ -102,7 +102,7 @@ function IdleSpotHandler:startIdleRewards(player)
 
     -- 检查是否有定时指令配置
     if not self.config.timedCommands or #self.config.timedCommands == 0 then
-        gg.log(string.format("挂机点 '%s' 未配置定时指令", self.name))
+        --gg.log(string.format("挂机点 '%s' 未配置定时指令", self.name))
         return
     end
 
@@ -146,7 +146,7 @@ function IdleSpotHandler:startIdleRewards(player)
             -- 将定时器添加到玩家的定时器列表中
             table.insert(self.idlePlayerTimers[playerId], timer)
 
-            gg.log(string.format("为玩家 '%s' 启动挂机奖励定时器，间隔: %d秒", player.name, interval))
+            --gg.log(string.format("为玩家 '%s' 启动挂机奖励定时器，间隔: %d秒", player.name, interval))
         end
     end
 end
@@ -165,7 +165,7 @@ function IdleSpotHandler:stopIdleRewards(player)
             end
         end
         self.idlePlayerTimers[playerId] = nil
-        gg.log(string.format("停止玩家 '%s' 的所有挂机奖励定时器", player.name))
+        --gg.log(string.format("停止玩家 '%s' 的所有挂机奖励定时器", player.name))
     end
 end
 
@@ -186,7 +186,7 @@ function IdleSpotHandler:OnDestroy()
     -- 调用父类销毁方法
     SceneNodeHandlerBase.OnDestroy(self)
 
-    gg.log(string.format("挂机点处理器 '%s' 已销毁", self.name))
+    --gg.log(string.format("挂机点处理器 '%s' 已销毁", self.name))
 end
 
 return IdleSpotHandler
