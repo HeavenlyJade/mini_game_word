@@ -18,6 +18,7 @@ local AchievementType = require(MainStorage.Code.Common.TypeConfig.AchievementTy
 local ActionCostType = require(MainStorage.Code.Common.TypeConfig.ActionCostType) ---@type ActionCostType
 local RewardType = require(MainStorage.Code.Common.TypeConfig.RewardType) ---@type RewardType
 local LotteryType = require(MainStorage.Code.Common.TypeConfig.LotteryType) ---@type LotteryType
+local ShopItemType = require(MainStorage.Code.Common.TypeConfig.ShopItemType) ---@type ShopItemType
 
 -- 引用所有 Config 的原始数据
 local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig)
@@ -37,6 +38,7 @@ local VariableNameConfig = require(MainStorage.Code.Common.Config.VariableNameCo
 local GameModeConfig = require(MainStorage.Code.Common.Config.GameModeConfig)
 local RewardConfig = require(MainStorage.Code.Common.Config.RewardConfig)
 local LotteryConfig = require(MainStorage.Code.Common.Config.LotteryConfig)
+local ShopItemConfig = require(MainStorage.Code.Common.Config.ShopItemConfig)
 
 -- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) -- 已移除
 -- local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) -- 已移除
@@ -65,6 +67,7 @@ ConfigLoader.VariableNames = {}
 ConfigLoader.GameModes = {}
 ConfigLoader.Rewards = {} -- 新增奖励配置存储
 ConfigLoader.Lotteries = {} -- 新增抽奖配置存储
+ConfigLoader.ShopItems = {} -- 新增商城商品配置存储
 
 --- 一个通用的加载函数，避免重复代码
 ---@param configData table 从Config目录加载的原始数据
@@ -107,6 +110,8 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(AchievementConfig, AchievementType, ConfigLoader.Achievements, "Achievement")
     ConfigLoader.LoadConfig(RewardConfig, RewardType, ConfigLoader.Rewards, "Reward")
     ConfigLoader.LoadConfig(LotteryConfig, LotteryType, ConfigLoader.Lotteries, "Lottery")
+    ConfigLoader.LoadConfig(ShopItemConfig, ShopItemType, ConfigLoader.ShopItems, "ShopItem")
+
     -- ConfigLoader.LoadConfig(ItemQualityConfig, nil, ConfigLoader.ItemQualities, "ItemQuality") -- 暂无ItemQualityType
     -- ConfigLoader.LoadConfig(MailConfig, nil, ConfigLoader.Mails, "Mail") -- 暂无MailType
     -- ConfigLoader.LoadConfig(NpcConfig, nil, ConfigLoader.Npcs, "Npc") -- 暂无NpcType
@@ -249,6 +254,17 @@ end
 ---@return table<string, LotteryType>
 function ConfigLoader.GetAllLotteries()
     return ConfigLoader.Lotteries
+end
+
+---@param id string
+---@return ShopItemType
+function ConfigLoader.GetShopItem(id)
+    return ConfigLoader.ShopItems[id]
+end
+
+---@return table<string, ShopItemType>
+function ConfigLoader.GetAllShopItems()
+    return ConfigLoader.ShopItems
 end
 
 return ConfigLoader 

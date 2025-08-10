@@ -334,4 +334,81 @@ function ShopItemType:GetToStringParams()
     }
 end
 
+--- 是否为限购商品
+---@return boolean 是否限购
+function ShopItemType:IsLimitedPurchase()
+    return self.limitConfig.limitType ~= "无限制"
+end
+
+--- 获取限购显示文本
+---@return string 限购文本
+function ShopItemType:GetLimitText()
+    local limitType = self.limitConfig.limitType
+    local limitCount = self.limitConfig.limitCount
+    
+    if limitType == "无限制" then
+        return "无限购"
+    elseif limitType == "永久" then
+        return string.format("限购%d次", limitCount)
+    else
+        return string.format("%s限购%d次", limitType, limitCount)
+    end
+end
+
+--- 获取折扣价格（如果有活动）
+---@return number 折扣后价格
+function ShopItemType:GetDiscountPrice()
+    local originalPrice = self.price.amount
+    
+    -- 可以根据活动系统计算折扣
+    if self.uiConfig.hotSaleTag then
+        return math.floor(originalPrice * 0.8) -- 热卖8折
+    end
+    
+    return originalPrice
+end
+
+--- 格式化价格显示
+---@return string 价格文本
+function ShopItemType:FormatPriceText()
+    local discountPrice = self:GetDiscountPrice()
+    local originalPrice = self.price.amount
+    local currencyType = self.price.currencyType
+    
+    if discountPrice < originalPrice then
+        return string.format("~~%d~~ %d %s", originalPrice, discountPrice, currencyType)
+    else
+        return string.format("%d %s", originalPrice, currencyType)
+    end
+end
+
+--- 生成购买日志
+---@param player MPlayer 玩家对象
+---@return string 日志文本
+function ShopItemType:GeneratePurchaseLog(player)
+    return string.format("玩家[%s]购买商品[%s]，价格[%s]", 
+        player.name, 
+        self.configName, 
+        self:FormatPriceText()
+    )
+end
+
+--- 验证商品配置数据完整性
+---@return boolean, string 是否有效，错误信息
+function ShopItemType:ValidateConfig()
+    if not self.configName or self.configName == "" then
+        return false, "商品名不能为空"
+    end
+    
+    if not self.price or not self.price.amount or self.price.amount < 0 then
+        return false, "价格配置无效"
+    end
+    
+    if not self.rewards or #self.rewards == 0 then
+        return false, "奖励配置不能为空"
+    end
+    
+    return true, "配置有效"
+end
+
 return ShopItemType
