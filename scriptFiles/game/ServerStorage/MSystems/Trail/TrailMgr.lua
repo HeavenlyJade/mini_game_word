@@ -528,4 +528,20 @@ function TrailMgr.GetActiveItemBonuses(uin)
     return bonuses
 end
 
+--- 检查玩家是否有可用的尾迹槽位
+---@param uin number 玩家ID
+---@return boolean 是否有可用槽位
+function TrailMgr.HasAvailableSlot(uin)
+    local trailManager = TrailMgr.GetPlayerTrail(uin)
+    if not trailManager then
+        return false
+    end
+    
+    -- 检查是否有空槽位
+    local trailCount = trailManager:GetTrailCount()
+    local maxSlots = trailManager.maxSlots -- 最大槽位数
+    
+    return trailCount < maxSlots
+end
+
 return TrailMgr 

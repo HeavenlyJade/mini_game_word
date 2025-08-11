@@ -120,32 +120,70 @@ end
 ---@return boolean, string 是否有足够空间，失败原因
 function Shop:CheckBagSpace(shopItem, player)
     if not shopItem.rewards or not next(shopItem.rewards) then
-        return true, "无需背包空间"
+        return true, "无需检查空间"
     end
     
-    local bagInstance = BagMgr.GetPlayerBag(player.Uin)
-    if not bagInstance then
-        return false, "背包系统异常"
-    end
-    
-    -- 计算所需空间
-    local requiredSlots = 0
-    for itemName, amount in pairs(shopItem.rewards) do
-        local itemType = ConfigLoader.GetItem(itemName)
-        if itemType and not itemType.isStackable then
-            requiredSlots = requiredSlots + amount
+    -- 根据商品类型检查对应的系统空间
+    for _, reward in ipairs(shopItem.rewards) do
+        local itemType = reward.itemType
+        local itemName = reward.itemName
+        local amount = reward.amount or 1
+        
+        if itemType == "伙伴" then
+            -- 检查伙伴槽位空间
+            local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
+            local hasSlot = PartnerMgr.HasAvailableSlot(player.uin)
+            if not hasSlot then
+                return false, "伙伴槽位已满，无法购买"
+            end
+        elseif itemType == "宠物" then
+            -- 检查宠物槽位空间
+            local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
+            local hasSlot = PetMgr.HasAvailableSlot(player.uin)
+            if not hasSlot then
+                return false, "宠物槽位已满，无法购买"
+            end
+        elseif itemType == "翅膀" then
+            -- 检查翅膀槽位空间
+            local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
+            local hasSlot = WingMgr.HasAvailableSlot(player.uin)
+            if not hasSlot then
+                return false, "翅膀槽位已满，无法购买"
+            end
+        elseif itemType == "尾迹" then
+            -- 检查尾迹槽位空间
+            local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
+            local hasSlot = TrailMgr.HasAvailableSlot(player.uin)
+            if not hasSlot then
+                return false, "尾迹槽位已满，无法购买"
+            end
+        elseif itemType == "物品" then
+            -- 检查背包空间
+            local bagInstance = BagMgr.GetOrCreatePlayerBag(player.uin, player)
+            if not bagInstance then
+                return false, "背包系统异常"
+            end
+            
+            -- 检查背包是否有足够空间
+            local hasSpace = BagMgr.HasEnoughSpace(player, {[itemName] = amount})
+            if not hasSpace then
+                return false, "背包空间不足"
+            end
         else
-            requiredSlots = requiredSlots + 1 -- 可堆叠物品只需1个槽位
+            -- 未知类型，默认检查背包
+            local bagInstance = BagMgr.GetOrCreatePlayerBag(player.uin, player)
+            if not bagInstance then
+                return false, "背包系统异常"
+            end
+            
+            local hasSpace = BagMgr.HasEnoughSpace(player, {[itemName] = amount})
+            if not hasSpace then
+                return false, "背包空间不足"
+            end
         end
     end
     
-    -- 检查可用空间
-    local availableSlots = bagInstance:GetAvailableSlots()
-    if availableSlots < requiredSlots then
-        return false, string.format("背包空间不足，需要%d个空位", requiredSlots)
-    end
-    
-    return true, "背包空间充足"
+    return true, "空间检查通过"
 end
 
 -- 购买执行 --------------------------------------------------------
@@ -217,11 +255,17 @@ function Shop:ProcessPayment(shopItem, player, currencyType)
             return false, "该商品不支持金币购买"
         end
         
-        local currentCoin = player:GetVariable("金币", 0)
+        -- 使用BagMgr获取玩家金币数量
+        local currentCoin = BagMgr.GetItemAmount(player, "金币")
         if currentCoin < priceAmount then
-            return false, string.format("金币不足，需要%d个", priceAmount)
+            return false, string.format("金币不足，需要%d个，当前拥有%d个", priceAmount, currentCoin)
         end
-        player:AddVariable("金币", -priceAmount)
+        
+        -- 使用BagMgr扣除玩家金币
+        local removeSuccess = BagMgr.RemoveItem(player, "金币", priceAmount)
+        if not removeSuccess then
+            return false, "扣除金币失败"
+        end
         
         -- 更新金币消费统计
         self.totalCoinSpent = self.totalCoinSpent + priceAmount
@@ -248,14 +292,18 @@ function Shop:RefundPayment(shopItem, player, currencyType)
     if currencyType == "金币" then
         priceAmount = shopItem.price.amount or 0
         if priceAmount > 0 then
-            player:AddVariable("金币", priceAmount)
-            self.totalCoinSpent = math.max(0, self.totalCoinSpent - priceAmount)
+            -- 使用BagMgr退还玩家金币
+            local addSuccess = BagMgr.AddItem(player, "金币", priceAmount)
+            if addSuccess then
+                self.totalCoinSpent = math.max(0, self.totalCoinSpent - priceAmount)
+                gg.log("执行购买退款成功", player.name, currencyType, priceAmount)
+            else
+                gg.log("执行购买退款失败", player.name, currencyType, priceAmount)
+            end
         end
     end
     
     -- 迷你币退款由迷你世界商城处理，这里不做处理
-    
-    gg.log("执行购买退款", player.name, currencyType, priceAmount)
 end
 
 --- 发放奖励
@@ -266,25 +314,77 @@ function Shop:GrantRewards(shopItem, player)
     if not shopItem.rewards or not next(shopItem.rewards) then
         return true, "无奖励物品"
     end
+    local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
+    local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
+    local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
+    local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
+
+    -- 按类型统计，用于决定是否同步
+    local stats = { bag = 0, pet = 0, partner = 0, wing = 0, trail = 0 }
     
-    local bagInstance = BagMgr.GetPlayerBag(player.Uin)
-    if not bagInstance then
-        return false, "背包系统异常"
-    end
-    
-    -- 发放所有奖励物品
-    for itemName, amount in pairs(shopItem.rewards) do
-        local itemType = ConfigLoader.GetItem(itemName)
-        if itemType then
-            local item = itemType:ToItem(amount)
-            local addSuccess = bagInstance:AddItem(item)
-            if not addSuccess then
-                return false, string.format("添加物品失败：%s x%d", itemName, amount)
+    -- 根据商品类型发放奖励
+    for _, reward in ipairs(shopItem.rewards) do
+        local itemType = reward.itemType
+        local itemName = reward.itemName
+        local amount = reward.amount or 1
+        
+        if itemType == "伙伴" then
+            -- 发放伙伴
+            local success, actualSlot = PartnerMgr.AddPartner(player, itemName)
+            if not success then
+                return false, string.format("添加伙伴失败：%s", itemName)
             end
+            stats.partner = stats.partner + 1
+        elseif itemType == "宠物" then
+            -- 发放宠物
+            local success, actualSlot = PetMgr.AddPet(player, itemName)
+            if not success then
+                return false, string.format("添加宠物失败：%s", itemName)
+            end
+            stats.pet = stats.pet + 1
+        elseif itemType == "翅膀" then
+            -- 发放翅膀
+            local success, actualSlot = WingMgr.AddWing(player, itemName)
+            if not success then
+                return false, string.format("添加翅膀失败：%s", itemName)
+            end
+            stats.wing = stats.wing + 1
+        elseif itemType == "尾迹" then
+            -- 发放尾迹
+            local success, actualSlot = TrailMgr.AddTrail(player, itemName)
+            if not success then
+                return false, string.format("添加尾迹失败：%s", itemName)
+            end
+            stats.trail = stats.trail + 1
+        elseif itemType == "物品" then
+            -- 发放物品到背包
+            local success = BagMgr.AddItem(player, itemName, amount)
+            if not success then
+                return false, string.format("添加物品失败：%s", itemName)
+            end
+            stats.bag = stats.bag + 1
         else
-            gg.log("警告：找不到物品配置", itemName)
         end
     end
+    
+    -- 统一按需同步（仅在对应类型发放过奖励时同步一次）
+    if stats.bag > 0 then
+        BagMgr.ForceSyncToClient(player.uin)
+    end
+    if stats.pet > 0 then
+        PetMgr.ForceSyncToClient(player.uin)
+    end
+    if stats.partner > 0 then
+        PartnerMgr.ForceSyncToClient(player.uin)
+    end
+    if stats.wing > 0 then
+        WingMgr.ForceSyncToClient(player.uin)
+    end
+    if stats.trail > 0 then
+        TrailMgr.ForceSyncToClient(player.uin)
+    end
+    
+    gg.log("商城奖励发放完成，已同步数据到客户端", player.name, "伙伴:", stats.partner, "宠物:", stats.pet, "翅膀:", stats.wing, "尾迹:", stats.trail, "物品:", stats.bag)
     
     return true, "奖励发放完成"
 end

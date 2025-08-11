@@ -101,11 +101,7 @@ function BagMgr.OnPlayerJoin(player)
     if ret == 0 and bag then
         return true
     else
-        -- 创建新背包
-        local Bag = require(ServerStorage.MSystems.Bag.Bag)
-        local newBag = Bag.New(player)
-        BagMgr.setPlayerBagData(player.uin, newBag)
-        return true
+        return false
     end
 end
 

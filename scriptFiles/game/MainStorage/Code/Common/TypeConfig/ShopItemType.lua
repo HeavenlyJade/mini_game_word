@@ -201,71 +201,122 @@ end
 
 --- 检查玩家是否满足购买条件
 ---@param playerLevel number 玩家等级
----@return boolean 是否满足条件
+---@return boolean, string 是否满足条件，失败原因
 function ShopItemType:CheckPurchaseCondition(playerLevel)
     local condition = self.limitConfig.purchaseCondition
+    if condition.conditionType == "无" or not condition.conditionType then
+        return true, "无等级要求"
+    end
+    
     if condition.conditionType == "玩家等级" then
         local targetLevel = condition.conditionValue or 0
         if condition.comparisonOperator == "大于等于" then
-            return playerLevel >= targetLevel
+            if playerLevel >= targetLevel then
+                return true, "等级满足要求"
+            else
+                return false, string.format("等级不足，需要%d级", targetLevel)
+            end
         elseif condition.comparisonOperator == "大于" then
-            return playerLevel > targetLevel
+            if playerLevel > targetLevel then
+                return true, "等级满足要求"
+            else
+                return false, string.format("等级不足，需要%d级以上", targetLevel)
+            end
         elseif condition.comparisonOperator == "等于" then
-            return playerLevel == targetLevel
+            if playerLevel == targetLevel then
+                return true, "等级满足要求"
+            else
+                return false, string.format("等级必须为%d级", targetLevel)
+            end
         elseif condition.comparisonOperator == "小于等于" then
-            return playerLevel <= targetLevel
+            if playerLevel <= targetLevel then
+                return true, "等级满足要求"
+            else
+                return false, string.format("等级过高，需要%d级以下", targetLevel)
+            end
         elseif condition.comparisonOperator == "小于" then
-            return playerLevel < targetLevel
+            if playerLevel < targetLevel then
+                return true, "等级满足要求"
+            else
+                return false, string.format("等级过高，需要%d级以下", targetLevel)
+            end
         end
     end
-    return true -- 默认满足条件
+    
+    return true, "条件满足" -- 默认满足条件
 end
 
---- 检查是否可购买（基于限购配置）
----@param currentPurchaseCount number 当前已购买次数
----@return boolean 是否可购买
-function ShopItemType:CanPurchase(currentPurchaseCount)
+--- 检查是否可购买（基于限购配置和玩家条件）
+---@param player MPlayer 玩家对象
+---@return boolean, string 是否可购买，失败原因
+function ShopItemType:CanPurchase(player)
+    if not player then
+        return false, "玩家对象无效"
+    end
+    
+    -- 检查玩家等级条件
+    local canBuyCondition, conditionReason = self:CheckPurchaseCondition(player.level or 0)
+    if not canBuyCondition then
+        return false, conditionReason
+    end
+    
+    -- 检查VIP需求
+    local canBuyVip, vipReason = self:CheckVipRequirement(player.vipLevel or 0)
+    if not canBuyVip then
+        return false, vipReason
+    end
+    
+    -- 检查时效性
+    local canBuyTime, timeReason = self:IsInValidTime()
+    if not canBuyTime then
+        return false, timeReason
+    end
+    
+    -- 检查限购（这里需要从玩家的购买记录中获取当前购买次数）
+    -- 由于这里无法直接访问玩家的购买记录，我们只做基础验证
     local limitType = self.limitConfig.limitType
     local limitCount = self.limitConfig.limitCount
     
     if limitType == "无限制" then
-        return true
+        return true, "可以购买"
     elseif limitType == "永久一次" then
-        return currentPurchaseCount < 1
-    elseif limitType == "每日限制" then
-        return currentPurchaseCount < limitCount
-    elseif limitType == "每周限制" then
-        return currentPurchaseCount < limitCount
-    elseif limitType == "每月限制" then
-        return currentPurchaseCount < limitCount
+        -- 这里需要从玩家数据中检查是否已购买过
+        return true, "可以购买（永久一次）"
+    elseif limitType == "每日限制" or limitType == "每周限制" or limitType == "每月限制" then
+        -- 这里需要从玩家数据中检查当前周期的购买次数
+        return true, "可以购买（" .. limitType .. "）"
     end
     
-    return true
+    return true, "可以购买"
 end
 
 --- 检查是否在有效时间内
----@return boolean 是否在有效时间内
+---@return boolean, string 是否在有效时间内，原因
 function ShopItemType:IsInValidTime()
     local timeConfig = self.specialProperties.timeConfig
     if not timeConfig.isLimited then
-        return true
+        return true, "无时间限制"
     end
     
     -- 这里可以根据实际需求实现时间检查逻辑
     -- 暂时返回true，实际使用时需要根据当前时间判断
-    return true
+    return true, "在有效时间内"
 end
 
 --- 检查VIP需求
 ---@param playerVipLevel number 玩家VIP等级
----@return boolean 是否满足VIP需求
+---@return boolean, string 是否满足VIP需求，失败原因
 function ShopItemType:CheckVipRequirement(playerVipLevel)
     local vipReq = self.specialProperties.vipRequirement
     if not vipReq.requireVip then
-        return true
+        return true, "无VIP要求"
     end
     
-    return playerVipLevel >= vipReq.vipLevel
+    if playerVipLevel >= vipReq.vipLevel then
+        return true, "VIP等级满足要求"
+    else
+        return false, string.format("VIP等级不足，需要%d级", vipReq.vipLevel)
+    end
 end
 
 --- 获取商品总价值（用于排序）

@@ -564,6 +564,22 @@ function PetMgr.GetPetCountByType(uin, petName, minStar)
     return petManager:GetPetCountByType(petName, minStar)
 end
 
+--- 检查玩家是否有可用的宠物槽位
+---@param uin number 玩家ID
+---@return boolean 是否有可用槽位
+function PetMgr.HasAvailableSlot(uin)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        return false
+    end
+    
+    -- 检查是否有空槽位
+    local petCount = petManager:GetPetCount()
+    local maxSlots = petManager.maxSlots -- 默认最大槽位数
+    
+    return petCount < maxSlots
+end
+
 --- 获取当前激活宠物的物品加成
 ---@param uin number 玩家ID
 ---@return table<string, number> 激活宠物的物品加成

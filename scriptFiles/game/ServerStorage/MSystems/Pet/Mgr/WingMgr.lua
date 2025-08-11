@@ -462,6 +462,22 @@ function WingMgr.GetWingCountByType(uin, wingName, minStar)
     return wingManager:GetWingCountByType(wingName, minStar)
 end
 
+--- 检查玩家是否有可用的翅膀槽位
+---@param uin number 玩家ID
+---@return boolean 是否有可用槽位
+function WingMgr.HasAvailableSlot(uin)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if not wingManager then
+        return false
+    end
+    
+    -- 检查是否有空槽位
+    local wingCount = wingManager:GetWingCount()
+    local maxSlots = wingManager.maxSlots  -- 默认最大槽位数
+    
+    return wingCount < maxSlots
+end
+
 ---【新增】更新玩家所有已装备翅膀的模型
 ---@param player MPlayer 玩家对象
 function WingMgr.UpdateAllEquippedWingModels(player)

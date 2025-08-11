@@ -463,6 +463,22 @@ function PartnerMgr.GetPartnerCountByType(uin, partnerName, minStar)
     return partnerManager:GetPartnerCountByType(partnerName, minStar)
 end
 
+--- 检查玩家是否有可用的伙伴槽位
+---@param uin number 玩家ID
+---@return boolean 是否有可用槽位
+function PartnerMgr.HasAvailableSlot(uin)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if not partnerManager then
+        return false
+    end
+    
+    -- 检查是否有空槽位
+    local partnerCount = partnerManager:GetPartnerCount()
+    local maxSlots = partnerManager.maxSlots -- 默认最大槽位数
+    
+    return partnerCount < maxSlots
+end
+
 ---【新增】更新玩家所有已装备伙伴的模型
 ---@param player MPlayer 玩家对象
 function PartnerMgr.UpdateAllEquippedPartnerModels(player)

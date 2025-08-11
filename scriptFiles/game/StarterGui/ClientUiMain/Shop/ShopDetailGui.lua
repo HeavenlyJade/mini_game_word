@@ -276,8 +276,6 @@ function ShopDetailGui:AppendShopItemList(categoryName)
         local purchaseButton = ViewButton.New(itemNodeClone, self)
         purchaseButton.clickCb = function()
             self:SelectItem(shopItemTypeData.configName)
-            -- 点击商品后直接购买，传递商品ID和分类名
-            self:OnClickPurchase(shopItemTypeData.configName, categoryName, shopItemTypeData.price.currencyType)
         end
         
         -- 将按钮存储到productTypesTable中

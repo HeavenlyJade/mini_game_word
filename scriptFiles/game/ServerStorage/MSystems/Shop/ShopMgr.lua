@@ -29,12 +29,12 @@ local lastResetCheck = 0
 -- 玩家加入时创建商城实例
 ---@param player MPlayer 玩家对象
 function ShopMgr.OnPlayerJoin(player)
-    if not player or not player.Uin then
+    if not player or not player.uin then
         --gg.log("创建玩家商城实例失败：玩家对象无效")
         return
     end
     
-    local uin = player.Uin
+    local uin = player.uin
     
     -- 检查是否已存在实例
     if server_player_shop_data[uin] then
@@ -44,7 +44,6 @@ function ShopMgr.OnPlayerJoin(player)
     
     -- 从云数据加载玩家商城数据
     local shopData = ShopCloudDataMgr.LoadPlayerShopData(uin)
-    shopData.uin = uin -- 确保UIN正确
     
     -- 检查并重置过期限购
     ShopCloudDataMgr.CheckAndResetLimitCounters(shopData)
@@ -53,7 +52,7 @@ function ShopMgr.OnPlayerJoin(player)
     local shopInstance = Shop.New(shopData)
     server_player_shop_data[uin] = shopInstance
     
-    --gg.log("玩家商城实例创建成功", uin)
+    gg.log("玩家商城实例创建成功", uin,shopData)
     return shopInstance
 end
 
@@ -91,15 +90,11 @@ end
 ---@param player MPlayer 玩家对象
 ---@return Shop|nil 商城实例
 function ShopMgr.GetOrCreatePlayerShop(player)
-    if not player or not player.Uin then
+    if not player or not player.uin then
         return nil
     end
     
-    local shopInstance = server_player_shop_data[player.Uin]
-    if not shopInstance then
-        shopInstance = ShopMgr.OnPlayerJoin(player)
-    end
-    
+    local shopInstance = server_player_shop_data[player.uin]
     return shopInstance
 end
 
@@ -145,11 +140,11 @@ function ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
     end
     
     -- 执行购买，传递货币类型
-    local success, message = shopInstance:ExecutePurchase(shopItemId, player, currencyType)
+    local success, message, purchaseData = shopInstance:ExecutePurchase(shopItemId, player, currencyType)
     
     if success then
         -- 保存数据
-        ShopMgr.SavePlayerShopData(player.Uin)
+        ShopMgr.SavePlayerShopData(player.uin)
         
         -- 构建购买结果
         local purchaseResult = {
@@ -401,7 +396,7 @@ function ShopMgr.ResetPlayerLimits(player, resetType)
     end
     
     shopInstance:ResetLimitCounters(resetType)
-    ShopMgr.SavePlayerShopData(player.Uin)
+    ShopMgr.SavePlayerShopData(player.uin)
     
     --gg.log("手动重置玩家限购", player.name, resetType)
     return true
@@ -433,7 +428,7 @@ function ShopMgr.SetPlayerPreference(player, key, value)
     end
     
     shopInstance:SetPreference(key, value)
-    ShopMgr.SavePlayerShopData(player.Uin)
+    ShopMgr.SavePlayerShopData(player.uin)
     
     return true
 end
