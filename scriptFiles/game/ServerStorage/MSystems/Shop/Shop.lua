@@ -32,7 +32,7 @@ local Shop = ClassMgr.Class("Shop")
 ---@param shopData PlayerShopData 玩家商城数据
 function Shop:OnInit(shopData)
     if not shopData then
-        --gg.log("警告：商城数据为空，使用默认数据")
+        gg.log("警告：商城数据为空，使用默认数据")
         shopData = ShopCloudDataMgr.CreateDefaultShopData()
     end
     
@@ -153,8 +153,9 @@ end
 --- 执行购买
 ---@param shopItemId string 商品ID
 ---@param player MPlayer 玩家对象
+---@param currencyType string 货币类型
 ---@return boolean, string 是否成功，结果消息
-function Shop:ExecutePurchase(shopItemId, player)
+function Shop:ExecutePurchase(shopItemId, player, currencyType)
     local shopItem = ConfigLoader.GetShopItem(shopItemId)
     if not shopItem then
         return false, "商品不存在"
@@ -166,8 +167,8 @@ function Shop:ExecutePurchase(shopItemId, player)
         return false, reason
     end
     
-    -- 执行扣费
-    local paySuccess, payReason = self:ProcessPayment(shopItem, player)
+    -- 执行扣费，传递货币类型
+    local paySuccess, payReason = self:ProcessPayment(shopItem, player, currencyType)
     if not paySuccess then
         return false, payReason
     end
@@ -176,12 +177,12 @@ function Shop:ExecutePurchase(shopItemId, player)
     local rewardSuccess, rewardReason = self:GrantRewards(shopItem, player)
     if not rewardSuccess then
         -- 购买失败，需要退款
-        self:RefundPayment(shopItem, player)
+        self:RefundPayment(shopItem, player, currencyType)
         return false, "发放奖励失败：" .. rewardReason
     end
     
     -- 更新购买记录
-    self:UpdatePurchaseRecord(shopItemId, shopItem)
+    self:UpdatePurchaseRecord(shopItemId, shopItem, currencyType)
     
     -- 更新限购计数器
     self:UpdateLimitCounter(shopItemId, shopItem)
@@ -189,30 +190,33 @@ function Shop:ExecutePurchase(shopItemId, player)
     -- 执行特殊指令
     self:ExecuteCommands(shopItem, player)
     
-    --gg.log("玩家购买商品成功", player.name, shopItemId)
+    gg.log("玩家购买商品成功", player.name, shopItemId, currencyType)
     return true, "购买成功"
 end
 
 --- 处理支付
 ---@param shopItem ShopItemType 商品配置
 ---@param player MPlayer 玩家对象
+---@param currencyType string 货币类型
 ---@return boolean, string 是否成功，失败原因
-function Shop:ProcessPayment(shopItem, player)
-    local priceType = shopItem.price.priceType
-    local priceAmount = shopItem.price.priceAmount
+function Shop:ProcessPayment(shopItem, player, currencyType)
+    -- 根据选择的货币类型获取对应的价格
+    local priceAmount = 0
     
-    if priceType == "迷你币" then
+    if currencyType == "迷你币" then
+        priceAmount = shopItem.price.miniCoinAmount or 0
+        if priceAmount <= 0 then
+            return false, "该商品不支持迷你币购买"
+        end
         -- 迷你币支付由迷你世界商城处理
         return true, "迷你币支付成功"
         
-    elseif priceType == "水晶" then
-        local currentCrystal = player:GetVariable("水晶", 0)
-        if currentCrystal < priceAmount then
-            return false, string.format("水晶不足，需要%d个", priceAmount)
+    elseif currencyType == "金币" then
+        priceAmount = shopItem.price.amount or 0
+        if priceAmount <= 0 then
+            return false, "该商品不支持金币购买"
         end
-        player:AddVariable("水晶", -priceAmount)
         
-    elseif priceType == "金币" then
         local currentCoin = player:GetVariable("金币", 0)
         if currentCoin < priceAmount then
             return false, string.format("金币不足，需要%d个", priceAmount)
@@ -223,11 +227,11 @@ function Shop:ProcessPayment(shopItem, player)
         self.totalCoinSpent = self.totalCoinSpent + priceAmount
         
     else
-        return false, "不支持的价格类型：" .. tostring(priceType)
+        return false, "不支持的货币类型：" .. tostring(currencyType)
     end
     
     -- 更新消费统计
-    if priceType == "迷你币" then
+    if currencyType == "迷你币" then
         self.totalPurchaseValue = self.totalPurchaseValue + priceAmount
     end
     
@@ -237,18 +241,21 @@ end
 --- 退款
 ---@param shopItem ShopItemType 商品配置
 ---@param player MPlayer 玩家对象
-function Shop:RefundPayment(shopItem, player)
-    local priceType = shopItem.price.priceType
-    local priceAmount = shopItem.price.priceAmount
+---@param currencyType string 货币类型
+function Shop:RefundPayment(shopItem, player, currencyType)
+    local priceAmount = 0
     
-    if priceType == "水晶" then
-        player:AddVariable("水晶", priceAmount)
-    elseif priceType == "金币" then
-        player:AddVariable("金币", priceAmount)
-        self.totalCoinSpent = math.max(0, self.totalCoinSpent - priceAmount)
+    if currencyType == "金币" then
+        priceAmount = shopItem.price.amount or 0
+        if priceAmount > 0 then
+            player:AddVariable("金币", priceAmount)
+            self.totalCoinSpent = math.max(0, self.totalCoinSpent - priceAmount)
+        end
     end
     
-    --gg.log("执行购买退款", player.name, priceType, priceAmount)
+    -- 迷你币退款由迷你世界商城处理，这里不做处理
+    
+    gg.log("执行购买退款", player.name, currencyType, priceAmount)
 end
 
 --- 发放奖励
@@ -275,7 +282,7 @@ function Shop:GrantRewards(shopItem, player)
                 return false, string.format("添加物品失败：%s x%d", itemName, amount)
             end
         else
-            --gg.log("警告：找不到物品配置", itemName)
+            gg.log("警告：找不到物品配置", itemName)
         end
     end
     
@@ -302,9 +309,17 @@ end
 --- 更新购买记录
 ---@param shopItemId string 商品ID
 ---@param shopItem ShopItemType 商品配置
-function Shop:UpdatePurchaseRecord(shopItemId, shopItem)
+---@param currencyType string 货币类型
+function Shop:UpdatePurchaseRecord(shopItemId, shopItem, currencyType)
     local currentTime = os.time()
-    local priceAmount = shopItem.price.priceAmount or 0
+    local priceAmount = 0
+    
+    -- 根据货币类型获取对应的价格
+    if currencyType == "迷你币" then
+        priceAmount = shopItem.price.miniCoinAmount or 0
+    elseif currencyType == "金币" then
+        priceAmount = shopItem.price.amount or 0
+    end
     
     if not self.purchaseRecords[shopItemId] then
         self.purchaseRecords[shopItemId] = ShopCloudDataMgr.CreatePurchaseRecord(shopItemId, priceAmount)
@@ -363,7 +378,7 @@ function Shop:ResetLimitCounters(resetType)
         end
     end
     
-    --gg.log("重置限购计数器", resetType, self.uin)
+    gg.log("重置限购计数器", resetType, self.uin)
 end
 
 -- 查询方法 --------------------------------------------------------

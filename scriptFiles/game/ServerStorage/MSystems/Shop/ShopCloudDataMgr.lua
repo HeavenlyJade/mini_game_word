@@ -46,72 +46,52 @@ local RESET_HOUR = 4 -- 凌晨4点重置
 ---@param currentTime number 当前时间戳
 ---@return number 下一个重置时间戳
 local function CalculateNextResetTime(resetType, currentTime)
-    local date = os.date("*t", currentTime)
+    local currentDate = os.date("*t", currentTime)
+    local nextReset = os.time({
+        year = currentDate.year,
+        month = currentDate.month,
+        day = currentDate.day,
+        hour = RESET_HOUR,
+        min = 0,
+        sec = 0
+    })
     
     if resetType == "daily" then
-        -- 每日4点重置
-        local resetTime = os.time({
-            year = date.year,
-            month = date.month,
-            day = date.day,
-            hour = RESET_HOUR,
-            min = 0,
-            sec = 0
-        })
-        
-        -- 如果当前时间已过今日4点，则计算明日4点
-        if currentTime >= resetTime then
-            resetTime = resetTime + 24 * 3600
+        -- 如果当前时间已经过了今天的重置时间，则设置为明天的重置时间
+        if currentTime >= nextReset then
+            nextReset = nextReset + 24 * 3600
         end
-        
-        return resetTime
-        
     elseif resetType == "weekly" then
-        -- 每周一4点重置
-        local dayOfWeek = date.wday == 1 and 7 or date.wday - 1 -- 转换为周一为1的格式
-        local daysUntilMonday = (8 - dayOfWeek) % 7
-        if daysUntilMonday == 0 and currentTime >= os.time({
-            year = date.year,
-            month = date.month,
-            day = date.day,
-            hour = RESET_HOUR,
-            min = 0,
-            sec = 0
-        }) then
+        -- 计算下一个周一的重置时间
+        local daysUntilMonday = (8 - currentDate.wday) % 7
+        if daysUntilMonday == 0 then
             daysUntilMonday = 7
         end
-        
-        local resetTime = os.time({
-            year = date.year,
-            month = date.month,
-            day = date.day + daysUntilMonday,
-            hour = RESET_HOUR,
-            min = 0,
-            sec = 0
-        })
-        
-        return resetTime
-        
+        nextReset = nextReset + (daysUntilMonday * 24 * 3600)
     elseif resetType == "monthly" then
-        -- 每月1日4点重置
-        local resetTime = os.time({
-            year = date.month == 12 and date.year + 1 or date.year,
-            month = date.month == 12 and 1 or date.month + 1,
+        -- 计算下个月1号的重置时间
+        local nextMonth = currentDate.month + 1
+        local nextYear = currentDate.year
+        if nextMonth > 12 then
+            nextMonth = 1
+            nextYear = nextYear + 1
+        end
+        nextReset = os.time({
+            year = nextYear,
+            month = nextMonth,
             day = 1,
             hour = RESET_HOUR,
             min = 0,
             sec = 0
         })
-        
-        return resetTime
     end
     
-    return currentTime
+    return nextReset
 end
 
 --- 创建默认商城数据
 ---@return PlayerShopData
-local function CreateDefaultShopData()
+function ShopCloudDataMgr.CreateDefaultShopData()
     local currentTime = os.time()
     
     return {
@@ -138,7 +118,7 @@ end
 local function ValidateAndRepairShopData(shopData)
     if not shopData or type(shopData) ~= "table" then
         --gg.log("商城数据无效，创建默认数据")
-        return CreateDefaultShopData()
+        return ShopCloudDataMgr.CreateDefaultShopData()
     end
     
     -- 确保必要字段存在
@@ -172,7 +152,7 @@ function ShopCloudDataMgr.LoadPlayerShopData(uin)
         return ValidateAndRepairShopData(data)
     else
         --gg.log("加载玩家商城数据失败，创建默认数据", uin)
-        return CreateDefaultShopData()
+        return ShopCloudDataMgr.CreateDefaultShopData()
     end
 end
 

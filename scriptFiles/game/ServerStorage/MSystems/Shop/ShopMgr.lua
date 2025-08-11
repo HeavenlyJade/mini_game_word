@@ -106,9 +106,11 @@ end
 -- 处理玩家购买请求
 ---@param player MPlayer 玩家对象
 ---@param shopItemId string 商品ID
+---@param currencyType string 货币类型
+---@param categoryName string|nil 商品分类
 ---@return boolean, string, table|nil 是否成功，结果消息，附加数据
-function ShopMgr.ProcessPurchase(player, shopItemId)
-    if not player or not shopItemId then
+function ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
+    if not player or not shopItemId or not currencyType then
         return false, "参数无效", nil
     end
     
@@ -124,13 +126,26 @@ function ShopMgr.ProcessPurchase(player, shopItemId)
         return false, "商品不存在", nil
     end
     
-    -- 检查迷你币商品
-    if shopItem.specialProperties and shopItem.specialProperties.miniItemId and shopItem.specialProperties.miniItemId > 0 then
-        return ShopMgr.ProcessMiniPurchase(player, shopItem)
+    -- 验证货币类型是否与商品配置匹配
+    if currencyType == "迷你币" then
+        if not shopItem.price.miniCoinAmount or shopItem.price.miniCoinAmount <= 0 then
+            return false, "该商品不支持迷你币购买", nil
+        end
+    elseif currencyType == "金币" then
+        if not shopItem.price.amount or shopItem.price.amount <= 0 then
+            return false, "该商品不支持金币购买", nil
+        end
+    else
+        return false, "不支持的货币类型：" .. currencyType, nil
     end
     
-    -- 执行购买
-    local success, message = shopInstance:ExecutePurchase(shopItemId, player)
+    -- 检查迷你币商品
+    if shopItem.specialProperties and shopItem.specialProperties.miniItemId and shopItem.specialProperties.miniItemId > 0 then
+        return ShopMgr.ProcessMiniPurchase(player, shopItem, currencyType)
+    end
+    
+    -- 执行购买，传递货币类型
+    local success, message = shopInstance:ExecutePurchase(shopItemId, player, currencyType)
     
     if success then
         -- 保存数据
@@ -141,13 +156,15 @@ function ShopMgr.ProcessPurchase(player, shopItemId)
             shopItemId = shopItemId,
             shopItemName = shopItem.configName,
             rewards = shopItem.rewards,
+            currencyType = currencyType,
+            categoryName = categoryName,
             purchaseTime = os.time()
         }
         
-        --gg.log("玩家购买成功", player.name, shopItemId)
+        --gg.log("玩家购买成功", player.name, shopItemId, currencyType)
         return true, message, purchaseResult
     else
-        --gg.log("玩家购买失败", player.name, shopItemId, message)
+        --gg.log("玩家购买失败", player.name, shopItemId, currencyType, message)
         return false, message, nil
     end
 end
@@ -155,18 +172,20 @@ end
 -- 处理迷你币商品购买
 ---@param player MPlayer 玩家对象
 ---@param shopItem ShopItemType 商品配置
+---@param currencyType string 货币类型
 ---@return boolean, string, table|nil 是否成功，结果消息，附加数据
-function ShopMgr.ProcessMiniPurchase(player, shopItem)
+function ShopMgr.ProcessMiniPurchase(player, shopItem, currencyType)
     -- 迷你币商品由迷你世界商城处理，这里只做记录
     local purchaseResult = {
         shopItemId = shopItem.configName,
         shopItemName = shopItem.configName,
         miniItemId = shopItem.specialProperties.miniItemId,
         purchaseType = "mini_coin",
+        currencyType = currencyType,
         purchaseTime = os.time()
     }
     
-    --gg.log("迷你币商品购买", player.name, shopItem.configName)
+    --gg.log("迷你币商品购买", player.name, shopItem.configName, currencyType)
     return true, "迷你币商品购买处理", purchaseResult
 end
 

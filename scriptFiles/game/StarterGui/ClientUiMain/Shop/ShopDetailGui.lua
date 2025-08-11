@@ -66,6 +66,10 @@ function ShopDetailGui:InitNodes()
 
     -- 物品详情
     self.itemDescription = self:Get("商城底图/右侧物品栏/物品显示", ViewComponent) ---@type ViewComponent
+    
+    -- 价格图节点 - 获取现有的ViewButton类型节点
+    self.miniCoinPriceButton = self:Get("商城底图/右侧物品栏/物品显示/物品显示底图/迷你币价格图", ViewButton) ---@type ViewButton
+    self.goldPriceButton = self:Get("商城底图/右侧物品栏/物品显示/物品显示底图/货币价格图", ViewButton) ---@type ViewButton
 end
 
 -- 数据初始化
@@ -108,6 +112,20 @@ end
 function ShopDetailGui:RegisterButtonEvents()
     self.closeButton.clickCb = function()
         self:Close()
+    end
+    
+    -- 为迷你币价格图按钮绑定点击事件
+    self.miniCoinPriceButton.clickCb = function()
+        if self.selectedItem then
+            self:OnClickPurchase(self.selectedItem, self.selectedCategory, "迷你币")
+        end
+    end
+    
+    -- 为货币价格图按钮绑定点击事件
+    self.goldPriceButton.clickCb = function()
+        if self.selectedItem then
+            self:OnClickPurchase(self.selectedItem, self.selectedCategory, "金币")
+        end
     end
 end
 
@@ -258,6 +276,8 @@ function ShopDetailGui:AppendShopItemList(categoryName)
         local purchaseButton = ViewButton.New(itemNodeClone, self)
         purchaseButton.clickCb = function()
             self:SelectItem(shopItemTypeData.configName)
+            -- 点击商品后直接购买，传递商品ID和分类名
+            self:OnClickPurchase(shopItemTypeData.configName, categoryName, shopItemTypeData.price.currencyType)
         end
         
         -- 将按钮存储到productTypesTable中
@@ -272,9 +292,42 @@ end
 
 
 --- 点击购买按钮
-function ShopDetailGui:OnClickPurchase(shopItemId)
-    --gg.log("点击购买商品: " .. shopItemId)
-    self:SendPurchaseRequest(shopItemId)
+function ShopDetailGui:OnClickPurchase(shopItemId, categoryName, currencyType)
+    gg.log("点击购买商品: " .. shopItemId .. "，分类: " .. (categoryName or "未知") .. "，货币类型: " .. (currencyType or "未知"))
+    
+    -- 如果没有传入分类名，尝试从当前选中分类获取
+    if not categoryName and self.selectedCategory then
+        categoryName = self.selectedCategory
+    end
+    
+    -- 验证商品信息
+    if not shopItemId or not categoryName then
+        --gg.log("错误：缺少商品ID或分类信息")
+        return
+    end
+    
+    -- 获取商品数据
+    local shopItemData = ConfigLoader.GetShopItem(shopItemId)
+    if not shopItemData then
+        --gg.log("错误：找不到商品数据，ID: " .. shopItemId)
+        return
+    end
+    
+    -- 验证货币类型是否匹配
+    if currencyType == "迷你币" then
+        if not shopItemData.price.miniCoinAmount or shopItemData.price.miniCoinAmount <= 0 then
+            --gg.log("错误：该商品不支持迷你币购买")
+            return
+        end
+    elseif currencyType == "金币" then
+        if not shopItemData.price.amount or shopItemData.price.amount <= 0 then
+            --gg.log("错误：该商品不支持金币购买")
+            return
+        end
+    end
+    
+    -- 发送购买请求，包含商品ID、分类信息和货币类型
+    self:SendPurchaseRequest(shopItemId, categoryName, currencyType)
 end
 
 --- 选中某个商品，显示详情
@@ -283,27 +336,35 @@ function ShopDetailGui:SelectItem(configName)
     
     local shopItemTypeData = ConfigLoader.GetShopItem(configName)
     if not shopItemTypeData then return end
+    
     local itemDescription = self.itemDescription.node
     itemDescription["物品显示底图"]["物品名称"].Title = shopItemTypeData.configName
+    
     local iconPath = shopItemTypeData.uiConfig.iconPath
     local miniCoinAmount = shopItemTypeData.price.miniCoinAmount
     local goldAmount = shopItemTypeData.price.amount
     local currencyType = shopItemTypeData.price.currencyType
+    
     if iconPath and iconPath ~="" then
         itemDescription["物品显示底图"]["物品图标"].Icon = shopItemTypeData.uiConfig.iconPath
     end
+    
+    -- 使用ViewButton节点设置迷你币价格
     if miniCoinAmount and miniCoinAmount > 0 then
-        itemDescription["物品显示底图"]["迷你币价格图"].Visible = true
-        itemDescription["物品显示底图"]["迷你币价格图"]["价格框"].Title = "" .. miniCoinAmount
+        self.miniCoinPriceButton.node.Visible = true
+        self.miniCoinPriceButton.node["价格框"].Title = "" .. miniCoinAmount
     else
-        itemDescription["物品显示底图"]["迷你币价格图"].Visible = false
+        self.miniCoinPriceButton.node.Visible = false
     end
+    
     gg.log("gg.FormatLargeNumber(goldAmount)",gg.FormatLargeNumber(goldAmount),configName,goldAmount)
+    
+    -- 使用ViewButton节点设置金币价格
     if goldAmount and goldAmount > 0 then
-        itemDescription["物品显示底图"]["货币价格图"].Visible = true
-        itemDescription["物品显示底图"]["货币价格图"]["价格框"].Title =  gg.FormatLargeNumber(goldAmount)
+        self.goldPriceButton.node.Visible = true
+        self.goldPriceButton.node["价格框"].Title = gg.FormatLargeNumber(goldAmount)
     else
-        itemDescription["物品显示底图"]["货币价格图"].Visible = false
+        self.goldPriceButton.node.Visible = false
     end
 end
 
@@ -317,11 +378,11 @@ end
 -- 网络请求
 -------------------------------------------------------------------
 
-function ShopDetailGui:SendPurchaseRequest(shopItemId)
-    --gg.log("发送购买请求, 商品ID: " .. shopItemId)
+function ShopDetailGui:SendPurchaseRequest(shopItemId, categoryName, currencyType)
+    gg.log("发送购买请求, 商品ID: " .. shopItemId)
     gg.network_channel:fireServer({
         cmd = ShopEventConfig.REQUEST.PURCHASE_ITEM,
-        args = { shopItemId = shopItemId }
+        args = { shopItemId = shopItemId, categoryName = categoryName, currencyType = currencyType }
     })
 end
 

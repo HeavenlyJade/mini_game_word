@@ -121,39 +121,9 @@ function _M:SetModel(model, animator, stateMachine)
     if not self.actor then return end
     self.actor.ModelId = model
     self.actor["Animator"].ControllerAsset = animator
-    self:SetAnimationController(stateMachine)
 end
 
--- 设置动画控制器
-function _M:SetAnimationController(name)
-    if self.modelPlayer and self.modelPlayer.name == name then
-        return
-    end
-    if self.modelPlayer then
-        self.modelPlayer.walkingTask:Disconnect()
-        self.modelPlayer.standingTaskId:Disconnect()
-        self.modelPlayer = nil
-    end
-    if name then
-        local AnimationConfig = require(MainStorage.Code.Common.config.AnimationConfig) ---@type AnimationConfig
-        local ModelPlayer = require(MainStorage.Code.MServer.graphic.ModelPlayer) ---@type ModelPlayer
-        local animator = self.actor.Animator
-        local animationConfig = AnimationConfig.Get(name)
-        if animator and animationConfig then
-            self.modelPlayer = ModelPlayer.New(name, animator, animationConfig)
-            self.modelPlayer.walkingTask = self.actor.Walking:Connect(function(isWalking)
-                if isWalking then
-                    self.modelPlayer:OnWalk()
-                end
-            end)
-            self.modelPlayer.standingTaskId = self.actor.Standing:Connect(function(isStanding)
-                if isStanding then
-                    self.modelPlayer:OnStand()
-                end
-            end)
-        end
-    end
-end
+
 
 -- 位置和方向管理 --------------------------------------------------------
 
@@ -195,14 +165,6 @@ end
 function _M:setGameActor(actor_)
     self.actor = actor_
     _M.node2Entity[actor_] = self
-
-    -- if actor_:IsA("Actor") then
-    --     -- 对于玩家Actor，保持原有的同步设置，避免干扰
-    --     if not self.isPlayer then
-    --         actor_.PhysXRoleType = Enum.PhysicsRoleType.BOX
-    --         actor_.IgnoreStreamSync = false
-    --     end
-    -- end
 end
 
 
