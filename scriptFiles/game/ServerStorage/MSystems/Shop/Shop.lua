@@ -228,8 +228,17 @@ function Shop:ExecutePurchase(shopItemId, player, currencyType)
     -- 执行特殊指令
     self:ExecuteCommands(shopItem, player)
     
+    -- 构建购买结果数据
+    local purchaseData = {
+        shopItemId = shopItemId,
+        shopItemName = shopItem.configName,
+        rewards = shopItem.rewards,
+        currencyType = currencyType,
+        purchaseTime = os.time()
+    }
+    
     gg.log("玩家购买商品成功", player.name, shopItemId, currencyType)
-    return true, "购买成功"
+    return true, "购买成功", purchaseData
 end
 
 --- 处理支付
@@ -258,7 +267,7 @@ function Shop:ProcessPayment(shopItem, player, currencyType)
         -- 使用BagMgr获取玩家金币数量
         local currentCoin = BagMgr.GetItemAmount(player, "金币")
         if currentCoin < priceAmount then
-            return false, string.format("金币不足，需要%d个，当前拥有%d个", priceAmount, currentCoin)
+            return false, string.format("金币不足，需要%.0f个，当前拥有%.0f个", priceAmount, currentCoin)
         end
         
         -- 使用BagMgr扣除玩家金币
