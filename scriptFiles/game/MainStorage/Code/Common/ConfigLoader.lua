@@ -267,4 +267,29 @@ function ConfigLoader.GetAllShopItems()
     return ConfigLoader.ShopItems
 end
 
+---@param category string 商品分类（如"伙伴"、"宠物"、"翅膀"等）
+---@return ShopItemType[] 该分类下的所有商品（按品质排序）
+function ConfigLoader.GetShopItemsByCategory(category)
+    local itemsArray = {}
+    
+    -- 收集该分类下的所有商品
+    for id, shopItem in pairs(ConfigLoader.ShopItems) do
+        if shopItem.category == category then
+            table.insert(itemsArray, shopItem)
+        end
+    end
+    
+    -- 按品质等级排序
+    local qualityOrder = {UR = 1, SSR = 2, SR = 3, R = 4, N = 5}
+    table.sort(itemsArray, function(a, b)
+        local qualityA = a:GetBackgroundStyle() or "N"
+        local qualityB = b:GetBackgroundStyle() or "N"
+        local orderA = qualityOrder[qualityA] or 6
+        local orderB = qualityOrder[qualityB] or 6
+        return orderA < orderB
+    end)
+    
+    return itemsArray
+end
+
 return ConfigLoader 

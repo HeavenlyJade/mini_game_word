@@ -128,6 +128,7 @@ function MainServer.initModule()
     local AchievementEventManager = require(ServerStorage.MSystems.Achievement.AchievementEventManager) ---@type AchievementEventManager
     local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
     local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
+    local ShopEventManager = require(ServerStorage.MSystems.Shop.ShopEventManager) ---@type ShopEventManager
 
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
@@ -142,6 +143,7 @@ function MainServer.initModule()
     AchievementEventManager.Init()
     RewardEventManager.Init()
     LotteryEventManager.Init()
+    ShopEventManager.Init()
 
  
     SceneNodeManager.Init()

@@ -72,8 +72,13 @@ function ShopGui:RegisterButtonEvents()
     -- 商城按钮
     self.shopSection.clickCb = function()
         -- 打开商城购买界面
-        --gg.log("商城按钮被点击")
-        -- TODO: 实现商城购买界面
+        local shopDetailGui = ViewBase["ShopDetailGui"]
+        if shopDetailGui then
+            shopDetailGui:Open()
+            gg.log("商城按钮被点击, 打开ShopDetailGui")
+        else
+            gg.log("错误：ShopDetailGui 界面未找到")
+        end
     end
 
     -- 排行榜按钮

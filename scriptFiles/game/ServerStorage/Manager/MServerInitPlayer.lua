@@ -152,6 +152,8 @@ function MServerInitPlayer.player_enter_game(player)
     local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
     RewardMgr.OnPlayerJoin(player_)
     LotteryMgr.OnPlayerJoin(player_)
+    local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
+    ShopMgr.OnPlayerJoin(player_)
     if isNewPlayer then
         PlayerInitMgr.InitializeNewPlayer(player_)
     end
@@ -193,6 +195,8 @@ function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor)
             decorativeNode.IgnoreStreamSync = true
         end
     end
+    
+
 end
 
 -- 向客户端同步玩家数据
@@ -211,14 +215,13 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     TrailMgr.ForceSyncToClient(uin)
 
     -- 【新增】同步抽奖数据
-    local lotteryManager = LotteryMgr.GetPlayerLottery(uin)
-    if lotteryManager then
-        local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
-        LotteryEventManager.NotifyAllDataToClient(uin)
-        --gg.log("已主动同步抽奖数据到客户端:", uin)
-    else
-        --gg.log("警告: 玩家", uin, "的抽奖数据不存在，跳过抽奖数据同步")
-    end
+    local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
+    LotteryEventManager.NotifyAllDataToClient(uin)
+
+    -- 【新增】同步商城数据
+    local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
+    ShopMgr.PushShopDataToClient(uin)
+
 
     -- 获取变量数据
     if mplayer.variableSystem then
@@ -235,16 +238,6 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)
 
-    -- 【新增】同步在线奖励数据
-    -- local rewardInstance = RewardMgr.GetPlayerReward(uin)
-    -- if rewardInstance then
-    --     local rewardStatus = rewardInstance:GetOnlineRewardStatus()
-    --     if rewardStatus then
-    --         local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
-    --         RewardEventManager.NotifyDataSync(mplayer, rewardStatus)
-    --     end
-
-    -- end
 
     gg.log("已向客户端", uin, "同步完整玩家数据")
 end
@@ -292,11 +285,11 @@ function MServerInitPlayer.OnPlayerSave(uin_)
     AchievementMgr.SavePlayerAchievementData(uin_)
     RewardMgr.SavePlayerRewardData(uin_)
     LotteryMgr.SavePlayerLotteryData(uin_)
-    
+    local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
+    ShopMgr.SavePlayerShopData(uin_)
     -- 保存玩家基础数据
     mplayer:leaveGame()
-    
-    --gg.log("统一存盘：玩家", uin_, "数据已保存")
+    gg.log("统一存盘：玩家", uin_, "数据已保存")
 end
 
 

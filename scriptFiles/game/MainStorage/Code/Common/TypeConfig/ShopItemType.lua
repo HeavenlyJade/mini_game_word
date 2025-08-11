@@ -8,6 +8,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class ShopItemPrice
 ---@field currencyType string 货币类型
 ---@field amount number 价格数量
+---@field miniCoinAmount number 迷你币数量
 ---@field variableKey string 变量键
 ---@field adMode string 广告模式
 ---@field adCount number 广告次数
@@ -107,6 +108,7 @@ function ShopItemType:ParsePrice(priceData)
         currencyType = priceData["货币类型"] or "金币",
         amount = priceData["价格数量"] or 0,
         variableKey = priceData["变量键"] or "",
+        miniCoinAmount = priceData["迷你币数量"] or -1,
         adMode = priceData["广告模式"] or "不可看广告",
         adCount = priceData["广告次数"] or 0
     }
@@ -173,7 +175,7 @@ function ShopItemType:ParseUIConfig(uiData)
         recommendedTag = uiData["推荐标签"] or false,
         iconPath = uiData["图标路径"] or "",
         iconCount = uiData["图标数量"] or 0,
-        backgroundStyle = uiData["背景样式"] or "默认"
+        backgroundStyle = uiData["背景样式"] or "N"
     }
 end
 
@@ -409,6 +411,64 @@ function ShopItemType:ValidateConfig()
     end
     
     return true, "配置有效"
+end
+
+-- 获取商品价格信息
+function ShopItemType:GetCost()
+    if not self.price then return nil end
+    
+    local MConfig = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
+    
+    -- 根据货币类型返回对应的价格信息
+    local currencyType = self.price.currencyType
+    local amount = self.price.amount or 0
+    
+    if currencyType == "迷你币" then
+        return { item = MConfig.CurrencyType.MiniCoin, amount = amount }
+    elseif currencyType == "金币" then
+        return { item = "金币", amount = amount }
+    else
+        return { item = currencyType, amount = amount }
+    end
+end
+
+-- 获取商品图标路径
+function ShopItemType:GetIconPath()
+    if self.uiConfig and self.uiConfig.iconPath then
+        return self.uiConfig.iconPath
+    end
+    return ""
+end
+
+-- 获取商品背景样式
+function ShopItemType:GetBackgroundStyle()
+    if self.uiConfig and self.uiConfig.backgroundStyle then
+        return self.uiConfig.backgroundStyle
+    end
+    return "N"
+end
+
+-- 检查是否为热卖商品
+function ShopItemType:IsHotSale()
+    return self.uiConfig and self.uiConfig.hotSaleTag == true
+end
+
+-- 检查是否为限定商品
+function ShopItemType:IsLimited()
+    return self.uiConfig and self.uiConfig.limitedTag == true
+end
+
+-- 检查是否为推荐商品
+function ShopItemType:IsRecommended()
+    return self.uiConfig and self.uiConfig.recommendedTag == true
+end
+
+-- 获取排序权重
+function ShopItemType:GetSortWeight()
+    if self.uiConfig and self.uiConfig.sortWeight then
+        return self.uiConfig.sortWeight
+    end
+    return 0
 end
 
 return ShopItemType

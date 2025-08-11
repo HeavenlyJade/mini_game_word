@@ -107,5 +107,5 @@ openui {"操作类型": "打开界面", "界面名": "LotteryGui", "抽奖类型
 openui {"操作类型": "打开界面", "界面名": "LotteryGui", "抽奖类型": "伙伴"}
 
 4. 打开其他通用界面:
-openui {"操作类型": "打开界面", "界面名": "ShopGui"}
+openui {"操作类型": "打开界面", "界面名": "ShopDetailGui"}
 --]]

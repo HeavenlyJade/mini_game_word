@@ -412,7 +412,7 @@ function LotteryMgr.SavePlayerLotteryData(uin)
         local playerData = lotterySystem:GetData()
         if playerData then
             LotteryCloudDataMgr.SavePlayerLotteryData(uin, playerData)
-            gg.log("统一存盘：已保存玩家", uin, "的抽奖数据")
+            -- gg.log("统一存盘：已保存玩家", uin, "的抽奖数据")
         end
     end
 end

@@ -437,4 +437,37 @@ function ShopMgr.GetPlayerPreference(player, key, defaultValue)
     return shopInstance:GetPreference(key, defaultValue)
 end
 
+-- 向客户端推送玩家的商城云端数据
+---@param uin number 玩家UIN
+---@return boolean 是否成功
+function ShopMgr.PushShopDataToClient(uin)
+    if not uin then
+        return false
+    end
+    
+    local shopInstance = server_player_shop_data[uin]
+    if not shopInstance then
+        --gg.log("玩家商城实例不存在，跳过数据推送", uin)
+        return false
+    end
+    
+    -- 获取商城数据
+    local shopData = shopInstance:GetData()
+    
+    -- 向客户端推送数据
+    local ShopEventConfig = require(MainStorage.Code.Event.EventShop) ---@type ShopEventConfig
+    gg.network_channel:fireClient(uin, {
+        cmd = ShopEventConfig.NOTIFY.SHOP_DATA_SYNC,
+        success = true,
+        data = {
+            shopData = shopData,
+            message = "商城数据同步完成",
+            timestamp = os.time()
+        }
+    })
+    
+    --gg.log("已向客户端推送商城数据", uin)
+    return true
+end
+
 return ShopMgr

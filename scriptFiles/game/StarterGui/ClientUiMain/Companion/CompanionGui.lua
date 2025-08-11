@@ -812,3 +812,5 @@ end
 
 
 
+return CompanionGui.New(script.Parent, uiConfig)
+

@@ -15,12 +15,10 @@ local RewardEventManager = {}
 
 --- 初始化事件管理器
 function RewardEventManager.Init()
-    gg.log("奖励事件管理器初始化...")
     
     -- 注册客户端请求事件
     RewardEventManager.RegisterClientEvents()
     
-    gg.log("奖励事件管理器初始化完成")
 end
 
 --- 注册客户端请求事件
