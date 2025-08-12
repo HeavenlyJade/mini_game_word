@@ -350,4 +350,13 @@ function Pet:SetPetBagCapacity(capacity)
     end
 end
 
+--- 增加可携带栏位数量
+---@param count number 增加的数量
+function Pet:AddUnlockedEquipSlots(count)
+    if count and count > 0 then
+        self.unlockedEquipSlots = (self.unlockedEquipSlots or 0) + count
+        --gg.log("玩家", self.uin, "宠物可携带栏位增加", count, "个，当前总数:", self.unlockedEquipSlots)
+    end
+end
+
 return Pet

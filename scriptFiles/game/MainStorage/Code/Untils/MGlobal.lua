@@ -1239,9 +1239,6 @@ if gg.isServer then
         return getServerDataMgr().getLivingByName(name_)
     end
 
-    gg.getPlayerByUin = function(uin_)
-        return getServerDataMgr().getPlayerByUin(uin_)
-    end
 
     gg.findMonsterByUuid = function(uuid_)
         return getServerDataMgr().findMonsterByUuid(uuid_)

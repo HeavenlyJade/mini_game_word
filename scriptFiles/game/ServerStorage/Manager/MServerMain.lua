@@ -100,6 +100,8 @@ function MainServer.initModule()
     local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
     local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
     local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
+    local MiniShopManager = require(ServerStorage.MiniGameMgr.MiniShopManager) ---@type MiniShopManager
+
 
     RewardMgr.Init()
     -- 延迟加载RewardMgr以避免循环引用
@@ -113,7 +115,7 @@ function MainServer.initModule()
     serverDataMgr.AchievementMgr = AchievementMgr
     serverDataMgr.RewardMgr = RewardMgr  -- 延迟加载
     serverDataMgr.LotteryMgr = LotteryMgr
-
+    serverDataMgr.MiniShopManager = MiniShopManager:OnInit()
     gg.log("初始化事件管理器和命令管理器")
     -- 初始化事件管理器和命令管理器
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
@@ -144,6 +146,7 @@ function MainServer.initModule()
     RewardEventManager.Init()
     LotteryEventManager.Init()
     ShopEventManager.Init()
+
 
  
     SceneNodeManager.Init()

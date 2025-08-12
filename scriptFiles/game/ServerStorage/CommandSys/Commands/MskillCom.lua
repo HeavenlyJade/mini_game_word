@@ -2,11 +2,14 @@
 --- V109 miniw-haima
 
 local MainStorage = game:GetService("MainStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.code.common.MGlobal)    ---@type gg
 local cloudDataMgr = require(MainStorage.code.server.MCloudDataMgr)  ---@type MCloudDataMgr
 local Skill = require(MainStorage.code.server.spells.Skill) ---@type Skill
 local SkillEventConfig = require(MainStorage.code.common.event_conf.event_skill) ---@type SkillEventConfig
 local SkillCommon = require(MainStorage.code.server.spells.SkillCommon) ---@type SkillCommon
+local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+
 ---@class SkillCommands
 local SkillCommands = {}
 
@@ -245,7 +248,7 @@ end
 function SkillCommands.main(params, player)
     --gg.log("技能命令处理",params)
     local uin = params["ID"]
-    local player = gg.getPlayerByUin(uin)
+    local player = MServerDataManager.getPlayerByUin(uin)
     local skillName = params["技能"]
     local level = params["等级"]
     local growth = params["经验"]

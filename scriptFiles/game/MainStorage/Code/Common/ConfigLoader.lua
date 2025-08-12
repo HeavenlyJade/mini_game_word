@@ -68,6 +68,7 @@ ConfigLoader.GameModes = {}
 ConfigLoader.Rewards = {} -- 新增奖励配置存储
 ConfigLoader.Lotteries = {} -- 新增抽奖配置存储
 ConfigLoader.ShopItems = {} -- 新增商城商品配置存储
+ConfigLoader.MiniShopItems = {} -- 迷你币商品映射表：miniItemId -> ShopItemType
 
 --- 一个通用的加载函数，避免重复代码
 ---@param configData table 从Config目录加载的原始数据
@@ -112,9 +113,50 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(LotteryConfig, LotteryType, ConfigLoader.Lotteries, "Lottery")
     ConfigLoader.LoadConfig(ShopItemConfig, ShopItemType, ConfigLoader.ShopItems, "ShopItem")
 
+    -- 构建迷你币商品映射表
+    ConfigLoader.BuildMiniShopMapping()
+
     -- ConfigLoader.LoadConfig(ItemQualityConfig, nil, ConfigLoader.ItemQualities, "ItemQuality") -- 暂无ItemQualityType
     -- ConfigLoader.LoadConfig(MailConfig, nil, ConfigLoader.Mails, "Mail") -- 暂无MailType
     -- ConfigLoader.LoadConfig(NpcConfig, nil, ConfigLoader.Npcs, "Npc") -- 暂无NpcType
+end
+
+--- 构建迷你币商品映射表
+--- 提取所有配置了迷你币支付且有miniItemId的商品，建立miniItemId -> ShopItemType的映射
+function ConfigLoader.BuildMiniShopMapping()
+    print("开始构建迷你币商品映射表")
+    local count = 0
+    
+    for shopItemId, shopItem in pairs(ConfigLoader.ShopItems) do
+        -- 检查是否配置了迷你币类型且有有效的miniItemId
+        if shopItem.price and 
+           shopItem.price.miniCoinType == "迷你币" and
+           shopItem.specialProperties and 
+           shopItem.specialProperties.miniItemId and 
+           shopItem.specialProperties.miniItemId > 0 then
+            
+            local miniItemId = shopItem.specialProperties.miniItemId
+            
+            -- 检查是否有重复的miniItemId
+            if ConfigLoader.MiniShopItems[miniItemId] then
+                print(string.format("警告：发现重复的迷你商品ID %d，商品：%s 和 %s", 
+                    miniItemId, 
+                    ConfigLoader.MiniShopItems[miniItemId].configName,
+                    shopItem.configName))
+            end
+            
+            -- 建立映射关系
+            ConfigLoader.MiniShopItems[miniItemId] = shopItem
+            count = count + 1
+            
+            print(string.format("注册迷你币商品：ID=%d, 名称=%s, 价格=%d迷你币", 
+                miniItemId, 
+                shopItem.configName, 
+                shopItem.price.miniCoinAmount or 0))
+        end
+    end
+    
+    print(string.format("迷你币商品映射表构建完成，共注册 %d 个商品", count))
 end
 
 --- 提供给外部系统访问实例化后数据的接口
@@ -290,6 +332,36 @@ function ConfigLoader.GetShopItemsByCategory(category)
     end)
     
     return itemsArray
+end
+
+--- 根据迷你商品ID获取对应的商城商品配置
+---@param miniItemId number 迷你商品ID
+---@return ShopItemType|nil 商城商品配置
+function ConfigLoader.GetMiniShopItem(miniItemId)
+    return ConfigLoader.MiniShopItems[miniItemId]
+end
+
+--- 获取所有迷你币商品映射
+---@return table<number, ShopItemType> 迷你币商品映射表
+function ConfigLoader.GetAllMiniShopItems()
+    return ConfigLoader.MiniShopItems
+end
+
+--- 检查指定迷你商品ID是否存在
+---@param miniItemId number 迷你商品ID
+---@return boolean 是否存在
+function ConfigLoader.HasMiniShopItem(miniItemId)
+    return ConfigLoader.MiniShopItems[miniItemId] ~= nil
+end
+
+--- 获取迷你币商品数量
+---@return number 迷你币商品数量
+function ConfigLoader.GetMiniShopItemCount()
+    local count = 0
+    for _ in pairs(ConfigLoader.MiniShopItems) do
+        count = count + 1
+    end
+    return count
 end
 
 return ConfigLoader 

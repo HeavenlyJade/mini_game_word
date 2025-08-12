@@ -7,6 +7,7 @@ local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type Vector
 -- local Modifiers          = require(MainStorage.Code.Common.Config.Modifiers) ---@type Modifiers
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ServerScheduler    = require(MainStorage.Code.MServer.Scheduler.ServerScheduler) ---@type ServerScheduler
+local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 local Entity             = require(ServerStorage.EntityTypes.Entity) ---@type Entity
 local MPlayer             = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
@@ -56,7 +57,7 @@ function _M:OnInit(npcData, actor)
     trigger.Size = Vector3.New(self.extraSize.x + npcSize.x, self.extraSize.y + npcSize.y, self.extraSize.y + npcSize.z)                                                               -- 扩展范围
     trigger.Touched:Connect(function(node)
         if node and node.UserId then
-            local player = gg.getPlayerByUin(node.UserId)
+            local player = MServerDataManager.getPlayerByUin(node.UserId)
             if player then
                 self:OnPlayerTouched(player)
             end
@@ -66,7 +67,7 @@ function _M:OnInit(npcData, actor)
     trigger.TouchEnded:Connect(function(node)
         -- print("TouchEnded", self.name, node.Name)
         if node and node.UserId then
-            local player = gg.getPlayerByUin(node.UserId)
+            local player = MServerDataManager.getPlayerByUin(node.UserId)
             if player then
                 if self.target == player then
                     self:SetTarget(nil)

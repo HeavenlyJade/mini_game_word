@@ -1,8 +1,10 @@
 
 local store = game:GetService("DeveloperStoreService")
 local MainStorage = game:GetService("MainStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local MS = require(MainStorage.Code.Untils.MS) ---@type MS
 
 ---@class MiniShopManager : Class
 local MiniShopManager = ClassMgr.Class("MiniShopManager")
@@ -29,6 +31,7 @@ function MiniShopManager:OnInit()
     -- 注册购买回调事件
     self:RegisterPurchaseCallback()
     --gg.log("MiniShopManager 初始化完成")
+    return self
 end
 
 -- 注册购买回调事件
@@ -42,25 +45,35 @@ end
 function MiniShopManager:OnPurchaseCallback(uin, goodsid, code, msg, num)
     if code ~= 0 then
         local errorMsg = self.ErrorCodes[code] or "未知错误"
-        --gg.log(string.format("迷你商品兑换失败！错误码: %d, 错误信息: %s", code, errorMsg))
+        gg.log("迷你商品兑换失败！错误码:", code, "错误信息:", errorMsg, "原始消息:", msg)
+        gg.log("错误详情 - UIN:", uin, "商品ID:", goodsid, "购买数量:", num)
         return
     end
     
-    if not self.miniId2ShopGood[goodsid] then
-        --gg.log(string.format("迷你商品兑换失败！未配置于Unity的商品ID：%d", goodsid))
+    -- 使用 ConfigLoader 检查迷你币商品映射
+    local ConfigLoader = require(game:GetService("MainStorage").Code.Common.ConfigLoader) ---@type ConfigLoader
+    if not ConfigLoader.HasMiniShopItem(goodsid) then
+        gg.log("迷你商品兑换失败！未配置于Unity的商品ID:", goodsid)
         return
     end
     
-    local player = gg.getPlayerByUin(uin)
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local player = MServerDataManager.getPlayerByUin(uin)
     if not player then
-        --gg.log(string.format("迷你商品兑换失败！不存在的玩家UIN：%d", uin))
+        gg.log("迷你商品兑换失败！不存在的玩家UIN:", uin)
         return
     end
     
-    -- 购买成功，发放商品
-    --gg.log(string.format("商品购买成功 - 玩家UIN: %d, 商品ID: %d, 数量: %d", uin, goodsid, num))
-    local shopGood = self.miniId2ShopGood[goodsid]
-    shopGood:Give(player)
+    -- code=0 购买成功
+    gg.log("迷你商品购买成功！")
+    gg.log("RemoteBuyGoodsCallBack - uin:", uin)
+    gg.log("RemoteBuyGoodsCallBack - goodsid:", goodsid) 
+    gg.log("RemoteBuyGoodsCallBack - num:", num)
+    gg.log("玩家信息:", player.name)
+    
+    -- 购买成功，转交商城系统发奖与记录
+    local ShopMgr = require(game:GetService("ServerStorage").MSystems.Shop.ShopMgr) ---@type ShopMgr
+    ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
 end
 
 -- 注册商品到商店系统
@@ -76,6 +89,15 @@ function MiniShopManager:RegisterGoods(miniId, shopGood)
     
     self.miniId2ShopGood[miniId] = shopGood
     --gg.log(string.format("成功注册商品，迷你ID: %d", miniId))
+    return true
+end
+
+-- 按需注册商城配置到回调映射（可由外部调用）
+function MiniShopManager:RegisterShopItemByConfig(shopItem)
+    if not shopItem or not shopItem.specialProperties then return false end
+    local miniId = shopItem.specialProperties.miniItemId
+    if not miniId or miniId <= 0 then return false end
+    self.miniId2ShopGood[miniId] = { __fromShopConfig = true, configName = shopItem.configName }
     return true
 end
 
@@ -148,10 +170,8 @@ function MiniShopManager:GetPlayerPurchasedList(playerid)
     return processedList
 end
 
--- 获取地图开发者商店商品列表
 function MiniShopManager:GetStoreList()
     local storeList = store:GetDeveloperStoreItems()
-    --gg.log(string.format("开发者商店商品列表 = %s", tostring(storeList)))
     
     if not storeList or #storeList == 0 then
         return {}
@@ -179,6 +199,7 @@ function MiniShopManager:GetProductInfo(productid)
     end
     
     local goodsInfo = store:GetProductInfo(productid)
+    gg.log("获取商品信息", productid, goodsInfo)
     if not goodsInfo then
         return nil
     end

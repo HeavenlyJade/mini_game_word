@@ -46,6 +46,7 @@ function ClientMain.start_client()
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
 
+    require(MainStorage.Code.Client.Graphic.ShopManagerClient) -- 加载客户端的商城管理
 
     require(MainStorage.Code.Client.Graphic.DamagePool)
     require(MainStorage.Code.Client.Graphic.WorldTextAnim)

@@ -492,9 +492,9 @@ local server_player_new_system_data = {} ---@type table<number, NewSystem>
 
 function NewSystemMgr.OnPlayerJoin(player)
     -- 从云数据加载玩家数据并创建实例
-    local playerData = NewSystemCloudDataMgr.LoadPlayerData(player.Uin)
+    local playerData = NewSystemCloudDataMgr.LoadPlayerData(player.uin)
     local newSystemInstance = NewSystem.New(playerData)
-    server_player_new_system_data[player.Uin] = newSystemInstance
+    server_player_new_system_data[player.uin] = newSystemInstance
 end
 
 function NewSystemMgr.OnPlayerLeave(uin)
@@ -508,7 +508,7 @@ end
 
 function NewSystemMgr.ProcessPlayerAction(player, action, data)
     -- 处理玩家操作
-    local instance = server_player_new_system_data[player.Uin]
+    local instance = server_player_new_system_data[player.uin]
     if instance then
         -- 执行业务逻辑
         -- 触发相关事件

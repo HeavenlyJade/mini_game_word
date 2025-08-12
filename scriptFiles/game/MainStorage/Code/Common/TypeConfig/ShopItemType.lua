@@ -109,8 +109,8 @@ end
 ---@return ShopItemPrice 价格配置对象
 function ShopItemType:ParsePrice(priceData)
     return {
-        currencyType = priceData["货币类型"] or "金币",
-        amount = priceData["价格数量"] or 0,
+        currencyType = priceData["货币类型"] or nil,
+        amount = priceData["价格数量"] or -1,
         miniCoinType = priceData["迷你币类型"],
         miniCoinAmount = priceData["迷你币数量"] or -1,
         variableKey = priceData["变量键"] or "",
@@ -194,7 +194,7 @@ function ShopItemType:ParseSpecialProperties(specialData)
     local timeConfig = specialData["时效配置"] or {}
     local vipRequirement = specialData["VIP需求"] or {}
     return {
-        miniItemId = specialData["迷你商品ID"] or 0,
+        miniItemId = specialData["迷你商品ID"] or -1,
         timeConfig = {
             isLimited = timeConfig["是否限时"] or false,
             startTime = timeConfig["开始时间"] or "",

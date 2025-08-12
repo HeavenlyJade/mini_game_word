@@ -92,11 +92,11 @@ function ShopEventManager.HandlePurchaseItem(evt)
     -- 执行购买，传递货币类型和分类名
     local success, message, purchaseResult = ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
     
-    if success then
+    if success == true then
         gg.log("商品购买成功", player.name, shopItemId, currencyType)
         
         -- 发送成功响应
-        gg.network_channel:fireClient(player.Uin, {
+        gg.network_channel:fireClient(player.uin, {
             cmd = ShopEventConfig.RESPONSE.PURCHASE_RESPONSE,
             success = true,
             data = {
@@ -107,6 +107,9 @@ function ShopEventManager.HandlePurchaseItem(evt)
             },
             errorMsg = nil
         })
+    elseif success == "pending" then
+        gg.log("迷你币支付已发起，等待用户完成", player.name, shopItemId, currencyType)
+        
     else
         gg.log("商品购买失败", player.name, shopItemId, currencyType, message)
         player:SendHoverText(message)
@@ -135,7 +138,7 @@ function ShopEventManager.HandleValidatePurchase(evt)
     gg.log("验证购买条件", player.name, shopItemId, canPurchase, reason)
     
     -- 发送成功响应
-    gg.network_channel:fireClient(player.Uin, {
+    gg.network_channel:fireClient(player.uin, {
         cmd = ShopEventConfig.RESPONSE.VALIDATE_RESPONSE,
         success = true,
         data = {
@@ -163,7 +166,7 @@ function ShopEventManager.HandleGetPurchaseRecords(evt)
     gg.log("获取购买记录", player.name, shopItemId)
     
     -- 发送成功响应
-    gg.network_channel:fireClient(player.Uin, {
+    gg.network_channel:fireClient(player.uin, {
         cmd = ShopEventConfig.RESPONSE.RECORDS_RESPONSE,
         success = true,
         data = {
@@ -201,7 +204,7 @@ function ShopEventManager.HandleGetLimitStatus(evt)
     gg.log("获取限购状态", player.name, shopItemId)
     
     -- 发送成功响应
-    gg.network_channel:fireClient(player.Uin, {
+    gg.network_channel:fireClient(player.uin, {
         cmd = ShopEventConfig.RESPONSE.LIMIT_STATUS_RESPONSE,
         success = true,
         data = {
@@ -226,7 +229,7 @@ function ShopEventManager.HandleGetShopStats(evt)
     gg.log("获取商城统计", player.name)
     
     -- 发送成功响应
-    gg.network_channel:fireClient(player.Uin, {
+    gg.network_channel:fireClient(player.uin, {
         cmd = ShopEventConfig.RESPONSE.STATS_RESPONSE,
         success = true,
         data = {
@@ -246,16 +249,16 @@ function ShopEventManager.HandleRefreshShopData(evt)
     end
     
     -- 保存当前数据
-    ShopMgr.SavePlayerShopData(player.Uin)
+    ShopMgr.SavePlayerShopData(player.uin)
     
     -- 推送最新数据到客户端
-    local success = ShopMgr.PushShopDataToClient(player.Uin)
+    local success = ShopMgr.PushShopDataToClient(player.uin)
     
     if success then
         gg.log("刷新商城数据", player.name)
         
         -- 发送成功响应
-        gg.network_channel:fireClient(player.Uin, {
+        gg.network_channel:fireClient(player.uin, {
             cmd = ShopEventConfig.RESPONSE.REFRESH_RESPONSE,
             success = true,
             data = {

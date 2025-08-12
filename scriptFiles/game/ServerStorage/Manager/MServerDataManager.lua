@@ -26,6 +26,7 @@ local MServerDataManager = {
     AchievementMgr = nil, ---@type AchievementMgr | nil
     RewardMgr=nil, ---@type RewardMgr | nil 
     LotteryMgr=nil, ---@type LotteryMgr | nil
+    MiniShopManager= nil, ---@type MiniShopManager | nil
     uuid_start = 0,
     tick = 0
 }

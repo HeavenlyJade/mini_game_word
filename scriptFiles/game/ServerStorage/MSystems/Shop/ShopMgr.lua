@@ -8,6 +8,7 @@ local RunService = game:GetService("RunService")
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+local MS = require(MainStorage.Code.Untils.MS) ---@type MS
 
 -- 引入相关系统
 local Shop = require(ServerStorage.MSystems.Shop.Shop) ---@type Shop
@@ -50,6 +51,7 @@ function ShopMgr.OnPlayerJoin(player)
     
     -- 创建商城实例
     local shopInstance = Shop.New(shopData)
+    ---@cast shopInstance Shop
     server_player_shop_data[uin] = shopInstance
     
     gg.log("玩家商城实例创建成功", uin,shopData)
@@ -103,8 +105,9 @@ end
 ---@param shopItemId string 商品ID
 ---@param currencyType string 货币类型
 ---@param categoryName string|nil 商品分类
----@return boolean, string, table|nil 是否成功，结果消息，附加数据
+---@return boolean|string, string, table|nil 状态（true=成功, false=失败, "pending"=等待支付），结果消息，附加数据
 function ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
+    gg.log("处理玩家购买请求111", player.name, shopItemId, currencyType, categoryName)
     if not player or not shopItemId or not currencyType then
         return false, "参数无效", nil
     end
@@ -120,11 +123,16 @@ function ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
     if not shopItem then
         return false, "商品不存在", nil
     end
+
     
     -- 验证货币类型是否与商品配置匹配
-    if currencyType == "迷你币" then
-        if not shopItem.price.miniCoinAmount or shopItem.price.miniCoinAmount <= 0 then
+    if shopItem.price.miniCoinType and shopItem.price.miniCoinType == "迷你币" then
+        if  shopItem.price.miniCoinAmount <= 0 then
             return false, "该商品不支持迷你币购买", nil
+        end
+            -- 检查迷你币商品
+        if shopItem.specialProperties.miniItemId and shopItem.specialProperties.miniItemId > 0 then
+            return ShopMgr.ProcessMiniPurchase(player, shopItem, currencyType)
         end
     elseif currencyType == "金币" then
         if not shopItem.price.amount or shopItem.price.amount <= 0 then
@@ -134,10 +142,7 @@ function ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
         return false, "不支持的货币类型：" .. currencyType, nil
     end
     
-    -- 检查迷你币商品
-    if shopItem.specialProperties and shopItem.specialProperties.miniItemId and shopItem.specialProperties.miniItemId > 0 then
-        return ShopMgr.ProcessMiniPurchase(player, shopItem, currencyType)
-    end
+
     
     -- 执行购买，传递货币类型
     local success, message, purchaseData = shopInstance:ExecutePurchase(shopItemId, player, currencyType)
@@ -168,20 +173,106 @@ end
 ---@param player MPlayer 玩家对象
 ---@param shopItem ShopItemType 商品配置
 ---@param currencyType string 货币类型
----@return boolean, string, table|nil 是否成功，结果消息，附加数据
+---@return boolean|string, string, table|nil 状态（true=成功, false=失败, "pending"=等待支付），结果消息，附加数据
 function ShopMgr.ProcessMiniPurchase(player, shopItem, currencyType)
-    -- 迷你币商品由迷你世界商城处理，这里只做记录
+    gg.log("处理迷你币商品购买", player.name, shopItem.configName, currencyType)
+
+    local miniId = shopItem.specialProperties and shopItem.specialProperties.miniItemId or 0
+    if not miniId or miniId <= 0 then
+        return false, "迷你币商品ID无效", nil
+    end
+
+    -- 检查迷你币商品映射是否存在（由 ConfigLoader 在初始化时构建）
+    if not ConfigLoader.HasMiniShopItem(miniId) then
+        gg.log("警告：迷你商品ID未在配置中找到", miniId, shopItem.configName)
+        return false, "迷你币商品配置异常", nil
+    end
+    gg.log("拉起迷你币购买弹窗", miniId, shopItem.configName)
+
+    player:SendEvent("ViewMiniGood", {
+        goodId = miniId,
+        desc = shopItem.configName,
+        amount = 1
+    })
+
+    gg.log("已发起迷你币支付弹窗", player.name, shopItem.configName, miniId)
+    -- 返回中间状态：既不是成功也不是失败，而是等待用户完成支付
+    -- 真实购买处理在 MiniShopManager:OnPurchaseCallback 中完成
+    return "pending", "支付弹窗已拉起，等待用户完成支付", nil
+end
+
+-- 迷你币支付成功回调处理（由 MiniShopManager 调用）
+---@param uin number
+---@param goodsid number
+---@param num number
+function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
+    if not uin or not goodsid then return end
+
+    local ShopEventConfig = require(MainStorage.Code.Event.EventShop) ---@type ShopEventConfig
+
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local player = MServerDataManager.getPlayerByUin(uin)
+    if not player then
+        gg.log("迷你币购买回调失败：找不到玩家", uin)
+        return
+    end
+
+    -- 使用 ConfigLoader 直接获取迷你币商品配置
+    local targetItem = ConfigLoader.GetMiniShopItem(goodsid)
+    if not targetItem then
+        --gg.log("迷你币购买成功但未找到对应配置", goodsid)
+        return
+    end
+
+    -- 获取/创建玩家商城实例
+    local shopInstance = ShopMgr.GetOrCreatePlayerShop(player)
+    if not shopInstance then
+        shopInstance = ShopMgr.OnPlayerJoin(player)
+    end
+    if not shopInstance then
+        return
+    end
+    ---@cast shopInstance Shop
+
+    -- 根据购买数量发放（通常为1）
+    local ok, reason = shopInstance:GrantRewards(targetItem, player)
+    if not ok then
+        gg.log("迷你币购买发奖失败", player.name, targetItem.configName, reason)
+        return
+    end
+    -- 记录购买与限购计数（以迷你币计）
+    shopInstance:UpdatePurchaseRecord(targetItem.configName, targetItem, "迷你币")
+    shopInstance:UpdateLimitCounter(targetItem.configName, targetItem)
+    
+    -- 持久化
+    ShopMgr.SavePlayerShopData(player.uin)
+
+    -- 通知客户端购买成功
     local purchaseResult = {
-        shopItemId = shopItem.configName,
-        shopItemName = shopItem.configName,
-        miniItemId = shopItem.specialProperties.miniItemId,
-        purchaseType = "mini_coin",
-        currencyType = currencyType,
+        shopItemId = targetItem.configName,
+        shopItemName = targetItem.configName,
+        rewards = targetItem.rewards,
+        currencyType = "迷你币",
+        categoryName = targetItem.category,
         purchaseTime = os.time()
     }
+
+    if not player.uin then
+        gg.log("警告：玩家Uin为空，无法发送客户端通知", player.name or "未知玩家")
+        return
+    end
     
-    --gg.log("迷你币商品购买", player.name, shopItem.configName, currencyType)
-    return true, "迷你币商品购买处理", purchaseResult
+    gg.network_channel:fireClient(player.uin, {
+        cmd = ShopEventConfig.RESPONSE.PURCHASE_RESPONSE,
+        success = true,
+        data = {
+            message = "奖励发放完成",
+            purchaseResult = purchaseResult,
+            currencyType = "迷你币",
+            categoryName = targetItem.category
+        },
+        errorMsg = nil
+    })
 end
 
 -- 验证购买条件

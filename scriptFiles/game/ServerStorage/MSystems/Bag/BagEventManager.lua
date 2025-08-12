@@ -56,7 +56,8 @@ function BagEventManager.ValidatePlayer(evt)
         return nil
     end
 
-    local player = gg.getPlayerByUin(uin)
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local player = MServerDataManager.getPlayerByUin(uin)
     if not player then
         --gg.log("背包事件找不到玩家: " .. uin)
         return nil

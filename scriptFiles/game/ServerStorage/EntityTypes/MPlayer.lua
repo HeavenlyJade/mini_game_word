@@ -185,6 +185,8 @@ function _MPlayer:SendEvent(eventName, data, callback)
     data.cmd = eventName
     ServerEventManager.SendToClient(self.uin, eventName, data, callback)
 end
+
+
 function _MPlayer:SendHoverText( text, ... )
     if ... then
         text = string.format(text, ...)
