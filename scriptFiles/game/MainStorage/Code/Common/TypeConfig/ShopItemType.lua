@@ -8,6 +8,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class ShopItemPrice
 ---@field currencyType string 货币类型
 ---@field amount number 价格数量
+---@field miniCoinType string|nil 迷你币类型
 ---@field miniCoinAmount number 迷你币数量
 ---@field variableKey string 变量键
 ---@field adMode string 广告模式
@@ -29,6 +30,9 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field itemName string|nil 商品名称
 ---@field variableName string|nil 变量名称
 ---@field amount number 数量
+---@field gainDescription string|nil 获得商品描述
+---@field simpleDescription string|nil 简单描述
+---@field iconResource string|nil 资源图标
 
 ---@class ShopItemPool
 ---@field poolName string 奖池名称
@@ -65,7 +69,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field price ShopItemPrice 价格配置
 ---@field limitConfig ShopItemLimitConfig 限购配置
 ---@field rewards ShopItemReward[] 获得物品
----@field commands string[] 执行指令
+---@field executeCommands table[] 执行指令
 ---@field pool ShopItemPool 奖池配置
 ---@field uiConfig ShopItemUIConfig 界面配置
 ---@field specialProperties ShopItemSpecialProperties 特殊属性
@@ -88,7 +92,7 @@ function ShopItemType:OnInit(data)
     self.rewards = self:ParseRewards(data["获得物品"] or {})
     
     -- 执行指令
-    self.commands = data["执行指令"] or {}
+    self.executeCommands = data["执行指令"] or {}
     
     -- 奖池配置
     self.pool = self:ParsePool(data["奖池"] or {})
@@ -107,8 +111,9 @@ function ShopItemType:ParsePrice(priceData)
     return {
         currencyType = priceData["货币类型"] or "金币",
         amount = priceData["价格数量"] or 0,
-        variableKey = priceData["变量键"] or "",
+        miniCoinType = priceData["迷你币类型"],
         miniCoinAmount = priceData["迷你币数量"] or -1,
+        variableKey = priceData["变量键"] or "",
         adMode = priceData["广告模式"] or "不可看广告",
         adCount = priceData["广告次数"] or 0
     }
@@ -141,7 +146,10 @@ function ShopItemType:ParseRewards(rewardsData)
             itemType = rewardData["商品类型"] or "物品",
             itemName = rewardData["商品名称"],
             variableName = rewardData["变量名称"],
-            amount = rewardData["数量"] or 1
+            amount = rewardData["数量"] or 1,
+            gainDescription = rewardData["获得商品描述"],
+            simpleDescription = rewardData["简单描述"],
+            iconResource = rewardData["资源图标"],
         })
     end
     return rewards

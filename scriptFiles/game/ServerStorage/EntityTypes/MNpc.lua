@@ -166,6 +166,8 @@ end
 
 -- 处理NPC交互
 function _M:HandleInteraction(player)
+    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+
     --gg.log("HandleInteraction", self.name, self.uuid, player.name, player.uuid)
     -- 检查交互条件
     if self.interactCondition then
@@ -177,7 +179,7 @@ function _M:HandleInteraction(player)
     end
     -- 执行交互指令
     if self.interactCommands then
-        player:ExecuteCommands(self.interactCommands)
+        CommandManager.ExecuteCommand(self.interactCommands, player, true)
     end
 
     -- 发布NPC交互事件

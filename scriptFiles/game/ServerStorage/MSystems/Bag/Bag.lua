@@ -689,6 +689,8 @@ end
 
 ---@param position BagPosition 背包位置
 function Bag:UseItem(position)
+    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+
     local itemData = self:GetItemByPosition(position)
     local player = self:GetPlayer()
     if not player then
@@ -704,7 +706,7 @@ function Bag:UseItem(position)
         -- 执行消耗品命令
         local itemType = ItemUtils.GetItemType(itemData)
         if itemType and itemType.useCommands then
-            player:ExecuteCommand(itemType.useCommands, nil)
+            CommandManager.ExecuteCommand(itemType.useCommands, player, true)
             -- 减少数量
             self:SetItemAmount(position, itemData.amount - 1)
         end

@@ -13,6 +13,7 @@ local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type Conf
 local ShopCloudDataMgr = require(ServerStorage.MSystems.Shop.ShopCloudDataMgr) ---@type ShopCloudDataMgr
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
+local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
 
 ---@class Shop : Class
 ---@field uin number 玩家ID
@@ -158,28 +159,25 @@ function Shop:CheckBagSpace(shopItem, player)
                 return false, "尾迹槽位已满，无法购买"
             end
         elseif itemType == "物品" then
-            -- 检查背包空间
-            local bagInstance = BagMgr.GetOrCreatePlayerBag(player.uin, player)
-            if not bagInstance then
-                return false, "背包系统异常"
+            -- 检查背包空间（保护 itemName 为空的情况）
+            if itemName and itemName ~= "" then
+                local bagInstance = BagMgr.GetOrCreatePlayerBag(player.uin, player)
+                if not bagInstance then
+                    return false, "背包系统异常"
+                end
+
+                -- 检查背包是否有足够空间
+                local hasSpace = BagMgr.HasEnoughSpace(player, {[itemName] = amount})
+                if not hasSpace then
+                    return false, "背包空间不足"
+                end
+            else
+                --gg.log("警告：物品奖励缺少名称，跳过空间检查", tostring(player and player.name))
             end
-            
-            -- 检查背包是否有足够空间
-            local hasSpace = BagMgr.HasEnoughSpace(player, {[itemName] = amount})
-            if not hasSpace then
-                return false, "背包空间不足"
-            end
+        elseif itemType == "指令执行" then
+            -- 指令执行类奖励不占用背包空间，跳过检查
         else
-            -- 未知类型，默认检查背包
-            local bagInstance = BagMgr.GetOrCreatePlayerBag(player.uin, player)
-            if not bagInstance then
-                return false, "背包系统异常"
-            end
-            
-            local hasSpace = BagMgr.HasEnoughSpace(player, {[itemName] = amount})
-            if not hasSpace then
-                return false, "背包空间不足"
-            end
+            -- 未知类型：无法确定是否占用背包空间，谨慎起见跳过检查，避免因 nil 键导致报错
         end
     end
     
@@ -192,7 +190,7 @@ end
 ---@param shopItemId string 商品ID
 ---@param player MPlayer 玩家对象
 ---@param currencyType string 货币类型
----@return boolean, string 是否成功，结果消息
+---@return boolean, string, table|nil 是否成功，结果消息，附加数据
 function Shop:ExecutePurchase(shopItemId, player, currencyType)
     local shopItem = ConfigLoader.GetShopItem(shopItemId)
     if not shopItem then
@@ -224,9 +222,7 @@ function Shop:ExecutePurchase(shopItemId, player, currencyType)
     
     -- 更新限购计数器
     self:UpdateLimitCounter(shopItemId, shopItem)
-    
-    -- 执行特殊指令
-    self:ExecuteCommands(shopItem, player)
+
     
     -- 构建购买结果数据
     local purchaseData = {
@@ -338,21 +334,27 @@ function Shop:GrantRewards(shopItem, player)
         local amount = reward.amount or 1
         
         if itemType == "伙伴" then
-            -- 发放伙伴
+            if not itemName or itemName == "" then
+                return false, "奖励配置无效：伙伴名称缺失"
+            end
             local success, actualSlot = PartnerMgr.AddPartner(player, itemName)
             if not success then
                 return false, string.format("添加伙伴失败：%s", itemName)
             end
             stats.partner = stats.partner + 1
         elseif itemType == "宠物" then
-            -- 发放宠物
+            if not itemName or itemName == "" then
+                return false, "奖励配置无效：宠物名称缺失"
+            end
             local success, actualSlot = PetMgr.AddPet(player, itemName)
             if not success then
                 return false, string.format("添加宠物失败：%s", itemName)
             end
             stats.pet = stats.pet + 1
         elseif itemType == "翅膀" then
-            -- 发放翅膀
+            if not itemName or itemName == "" then
+                return false, "奖励配置无效：翅膀名称缺失"
+            end
             local success, actualSlot = WingMgr.AddWing(player, itemName)
             if not success then
                 return false, string.format("添加翅膀失败：%s", itemName)
@@ -360,6 +362,9 @@ function Shop:GrantRewards(shopItem, player)
             stats.wing = stats.wing + 1
         elseif itemType == "尾迹" then
             -- 发放尾迹
+            if not itemName or itemName == "" then
+                return false, "奖励配置无效：尾迹名称缺失"
+            end
             local success, actualSlot = TrailMgr.AddTrail(player, itemName)
             if not success then
                 return false, string.format("添加尾迹失败：%s", itemName)
@@ -367,11 +372,20 @@ function Shop:GrantRewards(shopItem, player)
             stats.trail = stats.trail + 1
         elseif itemType == "物品" then
             -- 发放物品到背包
+            if not itemName or itemName == "" then
+                return false, "奖励配置无效：物品名称缺失"
+            end
             local success = BagMgr.AddItem(player, itemName, amount)
             if not success then
                 return false, string.format("添加物品失败：%s", itemName)
             end
             stats.bag = stats.bag + 1
+        elseif itemType == "指令执行" then
+            -- 奖励为指令执行：使用变量名称字段存放具体指令字符串
+            local commandStr = reward.variableName
+            if type(commandStr) == "string" and commandStr ~= "" then
+                CommandManager.ExecuteCommand(commandStr, player, true)
+            end
         else
         end
     end
@@ -398,20 +412,7 @@ function Shop:GrantRewards(shopItem, player)
     return true, "奖励发放完成"
 end
 
---- 执行特殊指令
----@param shopItem ShopItemType 商品配置
----@param player MPlayer 玩家对象
-function Shop:ExecuteCommands(shopItem, player)
-    if not shopItem.commands or #shopItem.commands == 0 then
-        return
-    end
-    
-    for _, command in ipairs(shopItem.commands) do
-        if type(command) == "string" and command ~= "" then
-            player:ExecuteCommand(command)
-        end
-    end
-end
+
 
 -- 数据管理 --------------------------------------------------------
 

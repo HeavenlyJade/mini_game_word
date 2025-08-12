@@ -64,6 +64,10 @@ function ShopGui:RegisterButtonEvents()
 
     -- 特权会员按钮
     self.vipSection.clickCb = function()
+        local PrivilegedVIPGui = ViewBase["PrivilegedVIPGui"]
+        if PrivilegedVIPGui then
+            PrivilegedVIPGui:Open()
+        end
         -- 打开特权会员界面
         --gg.log("特权会员按钮被点击")
         -- TODO: 实现特权会员界面
