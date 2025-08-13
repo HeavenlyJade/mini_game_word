@@ -6,6 +6,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local Reward = require(ServerStorage.MSystems.Reward.Reward) ---@type Reward
 local RewardCloudDataMgr = require(ServerStorage.MSystems.Reward.RewardCloudDataMgr) ---@type RewardCloudDataMgr
+local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
 
 ---@class RewardMgr
 local RewardMgr = {
@@ -290,58 +291,60 @@ end
 ---@return boolean 是否成功
 function RewardMgr.GiveRewardToPlayer(player, rewardItem)
     if not rewardItem then
+        gg.log("奖励发放失败：奖励数据为空")
         return false
     end
     
     local rewardType = rewardItem.type
     local amount = rewardItem.amount or 1
     
+    -- 转换为 PlayerRewardDispatcher 所需的格式
+    local rewardData = {
+        itemType = rewardType,
+        amount = amount
+    }
+    
     if rewardType == "物品" then
-        -- 发放普通物品
-        local itemName = rewardItem.itemName
-        if not itemName then
+        rewardData.itemName = rewardItem.itemName
+        if not rewardData.itemName then
+            gg.log("奖励发放失败：物品名称缺失")
             return false
         end
-        
-        -- 调用背包系统添加物品
-        local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-        return BagMgr.AddItem(player, itemName, amount)
         
     elseif rewardType == "宠物" then
-        -- 发放宠物
-        local petConfig = rewardItem.petConfig
-        if not petConfig then
+        rewardData.itemName = rewardItem.petConfig
+        if not rewardData.itemName then
+            gg.log("奖励发放失败：宠物配置缺失")
             return false
         end
-        
-        -- 调用宠物系统
-        local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
-        return PetMgr.AddPet(player, petConfig, amount)
         
     elseif rewardType == "伙伴" then
-        -- 发放伙伴
-        local partnerConfig = rewardItem.partnerConfig
-        if not partnerConfig then
+        rewardData.itemName = rewardItem.partnerConfig
+        if not rewardData.itemName then
+            gg.log("奖励发放失败：伙伴配置缺失")
             return false
         end
-        
-        -- 调用伙伴系统
-        local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
-        return PartnerMgr.AddPartner(player, partnerConfig, amount)
         
     elseif rewardType == "翅膀" then
-        -- 发放翅膀
-        local wingConfig = rewardItem.wingConfig
-        if not wingConfig then
+        rewardData.itemName = rewardItem.wingConfig
+        if not rewardData.itemName then
+            gg.log("奖励发放失败：翅膀配置缺失")
             return false
         end
         
-        -- 调用翅膀系统
-        local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
-        return WingMgr.AddWing(player, wingConfig, amount)
+    else
+        gg.log("奖励发放失败：不支持的奖励类型", rewardType)
+        return false
     end
     
-    return false
+    -- 使用统一奖励分发器发放奖励
+    local success, errorMsg = PlayerRewardDispatcher.DispatchRewards(player, {rewardData})
+    
+    if not success then
+        gg.log("奖励发放失败", player.name, "错误信息", errorMsg)
+    end
+    
+    return success
 end
 
 -- ==================== 数据查询 ====================

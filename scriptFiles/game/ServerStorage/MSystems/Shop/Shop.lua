@@ -14,6 +14,7 @@ local ShopCloudDataMgr = require(ServerStorage.MSystems.Shop.ShopCloudDataMgr) -
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
 
 ---@class Shop : Class
 ---@field uin number 玩家ID
@@ -124,61 +125,10 @@ function Shop:CheckBagSpace(shopItem, player)
         return true, "无需检查空间"
     end
     
-    -- 根据商品类型检查对应的系统空间
-    for _, reward in ipairs(shopItem.rewards) do
-        local itemType = reward.itemType
-        local itemName = reward.itemName
-        local amount = reward.amount or 1
-        
-        if itemType == "伙伴" then
-            -- 检查伙伴槽位空间
-            local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
-            local hasSlot = PartnerMgr.HasAvailableSlot(player.uin)
-            if not hasSlot then
-                return false, "伙伴槽位已满，无法购买"
-            end
-        elseif itemType == "宠物" then
-            -- 检查宠物槽位空间
-            local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
-            local hasSlot = PetMgr.HasAvailableSlot(player.uin)
-            if not hasSlot then
-                return false, "宠物槽位已满，无法购买"
-            end
-        elseif itemType == "翅膀" then
-            -- 检查翅膀槽位空间
-            local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
-            local hasSlot = WingMgr.HasAvailableSlot(player.uin)
-            if not hasSlot then
-                return false, "翅膀槽位已满，无法购买"
-            end
-        elseif itemType == "尾迹" then
-            -- 检查尾迹槽位空间
-            local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
-            local hasSlot = TrailMgr.HasAvailableSlot(player.uin)
-            if not hasSlot then
-                return false, "尾迹槽位已满，无法购买"
-            end
-        elseif itemType == "物品" then
-            -- 检查背包空间（保护 itemName 为空的情况）
-            if itemName and itemName ~= "" then
-                local bagInstance = BagMgr.GetOrCreatePlayerBag(player.uin, player)
-                if not bagInstance then
-                    return false, "背包系统异常"
-                end
-
-                -- 检查背包是否有足够空间
-                local hasSpace = BagMgr.HasEnoughSpace(player, {[itemName] = amount})
-                if not hasSpace then
-                    return false, "背包空间不足"
-                end
-            else
-                --gg.log("警告：物品奖励缺少名称，跳过空间检查", tostring(player and player.name))
-            end
-        elseif itemType == "指令执行" then
-            -- 指令执行类奖励不占用背包空间，跳过检查
-        else
-            -- 未知类型：无法确定是否占用背包空间，谨慎起见跳过检查，避免因 nil 键导致报错
-        end
+    -- 使用统一奖励分发器检查空间
+    local hasSpace, spaceError = PlayerRewardDispatcher.CheckRewardSpace(player, shopItem.rewards)
+    if not hasSpace then
+        return false, spaceError or "空间不足"
     end
     
     return true, "空间检查通过"
@@ -319,96 +269,23 @@ function Shop:GrantRewards(shopItem, player)
     if not shopItem.rewards or not next(shopItem.rewards) then
         return true, "无奖励物品"
     end
-    local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
-    local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
-    local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
-    local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
-
-    -- 按类型统计，用于决定是否同步
-    local stats = { bag = 0, pet = 0, partner = 0, wing = 0, trail = 0 }
     
-    -- 根据商品类型发放奖励
-    for _, reward in ipairs(shopItem.rewards) do
-        local itemType = reward.itemType
-        local itemName = reward.itemName
-        local amount = reward.amount or 1
-        
-        if itemType == "伙伴" then
-            if not itemName or itemName == "" then
-                return false, "奖励配置无效：伙伴名称缺失"
-            end
-            local success, actualSlot = PartnerMgr.AddPartner(player, itemName)
-            if not success then
-                return false, string.format("添加伙伴失败：%s", itemName)
-            end
-            stats.partner = stats.partner + 1
-        elseif itemType == "宠物" then
-            if not itemName or itemName == "" then
-                return false, "奖励配置无效：宠物名称缺失"
-            end
-            local success, actualSlot = PetMgr.AddPet(player, itemName)
-            if not success then
-                return false, string.format("添加宠物失败：%s", itemName)
-            end
-            stats.pet = stats.pet + 1
-        elseif itemType == "翅膀" then
-            if not itemName or itemName == "" then
-                return false, "奖励配置无效：翅膀名称缺失"
-            end
-            local success, actualSlot = WingMgr.AddWing(player, itemName)
-            if not success then
-                return false, string.format("添加翅膀失败：%s", itemName)
-            end
-            stats.wing = stats.wing + 1
-        elseif itemType == "尾迹" then
-            -- 发放尾迹
-            if not itemName or itemName == "" then
-                return false, "奖励配置无效：尾迹名称缺失"
-            end
-            local success, actualSlot = TrailMgr.AddTrail(player, itemName)
-            if not success then
-                return false, string.format("添加尾迹失败：%s", itemName)
-            end
-            stats.trail = stats.trail + 1
-        elseif itemType == "物品" then
-            -- 发放物品到背包
-            if not itemName or itemName == "" then
-                return false, "奖励配置无效：物品名称缺失"
-            end
-            local success = BagMgr.AddItem(player, itemName, amount)
-            if not success then
-                return false, string.format("添加物品失败：%s", itemName)
-            end
-            stats.bag = stats.bag + 1
-        elseif itemType == "指令执行" then
-            -- 奖励为指令执行：使用变量名称字段存放具体指令字符串
-            local commandStr = reward.variableName
-            if type(commandStr) == "string" and commandStr ~= "" then
-                CommandManager.ExecuteCommand(commandStr, player, true)
-            end
+    -- 使用统一奖励分发器发放奖励
+    local success, resultMsg, failedRewards = PlayerRewardDispatcher.DispatchRewards(player, shopItem.rewards)
+    
+    if not success then
+        -- 记录具体失败信息
+        if failedRewards and #failedRewards > 0 then
+            local firstError = failedRewards[1].error
+            gg.log("商城奖励发放失败", player.name, "失败原因", firstError)
+            return false, firstError
         else
+            gg.log("商城奖励发放失败", player.name, "失败原因", resultMsg)
+            return false, resultMsg
         end
     end
     
-    -- 统一按需同步（仅在对应类型发放过奖励时同步一次）
-    if stats.bag > 0 then
-        BagMgr.ForceSyncToClient(player.uin)
-    end
-    if stats.pet > 0 then
-        PetMgr.ForceSyncToClient(player.uin)
-    end
-    if stats.partner > 0 then
-        PartnerMgr.ForceSyncToClient(player.uin)
-    end
-    if stats.wing > 0 then
-        WingMgr.ForceSyncToClient(player.uin)
-    end
-    if stats.trail > 0 then
-        TrailMgr.ForceSyncToClient(player.uin)
-    end
-    
-    gg.log("商城奖励发放完成，已同步数据到客户端", player.name, "伙伴:", stats.partner, "宠物:", stats.pet, "翅膀:", stats.wing, "尾迹:", stats.trail, "物品:", stats.bag)
-    
+    gg.log("商城奖励发放成功", player.name, resultMsg)
     return true, "奖励发放完成"
 end
 

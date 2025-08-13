@@ -648,23 +648,52 @@ end
 ---@param attachments table 附件列表，格式: {"物品名": 数量}
 ---@return table 成功添加的物品列表
 function MailMgr._AddAttachmentsToPlayer(player, attachments)
-    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-    local ItemUtils = require(ServerStorage.MSystems.Bag.ItemUtils) ---@type ItemUtils
+    local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
     if not player or not attachments then return {} end
 
-    local addedItems = {}
+    -- 转换附件格式为 PlayerRewardDispatcher 标准格式
+    local rewardList = {}
     for itemName, amount in pairs(attachments) do
         if itemName and amount and amount > 0 then
-            -- 创建物品数据
-            local itemData = ItemUtils.CreateItemData(itemName, amount)
-            if itemData then
-                local success = BagMgr.GetPlayerBag(player.uin):AddItem(itemData)
-                if success then
+            table.insert(rewardList, {
+                itemType = "物品",
+                itemName = itemName,
+                amount = amount
+            })
+        end
+    end
+
+    -- 使用统一奖励分发器发放附件
+    local success, resultMsg, failedRewards = PlayerRewardDispatcher.DispatchRewards(player, rewardList)
+    
+    local addedItems = {}
+    if success then
+        -- 全部成功，记录所有物品
+        for itemName, amount in pairs(attachments) do
+            if itemName and amount and amount > 0 then
+                addedItems[itemName] = amount
+            end
+        end
+    else
+        -- 部分成功，只记录成功的物品
+        for itemName, amount in pairs(attachments) do
+            if itemName and amount and amount > 0 then
+                local failed = false
+                if failedRewards then
+                    for _, failedReward in ipairs(failedRewards) do
+                        if failedReward.reward.itemName == itemName then
+                            failed = true
+                            break
+                        end
+                    end
+                end
+                if not failed then
                     addedItems[itemName] = amount
                 end
             end
         end
     end
+    
     return addedItems
 end
 

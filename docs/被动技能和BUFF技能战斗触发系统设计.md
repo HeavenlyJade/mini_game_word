@@ -77,31 +77,31 @@ function PassiveSkillListener:OnBattleEvent(eventType, eventData)
     local listeners = self.eventSubscriptions[eventType]
     if not listeners then return end
     
-    for _, listener in ipairs(listeners) do
-        local entity = listener.entity
-        local skill = listener.skill
+    -- for _, listener in ipairs(listeners) do
+    --     local entity = listener.entity
+    --     local skill = listener.skill
         
-        -- 检查实体状态
-        if entity.isDead or not entity:HasSkill(skill.skillId) then
-            goto continue
-        end
+    --     -- 检查实体状态
+    --     if entity.isDead or not entity:HasSkill(skill.skillId) then
+    --         goto continue
+    --     end
         
-        -- 检查触发条件
-        if self.conditionChecker:CheckTriggerConditions(skill, entity, eventData) then
-            -- 检查冷却时间
-            if not entity:IsCoolingdown("passive_" .. skill.skillId) then
-                -- 触发被动技能
-                self:TriggerPassiveSkill(entity, skill, eventData)
+    --     -- 检查触发条件
+    --     if self.conditionChecker:CheckTriggerConditions(skill, entity, eventData) then
+    --         -- 检查冷却时间
+    --         if not entity:IsCoolingdown("passive_" .. skill.skillId) then
+    --             -- 触发被动技能
+    --             self:TriggerPassiveSkill(entity, skill, eventData)
                 
-                -- 设置冷却
-                if skill.config.cooldown > 0 then
-                    entity:SetCooldown("passive_" .. skill.skillId, skill.config.cooldown)
-                end
-            end
-        end
+    --             -- 设置冷却
+    --             if skill.config.cooldown > 0 then
+    --                 entity:SetCooldown("passive_" .. skill.skillId, skill.config.cooldown)
+    --             end
+    --         end
+    --     end
         
-        ::continue::
-    end
+    --     ::continue::
+    -- end
 end
 
 -- 触发被动技能

@@ -14,6 +14,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local LotteryCloudDataMgr = require(ServerStorage.MSystems.Lottery.LotteryCloudDataMgr) ---@type LotteryCloudDataMgr
 local LotterySystem = require(ServerStorage.MSystems.Lottery.LotterySystem) ---@type LotterySystem
+local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
 
 ---@class LotteryMgr
 local LotteryMgr = {
@@ -269,52 +270,43 @@ function LotteryMgr.GrantRewards(uin, rewards)
     gg.log("=== 开始发放抽奖奖励 ===")
     gg.log("玩家UIN:", uin, "奖励数量:", #rewards)
 
+    -- 获取玩家对象
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
-
-    -- 各系统管理器引用（假设均已初始化，不做过度检查）
-    local BagMgr = serverDataMgr.BagMgr ---@type BagMgr
-    local PetMgr = serverDataMgr.PetMgr --
-    local PartnerMgr = serverDataMgr.PartnerMgr ---@type PartnerMgr
-    local WingMgr = serverDataMgr.WingMgr ---@type WingMgr
-    local TrailMgr = serverDataMgr.TrailMgr ---@type TrailMgr
-
-    local playerBag = BagMgr.GetPlayerBag(uin) ---@type Bag
-    local playerPet = PetMgr.GetPlayerPet(uin) ---@type Pet
-    local playerPartner = PartnerMgr.GetPlayerPartner(uin) ---@type Partner
-    local playerWing = WingMgr.GetPlayerWing(uin) ---@type Wing
-    local playerTrail = TrailMgr.GetPlayerTrail(uin) ---@type Trail
-
-    -- 按类型统计，用于决定是否同步
-    local stats = { bag = 0, pet = 0, partner = 0, wing = 0, trail = 0 }
-
-    for _, reward in ipairs(rewards) do
-        if reward.rewardType == "物品" then
-            -- playerBag:AddItem(reward.rewardName, reward.quantity)
-            -- stats.bag = stats.bag + 1
-        elseif reward.rewardType == "宠物" then
-            playerPet:AddPet(reward.rewardName)
-            stats.pet = stats.pet + 1
-        elseif reward.rewardType == "伙伴" then
-            playerPartner:AddPartner(reward.rewardName)
-            stats.partner = stats.partner + 1
-        elseif reward.rewardType == "翅膀" then
-            playerWing:AddWing(reward.rewardName)
-            stats.wing = stats.wing + 1
-        elseif reward.rewardType == "尾迹" then
-            playerTrail:AddTrail(reward.rewardName)
-            stats.trail = stats.trail + 1
-        end
+    local player = serverDataMgr.getPlayerByUin(uin)
+    
+    if not player then
+        gg.log("错误：未找到玩家对象，UIN:", uin)
+        return
     end
 
-    -- 统一按需同步（仅在对应类型发放过奖励时同步一次）
-    if stats.bag > 0 then BagMgr.ForceSyncToClient(uin) end
-    if stats.pet > 0 then PetMgr.ForceSyncToClient(uin) end
-    if stats.partner > 0 then PartnerMgr.ForceSyncToClient(uin) end
-    if stats.wing > 0 then WingMgr.ForceSyncToClient(uin) end
-    if stats.trail > 0 then TrailMgr.ForceSyncToClient(uin) end
+    -- 转换抽奖奖励格式为 PlayerRewardDispatcher 标准格式
+    local rewardList = {}
+    for _, reward in ipairs(rewards) do
+        local rewardData = {
+            itemType = reward.rewardType,
+            itemName = reward.rewardName,
+            amount = reward.quantity or 1
+        }
+        table.insert(rewardList, rewardData)
+    end
 
-    gg.log("=== 抽奖奖励发放完成 ===")
-    gg.log("抽奖系统：为玩家", uin, "发放了", #rewards, "个奖励")
+    -- 使用统一奖励分发器发放奖励
+    local success, resultMsg, failedRewards = PlayerRewardDispatcher.DispatchRewards(player, rewardList)
+    
+    if success then
+        gg.log("=== 抽奖奖励发放完成 ===")
+        gg.log("抽奖系统：为玩家", uin, "发放了", #rewards, "个奖励")
+    else
+        gg.log("=== 抽奖奖励发放失败 ===")
+        gg.log("抽奖系统：玩家", uin, "奖励发放失败:", resultMsg)
+        
+        -- 记录失败的奖励详情
+        if failedRewards and #failedRewards > 0 then
+            for _, failedReward in ipairs(failedRewards) do
+                gg.log("失败奖励:", failedReward.reward.itemType, failedReward.reward.itemName, "错误:", failedReward.error)
+            end
+        end
+    end
 end
 
 --- 获取玩家抽奖数据

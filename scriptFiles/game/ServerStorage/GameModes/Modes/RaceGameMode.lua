@@ -8,6 +8,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
+local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
 -- 【已移除】不再需要直接引用 ServerEventManager
 
 ---@class RaceGameMode: GameModeBase
@@ -368,23 +369,17 @@ function RaceGameMode:_giveItemToPlayer(player, itemName, amount)
 
     gg.log(string.format("RaceGameMode: 尝试给玩家 %s 发放物品 %s x%d", player.name or "未知", itemName, amount))
 
-    -- 这里集成背包系统来发放物品
-    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)  ---@type MServerDataManager
-    local BagMgr = serverDataMgr.BagMgr ---@type BagMgr
-
-    if BagMgr then
-        local success = BagMgr.AddItem(player, itemName, amount)
-        if success then
-            gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))
-            -- 向玩家发送奖励通知
-            player:SendHoverText(string.format("获得 %s x%d", itemName, amount))
-        else
-            gg.log(string.format("RaceGameMode: 物品发放失败 - %s x%d", itemName, amount))
-        end
+    -- 使用统一奖励分发器发放物品
+    local success, errorMsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemName, amount)
+    
+    if success then
+        gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))
+        -- 向玩家发送奖励通知
+        player:SendHoverText(string.format("获得 %s x%d", itemName, amount))
     else
-        gg.log("RaceGameMode: 背包系统不可用，发送提示消息")
-        -- 如果背包系统不可用，至少给玩家发送提示
-        player:SendHoverText(string.format("应获得 %s x%d (系统暂不可用)", itemName, amount))
+        gg.log(string.format("RaceGameMode: 物品发放失败 - %s x%d, 错误: %s", itemName, amount, errorMsg or "未知错误"))
+        -- 发送失败提示
+        player:SendHoverText(string.format("获得物品失败: %s x%d", itemName, amount))
     end
 end
 
