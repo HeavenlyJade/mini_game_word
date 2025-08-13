@@ -304,15 +304,33 @@ function VariableCommand.handlers.view(params, player)
         player:SendHoverText(fullMessage)
         gg.log(fullMessage)
     else
-        -- 查看所有变量的最终值
+        -- 查看所有变量的详细信息
         local allVars = variableSystem:GetAllVariables()
         local response = {
-            string.format("--- 玩家 %s 的所有变量 ---", player.name)
+            string.format("--- 玩家 %s 的所有变量详情 ---", player.name)
         }
         local count = 0
-        for k, v in pairs(allVars) do
-            table.insert(response, string.format("  %s = %s", k, tostring(v)))
+        
+        for varName, finalValue in pairs(allVars) do
             count = count + 1
+            table.insert(response, string.format("\n--- %s ---", varName))
+            table.insert(response, string.format("最终值: %s", tostring(finalValue)))
+            
+            -- 获取该变量的详细信息
+            local details = variableSystem:GetVariableSources(varName)
+            if details and details.base then
+                table.insert(response, string.format("基础值: %s", tostring(details.base)))
+            end
+            
+            -- 显示来源列表
+            if details and details.sources then
+                table.insert(response, "来源列表:")
+                for source, data in pairs(details.sources) do
+                    table.insert(response, string.format("  - %s: %s (%s)", source, tostring(data.value), data.type))
+                end
+            else
+                table.insert(response, "来源列表: (无来源)")
+            end
         end
 
         if count == 0 then
