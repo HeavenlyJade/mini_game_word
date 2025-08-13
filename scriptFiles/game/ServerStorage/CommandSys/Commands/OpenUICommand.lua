@@ -38,12 +38,24 @@ function OpenUICommand.handlers.open(params, player)
    
         gg.network_channel:fireClient(player.uin, {
             cmd = "OpenLotteryUI",
+            operation = "打开界面",
             lotteryType = lotteryType
         })
         
-        gg.log("向玩家", player.name, "发送打开抽奖界面事件，类型:", lotteryType)
+        --gg.log("向玩家", player.name, "发送打开抽奖界面事件，类型:", lotteryType)
         return true
         
+    elseif uiName == "WaypointGui" then
+        -- 发送打开传送界面事件到客户端
+        gg.network_channel:fireClient(player.uin, {
+            cmd = "OpenWaypointGui",
+            uiName = uiName,
+            operation = "打开界面",
+            params = params,
+        })
+        --gg.log("向玩家", player.name, "发送打开传送界面事件:", uiName)
+        return true
+
     else
         -- 
         gg.network_channel:fireClient(player.uin, {
@@ -53,7 +65,45 @@ function OpenUICommand.handlers.open(params, player)
         })
        
         
-        gg.log("向玩家", player.name, "发送打开界面事件:", uiName)
+        --gg.log("向玩家", player.name, "发送打开界面事件:", uiName)
+        return true
+    end
+end
+
+--- 关闭界面处理器
+---@param params table 指令参数
+---@param player MPlayer 目标玩家
+---@return boolean 是否成功
+function OpenUICommand.handlers.close(params, player)
+    local uiName = params["界面名"]
+    if not uiName then
+        player:SendHoverText("缺少'界面名'字段")
+        return false
+    end
+
+    if uiName == "WaypointGui" then
+        gg.network_channel:fireClient(player.uin, {
+            cmd = "OpenWaypointGui",
+            uiName = uiName,
+            operation = "关闭界面",
+            params = params,
+        })
+        --gg.log("向玩家", player.name, "发送关闭传送界面事件:", uiName)
+        return true
+    elseif uiName == "LotteryGui" then
+        gg.network_channel:fireClient(player.uin, {
+            cmd = "OpenLotteryUI",
+            operation = "关闭界面",
+        })
+        --gg.log("向玩家", player.name, "发送关闭抽奖界面事件:", uiName)
+        return true
+    else
+        gg.network_channel:fireClient(player.uin, {
+            cmd = "CloseUI",
+            uiName = uiName,
+            params = params,
+        })
+        --gg.log("向玩家", player.name, "发送关闭界面事件:", uiName)
         return true
     end
 end
@@ -61,6 +111,7 @@ end
 -- 中文到英文的操作映射
 local operationMap = {
     ["打开界面"] = "open",
+    ["关闭界面"] = "close",
 }
 
 --- UI指令入口
@@ -84,7 +135,7 @@ function OpenUICommand.main(params, player)
     
     local handler = OpenUICommand.handlers[handlerName]
     if handler then
-        gg.log("UI指令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
+        --gg.log("UI指令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
         return handler(params, player)
     else
         player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)

@@ -17,6 +17,7 @@ local HANDLER_TYPE_MAP = {
     ["飞行比赛"] = require(ServerStorage.SceneInteraction.handlers.RaceTriggerHandler), ---@type RaceTriggerHandler
     ["挂机点"] = require(ServerStorage.SceneInteraction.handlers.IdleSpotHandler), ---@type IdleSpotHandler
     ["抽奖点"] = require(ServerStorage.SceneInteraction.handlers.LotterySpotHandler), ---@type LotterySpotHandler
+    ["传送点"] = require(ServerStorage.SceneInteraction.handlers.TeleportSpotHandler), ---@type TeleportSpotHandler
     -- ["陷阱"] = require(ServerStorage.SceneInteraction.handlers.TrapHandler), -- 示例
     -- ["治疗区域"] = require(ServerStorage.SceneInteraction.handlers.HealZoneHandler), -- 示例
 }

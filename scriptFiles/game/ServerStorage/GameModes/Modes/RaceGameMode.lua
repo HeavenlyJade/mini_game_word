@@ -43,8 +43,7 @@ function RaceGameMode:OnInit(instanceId, modeName, levelType)
     self.levelType = levelType -- 存储完整的LevelType实例
 
     -- 调试信息：显示比赛模式初始化结果
-    gg.log(string.format("RaceGameMode 初始化 - 实例ID: %s, 关卡: %s",instanceId, levelType and levelType.name or "无关卡配置"))
-    self.finishedPlayers = {} -- 【新增】初始化已完成玩家的记录表
+     self.finishedPlayers = {} -- 【新增】初始化已完成玩家的记录表
     self.flightData = {} -- 实时飞行数据 (uin -> FlightPlayerData)
     self.rankings = {} -- 按飞行距离排序的玩家uin列表
     self.distanceTimer = nil -- 距离计算定时器

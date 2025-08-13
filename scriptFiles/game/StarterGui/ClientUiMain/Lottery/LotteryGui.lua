@@ -128,13 +128,18 @@ function LotteryGui:RegisterEvents()
         self:OnLotteryErrorResponse(data)
     end)
 
-    -- 【新增】监听OpenLotteryUI事件
+    -- 【更新】监听OpenLotteryUI事件：支持打开/关闭
     ClientEventManager.Subscribe("OpenLotteryUI", function(args)
-        --gg.log("收到OpenLotteryUI事件:", args)
-        if args and args.lotteryType then
+        if not args then return end
+        if args.operation == "关闭界面" then
+            self:Close()
+            return
+        end
+        -- 默认/显式打开
+        if args.lotteryType then
             self:OpenWithType(args.lotteryType)
         else
-            --gg.log("OpenLotteryUI事件数据格式错误:", args)
+            self:Open()
         end
     end)
 end

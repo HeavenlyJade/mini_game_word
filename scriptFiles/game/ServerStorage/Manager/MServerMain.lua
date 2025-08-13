@@ -131,6 +131,7 @@ function MainServer.initModule()
     local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
     local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
     local ShopEventManager = require(ServerStorage.MSystems.Shop.ShopEventManager) ---@type ShopEventManager
+    local CommonEventManager = require(ServerStorage.MiniGameMgr.CommonEventManager) ---@type CommonEventManager
 
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
@@ -146,6 +147,7 @@ function MainServer.initModule()
     RewardEventManager.Init()
     LotteryEventManager.Init()
     ShopEventManager.Init()
+    CommonEventManager.Init()
 
 
  

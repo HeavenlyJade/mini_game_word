@@ -70,6 +70,12 @@ function TeleportPointType:GetWeight()
 	return self.weight or 1
 end
 
+--- 获取需求等级
+---@return number
+function TeleportPointType:GetRequiredLevel()
+    return self.requiredLevel or 0
+end
+
 --- 获取传送消耗
 ---@return number
 function TeleportPointType:GetCost()
