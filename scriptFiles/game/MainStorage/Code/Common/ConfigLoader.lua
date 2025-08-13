@@ -19,6 +19,7 @@ local ActionCostType = require(MainStorage.Code.Common.TypeConfig.ActionCostType
 local RewardType = require(MainStorage.Code.Common.TypeConfig.RewardType) ---@type RewardType
 local LotteryType = require(MainStorage.Code.Common.TypeConfig.LotteryType) ---@type LotteryType
 local ShopItemType = require(MainStorage.Code.Common.TypeConfig.ShopItemType) ---@type ShopItemType
+local TeleportPointType = require(MainStorage.Code.Common.TypeConfig.TeleportPointType) ---@type TeleportPointType
 
 -- 引用所有 Config 的原始数据
 local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig)
@@ -39,6 +40,7 @@ local GameModeConfig = require(MainStorage.Code.Common.Config.GameModeConfig)
 local RewardConfig = require(MainStorage.Code.Common.Config.RewardConfig)
 local LotteryConfig = require(MainStorage.Code.Common.Config.LotteryConfig)
 local ShopItemConfig = require(MainStorage.Code.Common.Config.ShopItemConfig)
+local TeleportPointConfig = require(MainStorage.Code.Common.Config.TeleportPointConfig)
 
 -- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) -- 已移除
 -- local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) -- 已移除
@@ -60,6 +62,7 @@ ConfigLoader.Pets = {}
 ConfigLoader.Partners = {} -- 新增伙伴配置存储
 ConfigLoader.Wings = {} -- 新增翅膀配置存储
 ConfigLoader.Trails = {} -- 新增尾迹配置存储
+ConfigLoader.TeleportPoints = {} -- 新增传送点配置存储
 ConfigLoader.ActionCosts = {}
 ConfigLoader.ItemTypes = {}
 ConfigLoader.PlayerInits = {}
@@ -112,6 +115,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(RewardConfig, RewardType, ConfigLoader.Rewards, "Reward")
     ConfigLoader.LoadConfig(LotteryConfig, LotteryType, ConfigLoader.Lotteries, "Lottery")
     ConfigLoader.LoadConfig(ShopItemConfig, ShopItemType, ConfigLoader.ShopItems, "ShopItem")
+    ConfigLoader.LoadConfig(TeleportPointConfig, TeleportPointType, ConfigLoader.TeleportPoints, "TeleportPoint")
 
     -- 构建迷你币商品映射表
     ConfigLoader.BuildMiniShopMapping()
@@ -307,6 +311,17 @@ end
 ---@return table<string, ShopItemType>
 function ConfigLoader.GetAllShopItems()
     return ConfigLoader.ShopItems
+end
+
+---@param id string
+---@return TeleportPointType
+function ConfigLoader.GetTeleportPoint(id)
+    return ConfigLoader.TeleportPoints[id]
+end
+
+---@return table<string, TeleportPointType>
+function ConfigLoader.GetAllTeleportPoints()
+    return ConfigLoader.TeleportPoints
 end
 
 ---@param category string 商品分类（如"伙伴"、"宠物"、"翅膀"等）
