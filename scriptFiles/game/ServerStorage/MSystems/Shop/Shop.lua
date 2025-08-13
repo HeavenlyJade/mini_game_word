@@ -566,4 +566,46 @@ function Shop:GetPreference(key, defaultValue)
     return self.preferences[key] or defaultValue
 end
 
+-- 执行奖励指令
+---@param commandContent string 指令内容
+---@param player MPlayer 玩家对象
+---@return boolean, string 是否成功，结果信息
+function Shop:ExecuteRewardCommand(commandContent, player)
+    if not commandContent or commandContent == "" then
+        return false, "指令内容为空"
+    end
+    
+    -- 直接执行指令，不进行解析
+    local commandSuccess = CommandManager.ExecuteCommand(commandContent, player, true)
+    if commandSuccess then
+        return true, "指令执行成功"
+    else
+        return false, "指令执行失败"
+    end
+end
+
+-- 同步变量数据到客户端
+---@param player MPlayer 玩家对象
+function Shop:SyncVariableDataToClient(player)
+    if not player or not player.uin or not player.variableSystem then
+        return
+    end
+    
+    -- 同步变量数据到 player.variables
+    player.variables = player.variableSystem.variables
+    
+    -- 保存玩家数据
+    local cloudDataMgr = require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type MCloudDataMgr
+    cloudDataMgr.SavePlayerData(player.uin, true)
+    
+    -- 向客户端发送变量数据同步事件
+    local allVars = player.variableSystem.variables
+    gg.network_channel:fireClient(player.uin, {
+        cmd = require(MainStorage.Code.Event.EventPlayer).NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
+        variableData = allVars,
+    })
+    
+    --gg.log(string.format("已同步玩家 %s 的变量数据到客户端", player.name))
+end
+
 return Shop
