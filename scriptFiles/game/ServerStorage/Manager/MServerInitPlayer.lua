@@ -234,6 +234,9 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
         --gg.log("警告: 玩家", uin, "的variableSystem不存在，跳过变量数据同步")
     end
 
+    -- 【新增】同步玩家等级和经验数据
+    mplayer:syncLevelExpToClient()
+
     -- 获取任务数据
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)

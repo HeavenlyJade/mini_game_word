@@ -37,6 +37,7 @@ EventPlayerConfig.NOTIFY = {
     PLAYER_DATA_SYNC_QUEST = "PlayerDataSync_Quest", -- 同步任务
     PLAYER_DATA_LOADED = "PlayerDataLoaded", -- 玩家数据加载完成
     NAVIGATE_TO_POSITION = "NavigateToPosition", -- 导航到指定位置
+    PLAYER_DATA_SYNC_LEVEL_EXP = "PlayerDataSync_LevelExp", -- 同步玩家等级和经验
 }
 
 --[[

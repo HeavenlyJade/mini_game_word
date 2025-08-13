@@ -7,6 +7,7 @@ local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local CommonEventConfig = require(MainStorage.Code.Event.CommonEvent) ---@type CommonEventConfig
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 local uiConfig = {
@@ -29,6 +30,10 @@ function WaypointGui:OnInit(node, config)
 
 	-- 数据缓存
 	self.teleportPoints = {} ---@type TeleportPointType[]
+	
+	-- 【新增】玩家等级和经验数据
+	self.playerLevel = 1
+	self.playerExp = 0
 
 	-- 事件与按钮
 	self:RegisterButtonEvents()
@@ -57,6 +62,22 @@ function WaypointGui:RegisterEvents()
             self:Close()
         end
     end)
+	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_LEVEL_EXP, function(data)
+        self:OnPlayerLevelExpSync(data)
+    end)
+    -- 注册玩家数据同步事件
+end
+
+-- 【新增】处理玩家等级和经验同步数据
+function WaypointGui:OnPlayerLevelExpSync(data)
+	gg.log("OnPlayerLevelExpSync",data)
+    if not data then return end
+    
+    self.playerLevel = data.level or 1
+    self.playerExp = data.exp or 0
+    
+    -- 刷新传送点列表，因为等级变化可能影响解锁状态
+    self:RefreshList()
 end
 
 function WaypointGui:OnOpen()
@@ -90,7 +111,6 @@ function WaypointGui:RefreshList()
 		if itemComp and itemComp.node then
 			-- 图标
 			local iconNode = itemComp.node
-			gg.log("iconNode",iconNode,tp:GetIconPath(),tp:GetRequiredLevel())
 			if iconNode then
 				iconNode.Icon = tp:GetIconPath()
 			end
@@ -101,12 +121,26 @@ function WaypointGui:RefreshList()
             end
 			-- 灰显未解锁
 			itemComp:SetGray(true)
+			
+			-- 【新增】根据玩家等级判断是否解锁传送点
+			local requiredLevel = tp:GetRequiredLevel() or 1
+			if self.playerLevel >= requiredLevel then
+				itemComp:SetGray(false) -- 已解锁，取消灰显
+			end
 
 			-- 点击事件（将条目包装为按钮以获得点击回调）
 			local itemBtn = ViewButton.New(itemComp.node, self, itemComp.path)
 			-- 设置按钮悬浮/点击图标
 			local hoverImg = tp:GetIconPath()
 			itemBtn:UpdateMainNodeState({ hoverImg = hoverImg, clickImg = hoverImg })
+			
+			-- 【修复】根据等级要求设置按钮的可点击状态
+			if self.playerLevel >= requiredLevel then
+				itemBtn:SetTouchEnable(true, false) -- 启用触摸，不更新灰显状态
+			else
+				itemBtn:SetTouchEnable(false, false) -- 禁用触摸，不更新灰显状态
+			end
+			
 			itemBtn.clickCb = function()
 				self:OnClickTeleport(tp)
 			end
@@ -118,6 +152,13 @@ end
 function WaypointGui:OnClickTeleport(tp)
 	gg.log("传送点击",tp)
 	if not tp then return end
+	
+	-- 【优化】等级检查，如果等级不足则提示用户并阻止传送
+	local requiredLevel = tp:GetRequiredLevel() or 1
+	if self.playerLevel < requiredLevel then
+		return 
+	end
+	
 	local requestData = {
         cmd = CommonEventConfig.REQUEST.TELEPORT_TO,
 		args = {
@@ -129,6 +170,16 @@ function WaypointGui:OnClickTeleport(tp)
 	gg.network_channel:fireServer(requestData)
 	-- 可选：立即关闭界面
 	self:Close()
+end
+
+-- 【新增】获取玩家当前等级
+function WaypointGui:GetPlayerLevel()
+	return self.playerLevel or 1
+end
+
+-- 【新增】获取玩家当前经验
+function WaypointGui:GetPlayerExp()
+	return self.playerExp or 0
 end
 
 return WaypointGui.New(script.Parent, uiConfig)

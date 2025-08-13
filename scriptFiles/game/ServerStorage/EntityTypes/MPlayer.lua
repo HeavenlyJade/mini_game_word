@@ -69,6 +69,16 @@ function _MPlayer:syncSkillData()
     end
 end
 
+-- 【新增】同步玩家等级和经验到客户端
+function _MPlayer:syncLevelExpToClient()
+    local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+    gg.network_channel:fireClient(self.uin, {
+        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_LEVEL_EXP,
+        level = self.level or 1,
+        exp = self.exp or 0,
+    })
+end
+
 -- 兼容性方法：同步给客户端当前目标的资料
 ---@param target_ Entity
 ---@param with_name_ boolean
@@ -156,6 +166,76 @@ function _MPlayer:Die()
     ServerEventManager.Publish("EntityDeadEvent", evt)
 end
 
+-- 【新增】重写等级设置方法，自动同步到客户端
+function _MPlayer:SetLevel(level)
+    if self.level ~= level then
+        self.level = level
+        -- 等级变化时自动同步到客户端
+        self:syncLevelExpToClient()
+    end
+end
+
+-- 【新增】重写经验设置方法，自动同步到客户端
+function _MPlayer:SetExp(exp)
+    if self.exp ~= exp then
+        self.exp = exp
+        -- 经验变化时自动同步到客户端
+        self:syncLevelExpToClient()
+    end
+end
+
+-- 【新增】添加经验值，自动同步到客户端
+function _MPlayer:AddExp(expAmount)
+    if expAmount and expAmount > 0 then
+        self.exp = (self.exp or 0) + expAmount
+        -- 经验变化时自动同步到客户端
+        self:syncLevelExpToClient()
+        
+        -- 【新增】检查是否升级
+        self:CheckLevelUp()
+    end
+end
+
+-- 【新增】检查并处理等级升级
+function _MPlayer:CheckLevelUp()
+    local currentLevel = self.level or 1
+    local currentExp = self.exp or 0
+    
+    -- 计算升级所需经验（这里使用简单的公式，可以根据实际需求调整）
+    local requiredExp = currentLevel * 100 -- 每级需要 level * 100 经验
+    
+    if currentExp >= requiredExp then
+        -- 升级
+        local newLevel = currentLevel + 1
+        self:SetLevel(newLevel)
+        
+        -- 扣除升级消耗的经验
+        self.exp = currentExp - requiredExp
+        
+        -- 升级后的额外处理
+        self:OnLevelUp(newLevel)
+        
+        -- 再次同步（因为等级和经验都变化了）
+        self:syncLevelExpToClient()
+    end
+end
+
+-- 【新增】等级升级后的回调方法
+function _MPlayer:OnLevelUp(newLevel)
+    -- 可以在这里添加升级后的逻辑，比如：
+    -- - 增加属性点
+    -- - 解锁新功能
+    -- - 播放升级特效
+    -- - 发送升级通知等
+    
+    -- 发送升级通知到客户端
+    gg.network_channel:fireClient(self.uin, {
+        cmd = "PlayerLevelUp",
+        newLevel = newLevel,
+        message = string.format("恭喜升级到 %d 级！", newLevel)
+    })
+end
+
 -- tick刷新
 function _MPlayer:updatePlayer()
     -- 调用父类update
@@ -185,7 +265,6 @@ function _MPlayer:SendEvent(eventName, data, callback)
     data.cmd = eventName
     ServerEventManager.SendToClient(self.uin, eventName, data, callback)
 end
-
 
 function _MPlayer:SendHoverText( text, ... )
     if ... then

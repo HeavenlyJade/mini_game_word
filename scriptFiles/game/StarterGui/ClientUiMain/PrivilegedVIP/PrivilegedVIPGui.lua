@@ -179,13 +179,13 @@ function PrivilegedVIPGui:OnClickPurchase()
     local shopItemId = self.vipShopItem.configName
     local categoryName = self.vipShopItem.category -- 从ShopItemType实例获取分类
     local miniCoinType = self.vipShopItem.price.miniCoinType -- 从ShopItemType实例获取迷你币类型
-    
+    local currencyType = self.vipShopItem.price.currencyType -- 从ShopItemType实例获取货币类型
     gg.log("点击购买VIP特权卡: " .. shopItemId .. "，分类: " .. categoryName .. "，迷你币类型: " .. (miniCoinType or "无"))
     
     -- 验证商品支持迷你币类型购买
     if not miniCoinType or miniCoinType == "" then
         gg.log("错误：该商品不支持迷你币类型购买")
-        return
+    
     end
     
     if not self.vipShopItem.price.miniCoinAmount or self.vipShopItem.price.miniCoinAmount <= 0 then
@@ -194,7 +194,7 @@ function PrivilegedVIPGui:OnClickPurchase()
     end
     
     -- 发送购买请求，使用迷你币类型作为货币类型
-    self:SendPurchaseRequest(shopItemId, categoryName, miniCoinType)
+    self:SendPurchaseRequest(shopItemId, categoryName, miniCoinType or currencyType)
 end
 
 --- 发送购买请求
@@ -261,16 +261,24 @@ end
 
 -------------------------------------------------------------------
 -- UI 更新
--------------------------------------------------------------------
+------------------------------------PrivilegedVIPGui-------------------------------
 
 function PrivilegedVIPGui:RefreshInterface()
-    -- 刷新特权描述
-    self:SetupPrivilegeDescription()
-    
-    -- 刷新特权商品
-    self:SetupPrivilegeProducts()
-    
+    -- 刷新特权描述和商品显示
+    self:RefreshPrivilegeDisplay()
+end
 
+function PrivilegedVIPGui:RefreshPrivilegeDisplay()
+    -- 刷新特权描述和商品显示
+    if not self.vipShopItem then return end
+    
+    -- 刷新价格显示
+    if self.priceFrame and self.vipShopItem.price then
+        self.priceFrame.node.Title = tostring(self.vipShopItem.price.miniCoinAmount or 0)
+    end
+    
+    -- 刷新购买按钮状态
+    self:RefreshPurchaseButtons()
 end
 
 function PrivilegedVIPGui:RefreshPurchaseButtons()
