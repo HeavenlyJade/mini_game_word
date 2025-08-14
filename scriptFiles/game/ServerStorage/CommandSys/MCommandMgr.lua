@@ -18,6 +18,7 @@ local TrailCommand = require(ServerStorage.CommandSys.Commands.MTrailCom) ---@ty
 local RewardCommand = require(ServerStorage.CommandSys.Commands.RewardCommand) ---@type RewardCommand
 local OpenUICommand = require(ServerStorage.CommandSys.Commands.OpenUICommand) ---@type OpenUICommand
 local AnimationCommand = require(ServerStorage.CommandSys.Commands.MAnimationCom) ---@type AnimationCommand
+local LevelExpCommand = require(ServerStorage.CommandSys.Commands.MLevelExpCom) ---@type LevelExpCommand
 
 
 ---@class CommandManager
@@ -43,6 +44,7 @@ CommandManager.handlers = {
     ["reward"] = RewardCommand.main,
 	["openui"] = OpenUICommand.main,
     ["animation"] = AnimationCommand.main,
+    ["levelExp"] = LevelExpCommand.main,
 
 
 
