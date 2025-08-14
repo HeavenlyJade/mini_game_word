@@ -5,23 +5,24 @@ local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventMan
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 ---@class RaceGameEventManager
-local RaceGameEventManager = {}
+local RaceGameEventManager = {
+}
 
 --- 初始化
 function RaceGameEventManager.Init()
+
+    
     RaceGameEventManager.RegisterEventHandlers()
+    gg.log("RaceGameEventManager 初始化完成")
 end
 
 --- 注册事件处理器
 function RaceGameEventManager.RegisterEventHandlers()
-    local eventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
-    if not eventName then
-        --gg.log("ERROR: RaceGameEventManager - 找不到玩家落地事件定义 (PLAYER_LANDED)。")
-        return
-    end
+    -- 注册玩家落地事件
+    local landedEventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
 
-    ServerEventManager.Subscribe(eventName, RaceGameEventManager.HandlePlayerLanded)
-    --gg.log("已注册 RaceGame 相关的事件处理器。")
+    ServerEventManager.Subscribe(landedEventName, RaceGameEventManager.HandlePlayerLanded)
+
 end
 
 --- 处理玩家落地事件
@@ -56,6 +57,110 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
         -- 仅在调试时打印，正常游戏时此日志可能过于频繁
         -- --gg.log(string.format("RaceEventManager: 收到玩家 %s 的落地报告，但玩家不在比赛中或模式不匹配，忽略。", player.name))
     end
+end
+
+--- 【新增】向指定玩家发送比赛开始通知
+---@param player MPlayer 目标玩家
+---@param raceTime number 比赛时长
+function RaceGameEventManager.SendRaceStartNotification(player, raceTime)
+    if not player or not player.uin then return end
+    
+    if not gg.network_channel then
+        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送比赛开始通知")
+        return
+    end
+    
+    local eventData = {
+        cmd = EventPlayerConfig.NOTIFY.RACE_CONTEST_SHOW,
+        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
+        raceTime = raceTime or 60
+    }
+    
+    gg.network_channel:fireClient(player.uin, eventData)
+    gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送比赛开始通知", player.name or player.uin))
+end
+
+--- 【新增】向指定玩家发送比赛结束通知
+---@param player MPlayer 目标玩家
+function RaceGameEventManager.SendRaceEndNotification(player)
+    if not player or not player.uin then return end
+    
+    if not gg.network_channel then
+        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送比赛结束通知")
+        return
+    end
+    
+    local eventData = {
+        cmd = EventPlayerConfig.NOTIFY.RACE_CONTEST_HIDE,
+        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME
+    }
+    
+    gg.network_channel:fireClient(player.uin, eventData)
+    gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送比赛结束通知", player.name or player.uin))
+end
+
+--- 【新增】向指定玩家发送比赛数据更新
+---@param player MPlayer 目标玩家
+---@param raceData table 比赛数据 {raceTime, elapsedTime, remainingTime, topThree, totalPlayers}
+function RaceGameEventManager.SendRaceDataUpdate(player, raceData)
+    if not player or not player.uin then return end
+    if not raceData then return end
+    
+    if not gg.network_channel then
+        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送比赛数据更新")
+        return
+    end
+    
+    local eventData = {
+        cmd = EventPlayerConfig.NOTIFY.RACE_CONTEST_UPDATE,
+        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
+        raceTime = raceData.raceTime,
+        elapsedTime = raceData.elapsedTime,
+        remainingTime = raceData.remainingTime,
+        topThree = raceData.topThree,
+        totalPlayers = raceData.totalPlayers
+    }
+    
+    gg.network_channel:fireClient(player.uin, eventData)
+end
+
+--- 【新增】向所有参赛者广播比赛事件
+---@param participants MPlayer[] 参赛者列表
+---@param eventType string 事件类型 (RACE_CONTEST_SHOW, RACE_CONTEST_HIDE, RACE_CONTEST_UPDATE)
+---@param eventData table 事件数据
+function RaceGameEventManager.BroadcastRaceEvent(participants, eventType, eventData)
+    if not participants or #participants == 0 then return end
+    if not eventType then return end
+    
+    if not gg.network_channel then
+        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播比赛事件")
+        return
+    end
+    
+    -- 确保事件数据包含必要的字段
+    local finalEventData = {
+        cmd = eventType,
+        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME
+    }
+    
+    -- 合并传入的事件数据
+    if eventData then
+        for k, v in pairs(eventData) do
+            finalEventData[k] = v
+        end
+    end
+    
+    -- 向所有参赛者发送事件
+    local successCount = 0
+    for _, player in ipairs(participants) do
+        if player and player.uin then
+            gg.network_channel:fireClient(player.uin, finalEventData)
+            successCount = successCount + 1
+        end
+    end
+    
+    gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名参赛者广播 %s 事件", 
+                        successCount, #participants, eventType))
 end
 
 return RaceGameEventManager

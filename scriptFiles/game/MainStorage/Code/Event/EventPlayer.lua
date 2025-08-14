@@ -38,6 +38,9 @@ EventPlayerConfig.NOTIFY = {
     PLAYER_DATA_LOADED = "PlayerDataLoaded", -- 玩家数据加载完成
     NAVIGATE_TO_POSITION = "NavigateToPosition", -- 导航到指定位置
     PLAYER_DATA_SYNC_LEVEL_EXP = "PlayerDataSync_LevelExp", -- 同步玩家等级和经验
+    RACE_CONTEST_UPDATE = "RaceContestUpdate", -- 比赛数据更新
+    RACE_CONTEST_SHOW = "RaceContestShow", -- 显示比赛界面
+    RACE_CONTEST_HIDE = "RaceContestHide", -- 隐藏比赛界面
 }
 
 --[[

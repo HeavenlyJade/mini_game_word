@@ -9,7 +9,7 @@ local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type E
 local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
 local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
--- 【已移除】不再需要直接引用 ServerEventManager
+local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
 
 ---@class RaceGameMode: GameModeBase
 ---@field participants MPlayer[]
@@ -20,6 +20,8 @@ local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDis
 ---@field rankings table<number> 按飞行距离排序的玩家uin列表
 ---@field distanceTimer Timer 距离计算定时器
 ---@field startPositions table<number, Vector3> 玩家起始位置记录 (uin -> Vector3)
+---@field raceStartTime number 比赛开始时间戳
+---@field contestUpdateTimer Timer 比赛界面更新定时器
 local RaceGameMode = ClassMgr.Class("RaceGameMode", GameModeBase)
 
 -- 比赛状态
@@ -49,6 +51,8 @@ function RaceGameMode:OnInit(instanceId, modeName, levelType)
     self.rankings = {} -- 按飞行距离排序的玩家uin列表
     self.distanceTimer = nil -- 距离计算定时器
     self.startPositions = {} -- 玩家起始位置记录 (uin -> Vector3)
+    self.raceStartTime = 0 -- 比赛开始时间戳
+    self.contestUpdateTimer = nil -- 比赛界面更新定时器
 end
 
 --- 当有玩家进入此游戏模式时调用
@@ -200,14 +204,13 @@ function RaceGameMode:Start()
                     end
                     -- 启动实时飞行距离计算
                     self:_startFlightDistanceTracking()
+                    -- 启动比赛界面更新
+                    self:_startContestUIUpdates()
+                    -- 记录比赛开始时间
+                    self.raceStartTime = os.time()
                 end)
             else
-                gg.log("传送失败，直接开始比赛")
-                -- 如果传送失败，直接发射（保持向后兼容）
-                for _, player in ipairs(self.participants) do
-                    self:LaunchPlayer(player)
-                end
-                self:_startFlightDistanceTracking()
+                gg.log("传送失败，比赛无法开始！")
             end
         end
     end)
@@ -226,6 +229,9 @@ function RaceGameMode:End()
 
     -- 停止实时飞行距离追踪
     self:_stopFlightDistanceTracking()
+    
+    -- 停止比赛界面更新
+    self:_stopContestUIUpdates()
 
     -- 最终排名确认（基于实际飞行距离）
     self:_updateRankings()
@@ -267,6 +273,7 @@ function RaceGameMode:End()
 
         -- 确保停止所有定时任务
         self:_stopFlightDistanceTracking()
+        self:_stopContestUIUpdates()
     end)
 end
 
@@ -510,6 +517,121 @@ function RaceGameMode:_calculateDistance(pos1, pos2)
         -- 静默处理错误，避免日志干扰
         return nil
     end
+end
+
+--- 【新增】启动比赛界面更新
+function RaceGameMode:_startContestUIUpdates()
+    if self.contestUpdateTimer then
+        self:RemoveTimer(self.contestUpdateTimer)
+    end
+
+    gg.log(string.format("RaceGameMode: 启动比赛界面更新，参赛者数量: %d", #self.participants))
+
+    -- 通知所有玩家显示比赛界面
+    self:_broadcastContestUIShow()
+
+    -- 每1秒更新一次比赛界面数据
+    self.contestUpdateTimer = self:AddInterval(1, function()
+        self:_updateContestUIData()
+    end)
+end
+
+--- 【新增】停止比赛界面更新
+function RaceGameMode:_stopContestUIUpdates()
+    if self.contestUpdateTimer then
+        self:RemoveTimer(self.contestUpdateTimer)
+        self.contestUpdateTimer = nil
+    end
+
+    -- 通知所有玩家隐藏比赛界面
+    self:_broadcastContestUIHide()
+end
+
+--- 【新增】向所有参赛者广播显示比赛界面
+function RaceGameMode:_broadcastContestUIShow()
+    local raceTime = self.levelType.raceTime or 60
+    local eventData = {
+        raceTime = raceTime
+    }
+    
+    RaceGameEventManager.BroadcastRaceEvent(
+        self.participants, 
+        EventPlayerConfig.NOTIFY.RACE_CONTEST_SHOW, 
+        eventData
+    )
+end
+
+--- 【新增】向所有参赛者广播隐藏比赛界面
+function RaceGameMode:_broadcastContestUIHide()
+    RaceGameEventManager.BroadcastRaceEvent(
+        self.participants, 
+        EventPlayerConfig.NOTIFY.RACE_CONTEST_HIDE,
+        {}
+    )
+end
+
+--- 【新增】更新比赛界面数据
+function RaceGameMode:_updateContestUIData()
+    if self.state ~= RaceState.RACING then
+        return
+    end
+
+    -- 计算当前时间和剩余时间
+    local currentTime = os.time()
+    local elapsedTime = currentTime - self.raceStartTime
+    local raceTime = self.levelType.raceTime or 60
+    local remainingTime = math.max(0, raceTime - elapsedTime)
+
+    -- 获取前三名玩家数据
+    local topThreeRankings = self:_getTopThreePlayersData()
+
+    local eventData = {
+        raceTime = raceTime,
+        elapsedTime = elapsedTime,
+        remainingTime = remainingTime,
+        topThree = topThreeRankings,
+        totalPlayers = #self.participants
+    }
+
+    -- 使用RaceGameEventManager向所有参赛者发送更新数据
+    RaceGameEventManager.BroadcastRaceEvent(
+        self.participants, 
+        EventPlayerConfig.NOTIFY.RACE_CONTEST_UPDATE, 
+        eventData
+    )
+end
+
+--- 【新增】获取前三名玩家数据（包含头像信息）
+---@return table 前三名玩家的详细数据
+function RaceGameMode:_getTopThreePlayersData()
+    local topThree = {}
+    
+    -- 确保排名是最新的
+    self:_updateRankings()
+    
+    -- 获取前三名的数据
+    for i = 1, math.min(3, #self.rankings) do
+        local uin = self.rankings[i]
+        local flightData = self.flightData[uin]
+        
+        if flightData then
+            -- 查找对应的玩家实例获取更多信息
+            local player = self:GetPlayerByUin(uin)
+            if player then
+                local playerData = {
+                    rank = i,
+                    uin = uin,
+                    name = flightData.name,
+                    flightDistance = flightData.flightDistance,
+                    isFinished = flightData.isFinished,
+                    userId = player.uin
+                }
+                table.insert(topThree, playerData)
+            end
+        end
+    end
+    
+    return topThree
 end
 
 return RaceGameMode
