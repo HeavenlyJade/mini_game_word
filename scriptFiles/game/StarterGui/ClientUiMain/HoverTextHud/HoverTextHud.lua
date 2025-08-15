@@ -1,10 +1,10 @@
-
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler) ---@type ClientScheduler
+
 ---@class TextInfo
 ---@field node UITextLabel
 ---@field fadeTimer number
@@ -16,13 +16,14 @@ local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler) ---@typ
 ---@class HoverTextHud:ViewBase
 local HoverTextHud = ClassMgr.Class("HoverTextHud", ViewBase)
 
+-- UI配置：设置为特殊层级，完全脱离层级管理
 local uiConfig = {
     uiName = "HoverTextHud",
-    layer = 999,  -- 设置为最高层级，确保始终在最顶层显示
+    layer = 0,  -- 改为0，不参与层级管理
     hideOnInit = false,
     closeHuds = false,
-    mouseVisible = false,  -- 悬浮文本不需要鼠标交互
-    closeHideMouse = false  -- 关闭时不影响鼠标状态
+    mouseVisible = false,
+    closeHideMouse = false
 }
 
 function HoverTextHud:OnInit(node, config)
@@ -31,10 +32,8 @@ function HoverTextHud:OnInit(node, config)
     self.template = self:Get("文本").node ---@type UITextLabel
     self.template.Visible = false
     
-    -- 设置模板的渲染层级
-    if self.template.RenderIndex then
-        self.template.RenderIndex = 9999
-    end
+    -- 确保节点始终在最高层级
+    self:SetupAlwaysOnTop()
     
     -- 计算初始位置
     self.initialY = self.template.Position.y
@@ -44,6 +43,51 @@ function HoverTextHud:OnInit(node, config)
     ClientEventManager.Subscribe("SendHoverText", function(evt)
         self:ShowText(evt.txt)
     end)
+end
+
+-- 设置始终在最上层的机制
+function HoverTextHud:SetupAlwaysOnTop()
+    -- 设置根节点的渲染层级为最高
+    if self.node and self.node.RenderIndex then
+        self.node.RenderIndex = 9999
+    end
+    
+    -- 设置模板的渲染层级
+    if self.template and self.template.RenderIndex then
+        self.template.RenderIndex = 9999
+    end
+    
+    -- 监听其他UI的打开事件，确保自己始终在最上层
+    local originalOpen = ViewBase.Open
+    ViewBase.Open = function(ui)
+        originalOpen(ui)
+        -- 当任何UI打开时，重新确保HoverTextHud在最上层
+        if ui ~= self and self.displaying then
+            self:EnsureOnTop()
+        end
+    end
+end
+
+-- 确保始终在最上层
+function HoverTextHud:EnsureOnTop()
+    if self.node then
+        -- 重新设置渲染层级
+        if self.node.RenderIndex then
+            self.node.RenderIndex = 9999
+        end
+        
+        -- 确保节点启用
+        self.node.Enabled = true
+        
+        -- 为所有活动文本重新设置层级
+        for _, textInfo in ipairs(self.activeTexts) do
+            if textInfo.node and textInfo.node.RenderIndex then
+                textInfo.node.RenderIndex = 9999
+            end
+        end
+        
+        gg.log("HoverTextHud: 重新确保在最上层显示")
+    end
 end
 
 function HoverTextHud:GetTextFromPool()
@@ -74,6 +118,11 @@ function HoverTextHud:GetTextFromPool()
     textInfo.fadeTimer = 0
     textInfo.node.Visible = true
     textInfo.node.TitleColor = ColorQuad.New(255, 255, 255, 255)
+    
+    -- 确保节点在最高层级
+    if textInfo.node.RenderIndex then
+        textInfo.node.RenderIndex = 9999
+    end
     
     -- 添加到活动列表
     table.insert(self.activeTexts, textInfo)
@@ -149,8 +198,12 @@ function HoverTextHud:ShowText(text)
     
     -- 设置文本
     textInfo.node.Title = text
+    
     -- 显示UI
     self:Open()
+    
+    -- 确保在最上层
+    self:EnsureOnTop()
 end
 
 function HoverTextHud:Update()
@@ -160,32 +213,31 @@ function HoverTextHud:Update()
     end
 end
 
--- 重写Open方法，避免影响其他UI的层级管理
+-- 重写Open方法，完全脱离层级管理
 function HoverTextHud:Open()
     if self.displaying then
         return
     end
+    
     self.displaying = true
     self:SetVisible(true)
     
-    -- 设置UI节点的渲染层级为最高层
-    if self.node and self.node.RenderIndex then
-        self.node.RenderIndex = 9999
-        --gg.log("HoverTextHud: 设置渲染层级为最高层 RenderIndex=9999")
-    end
+    -- 确保在最上层
+    self:EnsureOnTop()
     
-    --gg.log("HoverTextHud: 悬浮文本显示，当前layer=" .. self.layer)
-    -- 不调用父类的层级管理逻辑，直接显示
+    gg.log("HoverTextHud: 悬浮文本显示，脱离层级管理")
 end
 
--- 重写Close方法，避免影响其他UI的层级管理
+-- 重写Close方法，避免影响其他UI
 function HoverTextHud:Close()
-    self:SetVisible(false)
     if not self.displaying then
         return
     end
+    
     self.displaying = false
-    -- 不调用父类的层级管理逻辑，直接隐藏
+    self:SetVisible(false)
+    
+    gg.log("HoverTextHud: 悬浮文本隐藏")
 end
 
 return HoverTextHud.New(script.Parent, uiConfig)
