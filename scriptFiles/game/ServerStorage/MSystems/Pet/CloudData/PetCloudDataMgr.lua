@@ -71,6 +71,28 @@ function CloudPetDataAccessor:SavePlayerPetData(uin, petData)
     return true
 end
 
+--- 清空玩家宠物数据
+---@param uin number 玩家ID
+---@return boolean 是否成功
+function CloudPetDataAccessor:ClearPlayerPetData(uin)
+    -- 创建空的宠物数据并保存
+    local emptyPetData = {
+        activeSlots = {},
+        petList = {},
+        petSlots = 50,
+        unlockedEquipSlots = 3, -- 默认解锁3个栏位
+    }
+    
+    -- 清空云存储数据
+    cloudService:SetTableAsync('pet_player_' .. uin, emptyPetData, function(success)
+        if not success then
+            gg.log("清空玩家宠物云数据失败", uin)
+        else
+            gg.log("清空玩家宠物云数据成功", uin)
+        end
+    end)
 
+    return true
+end
 
 return CloudPetDataAccessor

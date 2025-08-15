@@ -8,6 +8,7 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 ---@field description string 描述
 ---@field currencyInits table 货币初始化列表
 ---@field variableInits table 变量初始化列表
+---@field commandInits table 指令初始化列表
 ---@field otherSettings table 其他设置
 ---@field New fun(data:table):PlayerInitType
 local PlayerInitType = ClassMgr.Class("PlayerInitType")
@@ -17,6 +18,7 @@ function PlayerInitType:OnInit(data)
     self.description = data["描述"] or ""
     self.currencyInits = data["货币初始化"] or {}
     self.variableInits = data["变量初始化"] or {}
+    self.commandInits = data["指令初始化"] or {}
     self.otherSettings = data["其他设置"] or {}
 end
 
@@ -58,6 +60,12 @@ end
 ---@return number
 function PlayerInitType:GetInitialLevel()
     return self.otherSettings["初始等级"] or 1
+end
+
+--- 获取指令初始化列表
+---@return string[] 指令字符串列表
+function PlayerInitType:GetCommandInitList()
+    return self.commandInits or {}
 end
 
 return PlayerInitType 

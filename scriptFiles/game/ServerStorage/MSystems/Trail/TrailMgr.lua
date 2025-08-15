@@ -544,4 +544,33 @@ function TrailMgr.HasAvailableSlot(uin)
     return trailCount < maxSlots
 end
 
+---【新增】清空玩家所有尾迹数据
+---@param uin number 玩家ID
+---@return boolean 是否成功
+function TrailMgr.ClearPlayerTrailData(uin)
+    gg.log("开始清空玩家尾迹数据:", uin)
+    
+    -- 清理内存中的尾迹管理器
+    local trailManager = TrailMgr.server_player_trails[uin]
+    if trailManager then
+        -- 先清理玩家身上的尾迹特效
+        trailManager:CleanupPlayerTrailEffects(uin)
+        
+        -- 清理内存缓存
+        TrailMgr.server_player_trails[uin] = nil
+    end
+    
+    -- 清空云端数据
+    local CloudTrailDataAccessor = require(ServerStorage.MSystems.Trail.TrailCloudDataMgr)
+    local success = CloudTrailDataAccessor:ClearPlayerTrailData(uin)
+    
+    if success then
+        gg.log("成功清空玩家尾迹数据:", uin)
+    else
+        gg.log("清空玩家尾迹数据失败:", uin)
+    end
+    
+    return success
+end
+
 return TrailMgr 

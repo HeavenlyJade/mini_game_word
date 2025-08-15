@@ -69,4 +69,28 @@ function CloudPartnerDataAccessor:SavePlayerPartnerData(uin, partnerData)
     return true
 end
 
+--- 清空玩家伙伴数据
+---@param uin number 玩家ID
+---@return boolean 是否成功
+function CloudPartnerDataAccessor:ClearPlayerPartnerData(uin)
+    -- 创建空的伙伴数据并保存
+    local emptyPartnerData = {
+        activeSlots = {},
+        partnerList = {},
+        partnerSlots = 30,
+        unlockedEquipSlots = 1, -- 默认解锁1个栏位
+    }
+    
+    -- 清空云存储数据
+    cloudService:SetTableAsync('partner_player_' .. uin, emptyPartnerData, function(success)
+        if not success then
+            gg.log("清空玩家伙伴云数据失败", uin)
+        else
+            gg.log("清空玩家伙伴云数据成功", uin)
+        end
+    end)
+
+    return true
+end
+
 return CloudPartnerDataAccessor

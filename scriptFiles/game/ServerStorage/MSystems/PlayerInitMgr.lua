@@ -6,6 +6,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
 
 ---@class PlayerInitMgr
 local PlayerInitMgr = {}
@@ -13,7 +14,7 @@ local PlayerInitMgr = {}
 --- 为新玩家执行初始化
 ---@param player MPlayer 玩家实例
 function PlayerInitMgr.InitializeNewPlayer(player)
-    --gg.log("开始初始化新玩家:", player.name)
+    gg.log("开始初始化新玩家:", player.name)
 
     -- 获取默认初始化配置
     local initConfig = ConfigLoader.GetPlayerInit('玩家初始化')
@@ -31,7 +32,10 @@ function PlayerInitMgr.InitializeNewPlayer(player)
     -- 3. 设置其他初始设置
     PlayerInitMgr._ApplyOtherSettings(player, initConfig)
 
-    -- 4. 【新增】同步初始化数据到客户端
+    -- 4. 执行指令初始化
+    PlayerInitMgr._ExecuteInitCommands(player, initConfig)
+
+    -- 5. 【新增】同步初始化数据到客户端
     PlayerInitMgr._SyncInitializedData(player)
 
     --gg.log("玩家初始化完成:", player.name)
@@ -76,6 +80,32 @@ function PlayerInitMgr._ApplyOtherSettings(player, initConfig)
         player.level = initialLevel
         --gg.log("设置初始等级:", initialLevel)
     end
+end
+
+--- 内部函数：执行指令初始化
+---@param player MPlayer 玩家实例
+---@param initConfig PlayerInitType 初始化配置
+function PlayerInitMgr._ExecuteInitCommands(player, initConfig)
+    local commandList = initConfig:GetCommandInitList()
+    
+    if not commandList or #commandList == 0 then
+        --gg.log("没有指令需要初始化")
+        return
+    end
+    
+    gg.log("开始执行新玩家指令初始化，共", #commandList, "条指令")
+    
+    for i, commandStr in ipairs(commandList) do
+        if commandStr and commandStr ~= "" then
+            --gg.log("执行初始化指令", i, ":", commandStr)
+            local success = CommandManager.ExecuteCommand(commandStr, player, true) -- silent = true 避免重复日志
+            if not success then
+                gg.log("初始化指令执行失败:", commandStr)
+            end
+        end
+    end
+    
+    gg.log("新玩家指令初始化完成")
 end
 
 --- 【新增】内部函数：同步初始化后的核心数据到客户端

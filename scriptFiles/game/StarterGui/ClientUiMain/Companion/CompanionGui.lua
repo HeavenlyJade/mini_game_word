@@ -499,7 +499,7 @@ function CompanionGui:RefreshSelectedCompanionDisplay()
 
     local companion = self.selectedCompanion
     ----gg.log("刷新选中伙伴显示:", companion.companionName)
-
+    self.companionUI:SetVisible(true)
     -- 【新增】获取伙伴配置并更新伙伴UI的图标
     local partnerConfig = self:GetPartnerConfig(companion.companionName)
     if self.companionUI and partnerConfig and partnerConfig.avatarResource then
@@ -655,7 +655,7 @@ end
 --- 隐藏伙伴详情
 function CompanionGui:HideCompanionDetail()
     if self.nameLabel then
-        self.nameLabel.node.Title = "未选择伙伴"
+        self.nameLabel.node.Title = ""
     end
     if self.starList then
         for i, starViewComp in ipairs(self.starList.childrensList or {}) do
@@ -672,7 +672,7 @@ function CompanionGui:HideCompanionDetail()
     -- if self.attributeList then
     --     self.attributeList:ClearChildren()
     -- end
-
+    self.companionUI:SetVisible(false)
     -- 隐藏操作按钮
     if self.upgradeButton then
         self.upgradeButton:SetVisible(false)

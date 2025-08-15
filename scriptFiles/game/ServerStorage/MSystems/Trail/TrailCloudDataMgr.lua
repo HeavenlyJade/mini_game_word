@@ -68,4 +68,28 @@ function CloudTrailDataAccessor:SavePlayerTrailData(uin, trailData)
     return true
 end
 
+--- 清空玩家尾迹数据
+---@param uin number 玩家ID
+---@return boolean 是否成功
+function CloudTrailDataAccessor:ClearPlayerTrailData(uin)
+    -- 创建空的尾迹数据并保存
+    local emptyTrailData = {
+        activeSlots = {},
+        companionList = {},
+        trailSlots = 30,
+        unlockedEquipSlots = 1, -- 默认解锁1个栏位
+    }
+    
+    -- 清空云存储数据
+    cloudService:SetTableAsync('trail_player_' .. uin, emptyTrailData, function(success)
+        if not success then
+            gg.log("清空玩家尾迹云数据失败", uin)
+        else
+            gg.log("清空玩家尾迹云数据成功", uin)
+        end
+    end)
+
+    return true
+end
+
 return CloudTrailDataAccessor 

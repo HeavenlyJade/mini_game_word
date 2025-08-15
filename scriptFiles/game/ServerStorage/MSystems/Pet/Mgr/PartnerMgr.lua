@@ -20,34 +20,9 @@ local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type Conf
 local PartnerMgr = {
     -- 在线玩家伙伴管理器缓存 {uin = Partner管理器实例}
     server_player_partners = {}, ---@type table<number, Partner>
-
-    -- 定时保存间隔（秒）
-    SAVE_INTERVAL = 60
 }
 
--- 移除定时存盘功能，现在使用统一的定时存盘机制
--- function SaveAllPlayerPARTNER_()
---     local count = 0
---     for uin, partnerManager in pairs(PartnerMgr.server_player_partners) do
---         if partnerManager then
---             -- 提取数据并保存到云端
---             local playerPartnerData = partnerManager:GetSaveData()
---             if playerPartnerData then
---                 CloudPartnerDataAccessor:SavePlayerPartnerData(uin, playerPartnerData)
---             end
---         end
---     end
---     -- --gg.log("定时保存伙伴数据完成，保存了", count, "个玩家的伙伴")
--- end
 
--- local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
--- saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
--- saveTimer.Name = 'PARTNER_SAVE_ALL'
--- saveTimer.Delay = 60
--- saveTimer.Loop = true
--- saveTimer.Interval = 60
--- saveTimer.Callback = SaveAllPlayerPARTNER_
--- saveTimer:Start()
 
 ---保存指定玩家的伙伴数据（供统一存盘机制调用）
 ---@param uin number 玩家ID
@@ -477,6 +452,50 @@ function PartnerMgr.HasAvailableSlot(uin)
     local maxSlots = partnerManager.maxSlots -- 默认最大槽位数
     
     return partnerCount < maxSlots
+end
+
+---【新增】清空玩家所有伙伴数据
+---@param uin number 玩家ID
+---@return boolean 是否成功
+function PartnerMgr.ClearPlayerPartnerData(uin)
+    gg.log("开始清空玩家伙伴数据:", uin)
+    
+    -- 清理内存中的伙伴管理器
+    local partnerManager = PartnerMgr.server_player_partners[uin]
+    if partnerManager then
+        -- 先清理玩家身上的伙伴模型
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin)
+        if player and player.actor then
+            local allEquipSlotIds = partnerManager.equipSlotIds or {}
+            for _, equipSlotId in ipairs(allEquipSlotIds) do
+                local partnerNode = player.actor:FindFirstChild(equipSlotId)
+                if partnerNode then
+                    partnerNode.Visible = false
+                    partnerNode.ModelId = ""
+                    local animatorNode = partnerNode:FindFirstChild("Animator")
+                    if animatorNode then
+                        animatorNode.ControllerAsset = ""
+                    end
+                end
+            end
+        end
+        
+        -- 清理内存缓存
+        PartnerMgr.server_player_partners[uin] = nil
+    end
+    
+    -- 清空云端数据
+    local CloudPartnerDataAccessor = require(ServerStorage.MSystems.Pet.CloudData.PartnerCloudDataMgr)
+    local success = CloudPartnerDataAccessor:ClearPlayerPartnerData(uin)
+    
+    if success then
+        gg.log("成功清空玩家伙伴数据:", uin)
+    else
+        gg.log("清空玩家伙伴数据失败:", uin)
+    end
+    
+    return success
 end
 
 ---【新增】更新玩家所有已装备伙伴的模型

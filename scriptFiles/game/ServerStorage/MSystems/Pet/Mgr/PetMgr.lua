@@ -707,6 +707,48 @@ function PetMgr.SaveAllPlayerData()
     -- --gg.log("PetMgr.SaveAllPlayerData: 批量保存所有玩家宠物数据") -- 日志已移至定时器启动时
 end
 
+---【新增】清空玩家所有宠物数据
+---@param uin number 玩家ID
+---@return boolean 是否成功
+function PetMgr.ClearPlayerPetData(uin)
+    gg.log("开始清空玩家宠物数据:", uin)
+    
+    -- 清理内存中的宠物管理器
+    local petManager = PetMgr.server_player_pets[uin]
+    if petManager then
+        -- 先清理玩家身上的宠物模型
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin)
+        if player and player.actor then
+            local allEquipSlotIds = petManager.equipSlotIds or {}
+            for _, equipSlotId in ipairs(allEquipSlotIds) do
+                local petNode = player.actor:FindFirstChild(equipSlotId)
+                if petNode then
+                    petNode.Visible = false
+                    petNode.ModelId = ""
+                    local animatorNode = petNode:FindFirstChild("Animator")
+                    if animatorNode then
+                        animatorNode.ControllerAsset = ""
+                    end
+                end
+            end
+        end
+        
+        -- 清理内存缓存
+        PetMgr.server_player_pets[uin] = nil
+    end
+    
+    -- 清空云端数据
+    local success = CloudPetDataAccessor:ClearPlayerPetData(uin)
+    
+    if success then
+        gg.log("成功清空玩家宠物数据:", uin)
+    else
+        gg.log("清空玩家宠物数据失败:", uin)
+    end
+    
+    return success
+end
 
 -- 定时器回调函数
 local function SaveAllPlayerPets_()

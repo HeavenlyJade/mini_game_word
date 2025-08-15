@@ -15,10 +15,12 @@ local ClearDataCommand = {}
 local DEFAULT_CLEAR_RANGE = {
     ["背包"] = true,
     ["成就"] = true,
-    ["核心数据"] = true, -- 将“变量”和“基础数据”合并
+    ["核心数据"] = true, -- 将"变量"和"基础数据"合并
     ["技能"] = true,
     ["宠物"] = true,
-    ["伙伴"] = true
+    ["伙伴"] = true,
+    ["翅膀"] = true,
+    ["尾迹"] = true
 }
 
 --- 清空背包数据
@@ -26,15 +28,15 @@ local DEFAULT_CLEAR_RANGE = {
 ---@return boolean 是否成功
 local function clearBagData(player)
     if not MServerDataManager.BagMgr then
-        --gg.log("背包管理器未初始化")
+        gg.log("背包管理器未初始化")
         return false
     end
     if not MServerDataManager.BagMgr.ClearPlayerBag then
-        --gg.log("错误: BagMgr 中缺少 ClearPlayerBag 函数")
+        gg.log("错误: BagMgr 中缺少 ClearPlayerBag 函数")
         return false
     end
     MServerDataManager.BagMgr.ClearPlayerBag(player.uin)
-    --gg.log("已清空玩家背包数据:", player.name)
+    gg.log("已清空玩家背包数据:", player.name)
     return true
 end
 
@@ -43,17 +45,17 @@ end
 ---@return boolean 是否成功
 local function clearAchievementData(player)
     if not MServerDataManager.AchievementMgr then
-        --gg.log("成就管理器未初始化")
+        gg.log("成就管理器未初始化")
         return false
     end
     local AchievementCloudDataMgr = require(ServerStorage.MSystems.Achievement.AchievementCloudDataMgr)
     if AchievementCloudDataMgr.ClearPlayerAchievements then
         AchievementCloudDataMgr.ClearPlayerAchievements(player.uin)
     else
-        --gg.log("警告: AchievementCloudDataMgr 中缺少 ClearPlayerAchievements 函数")
+        gg.log("警告: AchievementCloudDataMgr 中缺少 ClearPlayerAchievements 函数")
     end
     MServerDataManager.AchievementMgr.server_player_achievement_data[player.uin] = nil
-    --gg.log("已清空玩家成就数据:", player.name)
+    gg.log("已清空玩家成就数据:", player.name)
     return true
 end
 
@@ -64,7 +66,7 @@ local function clearCoreData(player)
     if MCloudDataMgr.ClearCorePlayerData then
         return MCloudDataMgr.ClearCorePlayerData(player.uin)
     else
-        --gg.log("错误: MCloudDataMgr 中缺少 ClearCorePlayerData 函数")
+        gg.log("错误: MCloudDataMgr 中缺少 ClearCorePlayerData 函数")
         return false
     end
 end
@@ -76,7 +78,7 @@ local function clearSkillData(player)
     if player.skills then
         player.skills = {}
     end
-    --gg.log("已清空玩家技能数据:", player.name)
+    gg.log("已清空玩家技能数据:", player.name)
     return true
 end
 
@@ -85,18 +87,16 @@ end
 ---@return boolean 是否成功
 local function clearPetData(player)
     if not MServerDataManager.PetMgr then
-        --gg.log("宠物管理器未初始化")
+        gg.log("宠物管理器未初始化")
         return false
     end
-    local CloudPetDataAccessor = require(ServerStorage.MSystems.Pet.CloudData.PetCloudDataMgr)
-    if CloudPetDataAccessor.ClearPlayerPetData then
-        CloudPetDataAccessor.ClearPlayerPetData(player.uin)
+    local success = MServerDataManager.PetMgr.ClearPlayerPetData(player.uin)
+    if success then
+        gg.log("已清空玩家宠物数据:", player.name)
     else
-        --gg.log("警告: PetCloudDataMgr 中缺少 ClearPlayerPetData 函数")
+        gg.log("清空玩家宠物数据失败:", player.name)
     end
-    MServerDataManager.PetMgr.server_player_pets[player.uin] = nil
-    --gg.log("已清空玩家宠物数据:", player.name)
-    return true
+    return success
 end
 
 --- 清空伙伴数据
@@ -104,18 +104,50 @@ end
 ---@return boolean 是否成功
 local function clearPartnerData(player)
     if not MServerDataManager.PartnerMgr then
-        --gg.log("伙伴管理器未初始化")
+        gg.log("伙伴管理器未初始化")
         return false
     end
-    local CloudPartnerDataAccessor = require(ServerStorage.MSystems.Pet.CloudData.PartnerCloudDataMgr)
-    if CloudPartnerDataAccessor.ClearPlayerPartnerData then
-        CloudPartnerDataAccessor.ClearPlayerPartnerData(player.uin)
+    local success = MServerDataManager.PartnerMgr.ClearPlayerPartnerData(player.uin)
+    if success then
+        gg.log("已清空玩家伙伴数据:", player.name)
     else
-        --gg.log("警告: PartnerCloudDataMgr 中缺少 ClearPlayerPartnerData 函数")
+        gg.log("清空玩家伙伴数据失败:", player.name)
     end
-    MServerDataManager.PartnerMgr.server_player_partners[player.uin] = nil
-    --gg.log("已清空玩家伙伴数据:", player.name)
-    return true
+    return success
+end
+
+--- 清空翅膀数据
+---@param player MPlayer 目标玩家
+---@return boolean 是否成功
+local function clearWingData(player)
+    if not MServerDataManager.WingMgr then
+        gg.log("翅膀管理器未初始化")
+        return false
+    end
+    local success = MServerDataManager.WingMgr.ClearPlayerWingData(player.uin)
+    if success then
+        gg.log("已清空玩家翅膀数据:", player.name)
+    else
+        gg.log("清空玩家翅膀数据失败:", player.name)
+    end
+    return success
+end
+
+--- 清空尾迹数据
+---@param player MPlayer 目标玩家
+---@return boolean 是否成功
+local function clearTrailData(player)
+    if not MServerDataManager.TrailMgr then
+        gg.log("尾迹管理器未初始化")
+        return false
+    end
+    local success = MServerDataManager.TrailMgr.ClearPlayerTrailData(player.uin)
+    if success then
+        gg.log("已清空玩家尾迹数据:", player.name)
+    else
+        gg.log("清空玩家尾迹数据失败:", player.name)
+    end
+    return success
 end
 
 --- 保存非核心数据
@@ -125,7 +157,7 @@ local function saveOtherData(player)
     if MCloudDataMgr.SaveSkillConfig then
         MCloudDataMgr.SaveSkillConfig(player) -- 保存技能数据
     end
-    --gg.log("已强制保存玩家清空后的非核心数据:", player.name)
+    gg.log("已强制保存玩家清空后的非核心数据:", player.name)
 end
 
 --- 同步数据到客户端
@@ -140,10 +172,16 @@ local function syncDataToClient(player)
     if MServerDataManager.PartnerMgr and MServerDataManager.PartnerMgr.ForceSyncToClient then
         MServerDataManager.PartnerMgr.ForceSyncToClient(player.uin)
     end
+    if MServerDataManager.WingMgr and MServerDataManager.WingMgr.ForceSyncToClient then
+        MServerDataManager.WingMgr.ForceSyncToClient(player.uin)
+    end
+    if MServerDataManager.TrailMgr and MServerDataManager.TrailMgr.ForceSyncToClient then
+        MServerDataManager.TrailMgr.ForceSyncToClient(player.uin)
+    end
     if player.syncSkillData then
         player:syncSkillData()
     end
-    --gg.log("已尝试同步玩家数据到客户端:", player.name)
+    gg.log("已尝试同步玩家数据到客户端:", player.name)
 end
 
 --- 获取目标玩家
@@ -189,7 +227,7 @@ function ClearDataCommand.main(params, executor)
     end
 
     local clearRange = getClearRange(params)
-    --gg.log("开始清空玩家数据:", targetPlayer.name, "执行者:", executor.name)
+    gg.log("开始清空玩家数据:", targetPlayer.name, "执行者:", executor.name)
 
     local results = {}
     local hasError = false
@@ -201,6 +239,8 @@ function ClearDataCommand.main(params, executor)
         ["技能"] = clearSkillData,
         ["宠物"] = clearPetData,
         ["伙伴"] = clearPartnerData,
+        ["翅膀"] = clearWingData,
+        ["尾迹"] = clearTrailData,
     }
 
     -- 因为“基础数据”和“变量”现在由“核心数据”统一处理，所以需要对用户的输入进行适配
@@ -222,7 +262,7 @@ function ClearDataCommand.main(params, executor)
     local resultMsg = string.format("玩家 [%s] 数据清空%s\n清空结果: %s", targetPlayer.name, hasError and "部分完成" or "完成", table.concat(results, ", "))
 
 
-    --gg.log("玩家数据清空操作完成:", targetPlayer.name, "结果:", hasError and "部分成功" or "完全成功")
+    gg.log("玩家数据清空操作完成:", targetPlayer.name, "结果:", hasError and "部分成功" or "完全成功")
 
     return true, resultMsg
 end

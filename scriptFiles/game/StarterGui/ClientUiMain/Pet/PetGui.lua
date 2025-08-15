@@ -739,7 +739,7 @@ end
 
 --- 隐藏宠物详情
 function PetGui:HidePetDetail()
-    if self.nameLabel then self.nameLabel.node.Title = "未选择宠物" end
+    if self.nameLabel then self.nameLabel.node.Title = "" end
     if self.petUI then self.petUI.node.Icon = "" end
 
     if self.starList then

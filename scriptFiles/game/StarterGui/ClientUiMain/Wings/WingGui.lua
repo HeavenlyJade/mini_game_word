@@ -614,7 +614,7 @@ end
 
 --- 隐藏翅膀详情
 function WingGui:HideWingDetail()
-    if self.nameLabel then self.nameLabel.node.Title = "未选择翅膀" end
+    if self.nameLabel then self.nameLabel.node.Title = "" end
     if self.wingUI then self.wingUI.node.Icon = "" end
 
     if self.starList then

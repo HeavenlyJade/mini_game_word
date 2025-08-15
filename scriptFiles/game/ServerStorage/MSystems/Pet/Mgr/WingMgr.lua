@@ -645,4 +645,44 @@ function WingMgr.SetWingBagCapacity(uin, capacity)
     end
 end
 
+---【新增】清空玩家所有翅膀数据
+---@param uin number 玩家ID
+---@return boolean 是否成功
+function WingMgr.ClearPlayerWingData(uin)
+    gg.log("开始清空玩家翅膀数据:", uin)
+    
+    -- 清理内存中的翅膀管理器
+    local wingManager = WingMgr.server_player_wings[uin]
+    if wingManager then
+        -- 先清理玩家身上的翅膀模型
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin)
+        if player and player.actor then
+            local allEquipSlotIds = wingManager.equipSlotIds or {}
+            for _, equipSlotId in ipairs(allEquipSlotIds) do
+                local wingNode = player.actor:FindFirstChild(equipSlotId)
+                if wingNode then
+                    wingNode.Visible = false
+                    wingNode.ModelId = ""
+                end
+            end
+        end
+        
+        -- 清理内存缓存
+        WingMgr.server_player_wings[uin] = nil
+    end
+    
+    -- 清空云端数据
+    local CloudWingDataAccessor = require(ServerStorage.MSystems.Pet.CloudData.WingCloudDataMgr)
+    local success = CloudWingDataAccessor:ClearPlayerWingData(uin)
+    
+    if success then
+        gg.log("成功清空玩家翅膀数据:", uin)
+    else
+        gg.log("清空玩家翅膀数据失败:", uin)
+    end
+    
+    return success
+end
+
 return WingMgr 

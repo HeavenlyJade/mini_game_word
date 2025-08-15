@@ -20,9 +20,9 @@ local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
 local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
 local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
-    local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
-    local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
-    local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
+local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
+local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr) ---@type AchievementMgr
+local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 local PlayerInitMgr = require(ServerStorage.MSystems.PlayerInitMgr) ---@type PlayerInitMgr
@@ -111,8 +111,7 @@ function MServerInitPlayer.player_enter_game(player)
         return   --加载数据网络层失败
     end
     --gg.log('cloud_player_data_', cloud_player_data_)
-    local isNewPlayer = next(cloud_player_data_) == nil
-
+    gg.log('isNewPlayer', cloud_player_data_)
     -- 玩家信息初始化（MPlayer会自动调用initPlayerData初始化背包和邮件）
     ---@type MPlayer
     local player_ = MPlayer.New({
@@ -154,9 +153,10 @@ function MServerInitPlayer.player_enter_game(player)
     LotteryMgr.OnPlayerJoin(player_)
     local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
     ShopMgr.OnPlayerJoin(player_)
-    if isNewPlayer then
+    if cloud_player_data_ == nil or next(cloud_player_data_) == nil then
         PlayerInitMgr.InitializeNewPlayer(player_)
     end
+    
     -- 【重构】玩家上线时，调用伙伴管理器来更新模型显示
     PartnerMgr.UpdateAllEquippedPartnerModels(player_)
     -- 【新增】玩家上线时，调用宠物管理器来更新模型显示

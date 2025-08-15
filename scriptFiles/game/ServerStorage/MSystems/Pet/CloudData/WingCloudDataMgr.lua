@@ -69,4 +69,28 @@ function CloudWingDataAccessor:SavePlayerWingData(uin, wingData)
     return true
 end
 
+--- 清空玩家翅膀数据
+---@param uin number 玩家ID
+---@return boolean 是否成功
+function CloudWingDataAccessor:ClearPlayerWingData(uin)
+    -- 创建空的翅膀数据并保存
+    local emptyWingData = {
+        activeSlots = {},
+        wingList = {},
+        wingSlots = 30,
+        unlockedEquipSlots = 1, -- 默认解锁1个栏位
+    }
+    
+    -- 清空云存储数据
+    cloudService:SetTableAsync('wing_player_' .. uin, emptyWingData, function(success)
+        if not success then
+            gg.log("清空玩家翅膀云数据失败", uin)
+        else
+            gg.log("清空玩家翅膀云数据成功", uin)
+        end
+    end)
+
+    return true
+end
+
 return CloudWingDataAccessor 
