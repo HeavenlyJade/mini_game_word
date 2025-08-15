@@ -57,7 +57,7 @@ CardIcon.qualityBaseMapboxClickIcon = {
 CardIcon.qualityBackGroundIcon = {
     ["N"] = "sandboxId://FlyUi/迷你界面/商城UI/绿色品质底图.png",
     ["R"] = "sandboxId://FlyUi/迷你界面/商城UI/蓝色品质底图.png",
-    ["SR"] = "ssandboxId://FlyUi/迷你界面/商城UI/紫色品质底图.png",
+    ["SR"] = "sandboxId://FlyUi/迷你界面/商城UI/紫色品质底图.png",
     ["SSR"] = "sandboxId://FlyUi/迷你界面/商城UI/橙色品质底图.png",
     ["UR"] = "sandboxId://FlyUi/迷你界面/商城UI/彩色品质底图.png",
 }
