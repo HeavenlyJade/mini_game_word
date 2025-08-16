@@ -96,6 +96,11 @@ function ContestGui:RegisterEvents()
 	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN, function(eventData)
 		self:OnPrepareCountdown(eventData)
 	end)
+	
+	-- 【新增】监听停止比赛准备倒计时事件
+	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN_STOP, function(eventData)
+		self:OnStopPrepareCountdown(eventData)
+	end)
 
 	-- 监听比赛界面显示事件
 	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_CONTEST_SHOW, function(eventData)
@@ -228,6 +233,38 @@ function ContestGui:UpdatePrepareCountdown(remainingTime)
 			remainingTime % 60)
 		self.sceneCountdownNode.Title = sceneTimeText
 	end
+end
+
+-- 【新增】处理停止比赛准备倒计时事件
+function ContestGui:OnStopPrepareCountdown(eventData)
+	local reason = eventData.reason or "未知原因"
+	gg.log("收到停止比赛准备倒计时事件，原因: " .. reason)
+	
+	-- 停止并清理准备倒计时定时器
+	if self.prepareTimer then
+		self.prepareTimer:Stop()
+		self.prepareTimer:Destroy()
+		self.prepareTimer = nil
+		gg.log("准备倒计时定时器已停止并清理")
+	end
+	
+	-- 隐藏倒计时界面
+	if self.countDown then
+		self.countDown:SetVisible(false)
+	end
+	
+	-- 清理场景倒计时节点的文本
+	if self.sceneCountdownNode and self.sceneCountdownNode.Title then
+		self.sceneCountdownNode.Title = ""
+	end
+	
+	-- 清理场景节点引用
+	self.sceneCountdownNode = nil
+	
+	-- 隐藏整个比赛界面
+	self:SetVisible(false)
+	
+	gg.log(string.format("比赛准备倒计时已停止，原因: %s", reason))
 end
 
 -- 显示比赛界面

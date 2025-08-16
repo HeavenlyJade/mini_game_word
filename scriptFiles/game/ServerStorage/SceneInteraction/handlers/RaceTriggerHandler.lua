@@ -80,10 +80,45 @@ end
 --- 当实体离开触发区域时调用
 ---@param player MPlayer
 function RaceTriggerHandler:OnEntityLeave(player)
-    if not player then return end
+    if not player or not player.isPlayer then return end
+    
     --gg.log(string.format("玩家 %s 离开了 '%s' 触发区域。", player.name, self.name))
-    -- 目前，离开区域不会将玩家从比赛中移除，只记录日志。
-    -- 这是为了防止玩家在比赛开始前误操作离开区域。
+    
+    -- 【新增】检查玩家是否在比赛中，如果在准备阶段离开则将其移除
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
+    
+    if GameModeManager and GameModeManager:IsPlayerInMode(player.uin) then
+        -- 获取玩家当前所在的比赛实例
+        local instanceId = GameModeManager.playerModes[player.uin]
+        local currentMode = GameModeManager.activeModes[instanceId]
+        
+        -- 如果比赛还在准备阶段，将玩家从比赛中移除
+        if currentMode and currentMode.state == "WAITING" then
+            local participantsCount = #currentMode.participants
+            --gg.log(string.format("玩家 %s 在准备阶段离开了比赛区域，将其从比赛中移除。当前参赛者数量: %d", player.name, participantsCount))
+            
+            -- 【新增】通过RaceGameEventManager发送停止倒计时事件
+            local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
+            RaceGameEventManager.SendStopPrepareCountdown(player, "退出准备区域")
+            
+            -- 移除玩家
+            GameModeManager:RemovePlayerFromCurrentMode(player)
+            
+            -- 根据是否为最后一个玩家提供不同的提示
+            if participantsCount <= 1 then
+                -- 这是最后一个玩家离开
+                if player.SendHoverText then
+                    player:SendHoverText("已退出比赛准备，比赛已取消")
+                end
+            else
+                -- 还有其他玩家在准备中
+                if player.SendHoverText then
+                    player:SendHoverText("已退出比赛准备")
+                end
+            end
+        end
+    end
 end
 
 return RaceTriggerHandler

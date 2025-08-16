@@ -124,11 +124,10 @@ function RaceGameEventManager.SendRaceDataUpdate(player, raceData)
     gg.network_channel:fireClient(player.uin, eventData)
 end
 
---- 【新增】向所有参赛者广播比赛准备倒计时
----@param participants MPlayer[] 参赛者列表
+--- 【修改】向所有在线玩家广播比赛准备倒计时（不仅仅是参赛者）
+---@param participants MPlayer[] 参赛者列表（用于记录日志）
 ---@param prepareTime number 准备时间
 function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTime)
-    if not participants or #participants == 0 then return end
     if not prepareTime then return end
     
     if not gg.network_channel then
@@ -142,17 +141,80 @@ function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTim
         prepareTime = prepareTime
     }
     
-    -- 向所有参赛者发送事件
+    -- 【核心修改】从MServerDataManager获取所有在线玩家，向所有玩家发送倒计时
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local allPlayers = serverDataMgr.getAllPlayers()
+    
     local successCount = 0
-    for _, player in ipairs(participants) do
+    local totalPlayers = 0
+    
+    -- 向所有在线玩家发送倒计时事件
+    for uin, player in pairs(allPlayers) do
         if player and player.uin then
             gg.network_channel:fireClient(player.uin, eventData)
             successCount = successCount + 1
         end
+        totalPlayers = totalPlayers + 1
     end
     
-    -- gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名参赛者广播准备倒计时事件，准备时间: %d秒", 
-    --                     successCount, #participants, prepareTime))
+    --gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名在线玩家广播准备倒计时事件，准备时间: %d秒，参赛者数量: %d", 
+    --                    successCount, totalPlayers, prepareTime, participants and #participants or 0))
+end
+
+--- 【新增】向指定玩家发送停止准备倒计时事件
+---@param player MPlayer 目标玩家
+---@param reason string 停止原因（可选）
+function RaceGameEventManager.SendStopPrepareCountdown(player, reason)
+    if not player or not player.uin then return end
+    
+    if not gg.network_channel then
+        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送停止准备倒计时")
+        return
+    end
+    
+    local eventData = {
+        cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN_STOP,
+        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
+        reason = reason or "退出准备区域"
+    }
+    
+    gg.network_channel:fireClient(player.uin, eventData)
+    --gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送停止准备倒计时事件，原因: %s", player.name or player.uin, reason or "退出准备区域"))
+end
+
+--- 【修改】向所有在线玩家广播停止准备倒计时事件（不仅仅是参赛者）
+---@param participants MPlayer[] 参赛者列表（用于记录日志）
+---@param reason string 停止原因（可选）
+function RaceGameEventManager.BroadcastStopPrepareCountdown(participants, reason)
+    if not gg.network_channel then
+        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播停止准备倒计时")
+        return
+    end
+    
+    local eventData = {
+        cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN_STOP,
+        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
+        reason = reason or "比赛已取消"
+    }
+    
+    -- 【核心修改】从MServerDataManager获取所有在线玩家，向所有玩家发送停止倒计时
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local allPlayers = serverDataMgr.getAllPlayers()
+    
+    local successCount = 0
+    local totalPlayers = 0
+    
+    -- 向所有在线玩家发送停止倒计时事件
+    for uin, player in pairs(allPlayers) do
+        if player and player.uin then
+            gg.network_channel:fireClient(player.uin, eventData)
+            successCount = successCount + 1
+        end
+        totalPlayers = totalPlayers + 1
+    end
+    
+    --gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名在线玩家广播停止准备倒计时事件，原因: %s，参赛者数量: %d", 
+    --                     successCount, totalPlayers, reason or "比赛已取消", participants and #participants or 0))
 end
 
 --- 【新增】向所有参赛者广播比赛事件

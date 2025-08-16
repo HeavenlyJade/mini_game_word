@@ -12,7 +12,7 @@ local InitAutoSpotNodes = {}
 
 --- 初始化所有挂机点节点配置
 function InitAutoSpotNodes.InitializeAllAutoSpotNodes()
-    gg.log("开始初始化挂机区域节点配置")
+    --gg.log("开始初始化挂机区域节点配置")
     
     -- 获取所有场景节点配置
     local allSceneNodes = ConfigLoader.GetAllSceneNodes()
@@ -24,7 +24,7 @@ function InitAutoSpotNodes.InitializeAllAutoSpotNodes()
         end
     end
     
-    gg.log("挂机区域节点配置初始化完成")
+    --gg.log("挂机区域节点配置初始化完成")
 end
 
 --- 初始化单个挂机点节点配置
@@ -32,19 +32,19 @@ end
 function InitAutoSpotNodes.InitializeSingleAutoSpotNode(sceneNode)
     if not sceneNode then return end
     
-    gg.log("初始化挂机点:", sceneNode.name)
+    --gg.log("初始化挂机点:", sceneNode.name)
     
     -- 获取节点路径
     local nodePath = sceneNode.nodePath
     if not nodePath or nodePath == "" then
-        gg.log("错误：挂机点", sceneNode.name, "没有配置节点路径")
+        --gg.log("错误：挂机点", sceneNode.name, "没有配置节点路径")
         return
     end
     
     -- 在场景中查找对应的节点
     local targetNode = gg.GetChild(WorkSpace, nodePath)
     if not targetNode then
-        gg.log("错误：找不到挂机点", sceneNode.name, "的节点，路径:", nodePath)
+        --gg.log("错误：找不到挂机点", sceneNode.name, "的节点，路径:", nodePath)
         return
     end
     
@@ -58,7 +58,7 @@ function InitAutoSpotNodes.InitializeSingleAutoSpotNode(sceneNode)
     -- 设置作用描述节点
     local effectNode = InitAutoSpotNodes.SetNodeTitleByPath(targetNode, sceneNode.effectDescNode, effectDesc)
     
-    gg.log("挂机点", sceneNode.name, "配置完成")
+    --gg.log("挂机点", sceneNode.name, "配置完成")
 end
 
 --- 根据路径设置节点的Title属性
@@ -66,7 +66,7 @@ end
 ---@param nodePath string 子节点路径
 ---@param title string 要设置的Title值
 function InitAutoSpotNodes.SetNodeTitleByPath(parentNode, nodePath, title)
-    gg.log("设置节点", nodePath, "的Title为:", title,parentNode)
+    --gg.log("设置节点", nodePath, "的Title为:", title,parentNode)
     if not parentNode or not nodePath or nodePath == "" or not title or title == "" then
         return
     end
@@ -74,10 +74,10 @@ function InitAutoSpotNodes.SetNodeTitleByPath(parentNode, nodePath, title)
     -- 查找子节点
     local targetNode = gg.GetChild(parentNode, nodePath)
     if not targetNode then
-        gg.log("警告：找不到节点路径:", nodePath)
+        --gg.log("警告：找不到节点路径:", nodePath)
         return
     end  
-    gg.log("设置节点", nodePath, "的Title为:", title,targetNode)
+    --gg.log("设置节点", nodePath, "的Title为:", title,targetNode)
     targetNode.Title = title
     
     return targetNode

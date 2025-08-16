@@ -16,7 +16,7 @@ local os   = os
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
-
+local PhysXService =game:GetService("PhysXService")
 local MS = require(MainStorage.Code.Untils.MS) ---@type MS
 local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
@@ -69,7 +69,8 @@ function MainServer.start_server()
     math.randomseed(os.time() + gg.GetTimeStamp())
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
     MServerInitPlayer.register_player_in_out()   --玩家进出游戏
-
+    -- local physxService = PhysXService:GetInstance()
+    -- physxService:SetCollideInfo(1, 1, false)  
     MainServer.initModule()
 
     MainServer.createNetworkChannel()     --建立网络通道
@@ -78,6 +79,7 @@ function MainServer.start_server()
     MainServer.bind_save_data_tick()      --开始定时存盘
     MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     MServerInitPlayer.setInitFinished(true)  -- 设置初始化完成
+    MainServer.SetCollisionGroup()
     gg.log("结束服务器")
 
 end
@@ -163,13 +165,15 @@ function MainServer.initModule()
 end
 
 -- --设置碰撞组
--- function MainServer.SetCollisionGroup()
---     --设置碰撞组
---     local WS = game:GetService("PhysXService")
---     WS:SetCollideInfo(0, 0, false)   --玩家不与玩家碰撞
---     WS:SetCollideInfo(1, 1, false)   --怪物不与怪物碰撞
---     WS:SetCollideInfo(0, 1, false)   --玩家不与怪物碰撞
--- end
+function MainServer.SetCollisionGroup()
+    --设置碰撞组
+    gg.log("设置碰撞组1111")
+    local WS = game:GetService("PhysXService")
+    WS:SetCollideInfo(4, 4, false)   --玩家不与玩家碰撞
+    gg.log("设置碰撞组")
+    -- WS:SetCollideInfo(1, 1, false)   --怪物不与怪物碰撞
+    -- WS:SetCollideInfo(0, 1, false)   --玩家不与怪物碰撞
+end
 
 
 

@@ -132,7 +132,6 @@ function MServerInitPlayer.player_enter_game(player)
     player_actor_.Center = Vector3.New(0, 80, 0)      --盒子中心位置
 
     player_:setGameActor(player_actor_)     --player
-    player_actor_.CollideGroupID = 4
 
     -- 【新增】确保装饰性对象的同步设置正确
 
@@ -168,7 +167,7 @@ function MServerInitPlayer.player_enter_game(player)
 
     MServerInitPlayer.syncPlayerDataToClient(player_)
     MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_)
-
+    gg.log("玩家碰撞组设置验证:", player.name, "CollideGroupID:", player_actor_.CollideGroupID)
     gg.log("玩家进入了游戏", gg.player_scene_map,player)
 
 

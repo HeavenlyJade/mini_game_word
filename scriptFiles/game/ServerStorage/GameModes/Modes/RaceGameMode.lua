@@ -81,10 +81,41 @@ end
 function RaceGameMode:OnPlayerLeave(player)
     if not player then return end
 
+    -- 从参赛者列表中移除玩家
     for i, p in ipairs(self.participants) do
         if p.uin == player.uin then
             table.remove(self.participants, i)
             break -- 找到并移除后即可退出循环
+        end
+    end
+    
+    -- 【新增】清理玩家相关的比赛数据
+    if self.finishedPlayers then
+        self.finishedPlayers[player.uin] = nil
+    end
+    
+    if self.flightData then
+        self.flightData[player.uin] = nil
+    end
+    
+    if self.startPositions then
+        self.startPositions[player.uin] = nil
+    end
+    
+    -- 【核心优化】处理玩家离开后的比赛状态
+    if self.state == "WAITING" then
+        -- 准备阶段：如果所有玩家都离开了，直接清理比赛实例
+        if #self.participants == 0 then
+            --gg.log(string.format("比赛实例 %s：所有玩家在准备阶段离开，取消比赛并清理实例。", self.instanceId))
+            self:_cancelRaceAndCleanup()
+            return
+        end
+    elseif self.state == "RACING" then
+        -- 比赛进行中：如果剩余玩家不足，结束比赛
+        if #self.participants <= 1 then
+            --gg.log(string.format("比赛实例 %s：参赛玩家不足，提前结束比赛。", self.instanceId))
+            self:End()
+            return
         end
     end
 end
@@ -289,6 +320,28 @@ function RaceGameMode:_calculateAndDistributeRewards()
     end
 
     gg.log(string.format("信息: [RaceGameMode] 开始计算奖励，参与玩家数: %d", #self.participants))
+
+    -- 【新增】清理已离开玩家的排名数据
+    for i = #self.rankings, 1, -1 do
+        local uin = self.rankings[i]
+        local playerStillInRace = false
+        
+        -- 检查玩家是否还在参赛者列表中
+        for _, participant in ipairs(self.participants) do
+            if participant.uin == uin then
+                playerStillInRace = true
+                break
+            end
+        end
+        
+        -- 如果玩家已不在比赛中，从排名中移除
+        if not playerStillInRace then
+            table.remove(self.rankings, i)
+            if self.flightData then
+                self.flightData[uin] = nil
+            end
+        end
+    end
 
     -- 按照真实排名顺序处理奖励
     for _, uin in ipairs(self.rankings) do
@@ -631,6 +684,41 @@ function RaceGameMode:_getTopThreePlayersData()
     end
     
     return topThree
+end
+
+--- 【新增】取消比赛并完全清理实例（用于准备阶段所有玩家离开）
+function RaceGameMode:_cancelRaceAndCleanup()
+    -- 【新增】向剩余玩家发送停止倒计时事件（如果还有的话）
+    if #self.participants > 0 then
+        local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
+        RaceGameEventManager.BroadcastStopPrepareCountdown(self.participants, "比赛已取消")
+    end
+    
+    -- 设置状态为已结束，防止其他逻辑继续执行
+    self.state = RaceState.FINISHED
+    
+    -- 停止所有定时器
+    self:_stopFlightDistanceTracking()
+    self:_stopContestUIUpdates()
+    
+    -- 清理所有数据
+    self.participants = {}
+    self.finishedPlayers = {}
+    self.flightData = {}
+    self.rankings = {}
+    self.startPositions = {}
+    
+    -- 通知GameModeManager清理此实例
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
+    
+    if GameModeManager and GameModeManager.activeModes then
+        GameModeManager.activeModes[self.instanceId] = nil
+        --gg.log(string.format("比赛实例 %s 已被取消并从GameModeManager中移除。", self.instanceId))
+    end
+    
+    -- 清理自身资源
+    self:Destroy()
 end
 
 return RaceGameMode

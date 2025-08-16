@@ -32,9 +32,7 @@ local BehaviorTree = require(ServerStorage.EntityTypes.BehaviorTree) ---@type Mo
 ---@field New fun(info_:table):Monster
 local _M = ClassMgr.Class('Monster', Entity)
 local MOB_COLLIDE_GROUP = 3
-game:GetService("PhysXService"):SetCollideInfo(3, 3, false)
-game:GetService("PhysXService"):SetCollideInfo(4, 4, false)
-game:GetService("PhysXService"):SetCollideInfo(2, 2, false)
+
 --------------------------------------------------
 -- 初始化与基础方法
 --------------------------------------------------
