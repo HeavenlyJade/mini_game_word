@@ -81,7 +81,7 @@ end
 --- 处理来自服务端的通用"发射"或"开始特殊模式"指令
 ---@param data LaunchPlayerParams
 function PlayerActionHandler:OnReceiveLaunchCommand(data)
-    gg.log("PlayerActionHandler: 接收到启动指令, 数据: ", gg.table2str(data))
+    -- gg.log("PlayerActionHandler: 接收到启动指令, 数据: ", gg.table2str(data))
 
     -- 1. 如果有旧模块在运行，先调用其 OnEnd() 强制结束
     if self.activeModule and self.activeModule.OnEnd then
@@ -133,12 +133,12 @@ function PlayerActionHandler:CheckAndExecuteFlyingAnimation(data)
     -- 获取当前飞行状态
     local isFlying = actor.Flying.Value
     
-    gg.log("PlayerActionHandler: 检查飞行动画执行条件", {
-        isIdleScene = isIdleScene,
-        isRaceScene = isRaceScene,
-        isFlying = isFlying,
-        operationType = data.operationType
-    })
+    -- gg.log("PlayerActionHandler: 检查飞行动画执行条件", {
+    --     isIdleScene = isIdleScene,
+    --     isRaceScene = isRaceScene,
+    --     isFlying = isFlying,
+    --     operationType = data.operationType
+    -- })
     if operationType =="取消飞行" then
         self.gameMode =nil
 

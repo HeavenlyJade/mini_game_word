@@ -98,7 +98,7 @@ function AnimationCommand.handlers.startFly(params, player)
     
     local msg = string.format("玩家 %s 已启动飞行模式（%s），动画: %s，重力: %s", 
         player.name, sceneType, clientData.animationName, tostring(clientData.gravityValue))
-    player:SendHoverText(msg)
+    -- player:SendHoverText(msg)
     gg.log(msg)
     
     return true
@@ -137,7 +137,7 @@ function AnimationCommand.handlers.stopFly(params, player)
     AnimationCommand._clearPlayerState(uin)
     
     local msg = string.format("玩家 %s 已取消飞行模式，恢复重力: %s", player.name, tostring(originalState.originalGravity))
-    player:SendHoverText(msg)
+    -- player:SendHoverText(msg)
     gg.log(msg)
     
     return true
@@ -167,7 +167,7 @@ function AnimationCommand.handlers.setAnimation(params, player)
     gg.network_channel:fireClient(player.uin, clientData)
     
     local msg = string.format("玩家 %s 动画已设置为: %s", player.name, animationName)
-    player:SendHoverText(msg)
+    -- player:SendHoverText(msg)
     gg.log(msg)
     
     return true
@@ -197,7 +197,7 @@ function AnimationCommand.handlers.setGravity(params, player)
     gg.network_channel:fireClient(player.uin, clientData)
     
     local msg = string.format("玩家 %s 重力已设置为: %s", player.name, tostring(gravityValue))
-    player:SendHoverText(msg)
+    -- player:SendHoverText(msg)
     gg.log(msg)
     
     return true
@@ -227,7 +227,7 @@ function AnimationCommand.handlers.setMoveSpeed(params, player)
     gg.network_channel:fireClient(player.uin, clientData)
     
     local msg = string.format("玩家 %s 移动速度已设置为: %s", player.name, tostring(moveSpeed))
-    player:SendHoverText(msg)
+    -- player:SendHoverText(msg)
     gg.log(msg)
     
     return true
@@ -254,7 +254,7 @@ function AnimationCommand.handlers.forceStop(params, player)
     AnimationCommand._clearPlayerState(uin)
     
     local msg = string.format("玩家 %s 的动画控制已被强制停止", player.name)
-    player:SendHoverText(msg)
+    -- player:SendHoverText(msg)
     gg.log(msg)
     
     return true

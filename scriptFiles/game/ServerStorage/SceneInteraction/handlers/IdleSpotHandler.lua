@@ -162,6 +162,8 @@ function IdleSpotHandler:stopIdleRewards(player)
         for _, timer in ipairs(timers) do
             if timer then
                 timer:Stop()
+                timer:Destroy() -- 再销毁
+
             end
         end
         self.idlePlayerTimers[playerId] = nil
@@ -177,6 +179,7 @@ function IdleSpotHandler:OnDestroy()
             for _, timer in ipairs(timers) do
                 if timer then
                     timer:Stop()
+                    timer:Destroy()
                 end
             end
         end
