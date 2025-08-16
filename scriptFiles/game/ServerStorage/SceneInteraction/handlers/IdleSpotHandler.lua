@@ -9,6 +9,7 @@ local SceneNodeHandlerBase = require(ServerStorage.SceneInteraction.SceneNodeHan
 local gg = require(MainStorage.Code.Untils.MGlobal)
 local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
 local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
+local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal) ---@type ActionCosteRewardCal
 
 ---@class IdleSpotHandler : SceneNodeHandlerBase
 ---@field idlePlayerTimers table<string, table<Timer>> 每个玩家的挂机定时器列表
@@ -21,6 +22,9 @@ function IdleSpotHandler:OnInit(node, config, debugId)
 
     -- 初始化玩家挂机状态跟踪
     self.idlePlayerTimers = {}
+
+    -- 初始化条件计算器
+    self.conditionCalculator = ActionCosteRewardCal.New() ---@type ActionCosteRewardCal
 
     --gg.log(string.format("挂机点处理器 '%s' 初始化完成", self.name))
 end
@@ -52,6 +56,13 @@ function IdleSpotHandler:OnEntityEnter(entity)
     end
 
     ---@cast entity MPlayer
+    
+    -- 检查进入条件
+    if not self:checkEnterConditions(entity) then
+        --gg.log(string.format("玩家 '%s' 不满足挂机点 '%s' 的进入条件，拒绝进入", entity.name, self.name))
+        return
+    end
+
     local playerId = entity.uuid
 
     --gg.log(string.format("玩家 '%s' 进入挂机点 '%s'", entity.name, self.name))
@@ -63,6 +74,42 @@ function IdleSpotHandler:OnEntityEnter(entity)
 
     -- 启动定时奖励
     self:startIdleRewards(entity)
+end
+
+--- 检查玩家是否满足进入条件
+---@param player MPlayer 玩家对象
+---@return boolean 是否满足进入条件
+function IdleSpotHandler:checkEnterConditions(player)
+    -- 如果没有配置进入条件，则默认满足
+    if not self.config.enterConditions or #self.config.enterConditions == 0 then
+        return true
+    end
+
+    -- 获取玩家数据 - 使用MPlayer的GetConsumableData方法构建统一数据结构
+    local playerData = player:GetConsumableData()
+    
+    -- 获取玩家的背包数据
+    local bagData = {}
+    if player.bagMgr then
+        bagData = player.bagMgr
+    end
+
+    -- 构建外部上下文（如果需要的话）
+    local externalContext = {}
+
+    -- 遍历所有进入条件，所有条件都必须满足
+    for _, condition in ipairs(self.config.enterConditions) do
+        local formula = condition["条件公式"]
+        if formula and formula ~= "" then
+            -- 直接使用ActionCosteRewardCal的_CheckCondition方法
+            -- 参数顺序：条件表达式, 玩家数据, 背包数据, 外部上下文
+            if not self.conditionCalculator:_CheckCondition(formula, playerData, bagData, externalContext) then
+                return false
+            end
+        end
+    end
+
+    return true
 end
 
 --- 当玩家离开挂机点时

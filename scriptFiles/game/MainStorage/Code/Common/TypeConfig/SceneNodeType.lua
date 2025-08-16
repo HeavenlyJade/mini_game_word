@@ -23,10 +23,14 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 ---@field soundAsset string 音效资源
 ---@field requirementDesc string 需求描述
 ---@field effectDesc string 作用描述
+---@field enterConditions EnterCondition[] 进入条件列表
 ---@field enterCommand string 进入指令
 ---@field leaveCommand string 离开指令
 ---@field timedCommands table 定时指令列表
 ---@field New fun(data:table):SceneNodeType
+
+---@class EnterCondition
+---@field 条件公式 string 条件公式，如 "$数据_固定值_历史最大战力值$ >= 1500"
 local SceneNodeType = ClassMgr.Class("SceneNodeType")
 
 -- 从原始配置数据初始化场景节点类型对象
@@ -51,6 +55,7 @@ function SceneNodeType:OnInit(data)
     self.soundAsset = data["音效资源"] or ""
     self.requirementDesc = data["需求描述"] or ""
     self.effectDesc = data["作用描述"] or ""
+    self.enterConditions = data["进入条件列表"] or {}
     self.enterCommand = data["进入指令"] or ""
     self.leaveCommand = data["离开指令"] or ""
     self.timedCommands = data["定时指令列表"] or {}
