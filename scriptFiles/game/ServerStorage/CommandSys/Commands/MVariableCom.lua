@@ -152,7 +152,7 @@ end
 --- 同步并保存玩家数据
 ---@param player MPlayer
 local function syncAndSave(player)
-        -- gg.log("syncAndSave", player.variables)
+    gg.log("syncAndSave", player.variables)
     if player and player.variableSystem then
         player.variables = player.variableSystem.variables
         cloudDataMgr.SavePlayerData(player.uin, true)
@@ -195,7 +195,7 @@ function VariableCommand.handlers.add(params, player)
     local newValue = variableSystem:GetVariable(variableName)
 
     local msg = string.format("成功为 %s 的变量 '%s' 新增 %s, 新值为: %s.%s", player.name, variableName, tostring(valueToAdd), tostring(newValue), bonusInfo)
-    -- gg.log(msg)
+    gg.log(msg)
     -- player:SendHoverText(msg)
     syncAndSave(player)
     return true

@@ -525,35 +525,31 @@ function gg.FormatTime(time, isShort)
 end
 
 -- 数字格式化函数
--- 数字格式化函数
 function gg.FormatLargeNumber(num)
     if num < 10000 then
         return tostring(num)
     end
-    
-    -- 扩展单位数组，京之后是垓、秭、穰...
-    local units = {"", "万", "亿", "兆", "京", "垓", "秭", "穰", "沟", "涧"}
+
+    local units = {"", "万", "亿", "兆", "京"}
     local unitIndex = 1
     local result = num
-    
+
     while result >= 10000 and unitIndex < #units do
         result = result / 10000
         unitIndex = unitIndex + 1
     end
-    
-    -- 如果超过最大单位，显示为科学计数法或最大单位+很大的数字
-    if unitIndex >= #units and result >= 10000 then
-        return string.format("%.2e", num) -- 科学计数法
-    end
-    
+
     -- 保留一位小数
     result = math.floor(result * 10) / 10
-    
+
+    -- 如果是整数，去掉小数点
     if result == math.floor(result) then
         return tostring(math.floor(result)) .. units[unitIndex]
     else
+        -- 检查小数点前的数字位数
         local wholePart = math.floor(result)
-        if wholePart >= 1000 then
+        if wholePart >= 1000 and wholePart < 10000 then
+            -- 如果是4位数，去掉小数部分
             return tostring(wholePart) .. units[unitIndex]
         else
             return tostring(result) .. units[unitIndex]

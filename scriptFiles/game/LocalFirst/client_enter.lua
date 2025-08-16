@@ -12,3 +12,7 @@ MainClient.start_client()
 local RaceTrack = require(game:GetService("MainStorage"):WaitForChild('Code').Client.SceneNode.RaceTrack) ---@type RaceTrack
 RaceTrack.InitializeRaceTrack()
 
+-- 导入并初始化挂机区域节点配置
+local InitAutoSpotNodes = require(game:GetService("MainStorage"):WaitForChild('Code').Client.SceneNode.InitAutoSpotNodes) ---@type InitAutoSpotNodes
+InitAutoSpotNodes.InitializeAllAutoSpotNodes()
+

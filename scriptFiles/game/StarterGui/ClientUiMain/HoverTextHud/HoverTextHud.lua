@@ -31,7 +31,7 @@ function HoverTextHud:OnInit(node, config)
     self.activeTexts = {} ---@type TextInfo[]
     self.template = self:Get("文本").node ---@type UITextLabel
     self.template.Visible = false
-    
+    self.template.Parent.Visible =true
     -- 确保节点始终在最高层级
     self:SetupAlwaysOnTop()
     
@@ -75,7 +75,7 @@ function HoverTextHud:EnsureOnTop()
         if self.node.RenderIndex then
             self.node.RenderIndex = 9999
         end
-        
+        self.node.Visible =true
         -- 确保节点启用
         self.node.Enabled = true
         

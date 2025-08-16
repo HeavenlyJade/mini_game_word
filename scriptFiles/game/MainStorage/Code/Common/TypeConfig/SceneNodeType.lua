@@ -16,9 +16,13 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 ---@field teleportNodeName string 传送节点
 ---@field triggerBoxNodeName string 包围盒节点
 ---@field raceScenePath string 比赛场景
+---@field requirementDescNode string 需求描述节点
+---@field effectDescNode string 作用描述节点
 ---@field linkedLevel string 关联关卡
 ---@field gameplayRules table 玩法规则
 ---@field soundAsset string 音效资源
+---@field requirementDesc string 需求描述
+---@field effectDesc string 作用描述
 ---@field enterCommand string 进入指令
 ---@field leaveCommand string 离开指令
 ---@field timedCommands table 定时指令列表
@@ -39,10 +43,14 @@ function SceneNodeType:OnInit(data)
     self.teleportNodeName = self.areaConfig["传送节点"] or ""
     self.triggerBoxNodeName = self.areaConfig["包围盒节点"] or ""
     self.raceScenePath = self.areaConfig["比赛场景"] or ""
+    self.requirementDescNode = self.areaConfig["需求描述节点"] or ""
+    self.effectDescNode = self.areaConfig["作用描述节点"] or ""
     
     self.linkedLevel = data["关联关卡"] or ""
     self.gameplayRules = data["玩法规则"] or {}
     self.soundAsset = data["音效资源"] or ""
+    self.requirementDesc = data["需求描述"] or ""
+    self.effectDesc = data["作用描述"] or ""
     self.enterCommand = data["进入指令"] or ""
     self.leaveCommand = data["离开指令"] or ""
     self.timedCommands = data["定时指令列表"] or {}
