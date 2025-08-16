@@ -10,6 +10,7 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+local NodeConf = require(MainStorage.Code.Common.Icon.NodeConf) ---@type NodeConf
 
 -- 引入UI基类和组件
 local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
@@ -22,6 +23,7 @@ local uiConfig = {
 	layer = 1,
 	hideOnInit = true,
 }
+
 
 ---@class ContestGui : ViewBase
 local ContestGui = ClassMgr.Class("ContestGui", ViewBase)
@@ -90,6 +92,11 @@ end
 
 -- 注册事件监听
 function ContestGui:RegisterEvents()
+	-- 监听比赛准备倒计时事件
+	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN, function(eventData)
+		self:OnPrepareCountdown(eventData)
+	end)
+
 	-- 监听比赛界面显示事件
 	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_CONTEST_SHOW, function(eventData)
 		self:OnContestShow(eventData)
@@ -106,6 +113,123 @@ function ContestGui:RegisterEvents()
 	end)
 end
 
+-- 处理比赛准备倒计时
+function ContestGui:OnPrepareCountdown(eventData)
+	local prepareTime = eventData.prepareTime or 10
+	gg.log("收到比赛准备倒计时，准备时间: " .. prepareTime .. "秒")
+	
+	-- 显示准备倒计时界面
+	self:SetVisible(true)
+	self.countDown:SetVisible(true)
+	
+	-- 获取场景中的倒计时节点并设置初始文本
+	self:SetupCountdownNode(prepareTime)
+	
+	-- 开始倒计时显示
+	self:StartPrepareCountdown(prepareTime)
+end
+
+-- 设置倒计时节点
+function ContestGui:SetupCountdownNode(prepareTime)
+	-- 从NodeConf获取倒计时节点路径
+	local countdownPath = NodeConf["倒计时"]
+	if not countdownPath then
+		gg.log("警告: ContestGui - 无法从NodeConf获取倒计时节点路径")
+		return
+	end
+	
+	-- 从WorkSpace开始，使用gg.GetChild方法获取场景节点
+	local workSpace = game.WorkSpace
+	local countdownNode = gg.GetChild(workSpace, countdownPath)
+	if not countdownNode then
+		gg.log("警告: ContestGui - 无法获取倒计时节点: " .. countdownPath)
+		return
+	end
+	
+	-- 设置倒计时节点的初始文本
+	local timeText = string.format("%02d：%02d：%02d后开始比赛", 
+		math.floor(prepareTime / 3600), 
+		math.floor((prepareTime % 3600) / 60), 
+		prepareTime % 60)
+	
+	-- 设置节点标题
+	if countdownNode.Title then
+		countdownNode.Title = timeText
+		gg.log("成功设置倒计时节点文本: " .. timeText)
+	else
+		gg.log("警告: ContestGui - 倒计时节点没有Title属性")
+	end
+	
+	-- 保存节点引用以便后续更新
+	self.sceneCountdownNode = countdownNode
+end
+
+
+-- 开始准备倒计时
+function ContestGui:StartPrepareCountdown(prepareTime)
+    -- 如果已有定时器，先停止并清理
+    if self.prepareTimer then
+        self.prepareTimer:Stop()
+        self.prepareTimer:Destroy()
+        self.prepareTimer = nil
+    end
+    
+    local remainingTime = prepareTime
+    
+    -- 创建定时器节点
+    self.prepareTimer = SandboxNode.New("Timer", game.WorkSpace)
+    self.prepareTimer.Name = string.format("ContestPrepareCountdown_%s", self.name or "ContestGui")
+    self.prepareTimer.Delay = 1 -- 首次延迟1秒
+    self.prepareTimer.Loop = true -- 循环执行
+    self.prepareTimer.Interval = 1 -- 每秒执行一次
+    
+    -- 设置定时器回调
+    self.prepareTimer.Callback = function()
+        if remainingTime > 0 then
+            -- 更新倒计时显示
+            self:UpdatePrepareCountdown(remainingTime)
+            remainingTime = remainingTime - 1
+        else
+            -- 倒计时结束，停止定时器
+            self.prepareTimer:Stop()
+            self.prepareTimer = nil
+            
+            -- 隐藏倒计时
+            self.countDown:SetVisible(false)
+            
+            -- 清理场景节点引用
+            self.sceneCountdownNode = nil
+            
+            gg.log("比赛准备倒计时结束")
+        end
+    end
+    
+    -- 启动定时器
+    self.prepareTimer:Start()
+    
+    gg.log(string.format("开始比赛准备倒计时，总时间: %d秒", prepareTime))
+end
+
+-- 更新准备倒计时显示
+function ContestGui:UpdatePrepareCountdown(remainingTime)
+	if not self.countDown or not self.countDown.node then return end
+	
+	-- 更新UI倒计时文本
+	local uiTimeText = string.format("准备开始: %d", remainingTime)
+	if self.countDown.node.Title then
+		self.countDown.node.Title = uiTimeText
+	end
+	
+	-- 同时更新场景中的倒计时节点
+	if self.sceneCountdownNode and self.sceneCountdownNode.Title then
+		local sceneTimeText = string.format("%02d：%02d：%02d后开始比赛", 
+			math.floor(remainingTime / 3600), 
+			math.floor((remainingTime % 3600) / 60), 
+			remainingTime % 60)
+		self.sceneCountdownNode.Title = sceneTimeText
+	end
+end
+
 -- 显示比赛界面
 function ContestGui:OnContestShow(eventData)
 	gg.log("显示比赛界面，比赛时长: " .. (eventData.raceTime or 60) .. "秒")
@@ -115,8 +239,15 @@ end
 
 -- 隐藏比赛界面
 function ContestGui:OnContestHide(eventData)
-	gg.log("隐藏比赛界面")
-	self:SetVisible(false)
+    gg.log("隐藏比赛界面")
+    self:SetVisible(false)
+    
+    -- 清理准备倒计时定时器
+    if self.prepareTimer then
+        self.prepareTimer:Stop()
+        self.prepareTimer:Destroy()
+        self.prepareTimer = nil
+    end
 end
 
 -- 更新比赛数据

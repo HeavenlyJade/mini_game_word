@@ -41,6 +41,7 @@ EventPlayerConfig.NOTIFY = {
     RACE_CONTEST_UPDATE = "RaceContestUpdate", -- 比赛数据更新
     RACE_CONTEST_SHOW = "RaceContestShow", -- 显示比赛界面
     RACE_CONTEST_HIDE = "RaceContestHide", -- 隐藏比赛界面
+    RACE_PREPARE_COUNTDOWN = "RacePrepareCountdown", -- 比赛准备倒计时
 }
 
 --[[

@@ -404,18 +404,18 @@ function gg.getClientWorkSpace()
 end
 
 -- -- 是否锁定视角，不允许转动
--- ---@param flag_ boolean 是否锁定
--- function gg.lockCamera(flag_)
+---@param flag_ boolean 是否锁定
+function gg.lockCamera(flag_)
 
---     if flag_ then
---         gg.getClientWorkSpace().Camera.CameraType = Enum.CameraType.Fixed
---         gg.lockClientCharactor = true
---     else
---         gg.getClientWorkSpace().Camera.CameraType = Enum.CameraType.Custom
---         gg.lockClientCharactor = false
---     end
+    if flag_ then
+        gg.getClientWorkSpace().Camera.CameraType = Enum.CameraType.Fixed
+        gg.lockClientCharactor = true
+    else
+        gg.getClientWorkSpace().Camera.CameraType = Enum.CameraType.Custom
+        gg.lockClientCharactor = false
+    end
 
--- end
+end
 
 -- 客户端获得怪物容器
 ---@return SandboxNode|nil 怪物容器

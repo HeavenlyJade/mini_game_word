@@ -124,6 +124,37 @@ function RaceGameEventManager.SendRaceDataUpdate(player, raceData)
     gg.network_channel:fireClient(player.uin, eventData)
 end
 
+--- 【新增】向所有参赛者广播比赛准备倒计时
+---@param participants MPlayer[] 参赛者列表
+---@param prepareTime number 准备时间
+function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTime)
+    if not participants or #participants == 0 then return end
+    if not prepareTime then return end
+    
+    if not gg.network_channel then
+        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播准备倒计时")
+        return
+    end
+    
+    local eventData = {
+        cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN,
+        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
+        prepareTime = prepareTime
+    }
+    
+    -- 向所有参赛者发送事件
+    local successCount = 0
+    for _, player in ipairs(participants) do
+        if player and player.uin then
+            gg.network_channel:fireClient(player.uin, eventData)
+            successCount = successCount + 1
+        end
+    end
+    
+    -- gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名参赛者广播准备倒计时事件，准备时间: %d秒", 
+    --                     successCount, #participants, prepareTime))
+end
+
 --- 【新增】向所有参赛者广播比赛事件
 ---@param participants MPlayer[] 参赛者列表
 ---@param eventType string 事件类型 (RACE_CONTEST_SHOW, RACE_CONTEST_HIDE, RACE_CONTEST_UPDATE)
@@ -159,8 +190,8 @@ function RaceGameEventManager.BroadcastRaceEvent(participants, eventType, eventD
         end
     end
     
-    gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名参赛者广播 %s 事件", 
-                        successCount, #participants, eventType))
+    -- gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名参赛者广播 %s 事件", 
+    --                     successCount, #participants, eventType))
 end
 
 return RaceGameEventManager

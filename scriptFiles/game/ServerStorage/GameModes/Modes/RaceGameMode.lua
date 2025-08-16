@@ -186,6 +186,9 @@ function RaceGameMode:Start()
     -- 从LevelType实例获取玩法规则
     local prepareTime = self.levelType.prepareTime or 10
 
+    -- 【新增】立即向所有参赛者发送准备倒计时通知
+    RaceGameEventManager.BroadcastPrepareCountdown(self.participants, prepareTime)
+
     -- 准备阶段
     self:AddDelay(prepareTime, function()
         if self.state == RaceState.WAITING then
@@ -256,25 +259,21 @@ function RaceGameMode:End()
         end
     end
 
-    -- 使用关卡配置的准备时间作为结算展示时长，之后清理实例
-    local cleanupDelay = self.levelType.prepareTime or 10
-
-    self:AddDelay(cleanupDelay, function()
-        --  将所有玩家从比赛模式中移除
-        if GameModeManager then
-            -- 必须从后往前遍历，因为 RemovePlayerFromCurrentMode 可能会修改 self.participants
-            for i = #self.participants, 1, -1 do
-                local p = self.participants[i]
-                if p then
-                    GameModeManager:RemovePlayerFromCurrentMode(p)
-                end
+    -- 【立即清理】比赛结束后立即清理实例，无需等待倒计时
+    -- 将所有玩家从比赛模式中移除
+    if GameModeManager then
+        -- 必须从后往前遍历，因为 RemovePlayerFromCurrentMode 可能会修改 self.participants
+        for i = #self.participants, 1, -1 do
+            local p = self.participants[i]
+            if p then
+                GameModeManager:RemovePlayerFromCurrentMode(p)
             end
         end
+    end
 
-        -- 确保停止所有定时任务
-        self:_stopFlightDistanceTracking()
-        self:_stopContestUIUpdates()
-    end)
+    -- 确保停止所有定时任务
+    self:_stopFlightDistanceTracking()
+    self:_stopContestUIUpdates()
 end
 
 --- 【简化】传送所有参赛者到复活点（使用基类方法）
