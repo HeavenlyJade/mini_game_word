@@ -31,7 +31,7 @@ function _MPlayer:OnInit(info_)
     self.isPlayer = true
     ---@type VariableSystem
     self.variableSystem = VariableSystem.New("玩家", info_.variables or {})
-
+    self.currentScene = info_.currentScene or "init_map"
 
     -- 技能相关
     self.dict_btn_skill = nil -- 技能按钮映射

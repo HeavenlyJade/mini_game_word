@@ -135,12 +135,6 @@ function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTim
         return
     end
     
-    local eventData = {
-        cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN,
-        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
-        prepareTime = prepareTime
-    }
-    
     -- 【核心修改】从MServerDataManager获取所有在线玩家，向所有玩家发送倒计时
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     local allPlayers = serverDataMgr.getAllPlayers()
@@ -151,7 +145,16 @@ function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTim
     -- 向所有在线玩家发送倒计时事件
     for uin, player in pairs(allPlayers) do
         if player and player.uin then
-            gg.network_channel:fireClient(player.uin, eventData)
+            -- 【新增】为每个玩家创建包含场景信息的个性化事件数据
+            local playerEventData = {
+                cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN,
+                gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
+                prepareTime = prepareTime,
+                -- 【新增】包含玩家当前场景信息
+                playerScene = player.currentScene or "init_map"
+            }
+            
+            gg.network_channel:fireClient(player.uin, playerEventData)
             successCount = successCount + 1
         end
         totalPlayers = totalPlayers + 1

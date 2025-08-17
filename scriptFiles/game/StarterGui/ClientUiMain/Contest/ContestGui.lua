@@ -121,7 +121,12 @@ end
 -- 处理比赛准备倒计时
 function ContestGui:OnPrepareCountdown(eventData)
 	local prepareTime = eventData.prepareTime or 10
-	gg.log("收到比赛准备倒计时，准备时间: " .. prepareTime .. "秒")
+	local playerScene = eventData.playerScene or "init_map" -- 【新增】从服务端获取玩家场景
+	
+	gg.log("收到比赛准备倒计时，准备时间: " .. prepareTime .. "秒，玩家场景: " .. playerScene)
+	
+	-- 保存玩家场景信息
+	self.currentPlayerScene = playerScene
 	
 	-- 显示准备倒计时界面
 	self:SetVisible(true)
@@ -136,10 +141,19 @@ end
 
 -- 设置倒计时节点
 function ContestGui:SetupCountdownNode(prepareTime)
+	-- 【修改】使用服务端提供的玩家场景信息
+	local currentScene = self.currentPlayerScene or "init_map"
+	if not currentScene then
+		gg.log("警告: ContestGui - 无法获取玩家当前场景")
+		return
+	end
+	
+	gg.log("使用服务端提供的场景信息:", currentScene)
+	
 	-- 从NodeConf获取倒计时节点路径
-	local countdownPath = NodeConf["倒计时"]
+	local countdownPath = NodeConf["倒计时"][currentScene]
 	if not countdownPath then
-		gg.log("警告: ContestGui - 无法从NodeConf获取倒计时节点路径")
+		gg.log("警告: ContestGui - 无法从NodeConf获取场景 " .. currentScene .. " 的倒计时节点路径")
 		return
 	end
 	
@@ -169,6 +183,37 @@ function ContestGui:SetupCountdownNode(prepareTime)
 	self.sceneCountdownNode = countdownNode
 end
 
+-- 获取当前玩家所在场景
+function ContestGui:GetCurrentPlayerScene()
+	-- 【修改】优先使用服务端提供的场景信息
+	if self.currentPlayerScene then
+		gg.log("使用服务端提供的场景信息:", self.currentPlayerScene)
+		return self.currentPlayerScene
+	end
+	
+	-- 尝试从本地玩家数据获取场景信息
+	local localPlayer = Players.LocalPlayer
+	if not localPlayer then
+		return nil
+	end
+	
+	local uin = localPlayer.UserId
+	gg.log("当前玩家ID: " .. uin)
+	if not uin then
+		return nil
+	end
+	
+	-- 从全局映射中获取场景信息（备用方案）
+	local scene = gg.player_scene_map and gg.player_scene_map[uin]
+	if scene then
+		gg.log("从全局场景映射获取场景:", scene)
+		return scene
+	end
+	
+	-- 默认返回init_map
+	gg.log("使用默认场景: init_map")
+	return "init_map"
+end
 
 -- 开始准备倒计时
 function ContestGui:StartPrepareCountdown(prepareTime)
@@ -256,6 +301,7 @@ function ContestGui:OnStopPrepareCountdown(eventData)
 	-- 清理场景倒计时节点的文本
 	if self.sceneCountdownNode and self.sceneCountdownNode.Title then
 		self.sceneCountdownNode.Title = ""
+		gg.log("已清理场景倒计时节点文本")
 	end
 	
 	-- 清理场景节点引用

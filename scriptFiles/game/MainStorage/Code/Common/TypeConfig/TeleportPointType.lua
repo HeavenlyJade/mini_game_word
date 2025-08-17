@@ -9,6 +9,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class TeleportPointType : Class
 ---@field name string 传送点名称
 ---@field nodePath string 传送节点路径
+---@field sceneNode string 场景节点
 ---@field requiredCondition number 需求条件
 ---@field iconPath string 图片资源路径
 ---@field description string 传送点描述
@@ -22,6 +23,7 @@ local TeleportPointType = ClassMgr.Class('TeleportPointType')
 function TeleportPointType:OnInit(data)
     self.name = data['传送点名称'] or ''
     self.nodePath = data['传送节点'] or ''
+    self.sceneNode = data['场景节点'] or ''
     
     -- 处理需求条件，使用MGlobal封装的科学计数法转换函数
     self.requiredCondition = gg.convertScientificNotation(data['需求条件'])
@@ -93,6 +95,12 @@ end
 ---@return string
 function TeleportPointType:GetVariableFormula()
     return self.variableFormula or ''
+end
+
+--- 获取场景节点
+---@return string
+function TeleportPointType:GetSceneNode()
+    return self.sceneNode or ''
 end
 
 --- 检查变量表达公式是否满足条件

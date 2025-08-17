@@ -49,6 +49,7 @@ function CommonEventManager.HandleTeleportTo(evt)
 
     local args = evt.args or {}
     local nodePath = args.nodePath
+    local pointName = args.pointName -- 传送点名称
     if not nodePath or nodePath == "" then
         --gg.log("[传送] 失败：缺少 nodePath")
         return
@@ -91,6 +92,28 @@ function CommonEventManager.HandleTeleportTo(evt)
         return
     end
     --gg.log("[传送] 成功：", player.name, " -> ", tostring(targetPosition))
+
+    -- 传送成功后，更新玩家场景映射
+    if pointName then
+        -- 从传送点配置中获取场景节点
+        local TeleportPointConfig = require(MainStorage.Code.Common.Config.TeleportPointConfig) ---@type TeleportPointConfig
+        local pointConfig = TeleportPointConfig.Data[pointName]
+        
+        if pointConfig and pointConfig['场景节点'] then
+            local sceneNode = pointConfig['场景节点']
+            local uin = player.uin
+            gg.log("传送点名称: " .. pointName, "场景节点: " .. sceneNode, "玩家ID: " .. uin)
+            
+            -- 【修改】直接在MPlayer对象中更新场景信息
+            player.currentScene = sceneNode
+            gg.log("[传送] 更新玩家场景信息:", player.name, " -> ", sceneNode)
+            
+            -- 更新全局场景映射（保持兼容性）
+            if gg.player_scene_map then
+                gg.player_scene_map[uin] = sceneNode
+            end
+        end
+    end
 
     -- TODO: 如有传送消耗(cost)，在此扣除；当前按KISS原则暂不实现
 end
