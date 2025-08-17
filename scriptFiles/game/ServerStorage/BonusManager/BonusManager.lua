@@ -142,6 +142,7 @@ function BonusManager.GetWingItemBonuses(player)
         return {}
     end
     local bonuses = WingMgr.GetActiveItemBonuses(player.uin)
+    gg.log("[BonusManager调试] GetWingItemBonuses: 玩家", player.uin, "翅膀加成数据:", bonuses)
     return bonuses or {}
 end
 

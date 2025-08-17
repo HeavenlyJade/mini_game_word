@@ -346,7 +346,6 @@ function VariableCommand.main(params, player)
 end
 
 return VariableCommand
-
 -- ============================= 使用示例 =============================
 -- 
 -- 1. 基础变量操作（仅玩家变量加成）
@@ -476,3 +475,4 @@ return VariableCommand
 -- - 都支持"来源"、"玩家属性加成"、"玩家变量加成"、"其他加成"参数
 -- - 都使用相同的加成计算逻辑
 -- - 都提供相同的加成测试功能
+

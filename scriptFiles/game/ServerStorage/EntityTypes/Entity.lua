@@ -40,6 +40,7 @@ local TRIGGER_STAT_TYPES = {
         end
     end,
     ["速度"] = function(entity, value)
+        gg.log("速度", value)
         if entity.actor then
             entity.actor.Movespeed = value
         end
@@ -574,13 +575,12 @@ function _M:GetInitialStat(statName)
 end
 
 --- 恢复指定属性到初始值
----@param statName string 属性名
----@param source string|nil 来源，默认为"BASE"
 function _M:RestoreStatToInitial(statName, source)
+    source = source or "BASE"  -- 使用传入的source，如果没有则默认BASE
     local initialValue = self:GetInitialStat(statName)
     
     if initialValue > 0 then
-        -- 清除该属性的所有来源（包括BASE来源）
+        -- 清除该属性的所有来源
         for statSource, statMap in pairs(self.stats) do
             if statMap[statName] then
                 statMap[statName] = nil
@@ -588,9 +588,9 @@ function _M:RestoreStatToInitial(statName, source)
             end
         end
         
-        -- 初始值总是设置到BASE来源，确保一致性
-        self:SetStat(statName, initialValue, "BASE", true)
-        gg.log(string.format("属性 '%s' 已恢复到初始值: %s (来源: BASE)", statName, tostring(initialValue)))
+        -- 使用传入的source参数设置初始值
+        self:SetStat(statName, initialValue, source, true)
+        gg.log(string.format("属性 '%s' 已恢复到初始值: %s (来源: %s)", statName, tostring(initialValue), source))
     else
         gg.log(string.format("属性 '%s' 没有设置初始值", statName))
     end
