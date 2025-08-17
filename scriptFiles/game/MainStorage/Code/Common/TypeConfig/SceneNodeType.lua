@@ -18,6 +18,7 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 ---@field raceScenePath string 比赛场景
 ---@field requirementDescNode string 需求描述节点
 ---@field effectDescNode string 作用描述节点
+---@field countdownDisplayNode string 倒计时显示节点
 ---@field linkedLevel string 关联关卡
 ---@field gameplayRules table 玩法规则
 ---@field soundAsset string 音效资源
@@ -49,6 +50,7 @@ function SceneNodeType:OnInit(data)
     self.raceScenePath = self.areaConfig["比赛场景"] or ""
     self.requirementDescNode = self.areaConfig["需求描述节点"] or ""
     self.effectDescNode = self.areaConfig["作用描述节点"] or ""
+    self.countdownDisplayNode = self.areaConfig["倒计时显示节点"] or ""
     
     self.linkedLevel = data["关联关卡"] or ""
     self.gameplayRules = data["玩法规则"] or {}
