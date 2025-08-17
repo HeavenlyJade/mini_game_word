@@ -525,31 +525,36 @@ function gg.FormatTime(time, isShort)
 end
 
 -- 数字格式化函数
+-- 扩展版本的大数字格式化函数
 function gg.FormatLargeNumber(num)
     if num < 10000 then
         return tostring(num)
     end
-
-    local units = {"", "万", "亿", "兆", "京"}
+    
+    -- 完整的中文数字单位体系
+    local units = {
+        "", "万", "亿", "兆", "京", "垓", "秭", "穰", 
+        "沟", "涧", "正", "载", "极"
+    }
+    
     local unitIndex = 1
     local result = num
-
+    
     while result >= 10000 and unitIndex < #units do
         result = result / 10000
         unitIndex = unitIndex + 1
     end
-
+    
     -- 保留一位小数
     result = math.floor(result * 10) / 10
-
-    -- 如果是整数，去掉小数点
+    
+    -- 格式化输出
     if result == math.floor(result) then
         return tostring(math.floor(result)) .. units[unitIndex]
     else
-        -- 检查小数点前的数字位数
         local wholePart = math.floor(result)
-        if wholePart >= 1000 and wholePart < 10000 then
-            -- 如果是4位数，去掉小数部分
+        if wholePart >= 1000 then
+            -- 四位数时去掉小数部分
             return tostring(wholePart) .. units[unitIndex]
         else
             return tostring(result) .. units[unitIndex]
@@ -1293,6 +1298,51 @@ if gg.isServer then
         end
     }
     setmetatable(gg, mt)
+end
+
+--- 科学计数法数字转换为标准格式
+--- 将科学计数法格式的数字（如6e+20）转换为标准数字格式（如600000000000000000000）
+---@param value any 要转换的值（可以是字符串、数字或其他类型）
+---@return number 转换后的标准数字，失败时返回0
+function gg.convertScientificNotation(value)
+    if value == nil then
+        return -1
+    end
+    
+    if type(value) == 'string' then
+        -- 字符串格式的科学计数法转换为数字
+        local numValue = tonumber(value)
+        if numValue and numValue >= 1e15 then
+            -- 超大数字转换为标准格式，避免科学计数法问题
+            return tonumber(string.format("%.0f", numValue)) or numValue
+        else
+            return numValue or -1
+        end
+    elseif type(value) == 'number' then
+        -- 数字格式，检查是否为科学计数法
+        if value >= 1e15 then
+            -- 超大数字转换为标准格式，避免科学计数法问题
+            return tonumber(string.format("%.0f", value)) or value
+        else
+            return value
+        end
+    else
+        -- 其他类型，尝试转换为数字
+        local numValue = tonumber(value)
+        return numValue or -1
+    end
+end
+
+--- 科学计数法数字转换为字符串格式（用于表达式替换）
+--- 确保大数字在字符串替换时不会被tostring转换为科学计数法
+---@param value number 要转换的数字
+---@return string 转换后的字符串格式
+function gg.numberToString(value)
+    if type(value) == "number" and value >= 1e15 then
+        return string.format("%.0f", value)
+    else
+        return tostring(value)
+    end
 end
 
 return gg;

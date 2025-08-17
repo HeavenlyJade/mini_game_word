@@ -54,7 +54,9 @@ function InitAutoSpotNodes.InitializeSingleAutoSpotNode(sceneNode)
     
     -- 设置需求描述节点
     local requirementNode = InitAutoSpotNodes.SetNodeTitleByPath(targetNode, sceneNode.requirementDescNode, requirementDesc)
-    requirementNode.Size = Vector2.New(400, 50)
+    if requirementNode then
+        requirementNode.Size = Vector2.New(400, 50)
+    end
     -- 设置作用描述节点
     local effectNode = InitAutoSpotNodes.SetNodeTitleByPath(targetNode, sceneNode.effectDescNode, effectDesc)
     

@@ -77,7 +77,7 @@ function CommonEventManager.HandleTeleportTo(evt)
     end
 
     local actor = player.actor
-    if not actor then --gg.log("[传送] 失败：玩家无 actor");\
+    if not actor then --gg.log("[传送] 失败：玩家无 actor");
     return end
 
     -- 执行传送
