@@ -72,6 +72,10 @@ function RaceGameMode:OnPlayerEnter(player)
     -- 如果是第一个加入的玩家，可以启动一个定时器开始比赛
     if #self.participants == 1 then
         self:Start()
+    elseif self.state == RaceState.RACING then
+        -- 【新增】比赛进行中：立即传送新玩家到开始位置并发射
+        gg.log(string.format("比赛进行中，新玩家 %s 加入，立即传送并发射", player.name or player.uin))
+        self:_handleLateJoinPlayer(player)
     end
 end
 
@@ -684,6 +688,73 @@ function RaceGameMode:_getTopThreePlayersData()
     end
     
     return topThree
+end
+
+--- 【新增】处理迟到加入的玩家（比赛进行中）
+---@param player MPlayer 迟到加入的玩家
+function RaceGameMode:_handleLateJoinPlayer(player)
+    if not player or not player.actor then
+        gg.log("错误: [RaceGameMode] 迟到玩家数据无效，无法处理")
+        return
+    end
+
+    -- 1. 立即传送玩家到比赛开始位置
+    local teleportSuccess = self:_teleportPlayerToStartPosition(player)
+    if not teleportSuccess then
+        gg.log(string.format("警告: [RaceGameMode] 玩家 %s 传送失败，无法参与比赛", player.name or player.uin))
+        return
+    end
+
+    -- 2. 给传送一点时间完成，然后发射玩家
+    self:AddDelay(0.5, function()
+        if self.state == RaceState.RACING and player.actor then
+            gg.log(string.format("迟到玩家 %s 传送完成，开始发射", player.name or player.uin))
+            self:LaunchPlayer(player)
+            
+            -- 3. 通知其他玩家有新玩家加入
+            self:_notifyOtherPlayersNewPlayerJoined(player)
+        end
+    end)
+end
+
+--- 【新增】传送单个玩家到比赛开始位置
+---@param player MPlayer
+---@return boolean 是否成功传送
+function RaceGameMode:_teleportPlayerToStartPosition(player)
+    if not player or not player.actor then
+        return false
+    end
+
+    -- 通过handlerId获取场景处理器
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
+    
+    if not handler or not handler.teleportNode or not handler.teleportNode.Position then
+        gg.log("错误: [RaceGameMode] 无法找到有效的传送节点位置")
+        return false
+    end
+
+    local targetPosition = handler.teleportNode.Position
+    local TeleportService = game:GetService('TeleportService')
+    
+    -- 执行传送
+    TeleportService:Teleport(player.actor, targetPosition)
+    gg.log(string.format("玩家 %s 已传送到比赛开始位置", player.name or player.uin))
+    
+    return true
+end
+
+--- 【新增】通知其他玩家有新玩家加入
+---@param newPlayer MPlayer 新加入的玩家
+function RaceGameMode:_notifyOtherPlayersNewPlayerJoined(newPlayer)
+    if not newPlayer then return end
+    
+    -- 向其他参赛者发送新玩家加入通知
+    for _, player in ipairs(self.participants) do
+        if player.uin ~= newPlayer.uin then
+            player:SendHoverText(string.format("新玩家 %s 加入了比赛！", newPlayer.name or newPlayer.uin))
+        end
+    end
 end
 
 --- 【新增】取消比赛并完全清理实例（用于准备阶段所有玩家离开）

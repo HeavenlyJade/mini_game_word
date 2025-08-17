@@ -102,11 +102,11 @@ function CommonEventManager.HandleTeleportTo(evt)
         if pointConfig and pointConfig['场景节点'] then
             local sceneNode = pointConfig['场景节点']
             local uin = player.uin
-            gg.log("传送点名称: " .. pointName, "场景节点: " .. sceneNode, "玩家ID: " .. uin)
+            -- gg.log("传送点名称: " .. pointName, "场景节点: " .. sceneNode, "玩家ID: " .. uin)
             
             -- 【修改】直接在MPlayer对象中更新场景信息
             player.currentScene = sceneNode
-            gg.log("[传送] 更新玩家场景信息:", player.name, " -> ", sceneNode)
+            -- gg.log("[传送] 更新玩家场景信息:", player.name, " -> ", sceneNode)
             
             -- 更新全局场景映射（保持兼容性）
             if gg.player_scene_map then

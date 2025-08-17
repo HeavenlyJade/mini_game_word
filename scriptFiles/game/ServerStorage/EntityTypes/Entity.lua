@@ -78,6 +78,9 @@ function _M:OnInit(info_)
     self.stats = {} ---@type table<string, table<string, number>> 属性存储 [source][statName] = value
     self._attackCache = 0 -- 攻击力缓存
     
+    -- 初始属性存储（用于恢复默认值）
+    self.initialStats = {} ---@type table<string, number> 初始属性值存储
+    
     -- Actor相关
     self.actor = nil -- game_actor
     self.target = nil -- 当前目标 Entity
@@ -515,19 +518,27 @@ end
 
 --- 刷新属性（触发实体属性更新）
 function _M:RefreshStats()
-    if not self.actor then return end
-
     -- 重置装备属性
     self:ResetStats("EQUIP")
 
     -- 遍历所有需要触发的属性类型并刷新
     for statName, triggerFunc in pairs(TRIGGER_STAT_TYPES) do
         local value = self:GetStat(statName)
-        triggerFunc(self, value)
+        if value > 0 then
+            if self.actor then
+                triggerFunc(self, value)
+                --gg.log(string.format("属性 '%s' 已刷新到actor，值: %s", statName, tostring(value)))
+            else
+                --gg.log(string.format("属性 '%s' 值: %s，但actor不存在，跳过刷新", statName, tostring(value)))
+            end
+        end
     end
     
     -- 更新攻击缓存
     self._attackCache = self:GetStat("攻击")
+    
+    -- 添加调试信息
+    --gg.log(string.format("实体 %s 属性刷新完成，当前速度: %s", self.name or "未知", tostring(self:GetStat("速度"))))
 end
 
 --- 检查表中是否包含值
@@ -541,6 +552,98 @@ function _M:TableContains(tbl, value)
         end
     end
     return false
+end
+
+-- 初始属性管理 --------------------------------------------------------
+
+--- 设置属性的初始值（仅在第一次设置时生效）
+---@param statName string 属性名
+---@param value number 初始值
+function _M:SetInitialStat(statName, value)
+    if self.initialStats[statName] == nil then
+        self.initialStats[statName] = value
+        --gg.log(string.format("设置属性 '%s' 的初始值为: %s", statName, tostring(value)))
+    end
+end
+
+--- 获取属性的初始值
+---@param statName string 属性名
+---@return number 初始值，如果没有设置则返回0
+function _M:GetInitialStat(statName)
+    return self.initialStats[statName] or 0
+end
+
+--- 恢复指定属性到初始值
+---@param statName string 属性名
+---@param source string|nil 来源，默认为"BASE"
+function _M:RestoreStatToInitial(statName, source)
+    local initialValue = self:GetInitialStat(statName)
+    
+    if initialValue > 0 then
+        -- 清除该属性的所有来源（包括BASE来源）
+        for statSource, statMap in pairs(self.stats) do
+            if statMap[statName] then
+                statMap[statName] = nil
+                gg.log(string.format("已清除属性 '%s' 的来源 '%s'", statName, statSource))
+            end
+        end
+        
+        -- 初始值总是设置到BASE来源，确保一致性
+        self:SetStat(statName, initialValue, "BASE", true)
+        gg.log(string.format("属性 '%s' 已恢复到初始值: %s (来源: BASE)", statName, tostring(initialValue)))
+    else
+        gg.log(string.format("属性 '%s' 没有设置初始值", statName))
+    end
+end
+
+--- 恢复所有属性到初始值
+---@param source string|nil 来源，默认为"BASE"
+function _M:RestoreAllStatsToInitial(source)
+    local restoredCount = 0
+    
+    for statName, initialValue in pairs(self.initialStats) do
+        if initialValue > 0 then
+            -- 清除该属性的所有来源（包括BASE来源）
+            for statSource, statMap in pairs(self.stats) do
+                if statMap[statName] then
+                    statMap[statName] = nil
+                end
+            end
+            
+            -- 初始值总是设置到BASE来源，确保一致性
+            self:SetStat(statName, initialValue, "BASE", true)
+            restoredCount = restoredCount + 1
+        end
+    end
+    
+    if restoredCount > 0 then
+        --gg.log(string.format("已恢复 %d 个属性到初始值", restoredCount))
+    else
+        --gg.log("没有找到需要恢复的属性")
+    end
+    
+    return restoredCount
+end
+
+--- 批量设置初始属性
+---@param stats table<string, number> 属性名到初始值的映射
+function _M:SetInitialStats(stats)
+    if type(stats) == "table" then
+        for statName, value in pairs(stats) do
+            self:SetInitialStat(statName, value)
+        end
+        --gg.log(string.format("批量设置了 %d 个属性的初始值", table.getn(stats)))
+    end
+end
+
+--- 获取所有初始属性
+---@return table<string, number> 属性名到初始值的映射
+function _M:GetAllInitialStats()
+    local result = {}
+    for statName, value in pairs(self.initialStats) do
+        result[statName] = value
+    end
+    return result
 end
 
 return _M

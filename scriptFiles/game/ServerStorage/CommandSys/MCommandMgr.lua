@@ -10,6 +10,7 @@ local PetCommand = require(ServerStorage.CommandSys.Commands.MPetCom) ---@type P
 local PartnerCommand = require(ServerStorage.CommandSys.Commands.MPartnerCom) ---@type PartnerCommand
 local WingCommand = require(ServerStorage.CommandSys.Commands.MWingCom) ---@type WingCommand
 local VariableCommand = require(ServerStorage.CommandSys.Commands.MVariableCom) ---@type VariableCommand
+local StatCommand = require(ServerStorage.CommandSys.Commands.MStatCom) ---@type StatCommand
 local ClearDataCommand = require(ServerStorage.CommandSys.Commands.MClearDataCom) ---@type ClearDataCommand
 -- local SkillCommands = require(ServerStorage.CommandSys.Commands.MskillCom)     ---@type SkillCommands
 local json = require(MainStorage.Code.Untils.json) ---@type json
@@ -38,6 +39,7 @@ CommandManager.handlers = {
     -- 装载默认的配置技能
     -- ["skillConf"] = SkillCommands.main,
     ["variable"] = VariableCommand.main,
+    ["attribute"] = StatCommand.main,
     ["clearPlayerData"] = ClearDataCommand.main,
     ["trail"] = TrailCommand.main,
     ["reward"] = RewardCommand.main,
