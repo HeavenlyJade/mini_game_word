@@ -19,7 +19,7 @@ local ActionModules = {
 local PlayerActionHandler = ClassMgr.Class("PlayerActionHandler")
 
 function PlayerActionHandler:OnInit()
-    --gg.log("PlayerActionHandler 初始化...")
+    gg.log("PlayerActionHandler 初始化...")
     self:SubscribeServerEvents()
     self:ListenToPlayerEvents()
     self.activeModule = nil -- 当前激活的行为模块
@@ -34,7 +34,7 @@ function PlayerActionHandler:ListenToPlayerEvents()
         return
     end
 
-    --gg.log("PlayerActionHandler: 成功获取本地玩家 Actor，开始监听事件...")
+    gg.log("PlayerActionHandler: 成功获取本地玩家 Actor，开始监听事件...")
 
     -- 监听移动状态变化，并转发给当前模块
     -- actor.MoveStateChange:Connect(function(before, after)
@@ -58,7 +58,7 @@ end
 function PlayerActionHandler:OnModuleFinished(module)
     -- 确认是当前模块请求的结束
     if self.activeModule == module then
-        --gg.log("PlayerActionHandler: 已收到模块结束通知，正在清理。")
+        gg.log("PlayerActionHandler: 已收到模块结束通知，正在清理。")
         self.activeModule = nil
     end
 end
@@ -85,7 +85,7 @@ function PlayerActionHandler:OnReceiveLaunchCommand(data)
 
     -- 1. 如果有旧模块在运行，先调用其 OnEnd() 强制结束
     if self.activeModule and self.activeModule.OnEnd then
-        --gg.log("PlayerActionHandler: 检测到旧模块仍在运行，将强制结束它。")
+        gg.log("PlayerActionHandler: 检测到旧模块仍在运行，将强制结束它。")
         self.activeModule:OnEnd()
         self.activeModule = nil -- 立即清除引用
         self.gameMode =nil
@@ -97,12 +97,12 @@ function PlayerActionHandler:OnReceiveLaunchCommand(data)
     self.gameMode = gameMode
 
     if not ModuleClass then
-        --gg.log("PlayerActionHandler: 未找到与游戏模式 '" .. tostring(gameMode) .. "' 对应的行为模块。")
+        gg.log("PlayerActionHandler: 未找到与游戏模式 '" .. tostring(gameMode) .. "' 对应的行为模块。")
         return
     end
 
     -- 3. 创建模块实例，并开始其生命周期
-    --gg.log("PlayerActionHandler: 正在创建并启动模块: " .. tostring(gameMode))
+    gg.log("PlayerActionHandler: 正在创建并启动模块: " .. tostring(gameMode))
     self.activeModule = ModuleClass.New(self) -- 将自身作为 handler 传入
     if self.activeModule.OnStart then
         self.activeModule:OnStart(data)
@@ -149,25 +149,29 @@ end
 --- 处理导航到指定位置的请求
 ---@param data NavigateToPositionParams 导航数据
 function PlayerActionHandler:OnNavigateToPosition(data)
-    --gg.log("PlayerActionHandler: 接收到导航请求, 数据: ", gg.table2str(data))
+    gg.log("PlayerActionHandler: 接收到导航请求, 数据: ", gg.log(data))
     if not data or not data.position then
-        --gg.log("PlayerActionHandler: 导航请求缺少位置信息")
+        gg.log("PlayerActionHandler: 导航请求缺少位置信息")
         return
     end
     
     local actor = gg.getClientLocalPlayer()
     if not actor then
-        --gg.log("PlayerActionHandler: 无法获取本地玩家Actor")
+        gg.log("PlayerActionHandler: 无法获取本地玩家Actor")
         return
     end
     
+    -- 从表中重建 Vector3
+    local positionData = data.position
+    local targetPosition = Vector3.New(positionData.x, positionData.y, positionData.z)
+    
     -- 执行导航
-    actor:NavigateTo(data.position)
+    actor:NavigateTo(targetPosition)
     
     if data.message then
-        --gg.log("PlayerActionHandler: " .. data.message)
+        gg.log("PlayerActionHandler: " .. data.message)
     else
-    --gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(data.position))
+    gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition))
     end
 end
 
@@ -176,13 +180,13 @@ end
 ---@param message string 可选的消息
 function PlayerActionHandler:NavigateToPosition(targetPosition, message)
     if not targetPosition then
-        --gg.log("PlayerActionHandler: 导航目标位置为空")
+        gg.log("PlayerActionHandler: 导航目标位置为空")
         return
     end
     
     local actor = gg.getClientLocalPlayer()
     if not actor then
-        --gg.log("PlayerActionHandler: 无法获取本地玩家Actor")
+        gg.log("PlayerActionHandler: 无法获取本地玩家Actor")
         return
     end
     
@@ -190,9 +194,9 @@ function PlayerActionHandler:NavigateToPosition(targetPosition, message)
     actor:NavigateTo(targetPosition)
     
     if message then
-        --gg.log("PlayerActionHandler: " .. message)
+        gg.log("PlayerActionHandler: " .. message)
     else
-        --gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition))
+        gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition))
     end
 end
 

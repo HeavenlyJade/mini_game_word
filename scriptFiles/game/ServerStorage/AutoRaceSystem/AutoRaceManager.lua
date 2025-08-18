@@ -84,17 +84,20 @@ function AutoRaceManager.StartAutoRace(mPlayer)
         return
     end
     
-    -- 查找飞行比赛节点
-    local raceNodes = SceneNodeType.FindRaceNodesByScene("init_map")
+    -- 查找当前玩家所在场景的飞行比赛节点
+    local currentScene = mPlayer.currentScene 
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local raceNodes = ConfigLoader.GetSceneNodesBy(currentScene, "飞行比赛")
+    --gg.log("raceNodes",raceNodes)
     if #raceNodes == 0 then
-        --gg.log("未找到可用的飞行比赛节点")
+        --gg.log("未找到可用的飞行比赛节点，所属场景:", tostring(currentScene))
         return
     end
     
     -- 选择第一个比赛节点
     local raceNode = raceNodes[1]
     local nodePath = raceNode.nodePath
-    
+    --gg.log("nodePath", nodePath,raceNodes)
     -- 解析节点路径，获取场景节点
     local sceneNode = gg.GetChild(game.WorkSpace, nodePath)
     if not sceneNode then
@@ -118,6 +121,7 @@ function AutoRaceManager.StartAutoRace(mPlayer)
     
     -- 通过事件管理器发送导航指令到客户端
     local targetPosition = navNode.Position
+    --gg.log("targetPosition",targetPosition,navNode)
     local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
     AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, "自动导航到比赛节点位置")
     

@@ -63,25 +63,7 @@ function SceneNodeType:OnInit(data)
     self.timedCommands = data["定时指令列表"] or {}
 end
 
--- 通过所属场景找到场景类型为飞行比赛的配置节点
----@param belongScene string 所属场景名称
----@return SceneNodeType[] 找到的飞行比赛场景节点列表
-function SceneNodeType.FindRaceNodesByScene(belongScene)
-    local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig) ---@type SceneNodeConfig
-    local foundNodes = {}
-    
-    -- 遍历所有场景节点配置
-    for nodeName, nodeData in pairs(SceneNodeConfig.Data) do
-        -- 检查所属场景和场景类型
-        if nodeData["所属场景"] == belongScene and nodeData["场景类型"] == "飞行比赛" then
-            -- 创建SceneNodeType实例并添加到结果列表
-            local sceneNodeType = SceneNodeType.New(nodeData)
-            table.insert(foundNodes, sceneNodeType)
-        end
-    end
-    
-    return foundNodes
-end
+
 
 -- 检查场景节点配置是否为飞行比赛类型
 ---@return boolean 是否为飞行比赛类型

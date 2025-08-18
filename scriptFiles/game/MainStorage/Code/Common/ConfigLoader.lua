@@ -219,6 +219,22 @@ function ConfigLoader.GetAllSceneNodes()
     return ConfigLoader.SceneNodes
 end
 
+--- 按所属场景与场景类型筛选场景节点
+---@param belongScene string|nil 所属场景，nil 表示不过滤
+---@param sceneType string|nil 场景类型，nil 表示不过滤
+---@return SceneNodeType[] 满足条件的场景节点列表
+function ConfigLoader.GetSceneNodesBy(belongScene, sceneType)
+    local result = {}
+    for _, node in pairs(ConfigLoader.SceneNodes) do
+        local matchScene = (belongScene == nil) or (node.belongScene == belongScene)
+        local matchType = (sceneType == nil) or (node.sceneType == sceneType)
+        if matchScene and matchType then
+            table.insert(result, node)
+        end
+    end
+    return result
+end
+
 ---@param id string
 ---@return AchievementType
 function ConfigLoader.GetAchievement(id)

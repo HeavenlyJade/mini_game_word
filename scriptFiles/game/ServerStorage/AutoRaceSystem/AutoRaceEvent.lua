@@ -52,9 +52,12 @@ function AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, messag
         return
     end
     
+    -- 将 Vector3 转换为 table 以便网络传输
+    local positionData = { x = targetPosition.x, y = targetPosition.y, z = targetPosition.z }
+    
     gg.network_channel:fireClient(uin, {
         cmd = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION,
-        position = targetPosition,
+        position = positionData,
         message = message or "导航到指定位置"
     })
     

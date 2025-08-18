@@ -13,11 +13,11 @@ RaceTrack.config = RaceTrackConfig ---@type RaceTrackConfig 配置引用
 
 --- 初始化赛道系统
 function RaceTrack.InitializeRaceTrack()
-    gg.log("开始初始化赛道系统")
+    --gg.log("开始初始化赛道系统")
     
     -- 遍历所有配置的赛道路径
     for i, trackPath in ipairs(RaceTrack.config.trackPaths) do
-        gg.log("正在初始化赛道路径:", i, trackPath)
+        --gg.log("正在初始化赛道路径:", i, trackPath)
         
         -- 获取飞行环境节点（使用MGlobal的GetChild方法）
         local flightEnvironment = gg.GetChild(WorkSpace, trackPath)
@@ -25,20 +25,20 @@ function RaceTrack.InitializeRaceTrack()
         if flightEnvironment then
             -- 初始化该赛道的克隆
             RaceTrack.InitializeSingleTrack(trackPath, flightEnvironment)
-            gg.log("赛道路径", i, "初始化完成")
+            --gg.log("赛道路径", i, "初始化完成")
         else
-            gg.log("错误：找不到赛道路径", i, ":", trackPath)
+            --gg.log("错误：找不到赛道路径", i, ":", trackPath)
         end
     end
     
-    gg.log("所有赛道系统初始化完成")
+    --gg.log("所有赛道系统初始化完成")
 end
 
 --- 初始化单个赛道
 ---@param trackPath string 赛道路径
 ---@param flightEnvironment SandboxNode 飞行环境节点
 function RaceTrack.InitializeSingleTrack(trackPath, flightEnvironment)
-    gg.log("开始初始化赛道:", trackPath)
+    --gg.log("开始初始化赛道:", trackPath)
     
     -- 初始化该赛道的数据结构
     RaceTrack.trackData[trackPath] = {
@@ -59,7 +59,7 @@ function RaceTrack.CloneFlightEnvironment(trackPath)
     local flightEnvironment = trackInfo.originalNode
     local cloneCount = RaceTrack.config.cloneSettings.cloneCount
     
-    gg.log("开始克隆赛道", trackPath, "的", cloneCount, "个飞行环境节点")
+    --gg.log("开始克隆赛道", trackPath, "的", cloneCount, "个飞行环境节点")
     
     -- 清空之前的克隆节点数组
     trackInfo.clonedNodes = {}
@@ -69,7 +69,7 @@ function RaceTrack.CloneFlightEnvironment(trackPath)
     local parentNode = flightEnvironment.Parent
     
     if not parentNode then
-        gg.log("错误：赛道", trackPath, "的原节点没有父节点")
+        --gg.log("错误：赛道", trackPath, "的原节点没有父节点")
         return
     end
     
@@ -100,10 +100,10 @@ function RaceTrack.CloneFlightEnvironment(trackPath)
         -- 保存克隆的节点引用到数组
         table.insert(trackInfo.clonedNodes, clonedEnvironment)
         
-        gg.log("赛道", trackPath, "克隆节点", i, "完成，位置:", clonedEnvironment.Position)
+        --gg.log("赛道", trackPath, "克隆节点", i, "完成，位置:", clonedEnvironment.Position)
     end
     
-    gg.log("赛道", trackPath, "的所有", cloneCount, "个飞行环境节点克隆完成")
+    --gg.log("赛道", trackPath, "的所有", cloneCount, "个飞行环境节点克隆完成")
 end
 
 
@@ -142,7 +142,7 @@ function RaceTrack.SetupAirWall(airWallNode, index, trackPath)
     -- 例如：碰撞检测、触发器等
     
     local trackName = trackPath and trackPath:match("([^/]+)$") or "默认"
-    gg.log("赛道", trackName, "的空气墙", index, "属性设置完成")
+    --gg.log("赛道", trackName, "的空气墙", index, "属性设置完成")
 end
 
 --- 获取指定赛道的克隆环境节点数组
@@ -234,7 +234,7 @@ function RaceTrack.SetAirWallVisible(trackPath, index, visible)
     if airWall then
         airWall.Visible = visible
         local trackName = trackPath:match("([^/]+)$")
-        gg.log("赛道", trackName, "的空气墙", index, "可见性设置为:", visible)
+        --gg.log("赛道", trackName, "的空气墙", index, "可见性设置为:", visible)
     end
 end
 
@@ -248,7 +248,7 @@ function RaceTrack.SetAirWallVisibleByIndex(trackPath, cloneIndex, airWallIndex,
     if airWall then
         airWall.Visible = visible
         local trackName = trackPath:match("([^/]+)$")
-        gg.log("赛道", trackName, "的克隆节点", cloneIndex, "的空气墙", airWallIndex, "可见性设置为:", visible)
+        --gg.log("赛道", trackName, "的克隆节点", cloneIndex, "的空气墙", airWallIndex, "可见性设置为:", visible)
     end
 end
 
@@ -260,7 +260,7 @@ function RaceTrack.SetTrackPosition(trackPath, position)
     if clonedEnvs and #clonedEnvs > 0 then
         clonedEnvs[1].Position = position
         local trackName = trackPath:match("([^/]+)$")
-        gg.log("赛道", trackName, "位置设置为:", position)
+        --gg.log("赛道", trackName, "位置设置为:", position)
     end
 end
 
@@ -273,7 +273,7 @@ function RaceTrack.SetTrackPositionByIndex(trackPath, index, position)
     if clonedEnv then
         clonedEnv.Position = position
         local trackName = trackPath:match("([^/]+)$")
-        gg.log("赛道", trackName, "的克隆节点", index, "位置设置为:", position)
+        --gg.log("赛道", trackName, "的克隆节点", index, "位置设置为:", position)
     end
 end
 
@@ -286,13 +286,13 @@ function RaceTrack.DestroyTrack(trackPath)
             if clonedEnv then
                 clonedEnv:Destroy()
                 local trackName = trackPath:match("([^/]+)$")
-                gg.log("销毁赛道", trackName, "的克隆节点", i)
+                --gg.log("销毁赛道", trackName, "的克隆节点", i)
             end
         end
         trackInfo.clonedNodes = {}
         RaceTrack.trackData[trackPath] = nil
         local trackName = trackPath:match("([^/]+)$")
-        gg.log("赛道", trackName, "资源已清理")
+        --gg.log("赛道", trackName, "资源已清理")
     end
 end
 
@@ -301,7 +301,7 @@ function RaceTrack.Destroy()
     for trackPath, _ in pairs(RaceTrack.trackData) do
         RaceTrack.DestroyTrack(trackPath)
     end
-    gg.log("所有赛道资源已清理")
+    --gg.log("所有赛道资源已清理")
 end
 
 --- 获取指定赛道的克隆节点数量
