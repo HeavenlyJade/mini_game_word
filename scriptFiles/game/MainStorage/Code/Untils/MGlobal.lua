@@ -837,7 +837,7 @@ function gg.GetChild(node, path)
         if part ~= "" then
             lastPart = part
             if not node then
-                --gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在", root.Name, path,ullPath))
+                -- gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在", root.Name, path,fullPath))
                 return nil
             end
             node = node[part]

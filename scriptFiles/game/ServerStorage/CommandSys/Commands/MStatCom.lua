@@ -38,7 +38,7 @@ function StatCommand.handlers.add(params, player)
     local otherBonuses = params["其他加成"]
 
     if not (statName and value) then
-        player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
+        --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
         return false
     end
 
@@ -52,8 +52,8 @@ function StatCommand.handlers.add(params, player)
 
     local msg = string.format("成功为玩家 %s 的属性 '%s' 新增 %s (来源: %s)，新值为: %s.%s", 
         player.name, statName, tostring(valueToAdd), source, tostring(newValue), bonusInfo)
-    player:SendHoverText(msg)
-    gg.log(msg)
+    --player:SendHoverText(msg)
+    --gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -70,7 +70,7 @@ function StatCommand.handlers.set(params, player)
     local otherBonuses = params["其他加成"]
 
     if not (statName and value) then
-        player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
+        --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
         return false
     end
 
@@ -82,8 +82,8 @@ function StatCommand.handlers.set(params, player)
 
     local msg = string.format("成功将玩家 %s 的属性 '%s' 设置为: %s (来源: %s).%s", 
         player.name, statName, tostring(newValue), source, bonusInfo)
-    player:SendHoverText(msg)
-    gg.log(msg)
+    --player:SendHoverText(msg)
+    --gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -100,7 +100,7 @@ function StatCommand.handlers.reduce(params, player)
     local otherBonuses = params["其他加成"]
 
     if not (statName and value) then
-        player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
+        --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
         return false
     end
 
@@ -114,8 +114,8 @@ function StatCommand.handlers.reduce(params, player)
 
     local msg = string.format("成功为玩家 %s 的属性 '%s' 减少 %s (来源: %s)，新值为: %s.%s", 
         player.name, statName, tostring(valueToReduce), source, tostring(newValue), bonusInfo)
-    player:SendHoverText(msg)
-    gg.log(msg)
+    --player:SendHoverText(msg)
+    --gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -135,8 +135,8 @@ function StatCommand.handlers.testbonus(params, player)
     local msg = string.format("加成测试结果:\n基础值: %s\n最终值: %s%s", 
         tostring(baseValue), tostring(finalValue), bonusInfo)
     
-    player:SendHoverText(msg)
-    gg.log(msg)
+    --player:SendHoverText(msg)
+    --gg.log(msg)
     return true
 end
 
@@ -151,7 +151,7 @@ function StatCommand.handlers.bonusonly(params, player)
     local otherBonuses = params["其他加成"]
 
     if not statName then
-        player:SendHoverText("缺少 '属性名' 字段。")
+        --player:SendHoverText("缺少 '属性名' 字段。")
         return false
     end
 
@@ -167,13 +167,13 @@ function StatCommand.handlers.bonusonly(params, player)
         
         local msg = string.format("成功为玩家 %s 的属性 '%s' 应用加成 %s (来源: %s)，新值为: %s.%s", 
             player.name, statName, tostring(bonusValue), source, tostring(newValue), bonusInfo)
-        player:SendHoverText(msg)
-        gg.log(msg)
+        -- --player:SendHoverText(msg)
+        --gg.log(msg)
     else
         local msg = string.format("玩家 %s 的属性 '%s' 没有可应用的加成，保持原值。%s", 
             player.name, statName, bonusInfo)
-        player:SendHoverText(msg)
-        gg.log(msg)
+        --player:SendHoverText(msg)
+        --gg.log(msg)
     end
     
     syncAndSave(player)
@@ -214,8 +214,8 @@ function StatCommand.handlers.view(params, player)
         end
 
         local fullMessage = table.concat(response, "\n")
-        player:SendHoverText(fullMessage)
-        gg.log(fullMessage)
+        --player:SendHoverText(fullMessage)
+        --gg.log(fullMessage)
     else
         -- 查看所有属性
         local response = {
@@ -247,8 +247,8 @@ function StatCommand.handlers.view(params, player)
         end
 
         local fullMessage = table.concat(response, "\n")
-        player:SendHoverText(fullMessage)
-        gg.log(fullMessage)
+        --player:SendHoverText(fullMessage)
+        --gg.log(fullMessage)
     end
     return true
 end
@@ -270,10 +270,10 @@ function StatCommand.handlers.restore(params, player)
             end
             
             local msg = string.format("玩家 %s 的属性 '%s' 已恢复到初始值", player.name, statName)
-            player:SendHoverText(msg)
-            gg.log(msg)
+            --player:SendHoverText(msg)
+            --gg.log(msg)
         else
-            player:SendHoverText("错误：玩家对象不支持属性恢复功能")
+            --player:SendHoverText("错误：玩家对象不支持属性恢复功能")
             return false
         end
     else
@@ -287,10 +287,10 @@ function StatCommand.handlers.restore(params, player)
             end
             
             local msg = string.format("玩家 %s 的 %d 个属性已恢复到初始值", player.name, restoredCount)
-            player:SendHoverText(msg)
-            gg.log(msg)
+            --player:SendHoverText(msg)
+            --gg.log(msg)
         else
-            player:SendHoverText("错误：玩家对象不支持属性恢复功能")
+            --player:SendHoverText("错误：玩家对象不支持属性恢复功能")
             return false
         end
     end
@@ -312,10 +312,10 @@ function StatCommand.handlers.refresh(params, player)
         end
         
         local msg = string.format("玩家 %s 的属性已刷新", player.name)
-        player:SendHoverText(msg)
-        gg.log(msg)
+        --player:SendHoverText(msg)
+        --gg.log(msg)
     else
-        player:SendHoverText("错误：玩家对象不支持属性刷新功能")
+        --player:SendHoverText("错误：玩家对象不支持属性刷新功能")
         return false
     end
     
@@ -342,22 +342,22 @@ function StatCommand.main(params, player)
     local operationType = params["操作类型"]
 
     if not operationType then
-        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '设置', '减少', '查看', '恢复', '刷新', '测试加成', '仅加成新增'")
+        --player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '设置', '减少', '查看', '恢复', '刷新', '测试加成', '仅加成新增'")
         return false
     end
 
     local handlerName = operationMap[operationType]
     if not handlerName then
-        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '设置', '减少', '查看', '恢复', '刷新', '测试加成', '仅加成新增'")
+        --player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '设置', '减少', '查看', '恢复', '刷新', '测试加成', '仅加成新增'")
         return false
     end
 
     local handler = StatCommand.handlers[handlerName]
     if handler then
-        gg.log("属性命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
+        --gg.log("属性命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
         return handler(params, player)
     else
-        player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
+        --player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
         return false
     end
 end

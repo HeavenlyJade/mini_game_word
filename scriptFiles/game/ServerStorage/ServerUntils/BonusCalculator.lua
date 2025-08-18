@@ -205,12 +205,13 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
     if not (playerStatBonuses and type(playerStatBonuses) == "table") then
         return totalBonus, bonusDescriptions
     end
+    gg.log("playerStatBonuses111121",playerStatBonuses)
     
     for _, bonusItem in ipairs(playerStatBonuses) do
         local bonusStatName = bonusItem["名称"]
         local actionType = bonusItem["作用类型"]
         local scalingRate = bonusItem["缩放倍率"] or 0
-        
+        gg.log(string.format("[111111BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s, 作用类型: %s, 缩放倍率: %s", bonusStatName, actionType, scalingRate))
         if bonusStatName and actionType then
             local bonusValue = 0
             

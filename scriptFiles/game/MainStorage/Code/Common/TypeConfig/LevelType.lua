@@ -18,6 +18,8 @@ local RewardManager = require(MainStorage.Code.GameReward.RewardManager) --[[@ty
 ---@field victoryCondition string 胜利条件
 ---@field baseRewards table 基础奖励列表
 ---@field rankRewards table<string, table> 排名奖励字典 (名次 -> 奖励配置)
+---@field gameStartCommands table<string> 游戏开始指令列表
+---@field gameEndCommands table<string> 游戏结算指令列表
 ---@field _calculator RewardBase 缓存的奖励计算器实例
 local LevelType = ClassMgr.Class("LevelType")
 
@@ -50,6 +52,11 @@ function LevelType:OnInit(data)
         local rankName = string.format("第%d名", rank)
         self.rankRewards[rankName] = rankReward["奖励列表"] or {}
     end
+
+    -- 游戏开始指令
+    self.gameStartCommands = data["游戏开始指令"] or {}
+    -- 游戏结算指令
+    self.gameEndCommands = data["游戏结算指令"] or {}
 
     -- 【新增】缓存计算器实例
     self._calculator = nil
@@ -116,6 +123,18 @@ function LevelType:GetGameplayRules()
     }
 end
 
+--- 获取游戏开始指令
+---@return table<string>
+function LevelType:GetGameStartCommands()
+    return self.gameStartCommands
+end
+
+--- 获取游戏结算指令
+---@return table<string>
+function LevelType:GetGameEndCommands()
+    return self.gameEndCommands
+end
+
 --- 获取玩家限制信息
 ---@return number, number 最少人数, 最多人数
 function LevelType:GetPlayerLimits()
@@ -142,5 +161,37 @@ function LevelType:CalculateBaseRewards(playerData)
     -- 将计算任务完全委托给计算器
     return calculator:CalcBaseReward(playerData, self)
 end
+
+-- ========================================
+-- 使用示例：
+-- ========================================
+-- 
+-- -- 获取关卡实例
+-- local level = LevelType.New(levelConfigData)
+-- 
+-- -- 获取游戏开始指令列表
+-- local startCommands = level:GetGameStartCommands()
+-- for i, command in ipairs(startCommands) do
+--     -- 执行游戏开始指令，例如：
+--     -- 设置玩家属性、激活特殊效果等
+--     --gg.log(string.format("执行游戏开始指令 %d: %s", i, command))
+-- end
+-- 
+-- -- 获取游戏结算指令列表
+-- local endCommands = level:GetGameEndCommands()
+-- for i, command in ipairs(endCommands) do
+--     -- 执行游戏结算指令，例如：
+--     -- 恢复玩家属性、清理临时状态等
+--     --gg.log(string.format("执行游戏结算指令 %d: %s", i, command))
+-- end
+-- 
+-- -- 检查是否有指令需要执行
+-- if #startCommands > 0 then
+--     --gg.log(string.format("关卡 %s 有 %d 条游戏开始指令", level.name, #startCommands))
+-- end
+-- 
+-- if #endCommands > 0 then
+--     --gg.log(string.format("关卡 %s 有 %d 条游戏结算指令", level.name, #endCommands))
+-- end
 
 return LevelType
