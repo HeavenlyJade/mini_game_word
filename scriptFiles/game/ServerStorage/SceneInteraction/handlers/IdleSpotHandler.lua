@@ -47,9 +47,6 @@ end
 --- 当玩家进入挂机点时
 ---@param entity Entity
 function IdleSpotHandler:OnEntityEnter(entity)
-    -- 调用父类方法处理通用逻辑
-    SceneNodeHandlerBase.OnEntityEnter(self, entity)
-
     -- 只处理玩家
     if not entity or not entity.isPlayer then
         return
@@ -57,11 +54,19 @@ function IdleSpotHandler:OnEntityEnter(entity)
 
     ---@cast entity MPlayer
     
-    -- 检查进入条件
+    -- 检查进入条件 - 提前检查，避免不必要的父类调用
     if not self:checkEnterConditions(entity) then
         --gg.log(string.format("玩家 '%s' 不满足挂机点 '%s' 的进入条件，拒绝进入", entity.name, self.name))
+        -- 重要：如果条件不满足，需要从entitiesInZone中移除，避免后续TouchEnded事件误触发
+        local entityId = entity.uuid
+        if self.entitiesInZone[entityId] then
+            self.entitiesInZone[entityId] = nil
+        end
         return
     end
+
+    -- 条件满足后，再调用父类方法处理通用逻辑
+    SceneNodeHandlerBase.OnEntityEnter(self, entity)
 
     local playerId = entity.uuid
 
@@ -115,9 +120,6 @@ end
 --- 当玩家离开挂机点时
 ---@param entity Entity
 function IdleSpotHandler:OnEntityLeave(entity)
-    -- 调用父类方法处理通用逻辑
-    SceneNodeHandlerBase.OnEntityLeave(self, entity)
-
     -- 只处理玩家
     if not entity or not entity.isPlayer then
         return
@@ -125,6 +127,10 @@ function IdleSpotHandler:OnEntityLeave(entity)
 
     ---@cast entity MPlayer
     local playerId = entity.uuid
+
+
+    -- 调用父类方法处理通用逻辑
+    SceneNodeHandlerBase.OnEntityLeave(self, entity)
 
     --gg.log(string.format("玩家 '%s' 离开挂机点 '%s'", entity.name, self.name))
 
