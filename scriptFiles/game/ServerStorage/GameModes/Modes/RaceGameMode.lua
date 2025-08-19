@@ -179,49 +179,68 @@ function RaceGameMode:LaunchPlayer(player)
 end
 
 --- 【核心改造】处理玩家落地，由 RaceGameEventManager 调用
----@param player MPlayer 已经确认落地并且属于本场比赛的玩家
 function RaceGameMode:OnPlayerLanded(player)
-    -- 检查该玩家是否已经报告过落地
-    if self.finishedPlayers[player.uin] then
-        return -- 防止重复处理
-    end
-
-    -- 如果比赛已经结束，则不再处理后续的落地事件
-    if self.state == RaceState.FINISHED then
+    -- 防护性检查
+    if not player then
         return
     end
+    
+    -- 检查玩家是否已经完成比赛（防止重复处理）
+    if self.finishedPlayers[player.uin] then
+        return
+    end
+    
+    -- 检查比赛状态是否有效
+    if self.state ~= RaceState.RACING then
+        return
+    end
+    
+    -- 【核心步骤】立即结束该玩家的比赛
+    self:_finishPlayerRace(player)
+    
+    -- 检查是否所有玩家都已完成
+    self:_checkAndEndRaceIfAllFinished()
+end
 
-    -- 记录该玩家已完成
-    self.finishedPlayers[player.uin] = true
-
-    -- 标记玩家为已完成状态（用于停止距离计算）
-    self:_markPlayerFinished(player.uin)
-
-    -- 【新增】仅对该玩家执行比赛结束流程（不影响其他玩家）
-    -- 1) 隐藏该玩家的比赛界面
-    RaceGameEventManager.SendRaceEndNotification(player)
-    -- 2) 执行游戏结算指令（单人版）
-    self:_executeGameEndCommandsForPlayer(player)
-
-    -- 【核心修正】手动计算已完成玩家的数量。
-    -- 在 Lua 中，对以非连续数字（如uin）为键的 table 使用 '#' 操作符会返回 0，这是一个已知的语言特性。
+function RaceGameMode:_checkAndEndRaceIfAllFinished()
+    -- 计算已完成的玩家数量
     local finishedCount = 0
     for _ in pairs(self.finishedPlayers) do
         finishedCount = finishedCount + 1
     end
-
-    -- 获取玩家当前排名信息
-    local flightData = self:GetPlayerFlightData(player.uin)
-    local rankInfo = flightData and string.format("第%d名，飞行距离%.1f米", flightData.rank, flightData.flightDistance) or "排名计算中"
-
-    --player:SendHoverText(string.format("已落地！%s 等待其他玩家...", rankInfo))
-
-    -- 使用正确的计数值检查是否所有人都已完成
+    
+    -- 如果所有参赛者都已完成，结束整场比赛
     if finishedCount >= #self.participants then
-        self:End()
+        --gg.log("所有玩家已完成比赛，结束整场比赛")
+        self:End()  -- 调用原有的End方法来处理整场比赛结束（包含奖励结算）
     end
 end
 
+---@param player MPlayer 要结束比赛的玩家
+function RaceGameMode:_finishPlayerRace(player)
+    local uin = player.uin
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
+    -- 1. 标记玩家为已完成
+    self.finishedPlayers[uin] = true
+    
+    -- 2. 停止该玩家的距离计算
+    if self.flightData[uin] then
+        self.flightData[uin].isFinished = true
+    end
+    
+    -- 3. 最终确认该玩家的排名
+    self:_updateRankings()
+    -- 5. 隐藏该玩家的比赛界面
+    RaceGameEventManager.SendRaceEndNotification(player)
+    for i = #self.participants, 1, -1 do
+        local p = self.participants[i]
+        if p and p.uin == uin then
+            GameModeManager:RemovePlayerFromCurrentMode(p)
+        end
+    end
+    
+end
 
 
 --- 开始比赛

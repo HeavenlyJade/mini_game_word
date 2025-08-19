@@ -356,7 +356,7 @@ function ContestGui:OnContestHide(eventData)
     end
 end
 
--- 更新比赛数据
+
 function ContestGui:OnContestUpdate(eventData)
 	if not eventData then return end
 	-- 更新内部数据

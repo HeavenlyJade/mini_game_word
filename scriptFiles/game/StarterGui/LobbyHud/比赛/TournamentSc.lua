@@ -215,7 +215,7 @@ end
 --- 接收比赛开始(发射)事件，获取服务端携带的数据（含 variableData）
 ---@param data table
 function TournamentSc:OnLaunchPlayer(data)
-    -- gg.log("比赛发射事件", data)
+    -- --gg.log("比赛发射事件", data)
     self.leaveRaceButton:SetVisible(true)
     self.speedDashboard:SetVisible(true)
     self.speedPointer:SetVisible(true)
@@ -266,11 +266,11 @@ function TournamentSc:OnLaunchPlayer(data)
 	local v3 = A * 0.5
 	local v4 = A * 0.75
 	local v5 = A
-    gg.log("设置速度标题", self.speedLabels )
+    --gg.log("设置速度标题", self.speedLabels )
 
 	local function setSpeedTitle(index, value)
 		local comp = self.speedLabels[index]
-        gg.log("设置速度标题", index, value,comp,comp.node,comp.node.Title )
+        --gg.log("设置速度标题", index, value,comp,comp.node,comp.node.Title )
 		if comp and comp.node and comp.node.Title ~= nil then
 			comp.node.Title = gg.FormatLargeNumber(math.floor(value + 0.5))
 		end

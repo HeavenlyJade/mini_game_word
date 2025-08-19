@@ -60,6 +60,7 @@ function PlayerActionHandler:OnModuleFinished(module)
     if self.activeModule == module then
         gg.log("PlayerActionHandler: 已收到模块结束通知，正在清理。")
         self.activeModule = nil
+        self.gameMode = nil
     end
 end
 
@@ -75,6 +76,15 @@ function PlayerActionHandler:SubscribeServerEvents()
     -- 订阅导航事件
     ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION, function(data)
         self:OnNavigateToPosition(data)
+    end)
+
+    -- 新增：比赛界面隐藏事件强制结束当前行为模块
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_CONTEST_HIDE, function(_)
+        if self.activeModule and self.activeModule.OnEnd then
+            self.activeModule:OnEnd()
+            self.activeModule = nil
+            self.gameMode = nil
+        end
     end)
 end
 
