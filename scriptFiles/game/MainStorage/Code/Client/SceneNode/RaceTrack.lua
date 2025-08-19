@@ -123,6 +123,14 @@ function RaceTrack.SetChildrenIgnoreStreamSync(parentNode)
     if flightTrack then
         flightTrack.IgnoreStreamSync = true
     end
+
+    -- 设置空气墙1-4的IgnoreStreamSync属性为True
+    for i = 1, 4 do
+        local airWall = parentNode["空气墙" .. i]
+        if airWall then
+            airWall.IgnoreStreamSync = true
+        end
+    end
 end
 
 --- 设置空气墙属性
