@@ -57,6 +57,8 @@ function SceneNodeType:OnInit(data)
     self.soundAsset = data["音效资源"] or ""
     self.requirementDesc = data["需求描述"] or ""
     self.effectDesc = data["作用描述"] or ""
+    -- 新增：数值化的效率配置，直接用于效率比较
+    self.effectValueConfig = data["作数值的配置"] or 0
     self.enterConditions = data["进入条件列表"] or {}
     self.enterCommand = data["进入指令"] or ""
     self.leaveCommand = data["离开指令"] or ""

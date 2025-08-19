@@ -183,6 +183,23 @@ function ContestGui:SetupCountdownNode(prepareTime)
 	self.sceneCountdownNode = countdownNode
 end
 
+-- 【新增】设置比赛剩余时间显示
+function ContestGui:SetupRaceTimeDisplay(raceTime)
+
+	
+	-- 设置初始比赛剩余时间文本
+	local timeText = string.format("剩余时间: %02d:%02d", 
+		math.floor(raceTime / 60), 
+		raceTime % 60)
+	
+	if self.countDown.Title then
+		self.countDown.Title = timeText
+		gg.log("成功设置比赛剩余时间文本: " .. timeText)
+	else
+		gg.log("警告: ContestGui - 倒计时节点没有Title属性")
+	end
+	
+end
 -- 获取当前玩家所在场景
 function ContestGui:GetCurrentPlayerScene()
 	-- 【修改】优先使用服务端提供的场景信息
@@ -318,6 +335,12 @@ function ContestGui:OnContestShow(eventData)
 	gg.log("显示比赛界面，比赛时长: " .. (eventData.raceTime or 60) .. "秒")
 	self:SetVisible(true)
 	self.countDown:SetVisible(true)
+		-- 设置初始比赛剩余时间文本
+	local timeText = string.format("剩余时间: %02d:%02d", 
+	math.floor(eventData.raceTime / 60), eventData.raceTime % 60)
+
+	self.countDown.node.Title = timeText
+
 end
 
 -- 隐藏比赛界面
@@ -336,7 +359,7 @@ end
 -- 更新比赛数据
 function ContestGui:OnContestUpdate(eventData)
 	if not eventData then return end
-	
+	gg.log("更新比赛数据", eventData)
 	-- 更新内部数据
 	self.raceData = eventData
 	
@@ -351,9 +374,9 @@ end
 function ContestGui:UpdateCountdown(remainingTime)
 	if not remainingTime then return end
 	
-	local minutes = math.floor(remainingTime / 60)
-	local seconds = remainingTime % 60
-	local timeText = string.format("%02d:%02d", minutes, seconds)
+	local timeText = string.format("剩余时间: %02d:%02d", 
+	math.floor(remainingTime / 60), remainingTime % 60)
+	self.countDown:SetVisible(true)
 	
 	-- 假设倒计时节点有Title属性
 	if self.countDown and self.countDown.node and self.countDown.node.Title then

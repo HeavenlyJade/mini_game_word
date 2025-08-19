@@ -100,7 +100,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
             #finalMultipliers
         )
     end
-    gg.log("加成计算信息",bonusInfo)
+    --gg.log("加成计算信息",bonusInfo)
     return finalBonusValue, bonusInfo
 end
 
@@ -111,12 +111,12 @@ end
 ---@return table<string, any> 宠物加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPetItemBonuses(player)
     if not player or not player.uin then
-        gg.log("[BonusManager调试] GetPetItemBonuses: 玩家对象无效")
+        --gg.log("[BonusManager调试] GetPetItemBonuses: 玩家对象无效")
         return {}
     end
 
     local bonuses = PetMgr.GetActiveItemBonuses(player.uin)
-    gg.log("[BonusManager调试] GetPetItemBonuses: 玩家", player.uin, "宠物加成数据:", bonuses)
+    --gg.log("[BonusManager调试] GetPetItemBonuses: 玩家", player.uin, "宠物加成数据:", bonuses)
     return bonuses
 end
 
@@ -125,12 +125,12 @@ end
 ---@return table<string, any> 伙伴加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPartnerItemBonuses(player)
     if not player or not player.uin then
-        gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家对象无效")
+        --gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家对象无效")
         return {}
     end
 
     local bonuses = PartnerMgr.GetActiveItemBonuses(player.uin)
-    gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家", player.uin, "伙伴加成数据:", bonuses)
+    --gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家", player.uin, "伙伴加成数据:", bonuses)
     return bonuses
 end
 
@@ -142,7 +142,7 @@ function BonusManager.GetWingItemBonuses(player)
         return {}
     end
     local bonuses = WingMgr.GetActiveItemBonuses(player.uin)
-    gg.log("[BonusManager调试] GetWingItemBonuses: 玩家", player.uin, "翅膀加成数据:", bonuses)
+    --gg.log("[BonusManager调试] GetWingItemBonuses: 玩家", player.uin, "翅膀加成数据:", bonuses)
     return bonuses or {}
 end
 

@@ -72,6 +72,9 @@ function IdleSpotHandler:OnEntityEnter(entity)
 
     --gg.log(string.format("玩家 '%s' 进入挂机点 '%s'", entity.name, self.name))
 
+    -- 设置玩家挂机状态
+    entity:SetIdlingState(true, self.name)
+    
     -- 执行进入指令
     if self.config.enterCommand and self.config.enterCommand ~= "" then
         executeCommand(entity, self.config.enterCommand, self)
@@ -134,6 +137,9 @@ function IdleSpotHandler:OnEntityLeave(entity)
 
     --gg.log(string.format("玩家 '%s' 离开挂机点 '%s'", entity.name, self.name))
 
+    -- 设置玩家挂机状态
+    entity:SetIdlingState(false, nil)
+    
     -- 停止定时奖励
     self:stopIdleRewards(entity)
 

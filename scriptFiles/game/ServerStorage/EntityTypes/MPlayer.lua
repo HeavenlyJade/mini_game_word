@@ -43,6 +43,10 @@ function _MPlayer:OnInit(info_)
     self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
     self.loginTime = os.time() -- 登录时间
     
+    -- 挂机状态
+    self.isIdling = false -- 是否正在挂机
+    self.currentIdleSpot = nil -- 当前挂机点名称
+    
     -- 设置玩家初始属性值
     self:SetPlayerInitialStats()
 end
@@ -416,6 +420,31 @@ function _MPlayer:GetConsumableData()
         variableData = variableData,
         playerAttribute = playerAttribute
     }
+end
+
+--- 设置挂机状态
+---@param isIdling boolean 是否正在挂机
+---@param idleSpotName string|nil 挂机点名称
+function _MPlayer:SetIdlingState(isIdling, idleSpotName)
+    self.isIdling = isIdling
+    self.currentIdleSpot = idleSpotName
+    
+    --gg.log(string.format("玩家 %s 挂机状态更新: %s, 挂机点: %s", 
+    --    self.name, 
+    --    isIdling and "开始挂机" or "停止挂机", 
+    --    idleSpotName or "无"))
+end
+
+--- 检查是否正在挂机
+---@return boolean 是否正在挂机
+function _MPlayer:IsIdling()
+    return self.isIdling == true
+end
+
+--- 获取当前挂机点名称
+---@return string|nil 当前挂机点名称
+function _MPlayer:GetCurrentIdleSpot()
+    return self.currentIdleSpot
 end
 
 

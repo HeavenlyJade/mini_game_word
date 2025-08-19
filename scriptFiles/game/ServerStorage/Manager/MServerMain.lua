@@ -156,8 +156,12 @@ function MainServer.initModule()
     SceneNodeManager.Init()
     local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
     local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
+    local AutoPlayEventManager = require(ServerStorage.AutoRaceSystem.AutoPlayEvent) ---@type AutoPlayEventManager
+    local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
     AutoRaceManager.Init()
     AutoRaceEventManager.Init()
+    AutoPlayManager.Init()
+    AutoPlayEventManager.Init()
 
 
 

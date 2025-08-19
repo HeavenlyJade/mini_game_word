@@ -26,6 +26,9 @@ local EventPlayerConfig = {}
 EventPlayerConfig.REQUEST = {
     -- e.g., REQUEST_JUMP = "PlayerRequest_Jump"
     PLAYER_LANDED = "cmd_player_landed", -- 新增：玩家落地事件
+    AUTO_RACE_TOGGLE = "AutoRaceToggle", -- 自动比赛开关
+    AUTO_PLAY_TOGGLE = "AutoPlayToggle", -- 自动挂机开关
+    UNSTUCK_PLAYER = "UnstuckPlayer", -- 脱离卡死
 }
 
 

@@ -27,4 +27,20 @@ VariableNameConfig.StatNames = {
     '数据_固定值_加速度',
 }
 
+VariableNameConfig.PlayerAttributeNames = {
+    '速度',
+    '攻击',
+    '防御',
+}
+
+VariableNameConfig.DependencyRules = {
+    ['数据_固定值_战力值'] = {
+        ['目标变量'] = '数据_固定值_历史最大战力值',
+        ['条件'] = '大于',
+        ['动作'] = '设置为源值',
+        ['固定值'] = 0,
+        ['倍率'] = 0
+    },
+}
+
 return VariableNameConfig

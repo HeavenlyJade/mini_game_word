@@ -166,23 +166,23 @@ function BonusCalculator.GetOtherStatBonuses(player, statName, otherBonuses, pla
             end
         elseif bonusType == "翅膀" then
             local wingBonuses = BonusManager.GetWingItemBonuses(player)
-            gg.log(string.format("[BonusCalculator调试] GetOtherStatBonuses: 处理翅膀类型，目标属性: %s，翅膀加成数据: %s", statName, tostring(wingBonuses)))
+            --gg.log(string.format("[BonusCalculator调试] GetOtherStatBonuses: 处理翅膀类型，目标属性: %s，翅膀加成数据: %s", statName, tostring(wingBonuses)))
             for itemName, bonusData in pairs(wingBonuses) do
                 local isMatch = bonusData.targetVariable == statName or 
                                (not bonusData.targetVariable and bonusData.itemTarget == statName)
-                gg.log(string.format("[BonusCalculator调试] 翅膀加成匹配检查: %s, targetVariable: %s, itemTarget: %s, isMatch: %s", 
-                    itemName, tostring(bonusData.targetVariable), tostring(bonusData.itemTarget), tostring(isMatch)))
+                --gg.log(string.format("[BonusCalculator调试] 翅膀加成匹配检查: %s, targetVariable: %s, itemTarget: %s, isMatch: %s", 
+                 --itemName, tostring(bonusData.targetVariable), tostring(bonusData.itemTarget), tostring(isMatch)))
                 if isMatch then
                     if bonusData.fixed and bonusData.fixed > 0 then
                         totalValue = totalValue + bonusData.fixed
                         table.insert(bonusDescriptions, string.format("翅膀属性加成(%s, +%d)", itemName, bonusData.fixed))
-                        gg.log(string.format("[BonusCalculator调试] 添加翅膀固定加成: %s +%d", itemName, bonusData.fixed))
+                        --gg.log(string.format("[BonusCalculator调试] 添加翅膀固定加成: %s +%d", itemName, bonusData.fixed))
                     end
                     if bonusData.percentage and bonusData.percentage > 0 then
                         local percentageBonus = math.floor(playerStatValue * bonusData.percentage / 100)
                         totalValue = totalValue + percentageBonus
                         table.insert(bonusDescriptions, string.format("翅膀属性加成(%s, +%d%%)", itemName, bonusData.percentage))
-                        gg.log(string.format("[BonusCalculator调试] 添加翅膀百分比加成: %s +%d%% (计算值: %d)", itemName, bonusData.percentage, percentageBonus))
+                        --gg.log(string.format("[BonusCalculator调试] 添加翅膀百分比加成: %s +%d%% (计算值: %d)", itemName, bonusData.percentage, percentageBonus))
                     end
                 end
             end
@@ -205,13 +205,13 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
     if not (playerStatBonuses and type(playerStatBonuses) == "table") then
         return totalBonus, bonusDescriptions
     end
-    gg.log("playerStatBonuses111121",playerStatBonuses)
+    --gg.log("playerStatBonuses111121",playerStatBonuses)
     
     for _, bonusItem in ipairs(playerStatBonuses) do
         local bonusStatName = bonusItem["名称"]
         local actionType = bonusItem["作用类型"]
         local scalingRate = bonusItem["缩放倍率"] or 0
-        gg.log(string.format("[111111BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s, 作用类型: %s, 缩放倍率: %s", bonusStatName, actionType, scalingRate))
+        --gg.log(string.format("[111111BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s, 作用类型: %s, 缩放倍率: %s", bonusStatName, actionType, scalingRate))
         if bonusStatName and actionType then
             local bonusValue = 0
             
@@ -225,19 +225,19 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
                 -- 通过映射获取实际的属性名
                 local actualStatName = AttributeMapping.GetCorrespondingStat(bonusStatName)
                 playerStatValue = player:GetStat(actualStatName) or 0
-                gg.log(string.format("[BonusCalculator调试] 变量 %s 映射到属性 %s，值: %s", bonusStatName, actualStatName, tostring(playerStatValue)))
+                --gg.log(string.format("[BonusCalculator调试] 变量 %s 映射到属性 %s，值: %s", bonusStatName, actualStatName, tostring(playerStatValue)))
             else
                 -- 如果没有映射，直接使用原名称
                 playerStatValue = player:GetStat(bonusStatName) or 0
-                gg.log(string.format("[BonusCalculator调试] 变量 %s 无映射，直接读取，值: %s", bonusStatName, tostring(playerStatValue)))
+                --gg.log(string.format("[BonusCalculator调试] 变量 %s 无映射，直接读取，值: %s", bonusStatName, tostring(playerStatValue)))
             end
             
             -- 从其他加成中读取同名属性配置
             local otherStatValue, otherDescriptions = BonusCalculator.GetOtherStatBonuses(player, bonusStatName, otherBonuses, playerStatValue)
             bonusValue = bonusValue + otherStatValue
             
-            gg.log(string.format("[BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s 从其他加成读取到值: %s, 描述: %s", 
-                bonusStatName, tostring(otherStatValue), tostring(otherDescriptions)))
+            --gg.log(string.format("[BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s 从其他加成读取到值: %s, 描述: %s", 
+                --bonusStatName, tostring(otherStatValue), tostring(otherDescriptions)))
             
             -- 合并描述信息
             for _, desc in ipairs(otherDescriptions) do

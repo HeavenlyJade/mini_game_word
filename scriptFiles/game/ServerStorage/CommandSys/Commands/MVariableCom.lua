@@ -9,12 +9,15 @@ local cloudDataMgr = require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type
 local VariableNameConfig = require(MainStorage.Code.Common.Config.VariableNameConfig) ---@type VariableNameConfig
 local BaseUntils = require(ServerStorage.ServerUntils.BaseUntils) ---@type BaseUntils
 local BonusCalculator = require(ServerStorage.ServerUntils.BonusCalculator) ---@type BonusCalculator
+local DependencyRuleChecker = require(ServerStorage.ServerUntils.DependencyRuleChecker) ---@type DependencyRuleChecker
 
 ---@class VariableCommand
 local VariableCommand = {}
 
 -- 子命令处理器
 VariableCommand.handlers = {}
+
+
 
 --- 验证变量名是否存在于配置中
 ---@param variableName string
@@ -34,7 +37,7 @@ end
 --- 同步并保存玩家数据
 ---@param player MPlayer
 local function syncAndSave(player)
-    gg.log("syncAndSave", player.variables)
+    --gg.log("syncAndSave", player.variables)
     if player and player.variableSystem then
         player.variables = player.variableSystem.variables
         cloudDataMgr.SavePlayerData(player.uin, true)
@@ -46,7 +49,7 @@ local function syncAndSave(player)
             variableData = allVars,
         })
 
-        -- gg.log("玩家 " .. player.name .. " 的变量数据已保存并同步到客户端。")
+        -- --gg.log("玩家 " .. player.name .. " 的变量数据已保存并同步到客户端。")
     end
 end
 
@@ -79,8 +82,12 @@ function VariableCommand.handlers.add(params, player)
     local newValue = variableSystem:GetVariable(variableName)
 
     local msg = string.format("成功为玩家 %s 的变量 '%s' 新增 %s (来源: %s)，新值为: %s.%s", player.name, variableName, tostring(valueToAdd), source, tostring(newValue), bonusInfo)
-    gg.log(msg)
+    --gg.log(msg)
     -- player:SendHoverText(msg)
+    
+    -- 检查依赖规则
+    DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
+    
     syncAndSave(player)
     return true
 end
@@ -114,7 +121,11 @@ function VariableCommand.handlers.set(params, player)
 
     local msg = string.format("成功将玩家 %s 的变量 '%s' 设置为: %s (来源: %s).%s", player.name, variableName, tostring(newValue), source, bonusInfo)
     player:SendHoverText(msg)
-    gg.log(msg)
+    --gg.log(msg)
+    
+    -- 检查依赖规则
+    DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
+    
     syncAndSave(player)
     return true
 end
@@ -149,7 +160,11 @@ function VariableCommand.handlers.reduce(params, player)
     local newValue = variableSystem:GetVariable(variableName)
 
     local msg = string.format("成功为玩家 %s 的变量 '%s' 减少 %s (来源: %s)，新值为: %s.%s", player.name, variableName, tostring(valueToReduce), source, tostring(newValue), bonusInfo)
-    gg.log(msg)
+    --gg.log(msg)
+    
+    -- 检查依赖规则
+    DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
+    
     syncAndSave(player)
     return true
 end
@@ -170,7 +185,7 @@ function VariableCommand.handlers.view(params, player)
         if not details then
             local msg = string.format("玩家 %s 没有名为 '%s' 的变量。", player.name, variableName)
             player:SendHoverText(msg)
-            gg.log(msg)
+            --gg.log(msg)
             return false
         end
 
@@ -195,7 +210,7 @@ function VariableCommand.handlers.view(params, player)
 
         local fullMessage = table.concat(response, "\n")
         player:SendHoverText(fullMessage)
-        gg.log(fullMessage)
+        --gg.log(fullMessage)
     else
         -- 查看所有变量的详细信息
         local allVars = variableSystem:GetAllVariables()
@@ -232,7 +247,7 @@ function VariableCommand.handlers.view(params, player)
 
         local fullMessage = table.concat(response, "\n")
         player:SendHoverText(fullMessage)
-        gg.log(fullMessage)
+        --gg.log(fullMessage)
     end
     return true
 end
@@ -252,7 +267,7 @@ function VariableCommand.handlers.testbonus(params, player)
     local msg = string.format("加成测试结果:\n基础值: %s\n最终值: %s%s", 
         tostring(baseValue), tostring(finalValue), bonusInfo)
     
-    gg.log(msg)
+    --gg.log(msg)
     return true
 end
 
@@ -286,12 +301,12 @@ function VariableCommand.handlers.bonusonly(params, player)
         local msg = string.format("成功为玩家 %s 的变量 '%s' 应用加成 %s (来源: %s)，新值为: %s.%s", 
             player.name, variableName, tostring(bonusValue), source, tostring(newValue), bonusInfo)
         player:SendHoverText(msg)
-        gg.log(msg)
+        --gg.log(msg)
     else
         local msg = string.format("玩家 %s 的变量 '%s' 没有可应用的加成，保持原值。%s", 
             player.name, variableName, bonusInfo)
         player:SendHoverText(msg)
-        gg.log(msg)
+        --gg.log(msg)
     end
     
     syncAndSave(player)
@@ -330,13 +345,13 @@ function VariableCommand.main(params, player)
 
     if not player.variableSystem then
         player:SendHoverText("错误：找不到玩家的变量系统实例。")
-        gg.log("错误：玩家 " .. player.name .. " 的variableSystem为空。")
+        --gg.log("错误：玩家 " .. player.name .. " 的variableSystem为空。")
         return false
     end
 
     local handler = VariableCommand.handlers[handlerName]
     if handler then
-        gg.log("变量命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
+        --gg.log("变量命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
         return handler(params, player)
     else
         -- This case should not be reached due to the handlerName check above

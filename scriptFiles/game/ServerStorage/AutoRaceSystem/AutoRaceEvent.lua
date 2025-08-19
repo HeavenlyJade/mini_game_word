@@ -14,7 +14,7 @@ local AutoRaceEventManager = {}
 
 -- 事件名称定义
 AutoRaceEventManager.REQUEST = {
-    AUTO_RACE_TOGGLE = "AutoRaceToggle"
+    AUTO_RACE_TOGGLE = EventPlayerConfig.REQUEST.AUTO_RACE_TOGGLE
 }
 
 AutoRaceEventManager.RESPONSE = {
