@@ -359,7 +359,6 @@ end
 -- 更新比赛数据
 function ContestGui:OnContestUpdate(eventData)
 	if not eventData then return end
-	gg.log("更新比赛数据", eventData)
 	-- 更新内部数据
 	self.raceData = eventData
 	

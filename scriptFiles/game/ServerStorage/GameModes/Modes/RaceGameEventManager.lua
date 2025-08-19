@@ -19,9 +19,8 @@ end
 --- 注册事件处理器
 function RaceGameEventManager.RegisterEventHandlers()
     -- 注册玩家落地事件
-    local landedEventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
 
-    ServerEventManager.Subscribe(landedEventName, RaceGameEventManager.HandlePlayerLanded)
+    ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.PLAYER_LANDED, RaceGameEventManager.HandlePlayerLanded)
 
 end
 

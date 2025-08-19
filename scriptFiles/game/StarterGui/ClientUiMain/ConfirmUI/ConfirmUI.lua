@@ -6,7 +6,7 @@ local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventMana
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
 
-print("ConfirmUI LOCAL SCRIPT")
+
 
 local uiConfig = {
     uiName = "ConfirmUI",

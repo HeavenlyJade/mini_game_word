@@ -167,10 +167,12 @@ function RaceGameMode:LaunchPlayer(player)
         --gg.log("警告: [RaceGameMode] 无法为比赛实例 " .. self.instanceId .. " 找到有效的重生点位置。")
     end
 
+
+    eventData.variableData = player.variableSystem:GetAllVariables()
+
     -- 【核心改造】通过网络通道向指定客户端发送事件
-    if gg.network_channel then
-        gg.network_channel:fireClient(player.uin, eventData)
-    end
+    gg.network_channel:fireClient(player.uin, eventData)
+    
     
     -- 【新增】为当前发射的玩家执行游戏开始指令
     self:_executeGameStartCommandsForPlayer(player)
@@ -194,6 +196,12 @@ function RaceGameMode:OnPlayerLanded(player)
 
     -- 标记玩家为已完成状态（用于停止距离计算）
     self:_markPlayerFinished(player.uin)
+
+    -- 【新增】仅对该玩家执行比赛结束流程（不影响其他玩家）
+    -- 1) 隐藏该玩家的比赛界面
+    RaceGameEventManager.SendRaceEndNotification(player)
+    -- 2) 执行游戏结算指令（单人版）
+    self:_executeGameEndCommandsForPlayer(player)
 
     -- 【核心修正】手动计算已完成玩家的数量。
     -- 在 Lua 中，对以非连续数字（如uin）为键的 table 使用 '#' 操作符会返回 0，这是一个已知的语言特性。
@@ -852,6 +860,25 @@ function RaceGameMode:_executeGameEndCommands()
                     self:_executeCommandForPlayer(command, "游戏结算", player)
                 end
             end
+        end
+    end
+end
+
+--- 【新增】只为单个玩家执行游戏结算指令
+---@param player MPlayer 目标玩家
+function RaceGameMode:_executeGameEndCommandsForPlayer(player)
+    if not self.levelType or not player then
+        return
+    end
+
+    local endCommands = self.levelType:GetGameEndCommands()
+    if not endCommands or #endCommands == 0 then
+        return
+    end
+
+    for _, command in ipairs(endCommands) do
+        if command and type(command) == "string" then
+            self:_executeCommandForPlayer(command, "游戏结算", player)
         end
     end
 end
