@@ -63,7 +63,7 @@ function ShopDetailGui:InitNodes()
     -- 右侧物品栏
     self.itemList = self:Get("商城底图/右侧物品栏/物品右侧显示底图/物品模板栏位", ViewList) ---@type ViewList
     self.itemDemo = self:Get("商城底图/右侧物品栏/物品右侧显示底图/物品模板栏位/物品显示", ViewComponent) ---@type ViewComponent
-
+    self.itemList:SetVisible(false)
     -- 物品详情
     self.itemDescription = self:Get("商城底图/右侧物品栏/物品显示", ViewComponent) ---@type ViewComponent
     
@@ -80,9 +80,9 @@ function ShopDetailGui:InitData()
     self.selectedItem = nil     -- 当前选中的商品
     self.categoryButtons = {} -- 分类按钮
     self.categoryShopItems= {}
-    
+    -- "宠物"， "金币"
     -- 商品类型列表
-    self.productTypes = {"伙伴", "宠物", "翅膀", "尾迹", "特权", "金币"}
+    self.productTypes = {"伙伴", "翅膀", "尾迹", "特权",}
     
     -- 为每个商品类型创建对应的itemList
     self.categoryItemLists = {}
@@ -226,6 +226,13 @@ function ShopDetailGui:SelectCategory(categoryName)
     if currentItemList and currentItemList.node then
         currentItemList.node.Visible = true
         ----gg.log("显示分类: " .. categoryName .. " 的itemList")
+        
+        -- 切换分类后，默认选中第一个商品
+        local shopItems = ConfigLoader.GetShopItemsByCategory(categoryName)
+        if shopItems and #shopItems > 0 then
+            local firstItem = shopItems[1]
+            self:SelectItem(firstItem.configName)
+        end
     else
         ----gg.log("错误：找不到分类 " .. categoryName .. " 的itemList")
     end
@@ -246,6 +253,14 @@ function ShopDetailGui:AppendShopItemList(categoryName)
     --gg.log("shopItems",shopItems)
     
     --gg.log("刷新商品列表，数量: " .. #shopItems)
+    
+    -- 按照价格排序权重由小到大排序
+    table.sort(shopItems, function(a, b)
+        local aSortWeight = tonumber(a.uiConfig.sortWeight) or 0
+        local bSortWeight = tonumber(b.uiConfig.sortWeight) or 0
+        gg.log("aSortWeight",aSortWeight,bSortWeight)
+        return aSortWeight < bSortWeight
+    end)
     
     local currentItemList = self.categoryItemLists[categoryName] ---@type ViewList
     if not currentItemList then return end
@@ -272,6 +287,7 @@ function ShopDetailGui:AppendShopItemList(categoryName)
         end
         itemNodeClone.Icon= CardIcon.qualityBackGroundIcon[backgroundStyle]
         itemNodeClone:SetAttribute("图片-点击", shopItemTypeData.uiConfig.iconPath)
+        itemNodeClone:SetAttribute("图片-悬浮", CardIcon.qualityBackGroundIcon[backgroundStyle])
         -- 为每个商品创建购买按钮
         local purchaseButton = ViewButton.New(itemNodeClone, self)
         purchaseButton.clickCb = function()
@@ -283,6 +299,12 @@ function ShopDetailGui:AppendShopItemList(categoryName)
             button = purchaseButton,
             shopItem = shopItemTypeData
         }
+    end
+    
+    -- 默认选中第一个商品
+    if #shopItems > 0 then
+        local firstItem = shopItems[1]
+        self:SelectItem(firstItem.configName)
     end
     
 end
@@ -336,7 +358,9 @@ function ShopDetailGui:SelectItem(configName)
     if not shopItemTypeData then return end
     
     local itemDescription = self.itemDescription.node
-    itemDescription["物品显示底图"]["物品名称"].Title = shopItemTypeData.configName
+    itemDescription["物品介绍"]["物品名称"].Title = shopItemTypeData.configName
+    itemDescription["物品介绍"]["描述"].Title = shopItemTypeData.description
+
     
     local iconPath = shopItemTypeData.uiConfig.iconPath
     local miniCoinAmount = shopItemTypeData.price.miniCoinAmount
@@ -355,10 +379,8 @@ function ShopDetailGui:SelectItem(configName)
         self.miniCoinPriceButton.node.Visible = false
     end
     
-    --gg.log("gg.FormatLargeNumber(goldAmount)",gg.FormatLargeNumber(goldAmount),configName,goldAmount)
-    
-    -- 使用ViewButton节点设置金币价格
-    if goldAmount and goldAmount > 0 then
+    -- 根据金币配置决定是否显示金币购买按钮
+    if goldAmount and goldAmount > 0 and currencyType == "金币" then
         self.goldPriceButton.node.Visible = true
         self.goldPriceButton.node["价格框"].Title = gg.FormatLargeNumber(goldAmount)
     else

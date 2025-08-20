@@ -213,7 +213,7 @@ function Shop:ProcessPayment(shopItem, player, currencyType)
         -- 使用BagMgr获取玩家金币数量
         local currentCoin = BagMgr.GetItemAmount(player, "金币")
         if currentCoin < priceAmount then
-            return false, string.format("金币不足，需要%.0f个，当前拥有%.0f个", priceAmount, currentCoin)
+            return false, string.format("金币不足，需要%s，当前拥有%s", gg.FormatLargeNumber(priceAmount), gg.FormatLargeNumber(currentCoin))
         end
         
         -- 使用BagMgr扣除玩家金币
