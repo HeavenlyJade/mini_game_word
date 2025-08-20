@@ -47,7 +47,7 @@ function ShopDetailGui:OnInit(node, config)
     -- 5. 初始化UI内容
     self:InitShop()
 
-    --gg.log("ShopDetailGui 商城界面初始化完成")
+    ----gg.log("ShopDetailGui 商城界面初始化完成")
 end
 
 -- 节点初始化
@@ -80,6 +80,7 @@ function ShopDetailGui:InitData()
     self.selectedItem = nil     -- 当前选中的商品
     self.categoryButtons = {} -- 分类按钮
     self.categoryShopItems= {}
+    self.shopData = nil -- 商城云端数据缓存
     -- "宠物"， "金币"
     -- 商品类型列表
     self.productTypes = {"伙伴", "翅膀", "尾迹", "特权",}
@@ -93,7 +94,7 @@ end
 
 -- 注册客户端事件
 function ShopDetailGui:RegisterEvents()
-    --gg.log("注册商城系统事件监听")
+    ----gg.log("注册商城系统事件监听")
     ClientEventManager.Subscribe(ShopEventConfig.RESPONSE.SHOP_LIST_RESPONSE, function(data)
         self:OnShopListResponse(data)
     end)
@@ -109,6 +110,10 @@ function ShopDetailGui:RegisterEvents()
     end)
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
         self:OnSyncInventoryItems(data)
+    end)
+    -- 监听商城数据同步，用于判断永久一次的商品是否已购买
+    ClientEventManager.Subscribe(ShopEventConfig.NOTIFY.SHOP_DATA_SYNC, function(data)
+        self:OnShopDataSync(data)
     end)
 end
 
@@ -153,7 +158,7 @@ end
 
 --- UI打开时调用
 function ShopDetailGui:OnOpen()
-    --gg.log("ShopDetailGui 打开，请求默认商品列表")
+    ----gg.log("ShopDetailGui 打开，请求默认商品列表")
     -- 默认选中第一个分类并请求数据
     -- if self.selectedCategory then
     --     self:RequestShopList(self.selectedCategory)
@@ -164,7 +169,7 @@ end
 
 --- UI关闭时调用
 function ShopDetailGui:OnClose()
-    --gg.log("ShopDetailGui 关闭")
+    ----gg.log("ShopDetailGui 关闭")
 end
 
 -------------------------------------------------------------------
@@ -197,7 +202,7 @@ function ShopDetailGui:SetupCategories(categories)
         end)
         categoryItemList.node.Visible = false
         self.categoryItemLists[categoryName] = categoryItemList
-        gg.log("categoryItemLists", self.categoryItemLists)
+        --gg.log("categoryItemLists", self.categoryItemLists)
         self:AppendShopItemList(categoryName)
     end
     
@@ -210,7 +215,7 @@ function ShopDetailGui:SelectCategory(categoryName)
         return 
     end
     self.selectedCategory = categoryName
-    --gg.log("选中分类: " .. categoryName)
+    ----gg.log("选中分类: " .. categoryName)
     
     -- 更新分类按钮的选中状态
     for name, node in pairs(self.categoryButtons) do
@@ -231,7 +236,7 @@ function ShopDetailGui:SelectCategory(categoryName)
     local currentItemList = self.categoryItemLists[categoryName]
     if currentItemList and currentItemList.node then
         currentItemList.node.Visible = true
-        --gg.log("显示分类: " .. categoryName .. " 的itemList")
+        ----gg.log("显示分类: " .. categoryName .. " 的itemList")
         
         -- 切换分类后，默认选中第一个商品
         local shopItems = ConfigLoader.GetShopItemsByCategory(categoryName)
@@ -240,7 +245,7 @@ function ShopDetailGui:SelectCategory(categoryName)
             self:SelectItem(firstItem.configName)
         end
     else
-        --gg.log("错误：找不到分类 " .. categoryName .. " 的itemList")
+        ----gg.log("错误：找不到分类 " .. categoryName .. " 的itemList")
     end
 end
 
@@ -255,10 +260,10 @@ end
 function ShopDetailGui:AppendShopItemList(categoryName)
 
     local shopItems = ConfigLoader.GetShopItemsByCategory(categoryName)
-    gg.log("categoryName",categoryName)
-    gg.log("shopItems",shopItems)
+    --gg.log("categoryName",categoryName)
+    --gg.log("shopItems",shopItems)
     
-    gg.log("刷新商品列表，数量: " .. #shopItems)
+    --gg.log("刷新商品列表，数量: " .. #shopItems)
     
     -- 按照价格排序权重由小到大排序
     table.sort(shopItems, function(a, b)
@@ -352,6 +357,9 @@ function ShopDetailGui:SelectItem(configName)
     else
         self.goldPriceButton.node.Visible = false
     end
+
+    -- 选中后基于限购与购买记录控制按钮可见性
+    self:UpdateSelectedItemButtonsVisibility()
 end
 
 --- 清空选中的商品详情
@@ -371,7 +379,7 @@ end
 -- 【新增】迷你币购买请求
 function ShopDetailGui:SendMiniCoinPurchaseRequest(shopItemId, categoryName)
     local args = { shopItemId = shopItemId, categoryName = categoryName }
-    gg.log("发送迷你币购买请求, 商品ID: " .. shopItemId .. ", 事件: " .. ShopEventConfig.REQUEST.PURCHASE_MINI_ITEM)
+    --gg.log("发送迷你币购买请求, 商品ID: " .. shopItemId .. ", 事件: " .. ShopEventConfig.REQUEST.PURCHASE_MINI_ITEM)
     gg.network_channel:fireServer({
         cmd = ShopEventConfig.REQUEST.PURCHASE_MINI_ITEM,
         args = args
@@ -380,7 +388,7 @@ end
 
 -- 【新增】普通货币购买请求
 function ShopDetailGui:SendNormalPurchaseRequest(shopItemId, categoryName, currencyType)
-    gg.log("发送普通货币购买请求, 商品ID: " .. shopItemId .. ", 货币类型: " .. currencyType)
+    --gg.log("发送普通货币购买请求, 商品ID: " .. shopItemId .. ", 货币类型: " .. currencyType)
     gg.network_channel:fireServer({
         cmd = ShopEventConfig.REQUEST.PURCHASE_ITEM,
         args = { shopItemId = shopItemId, categoryName = categoryName, currencyType = currencyType }
@@ -394,18 +402,19 @@ end
 
 function ShopDetailGui:OnShopListResponse(data)
     if data and data.success and data.data and data.data.category == self.selectedCategory then
-        --gg.log("收到商品列表响应: ", data)
+        ----gg.log("收到商品列表响应: ", data)
         self:RefreshItemList(data.data.itemList)
     else
-        --gg.log("获取商品列表失败: " .. (data and data.errorMsg or "未知错误"))
+        ----gg.log("获取商品列表失败: " .. (data and data.errorMsg or "未知错误"))
     end
 end
 
 function ShopDetailGui:OnPurchaseResponse(data)
     if data and data.success then
-        --gg.log("普通货币购买成功: " .. (data.data and data.data.message or ""))
+        ----gg.log("普通货币购买成功: " .. (data.data and data.data.message or ""))
+        self:UpdateSelectedItemButtonsVisibility()
     else
-        --gg.log("普通货币购买失败: " .. (data and data.errorMsg or "未知错误"))
+        ----gg.log("普通货币购买失败: " .. (data and data.errorMsg or "未知错误"))
     end
 end
 
@@ -413,17 +422,18 @@ end
 function ShopDetailGui:OnMiniPurchaseResponse(data)
     if data and data.success then
         if data.data.status == "pending" then
-            --gg.log("迷你币支付弹窗已拉起: " .. (data.data.message or ""))
+            ----gg.log("迷你币支付弹窗已拉起: " .. (data.data.message or ""))
         elseif data.data.status == "success" then
-            --gg.log("迷你币购买成功: " .. (data.data.message or ""))
+            ----gg.log("迷你币购买成功: " .. (data.data.message or ""))
+            self:UpdateSelectedItemButtonsVisibility()
         end
     else
-        --gg.log("迷你币购买失败: " .. (data and data.errorMsg or "未知错误"))
+        ----gg.log("迷你币购买失败: " .. (data and data.errorMsg or "未知错误"))
     end
 end
 
 function ShopDetailGui:OnShopErrorResponse(data)
-    --gg.log("收到商城系统错误: ", data and data.errorMsg)
+    ----gg.log("收到商城系统错误: ", data and data.errorMsg)
 end
 
 function ShopDetailGui:OnSyncInventoryItems(data)
@@ -445,7 +455,7 @@ function ShopDetailGui:OnSyncInventoryItems(data)
     end
 
     if hasCurrencyUpdate then
-        --gg.log("商城界面已同步货币数据", self.currencyMap)
+        ----gg.log("商城界面已同步货币数据", self.currencyMap)
         self:RefreshAllPurchaseButtons()
     end
 end
@@ -472,6 +482,47 @@ function ShopDetailGui:RefreshAllPurchaseButtons()
     if self.selectedCategory and self.productTypesTable[self.selectedCategory] then
         for _, buttonData in pairs(self.productTypesTable[self.selectedCategory]) do
             self:UpdatePurchaseButtonState(buttonData.button, buttonData.shopItem)
+        end
+    end
+end
+
+-------------------------------------------------------------------
+-- 商城数据同步与限购判断
+-------------------------------------------------------------------
+
+function ShopDetailGui:OnShopDataSync(data)
+    local payload = data and data.data
+    if not payload or not payload.shopData then return end
+    self.shopData = payload.shopData
+
+    -- 当前商品刷新按钮可见性
+    self:UpdateSelectedItemButtonsVisibility()
+end
+
+--- 判断指定商品是否已购买（根据purchaseRecords）
+---@param itemId string
+---@return boolean
+function ShopDetailGui:IsItemPurchased(itemId)
+    if not self.shopData or not self.shopData.purchaseRecords then return false end
+    local record = self.shopData.purchaseRecords[itemId]
+    return record and (record.purchaseCount or 0) > 0 or false
+end
+
+--- 基于限购类型（永久一次）与购买记录，控制当前选中商品的购买按钮显示
+function ShopDetailGui:UpdateSelectedItemButtonsVisibility()
+    if not self.selectedItem then return end
+    local shopItemTypeData = ConfigLoader.GetShopItem(self.selectedItem)
+    if not shopItemTypeData then return end
+
+    local isPermanentOnce = (shopItemTypeData.limitConfig and shopItemTypeData.limitConfig.limitType == "永久一次")
+    local purchased = self:IsItemPurchased(shopItemTypeData.configName)
+
+    if isPermanentOnce and purchased then
+        if self.miniCoinPriceButton and self.miniCoinPriceButton.node then
+            self.miniCoinPriceButton.node.Visible = false
+        end
+        if self.goldPriceButton and self.goldPriceButton.node then
+            self.goldPriceButton.node.Visible = false
         end
     end
 end

@@ -32,6 +32,7 @@ function OnlineRewardsGui:OnInit(node, config)
     
     -- 奖励档位选择
     self.primarySlot = self:Get("在线奖励界面/奖励界面栏位_初级", ViewList) ---@type ViewList
+    self.primarySlot:SetVisible(true)
 
     -- 奖励容器
     self.rewardTemplate = self:Get("在线奖励界面/模版界面/奖励模版", ViewComponent) ---@type ViewComponent

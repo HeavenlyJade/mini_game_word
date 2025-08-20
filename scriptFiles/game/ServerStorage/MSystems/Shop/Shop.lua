@@ -173,7 +173,15 @@ function Shop:ExecutePurchase(shopItemId, player, currencyType)
     -- 更新限购计数器
     self:UpdateLimitCounter(shopItemId, shopItem)
 
-    
+    -- 执行商品配置的额外指令（如果有）
+    if shopItem.executeCommands ~= nil and #shopItem.executeCommands > 0 then
+        for _, commandStr in ipairs(shopItem.executeCommands) do
+            if type(commandStr) == "string" and commandStr ~= "" then
+                self:ExecuteRewardCommand(commandStr, player)
+            end
+        end
+    end
+
     -- 构建购买结果数据
     local purchaseData = {
         shopItemId = shopItemId,

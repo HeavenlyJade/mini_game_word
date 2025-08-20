@@ -185,7 +185,7 @@ function VariableCommand.handlers.view(params, player)
         if not details then
             local msg = string.format("玩家 %s 没有名为 '%s' 的变量。", player.name, variableName)
             player:SendHoverText(msg)
-            --gg.log(msg)
+            gg.log(msg)
             return false
         end
 
@@ -210,7 +210,10 @@ function VariableCommand.handlers.view(params, player)
 
         local fullMessage = table.concat(response, "\n")
         player:SendHoverText(fullMessage)
-        --gg.log(fullMessage)
+        local lines = gg.split(fullMessage, "\n")
+        for _, line in ipairs(lines) do
+            gg.log(line)
+        end
     else
         -- 查看所有变量的详细信息
         local allVars = variableSystem:GetAllVariables()
@@ -246,8 +249,11 @@ function VariableCommand.handlers.view(params, player)
         end
 
         local fullMessage = table.concat(response, "\n")
-        player:SendHoverText(fullMessage)
-        --gg.log(fullMessage)
+        -- player:SendHoverText(fullMessage)
+        local lines = gg.split(fullMessage, "\n")
+        for _, line in ipairs(lines) do
+            gg.log(line)
+        end
     end
     return true
 end

@@ -28,6 +28,7 @@ local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@ty
 local PlayerInitMgr = require(ServerStorage.MSystems.PlayerInitMgr) ---@type PlayerInitMgr
 
 local cloudDataMgr  = require(ServerStorage.CloundDataMgr.MCloudDataMgr)    ---@type MCloudDataMgr
+local NodeCloneGenerator = require(ServerStorage.ServerUntils.NodeCloneGenerator) ---@type NodeCloneGenerator
 
 
 ---@class MServerInitPlayer
@@ -179,6 +180,9 @@ function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor,player)
         return
     end
 
+    -- 生成玩家名称节点（如果未生成）
+    NodeCloneGenerator.GeneratePlayerNameDisplay(player)
+
     -- 装饰性对象的名称列表
     local decorativeObjectNames = {
         "Pet1", "Pet2", "Pet3", "Pet4", "Pet5", "Pet6",
@@ -194,15 +198,8 @@ function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor,player)
             decorativeNode.IgnoreStreamSync = true
         end
     end
-    local TitleNode = player_actor["称号"]
-    TitleNode["玩家名称"].Title = player.name
-    if player.variableSystem then
-        local privilegeValue = player.variableSystem:GetVariable("特权_固定值_特权标识", 0)
-        TitleNode["特权"].Visible = (privilegeValue == 1)
-    else
-        -- 如果变量系统不存在，默认隐藏特权标识
-        TitleNode["特权"].Visible = false
-    end
+
+
     
 
 end

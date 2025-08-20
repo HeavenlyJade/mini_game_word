@@ -54,7 +54,6 @@ function ShopMgr.OnPlayerJoin(player)
     ---@cast shopInstance Shop
     server_player_shop_data[uin] = shopInstance
     
-    gg.log("玩家商城实例创建成功", uin,shopData)
     return shopInstance
 end
 
@@ -303,6 +302,14 @@ function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
     -- 记录购买与限购计数（以迷你币计）
     shopInstance:UpdatePurchaseRecord(targetItem.configName, targetItem, "迷你币")
     shopInstance:UpdateLimitCounter(targetItem.configName, targetItem)
+    -- 执行商品配置的额外指令（如果有）
+    if targetItem.executeCommands and type(targetItem.executeCommands) == "table" and #targetItem.executeCommands > 0 then
+        for _, commandStr in ipairs(targetItem.executeCommands) do
+            if type(commandStr) == "string" and commandStr ~= "" then
+                shopInstance:ExecuteRewardCommand(commandStr, player)
+            end
+        end
+    end
     
     -- 持久化
     ShopMgr.SavePlayerShopData(player.uin)
@@ -460,6 +467,52 @@ function ShopMgr.SavePlayerShopData(uin)
     
     local shopData = shopInstance:GetData()
     return ShopCloudDataMgr.SavePlayerShopData(uin, shopData)
+end
+
+-- 清空指定玩家的商城数据并保存
+---@param uin number 玩家UIN
+---@return boolean 是否成功
+function ShopMgr.ClearPlayerShopData(uin)
+    if not uin then
+        return false
+    end
+
+    -- 创建默认数据并保存到云端
+    local defaultData = ShopCloudDataMgr.CreateDefaultShopData()
+    defaultData.uin = uin
+    ShopCloudDataMgr.SavePlayerShopData(uin, defaultData)
+
+    -- 如果内存中存在实例，同步重置其字段，避免旧数据残留
+    local shopInstance = server_player_shop_data[uin]
+    if shopInstance then
+        shopInstance.purchaseRecords = {}
+        shopInstance.limitCounters = {}
+        shopInstance.preferences = {}
+        shopInstance.vipLevel = 0
+        shopInstance.totalPurchaseValue = 0
+        shopInstance.totalCoinSpent = 0
+        shopInstance.dailyResetTime = defaultData.dailyResetTime
+        shopInstance.weeklyResetTime = defaultData.weeklyResetTime
+        shopInstance.monthlyResetTime = defaultData.monthlyResetTime
+    end
+
+    -- 确保有实例后推送同步
+    if not shopInstance then
+        local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+        local player = MServerDataManager.getPlayerByUin(uin)
+        if player then
+            shopInstance = ShopMgr.OnPlayerJoin(player)
+        end
+    end
+
+    if shopInstance then
+        ShopMgr.PushShopDataToClient(uin)
+        gg.log("已清空玩家商城数据并同步:", uin)
+    else
+        gg.log("已清空玩家商城云数据，但未找到在线实例用于同步:", uin)
+    end
+
+    return true
 end
 
 -- 保存所有在线玩家的商城数据
