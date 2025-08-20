@@ -19,6 +19,10 @@ VariableNameConfig.VariableNames = {
     '特权_固定值_特权标识',
     '特权_百分比_金币加成',
     '特权_百分比_训练加成',
+    '特权_百分比_奖杯加成',
+    '特权_固定值_最大重生',
+    '特权_固定值_高级抽蛋运气',
+    '特权_固定值_超级抽蛋运气',
 }
 
 VariableNameConfig.StatNames = {

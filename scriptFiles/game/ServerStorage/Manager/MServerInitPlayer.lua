@@ -166,7 +166,7 @@ function MServerInitPlayer.player_enter_game(player)
     TrailMgr.UpdateAllEquippedTrailModels(player_)
 
     MServerInitPlayer.syncPlayerDataToClient(player_)
-    MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_)
+    MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_,player_)
     gg.log("玩家碰撞组设置验证:", player.name, "CollideGroupID:", player_actor_.CollideGroupID)
     gg.log("玩家进入了游戏", gg.player_scene_map,player)
 
@@ -174,7 +174,7 @@ function MServerInitPlayer.player_enter_game(player)
 end
 
 -- 【新增】确保装饰性对象的同步设置正确
-function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor)
+function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor,player)
     if not player_actor then
         return
     end
@@ -193,6 +193,15 @@ function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor)
             -- 确保同步设置正确
             decorativeNode.IgnoreStreamSync = true
         end
+    end
+    local TitleNode = player_actor["称号"]
+    TitleNode["玩家名称"].Title = player.name
+    if player.variableSystem then
+        local privilegeValue = player.variableSystem:GetVariable("特权_固定值_特权标识", 0)
+        TitleNode["特权"].Visible = (privilegeValue == 1)
+    else
+        -- 如果变量系统不存在，默认隐藏特权标识
+        TitleNode["特权"].Visible = false
     end
     
 

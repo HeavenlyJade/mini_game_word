@@ -157,7 +157,7 @@ function AnimationCommand.handlers.setAnimation(params, player)
     
     -- 准备发送给客户端的数据
     local clientData = {
-        cmd = "S2C_LaunchPlayer", -- 添加事件名称
+        cmd = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, -- 添加事件名称
         gameMode = "PLAYER_ANIMATION",
         operationType = "设置动画",
         animationName = animationName
@@ -187,7 +187,7 @@ function AnimationCommand.handlers.setGravity(params, player)
     
     -- 准备发送给客户端的数据
     local clientData = {
-        cmd = "S2C_LaunchPlayer", -- 添加事件名称
+        cmd = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, -- 添加事件名称
         gameMode = "PLAYER_ANIMATION",
         operationType = "设置重力",
         gravityValue = gravityValue
@@ -217,7 +217,7 @@ function AnimationCommand.handlers.setMoveSpeed(params, player)
     
     -- 准备发送给客户端的数据
     local clientData = {
-        cmd = "S2C_LaunchPlayer", -- 添加事件名称
+        cmd =   EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, -- 添加事件名称
         gameMode = "PLAYER_ANIMATION",
         operationType = "设置移动速度",
         moveSpeed = moveSpeed
@@ -242,7 +242,7 @@ function AnimationCommand.handlers.forceStop(params, player)
     
     -- 准备发送给客户端的数据
     local clientData = {
-        cmd = "S2C_LaunchPlayer", -- 添加事件名称
+        cmd = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, -- 添加事件名称
         gameMode = "PLAYER_ANIMATION",
         operationType = "强制停止"
     }

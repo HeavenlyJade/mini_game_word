@@ -89,7 +89,9 @@ function TournamentSc:RegisterEvents()
 
 	-- 比赛发射事件（比赛开始时触发，含玩家变量数据）
 	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, function(data)
-		self:OnLaunchPlayer(data)
+        if data.gameMode == EventPlayerConfig.GAME_MODES.RACE_GAME then
+            self:OnLaunchPlayer(data)
+        end
 	end)
 
 	-- 比赛界面更新

@@ -161,11 +161,11 @@ function Shop:ExecutePurchase(shopItemId, player, currencyType)
     
     -- 发放奖励
     local rewardSuccess, rewardReason = self:GrantRewards(shopItem, player)
-    if not rewardSuccess then
-        -- 购买失败，需要退款
-        self:RefundPayment(shopItem, player, currencyType)
-        return false, "发放奖励失败：" .. rewardReason
-    end
+    -- if not rewardSuccess then
+    --     -- 购买失败，需要退款
+    --     self:RefundPayment(shopItem, player, currencyType)
+    --     return false, "发放奖励失败：" .. rewardReason
+    -- end
     
     -- 更新购买记录
     self:UpdatePurchaseRecord(shopItemId, shopItem, currencyType)

@@ -11,6 +11,8 @@ ShopEventConfig.REQUEST = {
     VALIDATE_PURCHASE = "ShopRequest_ValidatePurchase",  -- 验证购买条件
     GET_PURCHASE_RECORDS = "ShopRequest_GetRecords",     -- 获取购买记录
     REFRESH_SHOP = "ShopRequest_RefreshShop",            -- 刷新商城数据
+    PURCHASE_MINI_ITEM = "ShopRequest_PurchaseMiniItem", -- 【新增】迷你币专用购买事件
+
 }
 
 -- 服务器响应事件
@@ -21,6 +23,8 @@ ShopEventConfig.RESPONSE = {
     RECORDS_RESPONSE = "ShopResponse_Records",           -- 购买记录响应
     REFRESH_RESPONSE = "ShopResponse_Refresh",           -- 刷新结果响应
     ERROR = "ShopResponse_Error",                        -- 错误响应
+    MINI_PURCHASE_RESPONSE = "ShopResponse_MiniPurchase", -- 【新增】迷你币购买响应
+
 }
 
 -- 服务器主动推送事件
