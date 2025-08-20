@@ -45,7 +45,10 @@ function RebirthGui:OnInit(node, config)
     -- 2. 数据存储
     self.currentTalentLevel = 0 -- 当前重生天赋等级
     self.costsByLevel = {} -- 存储每个等级的消耗
+    self.maxExecutions = 0 -- 最大可执行次数
+    self.maxExecutionTotalCost = 0 -- 最大执行总消耗
     self.playerResources = {} -- 玩家持有的资源
+    self.playerVariableData = {} -- 玩家变量数据缓存（战力值等）
 
     -- 3. 事件注册
     self:RegisterEvents()
@@ -66,9 +69,15 @@ function RebirthGui:RegisterEvents()
         self:OnTalentLevelResponse(data)
     end)
 
-    -- 监听天赋动作执行结果
+    -- 监听天赋动作执行结果（包括重生）
     ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, function(data)
         self:OnPerformActionResponse(data)
+    end)
+
+    -- 【新增】监听玩家变量数据同步（战力值更新）
+    local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
+        self:OnPlayerVariableSync(data)
     end)
 end
 
@@ -137,6 +146,29 @@ function RebirthGui:OnPerformActionResponse(responseData)
     end
 end
 
+--- 新增：处理玩家变量数据同步（战力值更新）
+---@param data table 变量同步数据
+function RebirthGui:OnPlayerVariableSync(data)
+    if not data or not data.variableData then
+        return
+    end
+
+    -- 更新玩家变量数据缓存
+    if not self.playerVariableData then
+        self.playerVariableData = {}
+    end
+
+    -- 合并新数据到现有缓存中
+    for variableName, variableData in pairs(data.variableData) do
+        self.playerVariableData[variableName] = variableData
+    end
+
+    -- 如果是战力同步，刷新界面显示
+    if data.isPowerSync then
+        self:RefreshDisplay()
+    end
+end
+
 -- =================================
 -- 按钮操作处理
 -- =================================
@@ -145,9 +177,9 @@ end
 function RebirthGui:OnClickRebirthLevel(level)
     --gg.log(string.format("点击重生等级 %d 按钮", level))
 
-    -- 发送执行天赋动作的请求
+    -- 发送执行单次重生的请求
     gg.network_channel:fireServer({
-        cmd = AchievementEventConfig.REQUEST.PERFORM_TALENT_ACTION,
+        cmd = AchievementEventConfig.REQUEST.PERFORM_REBIRTH,
         args = {
             talentId = TALENT_ID,
             targetLevel = level
@@ -159,7 +191,7 @@ function RebirthGui:OnClickMaxRebirth()
     --gg.log("点击最大重生按钮")
 
     gg.network_channel:fireServer({
-        cmd = AchievementEventConfig.REQUEST.PERFORM_MAX_TALENT_ACTION,
+        cmd = AchievementEventConfig.REQUEST.PERFORM_MAX_REBIRTH,
         args = {
             talentId = TALENT_ID,
         }
@@ -194,7 +226,16 @@ function RebirthGui:RefreshDisplay()
         local canAfford = true
         if costsAndEffects and #costsAndEffects > 0 then
             for _, costInfo in ipairs(costsAndEffects) do
-                local playerAmount = self.playerResources[costInfo.item] or 0
+                local playerAmount = 0
+                
+                -- 优先使用缓存的变量数据
+                if self.playerVariableData and self.playerVariableData[costInfo.item] then
+                    playerAmount = self.playerVariableData[costInfo.item].base or 0
+                else
+                    -- 回退到服务器返回的资源数据
+                    playerAmount = self.playerResources[costInfo.item] or 0
+                end
+                
                 if playerAmount < costInfo.amount then
                     canAfford = false
                     break -- 只要有一项资源不够，就跳出循环

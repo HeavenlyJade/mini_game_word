@@ -78,6 +78,12 @@ function FuncScript:HandleAutoPlay()
     -- 更新本地状态
     self.autoPlayState = not (self.autoPlayState or false)
     
+    -- 如果启动自动挂机，先停止自动比赛
+    if self.autoPlayState and self.autoRaceState then
+        self.autoRaceState = false
+        self:HandleStopAutoRace(true) -- 调用停止函数，并传递一个标志以避免重复发送请求
+    end
+    
     -- 发送自动挂机请求到服务端
     gg.network_channel:FireServer({
         cmd = EventPlayerConfig.REQUEST.AUTO_PLAY_TOGGLE,
@@ -107,6 +113,12 @@ function FuncScript:HandleAutoRace()
     -- 更新本地状态
     self.autoRaceState = true
     
+    -- 如果启动自动比赛，先停止自动挂机
+    if self.autoRaceState and self.autoPlayState then
+        self.autoPlayState = false
+        self:HandleStopAutoPlay(true) -- 调用停止函数，并传递一个标志以避免重复发送请求
+    end
+    
     -- 发送自动比赛请求到服务端
     gg.network_channel:FireServer({
         cmd = EventPlayerConfig.REQUEST.AUTO_RACE_TOGGLE,
@@ -119,35 +131,39 @@ function FuncScript:HandleAutoRace()
 end
 
 -- 停止自动比赛功能处理
-function FuncScript:HandleStopAutoRace()
+function FuncScript:HandleStopAutoRace(isInternalCall)
     gg.log("触发停止自动比赛功能")
     
     -- 更新本地状态
     self.autoRaceState = false
     
-    -- 发送停止自动比赛请求到服务端
-    gg.network_channel:FireServer({
-        cmd = EventPlayerConfig.REQUEST.AUTO_RACE_TOGGLE,
-        uin = gg.get_client_uin(),
-        enabled = false
-    })
+    if not isInternalCall then
+        -- 发送停止自动比赛请求到服务端
+        gg.network_channel:FireServer({
+            cmd = EventPlayerConfig.REQUEST.AUTO_RACE_TOGGLE,
+            uin = gg.get_client_uin(),
+            enabled = false
+        })
+    end
     
     -- 更新按钮显示状态
     self:UpdateAutoRaceButtonDisplay()
 end
 
 -- 停止自动挂机功能处理
-function FuncScript:HandleStopAutoPlay()
+function FuncScript:HandleStopAutoPlay(isInternalCall)
     gg.log("触发停止自动挂机功能")
     
     -- 更新本地状态
     self.autoPlayState = false
     
-    -- 发送停止自动挂机请求到服务端
-    gg.network_channel:FireServer({
-        cmd = EventPlayerConfig.REQUEST.AUTO_PLAY_TOGGLE,
-        enabled = false
-    })
+    if not isInternalCall then
+        -- 发送停止自动挂机请求到服务端
+        gg.network_channel:FireServer({
+            cmd = EventPlayerConfig.REQUEST.AUTO_PLAY_TOGGLE,
+            enabled = false
+        })
+    end
     
     -- 更新按钮显示状态
     self:UpdateAutoPlayButtonDisplay()

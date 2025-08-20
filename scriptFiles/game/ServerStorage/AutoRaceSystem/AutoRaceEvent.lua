@@ -93,6 +93,21 @@ function AutoRaceEventManager.HandleAutoRaceToggle(evt)
     local enabled = evt.enabled
     local uin = player.uin
     
+    -- 如果启用自动比赛，先检查并停止自动挂机
+    if enabled then
+        local autoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
+        if autoPlayManager.IsPlayerAutoPlaying(player) then
+            -- 停止自动挂机
+            autoPlayManager.SetPlayerAutoPlayState(player, false)
+            -- 发送自动挂机停止通知
+            local autoPlayEventManager = require(ServerStorage.AutoRaceSystem.AutoPlayEvent) ---@type AutoPlayEventManager
+            autoPlayEventManager.SendSuccessResponse(uin, autoPlayEventManager.NOTIFY.AUTO_PLAY_STOPPED, {
+                enabled = false,
+                message = "自动挂机已停止（因启动自动比赛）"
+            })
+        end
+    end
+    
     -- 使用新的状态设置方法
     AutoRaceManager.SetPlayerAutoRaceState(player, enabled)
     

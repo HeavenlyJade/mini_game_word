@@ -155,10 +155,11 @@ function AutoRaceManager.SetPlayerAutoRaceState(mPlayer, enabled)
 end
 
 -- 检查玩家是否在自动比赛中
----@param uin number 玩家uin
+---@param player MPlayer 玩家实例
 ---@return boolean 是否在自动比赛中
-function AutoRaceManager.IsPlayerInAutoRace(uin)
-    return playerAutoRaceState[uin] == true
+function AutoRaceManager.IsPlayerAutoRacing(player)
+    if not player then return false end
+    return playerAutoRaceState[player.uin] == true
 end
 
 return AutoRaceManager

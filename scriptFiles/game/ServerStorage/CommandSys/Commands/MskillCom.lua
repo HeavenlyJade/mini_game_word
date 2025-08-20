@@ -15,7 +15,7 @@ local SkillCommands = {}
 
 
 ---@param params table
----@param player MPlayer
+---@param player Player
 function SkillCommands.unlock(params, player)
     local skillName = params["skillName"]
     local level = params["level"] or 1

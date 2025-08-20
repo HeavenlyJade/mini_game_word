@@ -332,10 +332,11 @@ function AutoPlayManager.SetPlayerAutoPlayState(player, enabled)
 end
 
 -- 检查玩家是否在自动挂机中
----@param uin number 玩家uin
+---@param player MPlayer 玩家实例
 ---@return boolean 是否在自动挂机中
-function AutoPlayManager.IsPlayerInAutoPlay(uin)
-    return playerAutoPlayState[uin] == true
+function AutoPlayManager.IsPlayerAutoPlaying(player)
+    if not player then return false end
+    return playerAutoPlayState[player.uin] == true
 end
 
 return AutoPlayManager

@@ -211,22 +211,7 @@ function ShopMgr.ProcessNormalPurchase(player, shopItemId, currencyType, categor
     end
 end
 
--- 【保留】原有的ProcessPurchase函数，但内部重定向到新函数
----@deprecated 请使用ProcessMiniCoinPurchase或ProcessNormalPurchase
----@param player MPlayer 玩家对象
----@param shopItemId string 商品ID
----@param currencyType string 货币类型
----@param categoryName string|nil 商品分类
----@return boolean|string, string, table|nil 状态（true=成功, false=失败, "pending"=等待支付），结果消息，附加数据
-function ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
-    gg.log("警告：使用了已弃用的ProcessPurchase函数", player.name, shopItemId, currencyType)
-    
-    if currencyType == "迷你币" then
-        return ShopMgr.ProcessMiniCoinPurchase(player, shopItemId, categoryName)
-    else
-        return ShopMgr.ProcessNormalPurchase(player, shopItemId, currencyType, categoryName)
-    end
-end
+
 
 -- 处理迷你币商品购买
 ---@param player MPlayer 玩家对象
@@ -310,6 +295,8 @@ function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
             end
         end
     end
+    
+
     
     -- 持久化
     ShopMgr.SavePlayerShopData(player.uin)
