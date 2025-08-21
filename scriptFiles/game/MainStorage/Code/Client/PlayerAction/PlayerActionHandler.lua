@@ -19,7 +19,7 @@ local ActionModules = {
 local PlayerActionHandler = ClassMgr.Class("PlayerActionHandler")
 
 function PlayerActionHandler:OnInit()
-    gg.log("PlayerActionHandler 初始化...")
+    -- gg.log("PlayerActionHandler 初始化...")
     self:SubscribeServerEvents()
     self:ListenToPlayerEvents()
     self.activeModule = nil -- 当前激活的行为模块
@@ -34,7 +34,6 @@ function PlayerActionHandler:ListenToPlayerEvents()
         return
     end
 
-    gg.log("PlayerActionHandler: 成功获取本地玩家 Actor，开始监听事件...")
 
     -- 监听移动状态变化，并转发给当前模块
     -- actor.MoveStateChange:Connect(function(before, after)

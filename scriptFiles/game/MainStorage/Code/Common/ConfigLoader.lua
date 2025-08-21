@@ -128,7 +128,6 @@ end
 --- 构建迷你币商品映射表
 --- 提取所有配置了迷你币支付且有miniItemId的商品，建立miniItemId -> ShopItemType的映射
 function ConfigLoader.BuildMiniShopMapping()
-    print("开始构建迷你币商品映射表")
     local count = 0
     
     for shopItemId, shopItem in pairs(ConfigLoader.ShopItems) do
@@ -153,10 +152,10 @@ function ConfigLoader.BuildMiniShopMapping()
             ConfigLoader.MiniShopItems[miniItemId] = shopItem
             count = count + 1
             
-            print(string.format("注册迷你币商品：ID=%d, 名称=%s, 价格=%d迷你币", 
-                miniItemId, 
-                shopItem.configName, 
-                shopItem.price.miniCoinAmount or 0))
+            -- print(string.format("注册迷你币商品：ID=%d, 名称=%s, 价格=%d迷你币", 
+            --     miniItemId, 
+            --     shopItem.configName, 
+            --     shopItem.price.miniCoinAmount or 0))
         end
     end
     

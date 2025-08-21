@@ -171,10 +171,8 @@ end
 -- --设置碰撞组
 function MainServer.SetCollisionGroup()
     --设置碰撞组
-    gg.log("设置碰撞组1111")
     local WS = game:GetService("PhysXService")
     WS:SetCollideInfo(4, 4, false)   --玩家不与玩家碰撞
-    gg.log("设置碰撞组")
     -- WS:SetCollideInfo(1, 1, false)   --怪物不与怪物碰撞
     -- WS:SetCollideInfo(0, 1, false)   --玩家不与怪物碰撞
 end

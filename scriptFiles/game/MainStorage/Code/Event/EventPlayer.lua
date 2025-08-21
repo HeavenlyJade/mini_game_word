@@ -47,6 +47,7 @@ EventPlayerConfig.NOTIFY = {
     RACE_CONTEST_HIDE = "RaceContestHide", -- 隐藏比赛界面
     RACE_PREPARE_COUNTDOWN = "RacePrepareCountdown", -- 比赛准备倒计时
     RACE_PREPARE_COUNTDOWN_STOP = "RacePrepareCountdownStop", -- 停止比赛准备倒计时
+    ITEM_ACQUIRED_NOTIFY = "ItemAcquiredNotify", -- 获得物品通知
 }
 
 --[[
@@ -113,6 +114,27 @@ EventPlayerConfig.GAME_MODES = {
     NONE = nil, -- 无特殊模式
     RACE_GAME = "飞车挑战赛" -- 飞车挑战赛
 }
+
+-- 物品类型枚举
+EventPlayerConfig.ITEM_TYPES = {
+    ITEM = "物品",           -- 背包物品
+    PET = "宠物",            -- 宠物
+    PARTNER = "伙伴",        -- 伙伴
+    WING = "翅膀",           -- 翅膀
+    TRAIL = "尾迹",          -- 尾迹
+}
+
+-- 物品通知数据结构
+---@class ItemAcquiredReward
+---@field itemType string 物品类型（使用ITEM_TYPES中的值）
+---@field itemName string 物品名称（配置名称）
+---@field amount number 物品数量
+
+---@class ItemAcquiredNotifyData
+---@field rewards ItemAcquiredReward[] 获得的物品列表
+---@field source string 来源描述（如"抽奖获得"、"在线奖励"等）
+---@field message string 通知消息（如"恭喜获得以下物品！"）
+
 EventPlayerConfig.PLAYER_ACTION = {
     PLAYER_ANIMATION = "PLAYER_ANIMATION",
 }

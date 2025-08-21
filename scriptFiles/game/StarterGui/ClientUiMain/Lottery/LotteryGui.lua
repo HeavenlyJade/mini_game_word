@@ -30,8 +30,8 @@ function LotteryGui:OnInit(node, config)
     self.fiveDrawButton = self:Get("抽奖界面/五连抽", ViewButton) ---@type ViewButton
 
     -- 价格显示
-    self.singlePriceComponent = self:Get("抽奖界面/单抽", ViewButton) ---@type ViewButton
-    self.fivePriceComponent = self:Get("抽奖界面/五连抽", ViewButton) ---@type ViewButton
+    self.singlePriceComponent = self:Get("抽奖界面/单抽/价格图", ViewComponent) ---@type ViewComponent
+    self.fivePriceComponent = self:Get("抽奖界面/五连抽/价格图", ViewComponent) ---@type ViewComponent
 
     -- 抽奖档位
     self.lotteryTierComponent = self:Get("抽奖界面/抽奖档位", ViewList) ---@type ViewList
@@ -156,7 +156,7 @@ function LotteryGui:RegisterEvents()
         end
         -- 默认/显式打开
         if args.lotteryType then
-            self:OpenWithType(args.lotteryType)
+            self:OpenWithType(args)
         else
             self:Open()
         end
@@ -561,16 +561,16 @@ function LotteryGui:UpdatePriceDisplay()
     
     if priceConfig then
         -- 更新单抽价格，使用格式化显示
-        if self.singlePriceComponent then
-            local singlePrice = priceConfig.singlePrice or 0
-            self.singlePriceComponent.node["价格图"]["价格框"].Title = gg.FormatLargeNumber(singlePrice)
-        end
+        
+        local singlePrice = priceConfig.singlePrice or 0
+        self.singlePriceComponent.node["价格框"].Title = gg.FormatLargeNumber(singlePrice)
+        
         
         -- 更新五连抽价格，使用格式化显示
-        if self.fivePriceComponent then
-            local fivePrice = priceConfig.fivePrice or 0
-            self.fivePriceComponent.node["价格图"]["价格框"].Title = gg.FormatLargeNumber(fivePrice)
-        end
+
+        local fivePrice = priceConfig.fivePrice or 0
+        self.fivePriceComponent.node["价格框"].Title = gg.FormatLargeNumber(fivePrice)
+    
     end
 end
 
@@ -632,12 +632,7 @@ function LotteryGui:GetPriceConfig(tier, lotteryType)
                 singlePrice =  singleCost.costAmount ,
                 fivePrice =  fiveCost.costAmount 
             }
-        else
-            -- 默认配置
-            self.priceConfigs[configKey] = {
-                singlePrice = 100,
-                fivePrice = 450
-            }
+        
         end
     end
     return self.priceConfigs[configKey]
@@ -838,6 +833,12 @@ function LotteryGui:CreateLotteryItemNode(viewList, rewardItem, index, poolName)
     
     -- 查找并设置背景图片
     local backgroundNode = itemNode:FindFirstChild("背景")
+    
+    -- 根据物品品质设置背景资源
+    if rewardInfo.rarity and CardIcon.qualityNoticeIcon[rewardInfo.rarity] then
+        backgroundNode.Icon = CardIcon.qualityNoticeIcon[rewardInfo.rarity]
+    end
+    
     local iconNode = backgroundNode:FindFirstChild("图标")
     if iconNode and rewardInfo.icon then
         -- 设置图片资源
@@ -1040,11 +1041,13 @@ function LotteryGui:RefreshCurrentLotteryItems()
 end
 
 --- 根据抽奖类型打开界面
----@param lotteryType string 抽奖类型（翅膀/宠物/伙伴）
-function LotteryGui:OpenWithType(lotteryType)
-    --gg.log("打开抽奖界面，类型:", lotteryType)
+---@param args string 抽奖类型（翅膀/宠物/伙伴）
+function LotteryGui:OpenWithType(args)
+    local lotteryType = args.lotteryType
+    local sceneBasedType = args.sceneBasedType
+    gg.log("打开抽奖界面，类型:", lotteryType,args)
     self:Open()
-    self:SetLotteryType(lotteryType)
+    self:SetLotteryType(lotteryType,sceneBasedType)
     --gg.log("打开抽奖界面，类型:", lotteryType)
 end
 
@@ -1058,15 +1061,15 @@ function LotteryGui:UpdateTierButtonsVisibility(lotteryType)
     self.superTierButton:SetVisible(false)
     
     -- 根据抽奖类型显示对应的档位按钮
-    if lotteryType == "翅膀" then
+    if string.find(lotteryType, "翅膀") then
         -- 翅膀只有终极档位
         self.superTierButton:SetVisible(true)
-    elseif lotteryType == "宠物" then
+    elseif string.find(lotteryType, "宠物") then
         -- 宠物有初级、中级、高级档位
         self.primaryTierButton:SetVisible(true)
         self.intermediateTierButton:SetVisible(true)
         self.advancedTierButton:SetVisible(true)
-    elseif lotteryType == "伙伴" then
+    elseif string.find(lotteryType, "伙伴") then
         -- 伙伴有初级、终极档位
         self.primaryTierButton:SetVisible(true)
         self.superTierButton:SetVisible(true)
@@ -1075,24 +1078,21 @@ end
 
 --- 设置抽奖类型
 ---@param lotteryType string 抽奖类型（翅膀/宠物/伙伴）
-function LotteryGui:SetLotteryType(lotteryType)
+---@param sceneBasedType string 场景基础类型（初级/中级/高级）
+function LotteryGui:SetLotteryType(lotteryType, sceneBasedType)
     -- 更新档位按钮的显示状态
     self:UpdateTierButtonsVisibility(lotteryType)
     
-    -- 根据抽奖类型设置当前抽奖池名称（使用该类型的第一个可用档位）
-    if lotteryType == "翅膀" then
-        -- 翅膀只有终极档位
-        self.currentPoolName = "初级翅膀终极"
-    elseif lotteryType == "宠物" then
-        -- 宠物从初级档位开始
-        self.currentPoolName = "初级宠物初级"
-    elseif lotteryType == "伙伴" then
-        -- 伙伴从初级档位开始
-        self.currentPoolName = "初级伙伴初级"
-    else
-        -- 默认使用翅膀
-        self.currentPoolName = "初级翅膀终极"
-        --gg.log("未知的抽奖类型:", lotteryType, "，使用默认类型：翅膀")
+    -- 根据抽奖类型设置当前抽奖池名称
+    if string.find(lotteryType, "翅膀") then
+        -- 翅膀只有终极档位，sceneBasedType 应该是 "终极"
+        self.currentPoolName = lotteryType .. "终极"
+    elseif string.find(lotteryType, "宠物") then
+        -- 宠物根据 sceneBasedType 设置档位
+        self.currentPoolName = lotteryType .. sceneBasedType
+    elseif string.find(lotteryType, "伙伴") then
+        -- 伙伴根据 sceneBasedType 设置档位
+        self.currentPoolName = lotteryType .. sceneBasedType
     end
     
     -- 刷新界面显示
@@ -1102,7 +1102,7 @@ function LotteryGui:SetLotteryType(lotteryType)
     self:UpdatePityProgress()
     self:RefreshCurrentLotteryItems()
     
-    --gg.log("设置抽奖类型完成:", lotteryType, "当前池:", self.currentPoolName)
+    --gg.log("设置抽奖类型完成:", lotteryType, "当前池:", self.currentPoolName, "档位:", sceneBasedType)
 end
 
 return LotteryGui.New(script.Parent, uiConfig)

@@ -194,29 +194,42 @@ end
 ---@param stats table 发放统计
 local function syncDataToClient(player, stats)
     -- 按需同步，仅在对应类型发放过奖励时同步一次
-    if stats.bag > 0 then
-        local BagMgr = getBagMgr()
+
+    local BagMgr = getBagMgr()
+    if BagMgr then
+        gg.log("开始同步背包数据到客户端", player.uin)
         BagMgr.ForceSyncToClient(player.uin)
+        gg.log("背包数据同步完成", player.uin)
+    else
+        gg.log("警告：无法获取背包管理器", player.uin)
     end
     
     if stats.pet > 0 then
         local PetMgr = getPetMgr()
-        PetMgr.ForceSyncToClient(player.uin)
+        if PetMgr then
+            PetMgr.ForceSyncToClient(player.uin)
+        end
     end
     
     if stats.partner > 0 then
         local PartnerMgr = getPartnerMgr()
-        PartnerMgr.ForceSyncToClient(player.uin)
+        if PartnerMgr then
+            PartnerMgr.ForceSyncToClient(player.uin)
+        end
     end
     
     if stats.wing > 0 then
         local WingMgr = getWingMgr()
-        WingMgr.ForceSyncToClient(player.uin)
+        if WingMgr then
+            WingMgr.ForceSyncToClient(player.uin)
+        end
     end
     
     if stats.trail > 0 then
         local TrailMgr = getTrailMgr()
-        TrailMgr.ForceSyncToClient(player.uin)
+        if TrailMgr then
+            TrailMgr.ForceSyncToClient(player.uin)
+        end
     end
     
     if stats.variable > 0 then

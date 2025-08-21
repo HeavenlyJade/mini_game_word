@@ -61,6 +61,14 @@ CardIcon.qualityBackGroundIcon = {
     ["SSR"] = "sandboxId://FlyUi/迷你界面/商城UI/橙色品质底图.png",
     ["UR"] = "sandboxId://FlyUi/迷你界面/商城UI/彩色品质底图.png",
 }
+
+CardIcon.qualityNoticeIcon = {
+    ["N"] = "sandboxId://FlyUi/迷你界面/获得物品通告UI/绿物品栏.png",
+    ["R"] = "sandboxId://FlyUi/迷你界面/获得物品通告UI/蓝物品栏.png",
+    ["SR"] = "sandboxId://FlyUi/迷你界面/获得物品通告UI/紫物品栏.png",
+    ["SSR"] = "sandboxId://FlyUi/迷你界面/获得物品通告UI/橙物品栏.png",
+    ["UR"] = "sandboxId://FlyUi/迷你界面/获得物品通告UI/彩物品栏.png",
+}
 -- 品质优先级配置
 CardIcon.qualityPriority = {
     ["UR"] = 5,
