@@ -35,7 +35,8 @@ function RebirthGui:OnInit(node, config)
     -- "最大重生"节点的子控件
     self.maxRebirthCountText = self:Get("重生界面/重生栏位/最大重生/可重生次数") ---@type UITextLabel
     self.maxRebirthCostText = self:Get("重生界面/重生栏位/最大重生/重生消耗") ---@type UITextLabel
-
+    self.autoRebirt = self:Get("重生界面/自动重生") ---@type ViewButton
+    self.autoRebirt:SetVisible(false)
     -- 模板节点
     self.rebirthTemplate = self:Get("重生界面/模版界面/重生", ViewComponent) ---@type ViewComponent
     if self.rebirthTemplate and self.rebirthTemplate.node then
