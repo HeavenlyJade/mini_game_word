@@ -16,6 +16,7 @@ local EventPlayerConfig = {}
 ---@field position Vector3 目标位置
 ---@field message string 可选的消息
 
+
 --[[
 ===================================
 网络事件定义
@@ -138,4 +139,5 @@ EventPlayerConfig.ITEM_TYPES = {
 EventPlayerConfig.PLAYER_ACTION = {
     PLAYER_ANIMATION = "PLAYER_ANIMATION",
 }
+
 return EventPlayerConfig

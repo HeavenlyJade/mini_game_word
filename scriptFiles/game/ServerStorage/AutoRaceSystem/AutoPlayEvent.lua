@@ -1,11 +1,10 @@
 -- AutoPlayEvent.lua
--- 自动挂机事件管理器
+-- 自动挂机事件管理器 - 新增传送相关事件
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
@@ -23,8 +22,7 @@ AutoPlayEventManager.RESPONSE = {
 
 AutoPlayEventManager.NOTIFY = {
     AUTO_PLAY_STARTED = "AutoPlayStarted",
-    AUTO_PLAY_STOPPED = "AutoPlayStopped",
-    NAVIGATE_TO_POSITION = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION
+    AUTO_PLAY_STOPPED = "AutoPlayStopped"
 }
 
 -- 初始化自动挂机事件管理器
@@ -86,8 +84,9 @@ function AutoPlayEventManager.HandleAutoPlayToggle(evt)
         end
     end
     
-    -- 使用新的状态设置方法
-    AutoPlayManager.SetPlayerAutoPlayState(player, enabled)
+    -- 使用新的状态设置方法（延迟 require 以避免循环依赖）
+    local autoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
+    autoPlayManager.SetPlayerAutoPlayState(player, enabled)
     
     if enabled then
         -- 发送启动通知
@@ -106,6 +105,37 @@ function AutoPlayEventManager.HandleAutoPlayToggle(evt)
         
         --gg.log("玩家", uin, "停止自动挂机")
     end
+end
+
+-- 【新增】发送自动挂机开始事件到客户端（供AutoPlayManager调用时也可直接使用）
+---@param uin number 玩家UIN
+---@param player MPlayer 玩家对象
+---@param targetPosition Vector3|nil 目标传送位置
+-- 删除：客户端传送改为服务端直接传送，不再发送 AUTO_PLAY_START
+
+-- 删除：自动挂机的传送成功/失败客户端提示，不再使用
+
+--  发送导航指令到客户端
+---@param uin number 玩家UIN
+---@param targetPosition Vector3 目标位置
+---@param message string 可选的消息
+function AutoPlayEventManager.SendNavigateToPosition(uin, targetPosition, message)
+    
+    if not uin or not targetPosition then
+        --gg.log("导航指令参数不完整")
+        return
+    end
+    
+    -- 将 Vector3 转换为 table 以便网络传输
+    local positionData = { x = targetPosition.x, y = targetPosition.y, z = targetPosition.z }
+    
+    gg.network_channel:fireClient(uin, {
+        cmd = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION,
+        position = positionData,
+        message = message or "导航到指定位置"
+    })
+    
+    --gg.log("已发送导航指令给玩家", uin, "，目标位置:", tostring(targetPosition))
 end
 
 -- 发送成功响应

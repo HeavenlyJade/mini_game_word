@@ -1,5 +1,5 @@
 -- AutoPlayManager.lua
--- 自动挂机管理器
+-- 自动挂机管理器 - 修改为直接传送模式
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
@@ -57,263 +57,206 @@ function AutoPlayManager.CheckAllPlayersAutoPlay()
                 local isInSpot = AutoPlayManager.IsPlayerInAutoPlaySpot(player)
                 local currentSpot = player:GetCurrentIdleSpot()
                 
-                gg.log(string.format("玩家 %s (UIN: %s) 自动挂机检查 - 挂机状态: %s, 当前挂机点: %s", 
-                    player.name, uin, 
-                    isInSpot and "在挂机点" or "不在挂机点", 
-                    currentSpot or "无"))
+                -- gg.log(string.format("玩家 %s (UIN: %s) 自动挂机检查 - 挂机状态: %s, 当前挂机点: %s", 
+                --     player.name, uin, tostring(isInSpot), currentSpot and currentSpot.name or "无"))
                 
+                -- 如果玩家不在挂机点，重新寻找并传送到最佳挂机点
                 if not isInSpot then
-                    -- 玩家不在挂机点，重新寻找最佳挂机点
-                    gg.log(string.format("玩家 %s 不在挂机点，开始寻找最佳挂机点", player.name))
-                    AutoPlayManager.FindAndMoveToBestAutoPlaySpot(player)
-                else
-                    gg.log(string.format("玩家 %s 已在挂机点 %s，无需重新导航", player.name, currentSpot))
+                    AutoPlayManager.FindAndTeleportToBestAutoPlaySpot(player)
                 end
-            else
-                -- 玩家不存在，清除状态
-                playerAutoPlayState[uin] = nil
-                gg.log(string.format("玩家 UIN: %s 不存在，已清除自动挂机状态", uin))
             end
         end
     end
 end
 
--- 检查玩家是否在挂机点
+-- 检查玩家是否在挂机点内
 ---@param player MPlayer 玩家对象
----@return boolean 是否在挂机点
+---@return boolean 是否在挂机点内
 function AutoPlayManager.IsPlayerInAutoPlaySpot(player)
-    if not player then
+    if not player or not player.actor then
         return false
     end
     
-    -- 直接使用玩家的挂机状态属性
-    local isIdling = player:IsIdling()
     local currentSpot = player:GetCurrentIdleSpot()
-    
-    if isIdling and currentSpot then
-        --gg.log(string.format("玩家 %s 正在挂机点: %s", player.name, currentSpot))
-        return true
-    end
-    
-    return false
+    return currentSpot ~= nil
 end
 
--- 寻找并移动到最佳挂机点
+-- 寻找并传送到最佳挂机点
 ---@param player MPlayer 玩家对象
-function AutoPlayManager.FindAndMoveToBestAutoPlaySpot(player)
+function AutoPlayManager.FindAndTeleportToBestAutoPlaySpot(player)
     if not player then return end
     
-    local uin = player.uin
-    local currentScene = player.currentScene
-    
-    gg.log("开始为玩家", uin, "寻找最佳挂机点，当前场景:", currentScene)
-    
-    -- 获取玩家历史最大战力值
-    local historicalMaxPower = AutoPlayManager.GetPlayerHistoricalMaxPower(player)
-    if not historicalMaxPower then
-        gg.log("无法获取玩家历史最大战力值，跳过自动挂机")
-        return
+    local bestSpot = AutoPlayManager.FindBestAutoPlaySpot(player)
+    if bestSpot then
+        AutoPlayManager.TeleportPlayerToAutoPlaySpot(player, bestSpot)
+    else
+        gg.log("玩家", player.uin, "找不到合适的挂机点")
     end
-    
-    gg.log("玩家", uin, "的历史最大战力值:", historicalMaxPower)
-    
-    -- 获取当前场景的所有挂机点
-    local autoPlayNodes = ConfigLoader.GetSceneNodesBy(currentScene, "挂机点")
-    if #autoPlayNodes == 0 then
-        gg.log("当前场景没有挂机点，跳过自动挂机")
-        return
-    end
-    
-    gg.log("找到", #autoPlayNodes, "个挂机点")
-    
-    -- 寻找最佳挂机点
-    local bestSpot = AutoPlayManager.FindBestAutoPlaySpot(autoPlayNodes, player)
-    if not bestSpot then
-        gg.log("未找到合适的挂机点，跳过自动挂机")
-        return
-    end
-    
-    gg.log("找到最佳挂机点:", bestSpot.name, "，效率:", AutoPlayManager.CalculateEfficiency(bestSpot, player))
-    
-    -- 移动到最佳挂机点
-    AutoPlayManager.MovePlayerToAutoPlaySpot(player, bestSpot)
-end
-
--- 获取玩家历史最大战力值
----@param player MPlayer 玩家对象
----@return number|nil 历史最大战力值
-function AutoPlayManager.GetPlayerHistoricalMaxPower(player)
-    if not player then
-        gg.log("玩家对象为空")
-        return nil
-    end
-    
-    if not player.variableSystem then
-        gg.log("玩家变量系统为空")
-        return nil
-    end
-    
-    -- 从变量系统获取历史最大战力值
-    local historicalMaxPower = player.variableSystem:GetVariable("数据_固定值_历史最大战力值")
-    gg.log("从变量系统获取历史最大战力值:", historicalMaxPower)
-    
-    return historicalMaxPower
 end
 
 -- 寻找最佳挂机点
----@param autoPlayNodes SceneNodeType[] 挂机点列表
 ---@param player MPlayer 玩家对象
 ---@return SceneNodeType|nil 最佳挂机点
-function AutoPlayManager.FindBestAutoPlaySpot(autoPlayNodes, player)
-    local bestSpot = nil
-    local bestEfficiency = 0
+function AutoPlayManager.FindBestAutoPlaySpot(player)
+    if not player then return nil end
     
-        -- 获取玩家历史最大战力值
-    local playerPower = AutoPlayManager.GetPlayerHistoricalMaxPower(player)
-    if not playerPower then
-        gg.log("无法获取玩家战力值，无法筛选挂机点")
+    local autoPlaySpots = AutoPlayManager.GetAllAutoPlaySpots(player.currentScene)
+    if not autoPlaySpots or #autoPlaySpots == 0 then
         return nil
     end
     
-    gg.log("开始筛选挂机点，玩家战力:", playerPower)
+    local bestSpot = nil
+    local bestEfficiency = -1
     
-    for _, node in ipairs(autoPlayNodes) do
-        gg.log("检查挂机点:", node.name, "，作用描述:", node.effectDesc)
-        
-        -- 检查进入条件
-        if AutoPlayManager.CheckEnterConditions(node, playerPower) then
-            -- 计算挂机效率（从作用描述中提取）
-            local efficiency = AutoPlayManager.CalculateEfficiency(node, player)
-            gg.log("挂机点", node.name, "满足条件，效率:", efficiency)
-            
+    for _, spot in ipairs(autoPlaySpots) do
+        if AutoPlayManager.CanPlayerUseSpot(spot, player) then
+            local efficiency = AutoPlayManager.CalculateEfficiency(spot, player)
             if efficiency > bestEfficiency then
                 bestEfficiency = efficiency
-                bestSpot = node
-                gg.log("更新最佳挂机点:", node.name, "，新效率:", efficiency)
+                bestSpot = spot
             end
-        else
-            gg.log("挂机点", node.name, "不满足条件")
         end
     end
     
     return bestSpot
 end
 
--- 检查进入条件
----@param node SceneNodeType 挂机点节点
----@param playerPower number 玩家战力值
----@return boolean 是否满足进入条件
-function AutoPlayManager.CheckEnterConditions(node, playerPower)
-    if not node.enterConditions or #node.enterConditions == 0 then
-        gg.log("挂机点", node.name, "无进入条件限制")
-        return true -- 没有条件限制
-    end
-    
-    gg.log("挂机点", node.name, "有", #node.enterConditions, "个进入条件")
-    
-    for _, condition in ipairs(node.enterConditions) do
-        local formula = condition["条件公式"]
-        if formula then
-            gg.log("检查条件公式:", formula)
-            -- 使用 ActionCosteRewardCal 逻辑直接检查条件
-            -- 构建一个包含战力值的玩家数据结构
-            local mockPlayerData = {
-                variableData = {
-                    ["数据_固定值_历史最大战力值"] = { base = playerPower }
-                }
-            }
-            
-            -- 检查条件是否满足
-            local conditionCalculator = ActionCosteRewardCal.New()
-            if not conditionCalculator:_CheckCondition(formula, mockPlayerData, {}, {}) then
-                gg.log("玩家战力不足，不满足条件")
-                return false -- 不满足条件
-            else
-                gg.log("玩家战力满足要求")
-            end
-        end
-    end
-    
-    return true
+-- 获取所有自动挂机点（可按场景过滤）
+---@param belongScene string|nil 所属场景，可为nil表示不过滤
+---@return SceneNodeType[] 挂机点列表
+function AutoPlayManager.GetAllAutoPlaySpots(belongScene)
+    return ConfigLoader.GetSceneNodesBy(belongScene, "挂机点")
 end
 
--- 解析条件公式
----@param formula string 条件公式
+-- 检查玩家是否可以使用挂机点
+---@param spot SceneNodeType 挂机点节点
 ---@param player MPlayer 玩家对象
----@return boolean 是否满足条件
-function AutoPlayManager.ParseConditionFormula(formula, player)
-    if not formula or formula == "" then
-        return true -- 空条件默认满足
+---@return boolean 是否可以使用
+function AutoPlayManager.CanPlayerUseSpot(spot, player)
+    if not spot or not player then return false end
+    
+    -- 检查挂机点条件
+    local conditionFormula = spot.conditionConfig
+    if not conditionFormula or conditionFormula == "" then
+        return true -- 无条件限制
     end
     
-    if not player then
-        gg.log("玩家对象为空，无法解析条件公式")
-        return false
-    end
+    -- 解析并计算条件公式
+    local calculator = ActionCosteRewardCal.New()
+    local result = calculator:EvaluateFormula(conditionFormula, player)
     
-    -- 使用 ActionCosteRewardCal 的逻辑来检查条件
-    local conditionCalculator = ActionCosteRewardCal.New()
-    
-    -- 获取玩家数据 - 使用MPlayer的GetConsumableData方法构建统一数据结构
-    local playerData = player:GetConsumableData()
-    
-    -- 获取玩家的背包数据
-    local bagData = {}
-    if player.bagMgr then
-        bagData = player.bagMgr
-    end
-    
-    -- 构建外部上下文（如果需要的话）
-    local externalContext = {}
-    
-    -- 直接使用ActionCosteRewardCal的_CheckCondition方法
-    local result = conditionCalculator:_CheckCondition(formula, playerData, bagData, externalContext)
-    
-    gg.log("条件公式解析结果:", formula, "->", result)
+    gg.log("条件公式解析结果:", conditionFormula, "->", result)
     
     return result
 end
 
--- 计算挂机效率（直接使用配置的“作数值的配置”）
+-- 计算挂机效率（直接使用配置的"作数值的配置"）
 ---@param node SceneNodeType 挂机点节点
 ---@param player MPlayer 玩家对象
 ---@return number 挂机效率
 function AutoPlayManager.CalculateEfficiency(node, player)
     local value = (node and node.effectValueConfig) or 0
-    gg.log("计算挂机点", node and node.name or "", "的效率，作数值的配置:", value)
     return tonumber(value) or 0
 end
 
--- 移动玩家到挂机点
+-- 【新增】直接传送玩家到挂机点
 ---@param player MPlayer 玩家对象
 ---@param spot SceneNodeType 挂机点
-function AutoPlayManager.MovePlayerToAutoPlaySpot(player, spot)
+function AutoPlayManager.TeleportPlayerToAutoPlaySpot(player, spot)
     if not player or not spot then return end
     
     local uin = player.uin
     
-    -- 获取挂机点的导航节点位置
+    -- 获取挂机点的传送位置
+    local targetPosition = AutoPlayManager.GetSpotTeleportPosition(spot)
+    if not targetPosition then
+        gg.log("无法获取挂机点传送位置:", spot.name)
+        return
+    end
+    
+    -- 服务端直接传送玩家
+    if not player.actor then
+        gg.log("无法传送：玩家无有效的actor")
+        return
+    end
+    AutoPlayManager.ExecuteTeleport(player, targetPosition)
+    gg.log("已将玩家", uin, "直接传送到挂机点:", spot.name)
+end
+
+-- 【新增】获取挂机点的传送位置
+---@param spot SceneNodeType 挂机点
+---@return Vector3|nil 传送位置
+function AutoPlayManager.GetSpotTeleportPosition(spot)
+    if not spot then return nil end
+    
+    -- 获取挂机点场景节点
     local sceneNode = gg.GetChild(game.WorkSpace, spot.nodePath)
     if not sceneNode then
         gg.log("无法找到挂机点场景节点:", spot.nodePath)
-        return
+        return nil
     end
     
-    -- 使用包围盒节点作为导航目标
-    local triggerBoxName = spot.areaConfig["包围盒节点"]
-    local triggerBox = sceneNode[triggerBoxName]
-    if not triggerBox then
-        gg.log("无法找到挂机点包围盒:", triggerBoxName)
-        return
+    -- 优先使用传送节点位置
+    local teleportNodeName = spot.areaConfig and spot.areaConfig["传送节点"]
+    if teleportNodeName and teleportNodeName ~= "" then
+        local teleportNode = sceneNode[teleportNodeName]
+        if teleportNode and teleportNode.Position then
+            return teleportNode.Position
+        end
     end
     
-    -- 发送导航指令到客户端
-    local targetPosition = triggerBox.Position
-    local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
-    AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, "自动导航到最佳挂机点")
+    -- 回退到包围盒节点中心
+    local triggerBoxName = spot.areaConfig and spot.areaConfig["包围盒节点"]
+    if triggerBoxName and triggerBoxName ~= "" then
+        local triggerBox = sceneNode[triggerBoxName]
+        if triggerBox and triggerBox.Position then
+            return triggerBox.Position
+        end
+    end
     
-    gg.log("已发送导航指令给玩家", uin, "，目标挂机点:", spot.name)
+    -- 最后回退到场景节点位置
+    if sceneNode.Position then
+        return sceneNode.Position
+    end
+    
+    return nil
 end
+
+-- 【新增】执行传送操作
+---@param player MPlayer 玩家对象
+---@param targetPosition Vector3 目标位置
+---@return boolean 是否传送成功
+function AutoPlayManager.ExecuteTeleport(player, targetPosition)
+    if not player or not targetPosition then return false end
+    
+    local actor = player.actor
+    if not actor then 
+        gg.log("玩家无actor对象，传送失败")
+        return false 
+    end
+    
+    -- 使用TeleportService进行传送
+    local TeleportService = game:GetService('TeleportService')
+    local success, err = pcall(function()
+        TeleportService:Teleport(actor, targetPosition)
+    end)
+    
+    if not success then
+        gg.log("传送异常:", tostring(err))
+        return false
+    end
+    
+    return true
+end
+
+-- 【废弃的导航方法，保留用于向后兼容】
+-- 移动玩家到挂机点（已废弃，使用传送替代）
+-- ---@param player MPlayer 玩家对象
+-- ---@param spot SceneNodeType 挂机点
+-- function AutoPlayManager.MovePlayerToAutoPlaySpot(player, spot)
+--     gg.log("警告: MovePlayerToAutoPlaySpot 已废弃，请使用 TeleportPlayerToAutoPlaySpot")
+--     AutoPlayManager.TeleportPlayerToAutoPlaySpot(player, spot)
+-- end
 
 -- 设置玩家自动挂机状态
 ---@param player MPlayer 玩家对象
@@ -324,8 +267,8 @@ function AutoPlayManager.SetPlayerAutoPlayState(player, enabled)
     local uin = player.uin
     if enabled then
         playerAutoPlayState[uin] = true
-        -- 立即寻找最佳挂机点
-        AutoPlayManager.FindAndMoveToBestAutoPlaySpot(player)
+        -- 立即寻找最佳挂机点并传送
+        AutoPlayManager.FindAndTeleportToBestAutoPlaySpot(player)
     else
         playerAutoPlayState[uin] = nil
     end
