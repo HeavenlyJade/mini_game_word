@@ -87,13 +87,14 @@ function RankingMgr.GetOrCreateRanking(rankType)
     return rankingInstance
 end
 
---- 更新玩家分数
+--- 更新玩家分数（使用安全更新）
 ---@param uin number 玩家UIN
 ---@param rankType string 排行榜类型
 ---@param playerName string 玩家名称
 ---@param score number 分数
+---@param forceUpdate boolean|nil 是否强制更新
 ---@return boolean 是否成功
-function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score)
+function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score, forceUpdate)
     if not uin or not rankType or not playerName or not score then
         gg.log("更新玩家分数失败：参数无效", uin, rankType, playerName, score)
         return false
@@ -114,11 +115,19 @@ function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score)
     local oldRankInfo = rankingInstance:GetPlayerRank(uin)
     local oldRank = oldRankInfo.rank or -1
     
-    -- 更新分数
-    local success = rankingInstance:UpdatePlayerScore(uin, playerName, score)
+    -- 使用安全更新分数
+    local success, oldScore, newScore = RankingCloudDataMgr.SafeUpdatePlayerScore(
+        rankType, tostring(uin), playerName, score, forceUpdate
+    )
+    
     if not success then
-        gg.log("更新玩家分数失败", uin, rankType, playerName, score)
-        return false
+        if newScore == oldScore then
+            -- 分数没有变化，这是正常的，不需要记录错误
+            return false
+        else
+            gg.log("更新玩家分数失败", uin, rankType, playerName, score)
+            return false
+        end
     end
     
     -- 获取新排名
@@ -127,20 +136,23 @@ function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score)
     
     -- 如果排名发生变化，触发通知
     if oldRank ~= newRank then
-        RankingMgr.NotifyRankChange(uin, rankType, playerName, oldRank, newRank, score)
+        RankingMgr.NotifyRankChange(uin, rankType, playerName, oldRank, newRank, newScore)
     end
     
-    gg.log("更新玩家分数成功", uin, rankType, playerName, score, "排名:", newRank)
+    if oldScore ~= newScore then
+        gg.log("更新玩家分数成功", uin, rankType, playerName, oldScore, "->", newScore, "排名:", newRank)
+    end
     return true
 end
 
---- 异步更新玩家分数
+--- 异步更新玩家分数（使用安全更新）
 ---@param uin number 玩家UIN
 ---@param rankType string 排行榜类型
 ---@param playerName string 玩家名称
 ---@param score number 分数
+---@param forceUpdate boolean|nil 是否强制更新
 ---@param callback function|nil 回调函数
-function RankingMgr.UpdatePlayerScoreAsync(uin, rankType, playerName, score, callback)
+function RankingMgr.UpdatePlayerScoreAsync(uin, rankType, playerName, score, forceUpdate, callback)
     if not uin or not rankType or not playerName or not score then
         gg.log("异步更新玩家分数失败：参数无效", uin, rankType, playerName, score)
         if callback then callback(false) end
@@ -158,26 +170,35 @@ function RankingMgr.UpdatePlayerScoreAsync(uin, rankType, playerName, score, cal
     local oldRankInfo = rankingInstance:GetPlayerRank(uin)
     local oldRank = oldRankInfo.rank or -1
     
-    -- 异步更新分数
-    rankingInstance:UpdatePlayerScoreAsync(uin, playerName, score, function(success)
-        if success then
-            -- 获取新排名并触发通知
-            local newRankInfo = rankingInstance:GetPlayerRank(uin)
-            local newRank = newRankInfo.rank or -1
-            
-            if oldRank ~= newRank then
-                RankingMgr.NotifyRankChange(uin, rankType, playerName, oldRank, newRank, score)
+    -- 异步安全更新分数
+    RankingCloudDataMgr.SafeUpdatePlayerScoreAsync(
+        rankType, tostring(uin), playerName, score, forceUpdate,
+        function(success, oldScore, newScore)
+            if success then
+                -- 获取新排名并触发通知
+                local newRankInfo = rankingInstance:GetPlayerRank(uin)
+                local newRank = newRankInfo.rank or -1
+                
+                if oldRank ~= newRank then
+                    RankingMgr.NotifyRankChange(uin, rankType, playerName, oldRank, newRank, newScore)
+                end
+                
+                if oldScore ~= newScore then
+                    gg.log("异步更新玩家分数成功", uin, rankType, playerName, oldScore, "->", newScore, "排名:", newRank)
+                end
+            else
+                if newScore == oldScore then
+                    -- 分数没有变化，这是正常的
+                else
+                    gg.log("异步更新玩家分数失败", uin, rankType, playerName, score)
+                end
             end
             
-            --gg.log("异步更新玩家分数成功", uin, rankType, playerName, score, "排名:", newRank)
-        else
-            gg.log("异步更新玩家分数失败", uin, rankType, playerName, score)
+            if callback then
+                callback(success)
+            end
         end
-        
-        if callback then
-            callback(success)
-        end
-    end)
+    )
 end
 
 --- 获取排行榜列表
@@ -337,16 +358,18 @@ function RankingMgr.GetAllRankingTypes()
     return result
 end
 
---- 批量更新多个玩家分数
+--- 批量更新多个玩家分数（使用安全更新）
 ---@param updates table 更新数据列表 {{uin, rankType, playerName, score}, ...}
+---@param forceUpdate boolean|nil 是否强制更新
 ---@return number 成功更新的数量
-function RankingMgr.BatchUpdatePlayerScores(updates)
+function RankingMgr.BatchUpdatePlayerScores(updates, forceUpdate)
     if not updates or type(updates) ~= "table" then
         gg.log("批量更新玩家分数失败：参数无效")
         return 0
     end
     
-    local successCount = 0
+    -- 按排行榜类型分组更新数据
+    local updatesByRankType = {}
     
     for _, updateData in pairs(updates) do
         if updateData and type(updateData) == "table" then
@@ -355,14 +378,40 @@ function RankingMgr.BatchUpdatePlayerScores(updates)
             local playerName = updateData.playerName or updateData[3]
             local score = updateData.score or updateData[4]
             
-            if RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score) then
-                successCount = successCount + 1
+            if uin and rankType and playerName and score then
+                if not updatesByRankType[rankType] then
+                    updatesByRankType[rankType] = {}
+                end
+                table.insert(updatesByRankType[rankType], {uin, playerName, score})
             end
         end
     end
     
-    gg.log("批量更新玩家分数完成", "总数:", #updates, "成功:", successCount)
-    return successCount
+    local totalSuccessCount = 0
+    
+    -- 按排行榜类型批量更新
+    for rankType, typeUpdates in pairs(updatesByRankType) do
+        local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, typeUpdates, forceUpdate)
+        totalSuccessCount = totalSuccessCount + successCount
+        
+        -- 处理排名变化通知
+        for _, result in pairs(results) do
+            if result.success and result.scoreChanged then
+                -- 获取排行榜实例来查询排名
+                local rankingInstance = RankingMgr.GetOrCreateRanking(rankType)
+                if rankingInstance then
+                    local newRankInfo = rankingInstance:GetPlayerRank(result.uin)
+                    local newRank = newRankInfo.rank or -1
+                    
+                    -- 这里简化处理，假设旧排名为-1（因为批量更新时难以高效获取所有玩家的旧排名）
+                    RankingMgr.NotifyRankChange(result.uin, rankType, result.playerName, -1, newRank, result.newScore)
+                end
+            end
+        end
+    end
+    
+    gg.log("批量更新玩家分数完成", "总数:", #updates, "成功:", totalSuccessCount)
+    return totalSuccessCount
 end
 
 --- 获取排行榜统计信息
@@ -437,25 +486,39 @@ function RankingMgr.PerformMaintenance()
     --gg.log("排行榜系统定期维护完成")
 end
 
---- 更新重生排行榜
+--- 更新重生排行榜（使用批量安全更新）
 function RankingMgr.UpdateRebirthRanking()
     local rankType = RankingConfig.TYPES.REBIRTH
     if not rankType then return end
 
     local players = serverDataMgr.getAllPlayers()
+    local updates = {}
 
+    -- 收集需要更新的玩家数据
     for uin, player in pairs(players) do
         if player and player.variableSystem then
             local rebirthCount = player.variableSystem:GetVariable("数据_固定值_重生次数", 0)
             
-            -- 获取当前分数
-            local rankInfo = RankingMgr.GetPlayerRank(uin, rankType)
-            local currentScore = rankInfo and rankInfo.score or 0
-
-            if rebirthCount > currentScore then
-                --gg.log("更新玩家重生排行榜分数", uin, player.name, rebirthCount)
-                RankingMgr.UpdatePlayerScore(uin, rankType, player.name, rebirthCount)
+            if rebirthCount and rebirthCount > 0 then
+                table.insert(updates, {uin, player.name, rebirthCount})
             end
+        end
+    end
+
+    -- 批量安全更新排行榜
+    if #updates > 0 then
+        local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
+        
+        -- 统计有意义的更新
+        local actualUpdates = 0
+        for _, result in pairs(results) do
+            if result.success and result.scoreChanged then
+                actualUpdates = actualUpdates + 1
+            end
+        end
+        
+        if actualUpdates > 0 then
+            gg.log("重生排行榜批量更新完成", "处理玩家:", #updates, "实际更新:", actualUpdates)
         end
     end
 end
