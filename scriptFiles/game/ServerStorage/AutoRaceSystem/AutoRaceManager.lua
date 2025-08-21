@@ -134,7 +134,13 @@ function AutoRaceManager.StopAutoRace(mPlayer)
     if not mPlayer then return end
     
     local uin = mPlayer.uin
+    -- 确保完全清理状态
     playerAutoRaceState[uin] = nil
+    
+    -- 向客户端发送停止导航指令
+    local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+    AutoRaceEventManager.SendStopNavigation(uin, "自动比赛已停止，停止导航")
+    
     --gg.log("已停止玩家", uin, "的自动比赛")
 end
 
@@ -150,7 +156,12 @@ function AutoRaceManager.SetPlayerAutoRaceState(mPlayer, enabled)
         -- 立即启动一次自动比赛
         AutoRaceManager.StartAutoRace(mPlayer)
     else
+        -- 确保完全清理状态
         playerAutoRaceState[uin] = nil
+        
+        -- 停止导航
+        local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+        AutoRaceEventManager.SendStopNavigation(uin, "自动比赛已停止，停止导航")
     end
 end
 

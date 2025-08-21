@@ -76,6 +76,11 @@ function PlayerActionHandler:SubscribeServerEvents()
         self:OnNavigateToPosition(data)
     end)
 
+    -- 订阅停止导航事件
+    ClientEventManager.Subscribe("STOP_NAVIGATION", function(data)
+        self:OnStopNavigation(data)
+    end)
+
     
 
     -- 新增：比赛界面隐藏事件强制结束当前行为模块
@@ -182,6 +187,22 @@ function PlayerActionHandler:OnNavigateToPosition(data)
         --gg.log("PlayerActionHandler: " .. data.message)
     else
     --gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition))
+    end
+end
+
+--- 处理停止导航请求
+---@param data table 停止导航数据
+function PlayerActionHandler:OnStopNavigation(data)
+    local actor = gg.getClientLocalPlayer()
+    if not actor then
+        return
+    end
+    
+    -- 停止当前导航
+    actor:StopNavigate()
+    
+    if data.message then
+        --gg.log("PlayerActionHandler: " .. data.message)
     end
 end
 

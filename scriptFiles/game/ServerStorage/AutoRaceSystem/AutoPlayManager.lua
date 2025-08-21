@@ -266,6 +266,10 @@ function AutoPlayManager.SetPlayerAutoPlayState(player, enabled)
     
     local uin = player.uin
     if enabled then
+        -- 先停止任何正在进行的导航
+        local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+        AutoRaceEventManager.SendStopNavigation(uin, "启动自动挂机，停止导航")
+        
         playerAutoPlayState[uin] = true
         -- 立即寻找最佳挂机点并传送
         AutoPlayManager.FindAndTeleportToBestAutoPlaySpot(player)

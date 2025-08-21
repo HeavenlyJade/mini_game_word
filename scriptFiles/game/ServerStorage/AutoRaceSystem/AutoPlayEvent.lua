@@ -16,13 +16,10 @@ AutoPlayEventManager.REQUEST = {
     AUTO_PLAY_TOGGLE = EventPlayerConfig.REQUEST.AUTO_PLAY_TOGGLE
 }
 
-AutoPlayEventManager.RESPONSE = {
-    AUTO_PLAY_STATUS = "AutoPlayStatus"
-}
-
+-- 通知事件名称定义
 AutoPlayEventManager.NOTIFY = {
-    AUTO_PLAY_STARTED = "AutoPlayStarted",
-    AUTO_PLAY_STOPPED = "AutoPlayStopped"
+    AUTO_PLAY_STARTED = "AUTO_PLAY_STARTED",
+    AUTO_PLAY_STOPPED = "AUTO_PLAY_STOPPED"
 }
 
 -- 初始化自动挂机事件管理器
@@ -60,6 +57,23 @@ function AutoPlayEventManager.ValidatePlayer(evt)
     return player
 end
 
+-- 私有函数：清理玩家的自动比赛状态
+---@param player MPlayer 玩家对象
+---@param reason string 停止原因
+local function ClearPlayerAutoRaceState(player, reason)
+    local autoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
+    if autoRaceManager.IsPlayerAutoRacing(player) then
+        -- 停止自动比赛
+        autoRaceManager.SetPlayerAutoRaceState(player, false)
+        -- 发送自动比赛停止通知
+        local autoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+        autoRaceEventManager.SendSuccessResponse(player.uin, autoRaceEventManager.NOTIFY.AUTO_RACE_STOPPED, {
+            enabled = false,
+            message = reason
+        })
+    end
+end
+
 -- 处理自动挂机开关请求
 ---@param evt table 事件数据 {enabled}
 function AutoPlayEventManager.HandleAutoPlayToggle(evt)
@@ -69,40 +83,29 @@ function AutoPlayEventManager.HandleAutoPlayToggle(evt)
     local enabled = evt.enabled
     local uin = player.uin
     
-    -- 如果启用自动挂机，先检查并停止自动比赛
+    -- 无论启用或停用自动挂机，都要清理自动比赛状态
     if enabled then
-        local autoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
-        if autoRaceManager.IsPlayerAutoRacing(player) then
-            -- 停止自动比赛
-            autoRaceManager.SetPlayerAutoRaceState(player, false)
-            -- 发送自动比赛停止通知
-            local autoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
-            autoRaceEventManager.SendSuccessResponse(uin, autoRaceEventManager.NOTIFY.AUTO_RACE_STOPPED, {
-                enabled = false,
-                message = "自动比赛已停止（因启动自动挂机）"
-            })
-        end
+        ClearPlayerAutoRaceState(player, "自动比赛已停止（因启动自动挂机）")
+    else
+        ClearPlayerAutoRaceState(player, "自动比赛已停止（因停止自动挂机）")
     end
     
-    -- 使用新的状态设置方法（延迟 require 以避免循环依赖）
+    -- 设置自动挂机状态
     local autoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
     autoPlayManager.SetPlayerAutoPlayState(player, enabled)
     
+    -- 发送相应通知
     if enabled then
-        -- 发送启动通知
         AutoPlayEventManager.SendSuccessResponse(uin, AutoPlayEventManager.NOTIFY.AUTO_PLAY_STARTED, {
             enabled = true,
             message = "自动挂机已启动，正在寻找最佳挂机点..."
         })
-        
         --gg.log("玩家", uin, "启动自动挂机")
     else
-        -- 发送停止通知
         AutoPlayEventManager.SendSuccessResponse(uin, AutoPlayEventManager.NOTIFY.AUTO_PLAY_STOPPED, {
             enabled = false,
             message = "自动挂机已停止"
         })
-        
         --gg.log("玩家", uin, "停止自动挂机")
     end
 end

@@ -64,6 +64,23 @@ function AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, messag
     --gg.log("已发送导航指令给玩家", uin, "，目标位置:", tostring(targetPosition))
 end
 
+-- 发送停止导航指令到客户端
+---@param uin number 玩家UIN
+---@param message string 可选的消息
+function AutoRaceEventManager.SendStopNavigation(uin, message)
+    if not uin then
+        --gg.log("停止导航指令参数不完整")
+        return
+    end
+    
+    gg.network_channel:fireClient(uin, {
+        cmd = "STOP_NAVIGATION",
+        message = message or "停止导航"
+    })
+    
+    --gg.log("已发送停止导航指令给玩家", uin)
+end
+
 -- 验证玩家
 ---@param evt table 事件参数
 ---@return MPlayer|nil 玩家对象
@@ -99,12 +116,7 @@ function AutoRaceEventManager.HandleAutoRaceToggle(evt)
         if autoPlayManager.IsPlayerAutoPlaying(player) then
             -- 停止自动挂机
             autoPlayManager.SetPlayerAutoPlayState(player, false)
-            -- 发送自动挂机停止通知
-            local autoPlayEventManager = require(ServerStorage.AutoRaceSystem.AutoPlayEvent) ---@type AutoPlayEventManager
-            autoPlayEventManager.SendSuccessResponse(uin, autoPlayEventManager.NOTIFY.AUTO_PLAY_STOPPED, {
-                enabled = false,
-                message = "自动挂机已停止（因启动自动比赛）"
-            })
+            
         end
     end
     
