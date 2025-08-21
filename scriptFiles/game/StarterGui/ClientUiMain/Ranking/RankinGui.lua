@@ -83,11 +83,11 @@ function RankingGui:InitNodes()
     self.otherPlayerParam = self:Get("排行榜界面/排行榜位置/排名其它/排行参数", ViewComponent) ---@type ViewComponent
     
     -- 右侧区域
-    self.rightBg = self:Get("右侧底图", ViewComponent) ---@type ViewComponent  
-    self.rankingButtonPos = self:Get("右侧底图/排行榜按钮位置", ViewList) ---@type ViewList
+    self.rightBg = self:Get("排行榜界面/右侧底图", ViewComponent) ---@type ViewComponent  
+    self.rankingButtonPos = self:Get("排行榜界面/右侧底图/排行榜按钮位置", ViewList) ---@type ViewList
 
-    self.TemrankingButton = self:Get("右侧底图/排行榜按钮位置模版/排行榜", ViewButton) ---@type ViewButton
-    self.TembuttonNameLabel = self:Get("右侧底图/排行榜按钮位置模版/排行榜/按钮名称", ViewComponent) ---@type ViewComponent
+    self.TemrankingButton = self:Get("排行榜界面/右侧底图/排行榜按钮位置模版/排行榜", ViewButton) ---@type ViewButton
+    self.TembuttonNameLabel = self:Get("排行榜界面/右侧底图/排行榜按钮位置模版/排行榜/按钮名称", ViewComponent) ---@type ViewComponent
     
     gg.log("RankingGui 节点初始化完成")
 end

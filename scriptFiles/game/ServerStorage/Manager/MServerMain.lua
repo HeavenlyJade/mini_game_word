@@ -103,7 +103,7 @@ function MainServer.initModule()
     local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
     local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
     local MiniShopManager = require(ServerStorage.MiniGameMgr.MiniShopManager) ---@type MiniShopManager
-
+    local RankingMgr = require(ServerStorage.MSystems.Ranking.RankingMgr) ---@type RankingMgr
 
     RewardMgr.Init()
     -- 延迟加载RewardMgr以避免循环引用
@@ -118,6 +118,8 @@ function MainServer.initModule()
     serverDataMgr.RewardMgr = RewardMgr  -- 延迟加载
     serverDataMgr.LotteryMgr = LotteryMgr
     serverDataMgr.MiniShopManager = MiniShopManager:OnInit()
+    serverDataMgr.RankingMgr = RankingMgr
+    RankingMgr.SystemInit()
     gg.log("初始化事件管理器和命令管理器")
     -- 初始化事件管理器和命令管理器
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
@@ -134,6 +136,7 @@ function MainServer.initModule()
     local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
     local ShopEventManager = require(ServerStorage.MSystems.Shop.ShopEventManager) ---@type ShopEventManager
     local CommonEventManager = require(ServerStorage.MiniGameMgr.CommonEventManager) ---@type CommonEventManager
+    local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
 
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
@@ -150,6 +153,7 @@ function MainServer.initModule()
     LotteryEventManager.Init()
     ShopEventManager.Init()
     CommonEventManager.Init()
+    RankingEventManager.Init()
 
 
  

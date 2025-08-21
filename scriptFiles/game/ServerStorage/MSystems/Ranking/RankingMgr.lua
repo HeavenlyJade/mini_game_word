@@ -5,11 +5,14 @@
 local game = game
 local pairs = pairs
 local os = os
+local SandboxNode = SandboxNode
 
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local serverDataMgr = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+local RankingConfig = require(MainStorage.Code.Common.Config.RankingConfig) ---@type RankingConfig
 
 -- 引入相关系统
 local Ranking = require(ServerStorage.MSystems.Ranking.Ranking) ---@type Ranking
@@ -127,7 +130,7 @@ function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score)
         RankingMgr.NotifyRankChange(uin, rankType, playerName, oldRank, newRank, score)
     end
     
-    --gg.log("更新玩家分数成功", uin, rankType, playerName, score, "排名:", newRank)
+    gg.log("更新玩家分数成功", uin, rankType, playerName, score, "排名:", newRank)
     return true
 end
 
@@ -434,6 +437,29 @@ function RankingMgr.PerformMaintenance()
     --gg.log("排行榜系统定期维护完成")
 end
 
+--- 更新重生排行榜
+function RankingMgr.UpdateRebirthRanking()
+    local rankType = RankingConfig.TYPES.REBIRTH
+    if not rankType then return end
+
+    local players = serverDataMgr.getAllPlayers()
+
+    for uin, player in pairs(players) do
+        if player and player.variableSystem then
+            local rebirthCount = player.variableSystem:GetVariable("数据_固定值_重生次数", 0)
+            
+            -- 获取当前分数
+            local rankInfo = RankingMgr.GetPlayerRank(uin, rankType)
+            local currentScore = rankInfo and rankInfo.score or 0
+
+            if rebirthCount > currentScore then
+                --gg.log("更新玩家重生排行榜分数", uin, player.name, rebirthCount)
+                RankingMgr.UpdatePlayerScore(uin, rankType, player.name, rebirthCount)
+            end
+        end
+    end
+end
+
 --- 系统初始化
 function RankingMgr.SystemInit()
     gg.log("排行榜管理器初始化开始")
@@ -455,6 +481,17 @@ function RankingMgr.SystemInit()
     -- 重置维护时间
     lastMaintenanceTime = os.time()
     
+    -- 创建定时器来更新排行榜
+    local timer = SandboxNode.New("Timer", game.WorkSpace)
+    timer.Name = "RankingUpdateTimer"
+    timer.Delay = 10 -- 延迟10秒开始
+    timer.Loop = true
+    timer.Interval = 60 -- 每60秒更新一次
+    timer.Callback = RankingMgr.UpdateRebirthRanking
+    timer:Start()
+    
+    gg.log("排行榜更新定时器已启动")
+
     gg.log("排行榜管理器初始化完成")
 end
 
