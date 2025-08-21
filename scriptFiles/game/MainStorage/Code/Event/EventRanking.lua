@@ -26,6 +26,8 @@ EventRanking.RESPONSE = {
 -- 服务器 -> 客户端的通知事件
 EventRanking.NOTIFY = {
     RANKING_UPDATE = "Ranking:NotifyRankingUpdate",
+    RANKING_DATA_SYNC = "Ranking:NotifyRankingDataSync",
+    RANKING_TYPES_SYNC = "Ranking:NotifyRankingTypesSync",
 }
 
 return EventRanking

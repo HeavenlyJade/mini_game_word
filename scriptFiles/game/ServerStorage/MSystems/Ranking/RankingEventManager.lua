@@ -77,6 +77,14 @@ function RankingEventManager.HandleGetRankingList(evt)
     -- 获取排行榜数据
     local rankingList = RankingMgr.GetRankingList(rankType, startRank, count)
     
+    -- 过滤掉uin=0的假数据
+    local filteredRankingList = {}
+    for _, rankData in pairs(rankingList) do
+        if rankData and rankData.uin and rankData.uin ~= 0 then
+            table.insert(filteredRankingList, rankData)
+        end
+    end
+    
     -- 构造响应数据
     gg.network_channel:fireClient(player.uin, {
         cmd = RankingEvent.RESPONSE.GET_RANKING_LIST,
@@ -84,8 +92,8 @@ function RankingEventManager.HandleGetRankingList(evt)
         rankType = rankType,
         startRank = startRank,
         count = count,
-        actualCount = #rankingList,
-        rankingList = rankingList,
+        actualCount = #filteredRankingList,
+        rankingList = filteredRankingList,
         timestamp = os.time()
     })
     --gg.log("发送排行榜列表响应成功", player.uin, rankType, #rankingList)
@@ -276,6 +284,66 @@ function RankingEventManager.BroadcastRankingUpdate(rankType, updateData)
     --gg.log("广播排行榜更新通知", rankType, updateData.playerUin)
 end
 
+--- 向客户端同步所有排行榜数据
+---@param uin number 玩家UIN
+function RankingEventManager.NotifyAllDataToClient(uin)
+    if not uin then
+        gg.log("同步排行榜数据失败：玩家UIN无效")
+        return
+    end
+    
+    -- 获取所有支持的排行榜类型
+    local rankingTypes = RankingMgr.GetAllRankingTypes()
+    
+    -- 为每个排行榜类型获取完整的排行榜数据
+    for _, rankTypeData in pairs(rankingTypes) do
+        local rankType = rankTypeData.rankType
+        
+        -- 获取该排行榜的完整数据（前100名）
+        local rankingList = RankingMgr.GetRankingList(rankType, 1, 100)
+        
+        -- 过滤掉uin=0的假数据
+        local filteredRankingList = {}
+        for _, rankData in pairs(rankingList) do
+            if rankData and rankData.uin and rankData.uin ~= 0 then
+                table.insert(filteredRankingList, rankData)
+            end
+        end
+        
+        -- 获取玩家在该排行榜的排名信息
+        local playerRankInfo = RankingMgr.GetPlayerRank(uin, rankType)
+        
+        -- 发送完整排行榜数据到客户端
+        gg.network_channel:fireClient(uin, {
+            cmd = RankingEvent.NOTIFY.RANKING_DATA_SYNC,
+            rankType = rankType,
+            rankingConfig = rankTypeData, -- 排行榜配置信息
+            rankingList = filteredRankingList, -- 过滤后的排行榜数据
+            playerRankInfo = { -- 玩家排名信息
+                playerUin = uin,
+                rank = playerRankInfo.rank or -1,
+                score = playerRankInfo.score or 0,
+                playerName = playerRankInfo.playerName or "",
+                isOnRanking = playerRankInfo.rank and playerRankInfo.rank > 0
+            },
+            count = #filteredRankingList,
+            timestamp = os.time()
+        })
+        
+        gg.log("发送排行榜数据", rankType, "原始条目数:", #rankingList, "过滤后条目数:", #filteredRankingList, "玩家排名:", playerRankInfo.rank)
+    end
+    
+    -- 发送排行榜类型列表
+    gg.network_channel:fireClient(uin, {
+        cmd = RankingEvent.NOTIFY.RANKING_TYPES_SYNC,
+        rankingTypes = rankingTypes,
+        count = #rankingTypes,
+        timestamp = os.time()
+    })
+    
+    gg.log("排行榜数据同步完成", uin, "排行榜类型数量:", #rankingTypes)
+end
+
 --- 推送玩家排名变化通知
 ---@param player MPlayer 玩家对象
 ---@param rankType string 排行榜类型
@@ -310,7 +378,6 @@ end
 
 --- 注册所有排行榜相关事件
 function RankingEventManager.RegisterEventHandlers()
-    gg.log("排行榜事件管理器开始注册事件")
     
     -- 注册客户端请求事件
     ServerEventManager.Subscribe(RankingEvent.REQUEST.GET_RANKING_LIST, function(evt) RankingEventManager.HandleGetRankingList(evt) end)
@@ -319,14 +386,11 @@ function RankingEventManager.RegisterEventHandlers()
     ServerEventManager.Subscribe(RankingEvent.REQUEST.REFRESH_RANKING, function(evt) RankingEventManager.HandleRefreshRanking(evt) end)
     ServerEventManager.Subscribe(RankingEvent.REQUEST.GET_RANKING_TYPES, function(evt) RankingEventManager.HandleGetRankingTypes(evt) end)
     
-    gg.log("排行榜事件管理器事件注册完成")
 end
 
 --- 系统初始化
 function RankingEventManager.Init()
-    gg.log("排行榜事件管理器初始化开始")
     RankingEventManager.RegisterEventHandlers()
-    gg.log("排行榜事件管理器初始化完成")
 end
 
 return RankingEventManager

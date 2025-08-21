@@ -88,6 +88,10 @@ function ShopGui:RegisterButtonEvents()
     -- 排行榜按钮
     self.rankingSection.clickCb = function()
         -- 打开排行榜界面
+        local RankingGui = ViewBase["RankingGui"]
+        if RankingGui then
+            RankingGui:Open()
+        end
         --gg.log("排行榜按钮被点击")
         -- TODO: 实现排行榜界面
     end

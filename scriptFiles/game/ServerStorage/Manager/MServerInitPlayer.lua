@@ -246,6 +246,9 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)
 
+    -- 【新增】同步排行榜数据
+    local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
+    RankingEventManager.NotifyAllDataToClient(uin)
 
     gg.log("已向客户端", uin, "同步完整玩家数据")
 end

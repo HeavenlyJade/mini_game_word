@@ -59,18 +59,20 @@ function Ranking:Initialize()
     end
     
     -- 获取排行榜配置
-    self.config = RankingCloudDataMgr.GetRankingConfig(self.rankType)
-    if not self.config then
+    local config = RankingCloudDataMgr.GetRankingConfig(self.rankType)
+    if not config then
         gg.log("初始化排行榜失败：无法获取配置", self.rankType)
         return false
     end
+    self.config = config
     
     -- 获取或创建CloudKVStore实例
-    self.cloudStore = RankingCloudDataMgr.GetOrCreateCloudStore(self.rankType)
-    if not self.cloudStore then
+    local cloudStore = RankingCloudDataMgr.GetOrCreateCloudStore(self.rankType)
+    if not cloudStore then
         gg.log("初始化排行榜失败：无法创建CloudKVStore", self.rankType)
         return false
     end
+    self.cloudStore = cloudStore
     
     -- 初始化排行榜存储
     local success = RankingCloudDataMgr.InitRankingStore(self.rankType)
@@ -215,8 +217,9 @@ end
 
 --- 获取玩家排名信息
 ---@param uin number 玩家UIN
+---@param playerName string|nil 玩家名称（可选）
 ---@return table 排名信息 {rank: number, score: number, playerName: string}
-function Ranking:GetPlayerRank(uin)
+function Ranking:GetPlayerRank(uin, playerName)
     if not self:IsAvailable() then
         gg.log("获取玩家排名失败：排行榜未初始化", self.rankType)
         return {rank = -1, score = 0, playerName = ""}
@@ -227,23 +230,58 @@ function Ranking:GetPlayerRank(uin)
         return {rank = -1, score = 0, playerName = ""}
     end
     
-    -- 先尝试获取玩家分数
-    local score = RankingCloudDataMgr.GetPlayerScore(self.rankType, tostring(uin), "")
+    -- 如果没有提供玩家名称，从排行榜数据中查找
+    if not playerName or playerName == "" then
+        local rankInfo = self:FindPlayerInRankingData(uin)
+        if rankInfo then
+            return rankInfo
+        else
+            return {rank = -1, score = 0, playerName = ""}
+        end
+    end
+    
+    -- 有玩家名称时，直接查询分数
+    local score = RankingCloudDataMgr.GetPlayerScore(self.rankType, tostring(uin), playerName or "")
     if score <= 0 then
         -- 玩家不在排行榜上
-        return {rank = -1, score = 0, playerName = ""}
+        return {rank = -1, score = 0, playerName = playerName}
     end
     
     -- 获取玩家详细排名信息
-    -- 由于CloudKVStore没有直接通过UIN获取排名的方法，需要遍历排行榜
     local rank = self:FindPlayerRankByScore(uin, score)
     
     return {
         rank = rank,
         score = score,
-        playerName = "", -- CloudKVStore中存储的playerName需要额外获取
+        playerName = playerName,
         uin = uin
     }
+end
+
+--- 在排行榜数据中查找玩家信息
+---@param uin number 玩家UIN
+---@return table|nil 玩家排名信息 {rank: number, score: number, playerName: string}
+function Ranking:FindPlayerInRankingData(uin)
+    if not self:IsAvailable() or not uin then
+        return nil
+    end
+    
+    -- 获取前100名数据进行查找
+    local topData = RankingCloudDataMgr.GetTopRankingData(self.rankType, 100)
+    
+    for rank, data in pairs(topData) do
+        if data.key and tonumber(data.key) == uin then
+            return {
+                rank = rank,
+                score = data.value or 0,
+                playerName = data.name or "",
+                uin = uin
+            }
+        end
+    end
+    
+    -- 如果在前100名中没找到，返回nil
+    return nil
 end
 
 --- 通过分数查找玩家排名

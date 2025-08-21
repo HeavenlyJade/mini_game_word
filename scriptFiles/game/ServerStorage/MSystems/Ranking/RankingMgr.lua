@@ -112,7 +112,7 @@ function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score, forceUpd
     end
     
     -- 获取旧排名（用于变化通知）
-    local oldRankInfo = rankingInstance:GetPlayerRank(uin)
+    local oldRankInfo = rankingInstance:GetPlayerRank(uin,playerName)
     local oldRank = oldRankInfo.rank or -1
     
     -- 使用安全更新分数
@@ -131,7 +131,7 @@ function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score, forceUpd
     end
     
     -- 获取新排名
-    local newRankInfo = rankingInstance:GetPlayerRank(uin)
+    local newRankInfo = rankingInstance:GetPlayerRank(uin, playerName)
     local newRank = newRankInfo.rank or -1
     
     -- 如果排名发生变化，触发通知
