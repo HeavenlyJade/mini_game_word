@@ -287,22 +287,9 @@ function WingEventManager.HandleUpgradeAllWings(evt)
     if not player then return end
 
     local upgradedCount = WingMgr.UpgradeAllPossibleWings(player.uin)
-
-    if upgradedCount > 0 then
-        --gg.log("一键升星成功", player.uin, "总共升级次数", upgradedCount)
-        -- 发送响应事件到客户端
-        gg.network_channel:fireClient(player.uin, {
-            cmd = WingEventManager.RESPONSE.WING_BATCH_UPGRADE,
-            success = true,
-            upgradedCount = upgradedCount
-        })
-    else
-        --gg.log("一键升星：没有可升星的翅膀", player.uin)
-        gg.network_channel:fireClient(player.uin, {
-            cmd = WingEventManager.RESPONSE.WING_BATCH_UPGRADE,
-            success = false,
-            errorMsg = "没有可升星的翅膀"
-        })
+    local updatedData = WingMgr.GetPlayerWingList(player.uin)
+    if updatedData then
+        WingEventManager.NotifyWingListUpdate(player.uin, updatedData)
     end
 end
 

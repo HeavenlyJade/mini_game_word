@@ -207,21 +207,7 @@ function WingGui:OnWingListResponse(data)
         self.equipSlotIds = data.equipSlotIds or {}
         self.wingBagCapacity = data.bagCapacity or 30
         self.unlockedEquipSlots = data.unlockedEquipSlots or 1
-
-        -- 【新增】更新翅膀数量显示
-        local wingCount = data.companionCount or 0
-        if self.WingCarryNumLabel then
-            self.WingCarryNumLabel.node.Title = string.format("%d/%d", wingCount, self.wingBagCapacity)
-        end
-
-        -- 【新增】更新携带数量显示
-        if self.carryCountLabel then
-            local equippedCount = 0
-            for _ in pairs(self.activeSlots) do
-                equippedCount = equippedCount + 1
-            end
-            self.carryCountLabel.node.Title = string.format("%d/%d", equippedCount, self.unlockedEquipSlots)
-        end
+        gg.log("翅膀数据:", self.activeSlots, self.equipSlotIds, self.wingBagCapacity, self.unlockedEquipSlots)
 
         --gg.log("翅膀数据同步完成, 激活槽位:", self.activeSlots)
 
@@ -552,18 +538,20 @@ function WingGui:RefreshWingList()
 
     -- 【新增】更新翅膀数量显示
     local wingCount = self:GetWingCount()
-    if self.WingCarryNumLabel then
-        self.WingCarryNumLabel.node.Title = string.format("%d/%d", wingCount, self.wingBagCapacity)
+    if self.carryCountLabel then
+        self.carryCountLabel.node.Title = string.format("%d/%d", wingCount, self.wingBagCapacity)
     end
 
     -- 【新增】更新携带数量显示
-    if self.carryCountLabel then
-        local equippedCount = 0
+    local equippedCount = 0
+
+    if self.WingCarryNumLabel then
         for _ in pairs(self.activeSlots) do
             equippedCount = equippedCount + 1
         end
-        self.carryCountLabel.node.Title = string.format("%d/%d", equippedCount, self.unlockedEquipSlots)
+        self.WingCarryNumLabel.node.Title = string.format("%d/%d", equippedCount, self.unlockedEquipSlots)
     end
+    -- gg.log("翅膀数量111:", wingCount, self.wingBagCapacity,equippedCount, self.unlockedEquipSlots)
 
     --gg.log("翅膀列表刷新完成")
 end
