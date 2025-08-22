@@ -393,7 +393,7 @@ function Ranking:FormatRankingData(rawData, startRank)
             local formatItem = {
                 rank = startRank + i - 1,
                 uin = tonumber(data.key) or 0,
-                playerName = data.name or "",
+                playerName = data.nick or "",
                 score = data.value or 0,
                 rankType = self.rankType
             }

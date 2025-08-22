@@ -86,7 +86,6 @@ function HoverTextHud:EnsureOnTop()
             end
         end
         
-        gg.log("HoverTextHud: 重新确保在最上层显示")
     end
 end
 

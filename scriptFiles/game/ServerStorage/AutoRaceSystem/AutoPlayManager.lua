@@ -129,25 +129,13 @@ function AutoPlayManager.GetAllAutoPlaySpots(belongScene)
 end
 
 -- 检查玩家是否可以使用挂机点
----@param spot SceneNodeType 挂机点节点
----@param player MPlayer 玩家对象
----@return boolean 是否可以使用
 function AutoPlayManager.CanPlayerUseSpot(spot, player)
     if not spot or not player then return false end
     
-    -- 检查挂机点条件
-    local conditionFormula = spot.conditionConfig
-    if not conditionFormula or conditionFormula == "" then
-        return true -- 无条件限制
-    end
+    -- 使用SceneNodeType的CheckVariableCondition方法验证进入条件
+    local canEnter, message = spot:CheckVariableCondition(player)
     
-    -- 解析并计算条件公式
-    local calculator = ActionCosteRewardCal.New()
-    local result = calculator:EvaluateFormula(conditionFormula, player)
-    
-    gg.log("条件公式解析结果:", conditionFormula, "->", result)
-    
-    return result
+    return canEnter
 end
 
 -- 计算挂机效率（直接使用配置的"作数值的配置"）

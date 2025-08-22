@@ -3,6 +3,7 @@
 
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal) ---@type ActionCosteRewardCal
 
 
 ---@class SceneNodeType : Class
@@ -73,5 +74,29 @@ function SceneNodeType:IsRaceGame()
     return self.sceneType == "飞行比赛"
 end
 
+--- 检查变量表达公式是否满足条件
+---@param playerData table 玩家数据
+---@param bagData table|nil 背包数据（可选）
+---@param externalContext table|nil 外部上下文（可选）
+---@return boolean, string
+function SceneNodeType:CheckVariableCondition(playerData, bagData, externalContext)
+    if not self.enterConditions or #self.enterConditions == 0 then
+        return true, '无变量条件限制'
+    end
+    
+    -- 检查所有进入条件，任何一个不满足就返回false
+    for _, condition in ipairs(self.enterConditions) do
+        local conditionFormula = condition["条件公式"]
+        if conditionFormula and conditionFormula ~= "" then
+            -- 使用ActionCosteRewardCal的条件检查逻辑
+            local result = ActionCosteRewardCal:_CalculateValue(conditionFormula, playerData, bagData, externalContext)
+            if result == false then
+                return false, '变量条件不满足: ' .. conditionFormula
+            end
+        end
+    end
+    
+    return true, '变量条件满足'
+end
 
 return SceneNodeType 
