@@ -669,4 +669,22 @@ function CompanionInstance:GetItemBonuses()
     return itemBonuses
 end
 
+---计算宠物的携带效果总数值（复用现有GetItemBonuses方法）
+---@return number 总效果数值
+function CompanionInstance:CalculateTotalEffectValue()
+    local itemBonuses = self:GetItemBonuses() -- 复用现有方法
+    local totalValue = 0
+    
+    for targetName, bonusData in pairs(itemBonuses) do
+        -- 将固定加成和百分比加成合并计算
+        local fixedValue = bonusData.fixed or 0
+        local percentageValue = bonusData.percentage or 0
+        
+        -- 简单的权重计算：固定加成直接相加，百分比加成作为权重
+        totalValue = totalValue + fixedValue + percentageValue
+    end
+    
+    return totalValue
+end
+
 return CompanionInstance

@@ -60,6 +60,11 @@ function PetEventManager.RegisterEventHandlers()
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.TOGGLE_PET_LOCK, function(evt) PetEventManager.HandleTogglePetLock(evt) end)
     -- 【新增】一键升星
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.UPGRADE_ALL_PETS, function(evt) PetEventManager.HandleUpgradeAllPets(evt) end)
+    
+    -- 【新增】自动装备最优宠物
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.AUTO_EQUIP_BEST_PET, function(evt) PetEventManager.HandleAutoEquipBestPet(evt) end)
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.AUTO_EQUIP_ALL_BEST_PETS, function(evt) PetEventManager.HandleAutoEquipAllBestPets(evt) end)
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.GET_PET_EFFECT_RANKING, function(evt) PetEventManager.HandleGetPetEffectRanking(evt) end)
 end
 
 --- 验证玩家
@@ -525,6 +530,88 @@ function PetEventManager.NotifyError(uin, errorCode, errorMsg)
     local player = MServerDataManager.getPlayerByUin(uin)
     if player then
         player:SendHoverText(errorMsg)
+    end
+end
+
+-- =================================
+-- 自动装备最优宠物事件处理
+-- =================================
+
+---处理自动装备最优宠物请求
+---@param evt table 事件数据 { equipSlotId: string, excludeEquipped: boolean }
+function PetEventManager.HandleAutoEquipBestPet(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local equipSlotId = args.equipSlotId
+    local excludeEquipped = args.excludeEquipped
+
+    if not equipSlotId then
+        PetEventManager.NotifyError(player.uin, -1, "自动装备宠物缺少装备栏参数")
+        return
+    end
+
+    local success, errorMsg, slotIndex = PetMgr.AutoEquipBestEffectPet(player.uin, equipSlotId, excludeEquipped)
+
+    if success then
+        --gg.log("自动装备最优宠物成功", player.uin, "装备栏", equipSlotId, "宠物槽位", slotIndex)
+    else
+        --gg.log("自动装备最优宠物失败", player.uin, "错误", errorMsg)
+        PetEventManager.NotifyError(player.uin, -1, errorMsg)
+    end
+end
+
+---处理自动装备所有最优宠物请求
+---@param evt table 事件数据 { excludeEquipped: boolean }
+function PetEventManager.HandleAutoEquipAllBestPets(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local excludeEquipped = args.excludeEquipped
+
+    local results = PetMgr.AutoEquipAllBestEffectPets(player.uin, excludeEquipped)
+
+    -- 统计成功和失败的数量
+    local successCount = 0
+    local failureCount = 0
+    
+    for equipSlotId, result in pairs(results) do
+        if result.success then
+            successCount = successCount + 1
+        else
+            failureCount = failureCount + 1
+        end
+    end
+
+    if successCount > 0 then
+        --gg.log("自动装备所有最优宠物完成", player.uin, "成功", successCount, "失败", failureCount)
+    else
+        --gg.log("自动装备所有最优宠物失败", player.uin, "没有成功装备任何宠物")
+        PetEventManager.NotifyError(player.uin, -1, "没有找到可装备的宠物")
+    end
+end
+
+---处理获取宠物效果排行请求
+---@param evt table 事件数据 { limit: number }
+function PetEventManager.HandleGetPetEffectRanking(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local limit = args.limit
+
+    local ranking = PetMgr.GetPlayerPetEffectRanking(player.uin, limit)
+
+    if ranking then
+        -- 发送排行数据给客户端
+        gg.network_channel:fireClient(player.uin, {
+            cmd = PetEventManager.RESPONSE.PET_EFFECT_RANKING,
+            ranking = ranking
+        })
+    else
+        PetEventManager.NotifyError(player.uin, -1, "获取宠物效果排行失败")
     end
 end
 

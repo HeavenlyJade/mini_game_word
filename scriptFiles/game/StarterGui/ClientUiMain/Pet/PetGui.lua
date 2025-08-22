@@ -111,6 +111,11 @@ function PetGui:RegisterEvents()
     ClientEventManager.Subscribe(PetEventConfig.RESPONSE.ERROR, function(data)
         self:OnPetErrorResponse(data)
     end)
+    
+    -- 【新增】监听自动装备结果响应
+    ClientEventManager.Subscribe(PetEventConfig.RESPONSE.PET_EFFECT_RANKING, function(data)
+        self:OnAutoEquipResultResponse(data)
+    end)
 end
 
 function PetGui:RegisterButtonEvents()
@@ -275,6 +280,35 @@ function PetGui:OnPetErrorResponse(data)
     -- TODO: 显示错误提示给玩家
 end
 
+--- 【新增】处理自动装备结果响应
+function PetGui:OnAutoEquipResultResponse(data)
+    ----gg.log("收到自动装备结果响应:", data)
+    
+    if data.ranking then
+        ----gg.log("自动装备完成，宠物效果排行:", data.ranking)
+        
+        -- 刷新界面显示
+        self:RequestPetData() -- 重新请求宠物数据以获取最新的装备状态
+        
+        -- 恢复装备最佳按钮状态
+        if self.UltimateEqu then
+            self.UltimateEqu:SetGray(false)
+            self.UltimateEqu:SetTouchEnable(true, nil)
+        end
+        
+        -- 可以在这里添加成功提示
+        ----gg.log("自动装备所有最优宠物完成！")
+    else
+        ----gg.log("自动装备失败或没有响应数据")
+        
+        -- 恢复装备最佳按钮状态
+        if self.UltimateEqu then
+            self.UltimateEqu:SetGray(false)
+            self.UltimateEqu:SetTouchEnable(true, nil)
+        end
+    end
+end
+
 --- 检查界面是否已打开
 function PetGui:IsOpen()
     return self.petPanel and self.petPanel:IsVisible()
@@ -322,6 +356,33 @@ function PetGui:OnClickEquipPet()
 
     ----gg.log("点击装备按钮:", "背包槽位", petSlotId, "目标装备栏", equipSlotId)
     self:SendEquipPetRequest(petSlotId, equipSlotId)
+end
+
+--- 【新增】单个宠物自动装备最佳（可选功能）
+function PetGui:OnClickAutoEquipBestPet()
+    if not self.selectedPet then
+        ----gg.log("未选中宠物，无法自动装备")
+        return
+    end
+
+    local equipSlotId = self:FindNextAvailableEquipSlot()
+    if not equipSlotId then
+        ----gg.log("没有可用的装备栏")
+        return
+    end
+
+    ----gg.log("点击单个宠物自动装备最佳:", "目标装备栏", equipSlotId)
+    
+    -- 发送单个宠物自动装备最佳请求
+    local requestData = {
+        cmd = PetEventConfig.REQUEST.AUTO_EQUIP_BEST_PET,
+        args = {
+            equipSlotId = equipSlotId,
+            excludeEquipped = true
+        }
+    }
+    
+    gg.network_channel:fireServer(requestData)
 end
 
 --- 卸下按钮点击
@@ -382,10 +443,21 @@ end
 
 --- 装备最佳按钮点击
 function PetGui:OnClickUltimateEquip()
-    ----gg.log("点击了装备最佳按钮，功能待实现")
-    -- TODO: 实现装备最佳的逻辑, 例如发送一个请求到服务端
-    -- local requestData = { cmd = PetEventConfig.REQUEST.EQUIP_BEST, args = {} }
-    -- gg.network_channel:fireServer(requestData)
+    ----gg.log("点击了装备最佳按钮，发送自动装备所有最优宠物请求")
+    
+    -- 发送自动装备所有最优宠物的请求
+    local requestData = {
+        cmd = PetEventConfig.REQUEST.AUTO_EQUIP_ALL_BEST_PETS,
+        args = {
+            excludeEquipped = true -- 排除已装备的宠物，避免重复装备
+        }
+    }
+    
+    ----gg.log("发送自动装备所有最优宠物请求:", requestData.args)
+    gg.network_channel:fireServer(requestData)
+    
+    -- 按钮变灰并禁用触摸，等待服务端响应
+
 end
 
 -- =================================
