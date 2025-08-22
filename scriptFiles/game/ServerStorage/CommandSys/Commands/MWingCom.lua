@@ -39,7 +39,7 @@ function WingCommand.handlers.add(params, player)
 
     local success, errorMsg, actualSlot = WingMgr.AddWingToSlot(player.uin, wingName, slotIndex)
     if success then
-        local msg = string.format("成功给玩家 %s 添加翅膀: %s 到槽位 %d", player.name, wingName, actualSlot)
+        local msg = string.format("新增物品 %s 添加翅膀: %s 到槽位 %d", player.name, wingName, actualSlot)
         --player:SendHoverText(msg)
         gg.log(msg)
         WingCommand._syncToClient(player) -- 同步数据到客户端

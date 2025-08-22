@@ -473,7 +473,7 @@ function BaseCompanion:UpgradeCompanionStar(slotIndex)
                 -- 检查材料是否充足（排除当前升星的伙伴）
                 local candidates = self:FindCompanionsByCondition(companionName, needStar, slotIndex)
                 if #candidates < actualNeedCount then
-                    return false, string.format("伙伴材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
+                    return false, string.format("材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
                 end
 
                 -- 消耗材料
@@ -573,7 +573,7 @@ function BaseCompanion:CanCompanionUpgradeStar(slotIndex)
             if actualNeedCount > 0 then
                 local candidates = self:FindCompanionsByCondition(companionName, needStar, slotIndex)
                 if #candidates < actualNeedCount then
-                    return false, string.format("伙伴材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
+                    return false, string.format("材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
                 end
             end
         end

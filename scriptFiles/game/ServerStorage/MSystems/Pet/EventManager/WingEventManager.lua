@@ -210,6 +210,7 @@ function WingEventManager.HandleUpgradeWingStar(evt)
         end
         --gg.log("翅膀升星成功", player.uin, "槽位", slotIndex)
     else
+        WingEventManager.NotifyError(player.uin, -1, errorMsg)
         --gg.log("翅膀升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end

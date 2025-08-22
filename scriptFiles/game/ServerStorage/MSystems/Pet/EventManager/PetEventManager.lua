@@ -316,12 +316,13 @@ function PetEventManager.HandleUpgradePetStar(evt)
     end
 
     local success, errorMsg = PetMgr.UpgradePetStar(player.uin, slotIndex)
-
+    -- gg.log("宠物升星", player.uin, "槽位", slotIndex, "成功", success, "错误", errorMsg)
     if success then
         -- 通知客户端更新（升星可能消耗了其他宠物，需要全量更新）
         PetMgr.NotifyPetDataUpdate(player.uin)
         --gg.log("宠物升星成功", player.uin, "槽位", slotIndex)
     else
+        PetEventManager.NotifyError(player.uin, -1, errorMsg)
         --gg.log("宠物升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end

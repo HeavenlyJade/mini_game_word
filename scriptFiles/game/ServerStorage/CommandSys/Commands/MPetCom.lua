@@ -39,7 +39,7 @@ function PetCommand.handlers.add(params, player)
 
     local success, actualSlot = PetMgr.AddPet(player, petName, slotIndex)
     if success then
-        local msg = string.format("成功给玩家 %s 添加宠物: %s 到槽位 %d", player.name, petName, actualSlot)
+        local msg = string.format("获取宠物 %s 到槽位 %d", petName, actualSlot)
         player:SendHoverText(msg)
         gg.log(msg)
         _syncToClient(player) -- 同步数据

@@ -214,6 +214,7 @@ function PartnerEventManager.HandleUpgradePartnerStar(evt)
         end
         --gg.log("伙伴升星成功", player.uin, "槽位", slotIndex)
     else
+        PartnerEventManager.NotifyError(player.uin, -1, errorMsg)   
         --gg.log("伙伴升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
