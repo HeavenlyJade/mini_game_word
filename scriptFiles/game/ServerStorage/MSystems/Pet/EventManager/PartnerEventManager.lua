@@ -47,6 +47,18 @@ function PartnerEventManager.RegisterEventHandlers()
 
     -- 重命名伙伴
     ServerEventManager.Subscribe(PartnerEventManager.REQUEST.RENAME_PARTNER, function(evt) PartnerEventManager.HandleRenamePartner(evt) end)
+    
+    -- 【新增】一键升星
+    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.UPGRADE_ALL_PARTNERS, function(evt) PartnerEventManager.HandleUpgradeAllPartners(evt) end)
+    
+    -- 【新增】删除/锁定伙伴
+    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.DELETE_PARTNER, function(evt) PartnerEventManager.HandleDeletePartner(evt) end)
+    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.TOGGLE_PARTNER_LOCK, function(evt) PartnerEventManager.HandleTogglePartnerLock(evt) end)
+    
+    -- 【新增】自动装备最优伙伴
+    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.AUTO_EQUIP_BEST_PARTNER, function(evt) PartnerEventManager.HandleAutoEquipBestPartner(evt) end)
+    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.AUTO_EQUIP_ALL_BEST_PARTNERS, function(evt) PartnerEventManager.HandleAutoEquipAllBestPartners(evt) end)
+    ServerEventManager.Subscribe(PartnerEventManager.REQUEST.GET_PARTNER_EFFECT_RANKING, function(evt) PartnerEventManager.HandleGetPartnerEffectRanking(evt) end)
 end
 
 --- 验证玩家
@@ -311,6 +323,170 @@ function PartnerEventManager.NotifyError(uin, errorCode, errorMsg)
     local player = MServerDataManager.getPlayerByUin(uin)
     if player then
         player:SendHoverText(errorMsg)
+    end
+end
+
+-- =================================
+-- 新增功能事件处理
+-- =================================
+
+---处理一键升星请求
+---@param evt table 事件数据
+function PartnerEventManager.HandleUpgradeAllPartners(evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local upgradedCount = PartnerMgr.UpgradeAllPossiblePartners(player.uin)
+    
+    if upgradedCount > 0 then
+        --gg.log("一键升星完成", player.uin, "升星数量", upgradedCount)
+        local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
+        if updatedData then
+            PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
+        end
+    else
+        --gg.log("一键升星：没有可升星的伙伴", player.uin)
+    end
+end
+
+---处理删除伙伴请求
+---@param evt table 事件数据 { slotIndex: number }
+function PartnerEventManager.HandleDeletePartner(evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local slotIndex = args.slotIndex
+
+    if not slotIndex then
+        PartnerEventManager.NotifyError(player.uin, -1, "删除伙伴缺少槽位参数")
+        return
+    end
+
+    local success, errorMsg = PartnerMgr.DeletePartner(player.uin, slotIndex)
+
+    if success then
+        --gg.log("删除伙伴成功", player.uin, "槽位", slotIndex)
+        local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
+        if updatedData then
+            PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
+        end
+    else
+        --gg.log("删除伙伴失败", player.uin, errorMsg)
+        PartnerEventManager.NotifyError(player.uin, -1, errorMsg)
+    end
+end
+
+---处理切换伙伴锁定状态请求
+---@param evt table 事件数据 { slotIndex: number }
+function PartnerEventManager.HandleTogglePartnerLock(evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local slotIndex = args.slotIndex
+
+    if not slotIndex then
+        PartnerEventManager.NotifyError(player.uin, -1, "切换锁定状态缺少槽位参数")
+        return
+    end
+
+    local success, errorMsg, newLockState = PartnerMgr.TogglePartnerLock(player.uin, slotIndex)
+
+    if success then
+        --gg.log("切换伙伴锁定状态成功", player.uin, "槽位", slotIndex, "新状态", newLockState)
+        local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
+        if updatedData then
+            PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
+        end
+    else
+        --gg.log("切换伙伴锁定状态失败", player.uin, errorMsg)
+        PartnerEventManager.NotifyError(player.uin, -1, errorMsg)
+    end
+end
+
+---处理自动装备最优伙伴请求
+---@param evt table 事件数据 { equipSlotId: string, excludeEquipped: boolean }
+function PartnerEventManager.HandleAutoEquipBestPartner(evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local equipSlotId = args.equipSlotId
+    local excludeEquipped = args.excludeEquipped
+
+    if not equipSlotId then
+        PartnerEventManager.NotifyError(player.uin, -1, "自动装备伙伴缺少装备栏参数")
+        return
+    end
+
+    local success, errorMsg, slotIndex = PartnerMgr.AutoEquipBestEffectPartner(player.uin, equipSlotId, excludeEquipped)
+
+    if success then
+        --gg.log("自动装备最优伙伴成功", player.uin, "装备栏", equipSlotId, "伙伴槽位", slotIndex)
+        local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
+        if updatedData then
+            PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
+        end
+    else
+        --gg.log("自动装备最优伙伴失败", player.uin, errorMsg)
+        PartnerEventManager.NotifyError(player.uin, -1, errorMsg)
+    end
+end
+
+---处理自动装备所有最优伙伴请求
+---@param evt table 事件数据 { excludeEquipped: boolean }
+function PartnerEventManager.HandleAutoEquipAllBestPartners(evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local excludeEquipped = args.excludeEquipped
+
+    local results = PartnerMgr.AutoEquipAllBestEffectPartners(player.uin, excludeEquipped)
+    
+    -- 获取伙伴效果排行以便返回给客户端
+    local ranking, rankingError = PartnerMgr.GetPartnerEffectRanking(player.uin, 10)
+    
+    if ranking then
+        --gg.log("自动装备所有最优伙伴完成", player.uin, "结果", results)
+        
+        -- 发送排行数据给客户端
+        gg.network_channel:fireClient(player.uin, {
+            cmd = PartnerEventManager.RESPONSE.PARTNER_EFFECT_RANKING,
+            ranking = ranking,
+            results = results
+        })
+        
+        -- 更新伙伴列表数据
+        local updatedData = PartnerMgr.GetPlayerPartnerList(player.uin)
+        if updatedData then
+            PartnerEventManager.NotifyPartnerListUpdate(player.uin, updatedData)
+        end
+    else
+        --gg.log("自动装备所有最优伙伴失败", player.uin, rankingError)
+        PartnerEventManager.NotifyError(player.uin, -1, rankingError or "自动装备失败")
+    end
+end
+
+---处理获取伙伴效果排行请求
+---@param evt table 事件数据 { limit: number }
+function PartnerEventManager.HandleGetPartnerEffectRanking(evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    if not player then return end
+
+    local args = evt.args or {}
+    local limit = args.limit or 10
+
+    local ranking, errorMsg = PartnerMgr.GetPartnerEffectRanking(player.uin, limit)
+
+    if ranking then
+        gg.network_channel:fireClient(player.uin, {
+            cmd = PartnerEventManager.RESPONSE.PARTNER_EFFECT_RANKING,
+            ranking = ranking
+        })
+    else
+        PartnerEventManager.NotifyError(player.uin, -1, errorMsg or "获取排行失败")
     end
 end
 

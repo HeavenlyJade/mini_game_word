@@ -24,6 +24,10 @@ function WingGui:OnInit(node, config)
     -- 1. 节点初始化
     self.wingPanel = self:Get("翅膀界面", ViewComponent) ---@type ViewComponent
     self.closeButton = self:Get("翅膀界面/关闭", ViewButton) ---@type ViewButton
+    self.Synthesis= self:Get("翅膀界面/翅膀显示栏/一键合成", ViewButton) ---@type ViewButton
+    self.UltimateEqu = self:Get("翅膀界面/翅膀显示栏/装备最佳", ViewButton) ---@type ViewButton
+    self.deleteButton = self:Get("翅膀界面/删除", ViewButton) ---@type ViewButton
+    self.lockButton = self:Get("翅膀界面/锁定", ViewButton) ---@type ViewButton
 
     -- 翅膀显示栏
     self.displayBar = self:Get("翅膀界面/翅膀显示栏", ViewComponent) ---@type ViewComponent
@@ -107,6 +111,11 @@ function WingGui:RegisterEvents()
     ClientEventManager.Subscribe(WingEventConfig.RESPONSE.ERROR, function(data)
         self:OnWingErrorResponse(data)
     end)
+
+    -- 【新增】监听自动装备结果响应
+    ClientEventManager.Subscribe(WingEventConfig.RESPONSE.WING_EFFECT_RANKING, function(data)
+        self:OnAutoEquipResultResponse(data)
+    end)
 end
 
 function WingGui:RegisterButtonEvents()
@@ -128,6 +137,34 @@ function WingGui:RegisterButtonEvents()
     -- 卸下按钮
     self.unequipButton.clickCb = function()
         self:OnClickUnequipWing()
+    end
+
+    -- 【新增】一键合成按钮
+    if self.Synthesis then
+        self.Synthesis.clickCb = function()
+            self:OnClickSynthesis()
+        end
+    end
+
+    -- 【新增】装备最佳按钮
+    if self.UltimateEqu then
+        self.UltimateEqu.clickCb = function()
+            self:OnClickUltimateEquip()
+        end
+    end
+
+    -- 【新增】删除按钮
+    if self.deleteButton then
+        self.deleteButton.clickCb = function()
+            self:OnClickDeleteWing()
+        end
+    end
+
+    -- 【新增】锁定按钮
+    if self.lockButton then
+        self.lockButton.clickCb = function()
+            self:OnClickLockWing()
+        end
     end
 
     --gg.log("翅膀界面按钮事件注册完成")
@@ -285,6 +322,35 @@ function WingGui:OnWingErrorResponse(data)
     -- TODO: 显示错误提示给玩家
 end
 
+--- 【新增】处理自动装备结果响应
+function WingGui:OnAutoEquipResultResponse(data)
+    --gg.log("收到自动装备结果响应:", data)
+    
+    if data.ranking then
+        --gg.log("自动装备完成，翅膀效果排行:", data.ranking)
+        
+        -- 刷新界面显示
+        self:RequestWingData() -- 重新请求翅膀数据以获取最新的装备状态
+        
+        -- 恢复装备最佳按钮状态
+        if self.UltimateEqu then
+            self.UltimateEqu:SetGray(false)
+            self.UltimateEqu:SetTouchEnable(true, nil)
+        end
+        
+        -- 可以在这里添加成功提示
+        --gg.log("自动装备所有最优翅膀完成！")
+    else
+        --gg.log("自动装备失败或没有响应数据")
+        
+        -- 恢复装备最佳按钮状态
+        if self.UltimateEqu then
+            self.UltimateEqu:SetGray(false)
+            self.UltimateEqu:SetTouchEnable(true, nil)
+        end
+    end
+end
+
 --- 检查界面是否已打开
 function WingGui:IsOpen()
     return self.wingPanel and self.wingPanel:IsVisible()
@@ -353,6 +419,61 @@ function WingGui:OnClickUnequipWing()
     self:SendUnequipWingRequest(equipSlotId)
 end
 
+--- 【新增】一键合成按钮点击
+function WingGui:OnClickSynthesis()
+    --gg.log("点击了一键合成按钮，发送升星请求")
+    local requestData = {
+        cmd = WingEventConfig.REQUEST.UPGRADE_ALL_WINGS,
+        args = {}
+    }
+    gg.network_channel:fireServer(requestData)
+end
+
+--- 【新增】装备最佳按钮点击
+function WingGui:OnClickUltimateEquip()
+    --gg.log("点击了装备最佳按钮，发送自动装备所有最优翅膀请求")
+    
+    -- 发送自动装备所有最优翅膀的请求
+    local requestData = {
+        cmd = WingEventConfig.REQUEST.AUTO_EQUIP_ALL_BEST_WINGS,
+        args = {
+            excludeEquipped = true -- 排除已装备的翅膀，避免重复装备
+        }
+    }
+    
+    --gg.log("发送自动装备所有最优翅膀请求:", requestData.args)
+    gg.network_channel:fireServer(requestData)
+end
+
+--- 【新增】删除翅膀按钮点击
+function WingGui:OnClickDeleteWing()
+    if not self.selectedWing then
+        --gg.log("未选择翅膀，无法删除")
+        return
+    end
+
+    if self.selectedWing.isLocked then
+        --gg.log("翅膀已锁定，无法删除")
+        -- TODO: 可以向玩家显示提示
+        return
+    end
+
+    -- TODO: 在实际项目中，这里应该弹出一个二次确认对话框
+    --gg.log("请求删除翅膀:", self.selectedWing.slotIndex)
+    self:SendDeleteWingRequest(self.selectedWing.slotIndex)
+end
+
+--- 【新增】锁定翅膀按钮点击
+function WingGui:OnClickLockWing()
+    if not self.selectedWing then
+        --gg.log("未选择翅膀，无法切换锁定状态")
+        return
+    end
+
+    --gg.log("请求切换翅膀锁定状态:", self.selectedWing.slotIndex)
+    self:SendToggleLockRequest(self.selectedWing.slotIndex)
+end
+
 -- =================================
 -- 网络请求发送
 -- =================================
@@ -391,6 +512,26 @@ function WingGui:SendUnequipWingRequest(equipSlotId)
     gg.network_channel:fireServer(requestData)
 end
 
+--- 【新增】发送删除翅膀请求
+function WingGui:SendDeleteWingRequest(slotIndex)
+    local requestData = {
+        cmd = WingEventConfig.REQUEST.DELETE_WING,
+        args = { slotIndex = slotIndex }
+    }
+    --gg.log("发送删除翅膀请求:", requestData.args)
+    gg.network_channel:fireServer(requestData)
+end
+
+--- 【新增】发送切换锁定状态请求
+function WingGui:SendToggleLockRequest(slotIndex)
+    local requestData = {
+        cmd = WingEventConfig.REQUEST.TOGGLE_WING_LOCK,
+        args = { slotIndex = slotIndex }
+    }
+    --gg.log("发送切换锁定状态请求:", requestData.args)
+    gg.network_channel:fireServer(requestData)
+end
+
 -- =================================
 -- UI刷新方法
 -- =================================
@@ -412,7 +553,7 @@ function WingGui:RefreshWingList()
     -- 【新增】更新翅膀数量显示
     local wingCount = self:GetWingCount()
     if self.WingCarryNumLabel then
-        self.WingCarryNumLabel.node.Title = string.format("翅膀数量: %d/%d", wingCount, self.wingBagCapacity)
+        self.WingCarryNumLabel.node.Title = string.format("%d/%d", wingCount, self.wingBagCapacity)
     end
 
     -- 【新增】更新携带数量显示
@@ -421,7 +562,7 @@ function WingGui:RefreshWingList()
         for _ in pairs(self.activeSlots) do
             equippedCount = equippedCount + 1
         end
-        self.carryCountLabel.node.Title = string.format("携带数量: %d/%d", equippedCount, self.unlockedEquipSlots)
+        self.carryCountLabel.node.Title = string.format("%d/%d", equippedCount, self.unlockedEquipSlots)
     end
 
     --gg.log("翅膀列表刷新完成")
@@ -476,6 +617,12 @@ function WingGui:SetupWingSlotDisplay(slotNode, slotIndex, wingInfo)
 
     local isEquipped = self:IsWingEquipped(slotIndex)
     self:UpdateActiveState(slotNode, isEquipped)
+
+    -- 【新增】更新锁定状态显示
+    local lockNode = slotNode:FindFirstChild("锁定")
+    if lockNode then
+        lockNode.Visible = wingInfo.isLocked or false
+    end
 end
 
 --- 更新槽位中的星级显示
@@ -516,6 +663,7 @@ function WingGui:OnWingSlotClick(slotIndex, wingInfo)
         level = wingInfo.level,
         starLevel = wingInfo.starLevel,
         isEquipped = isEquipped,
+        isLocked = wingInfo.isLocked or false -- 【新增】添加锁定状态
     }
 
     self:RefreshSelectedWingDisplay()
@@ -650,6 +798,21 @@ function WingGui:UpdateButtonStates(wing)
     if self.unequipButton then
         self.unequipButton:SetVisible(isEquipped)
     end
+
+    -- 【新增】更新删除和锁定按钮的状态
+    if self.deleteButton then
+        -- 只有在未锁定的情况下才可删除
+        self.deleteButton:SetVisible(true)
+        self.deleteButton:SetGray(wing.isLocked)
+        self.deleteButton:SetTouchEnable(not wing.isLocked, nil)
+    end
+
+    if self.lockButton then
+        self.lockButton:SetVisible(true)
+        -- TODO: 可以根据锁定状态改变按钮文本或图标
+        -- local lockText = self.lockButton.node:FindFirstChild("Text")
+        -- if lockText then lockText.Title = wing.isLocked and "解锁" or "锁定" end
+    end
 end
 
 --- 隐藏翅膀详情
@@ -674,6 +837,10 @@ function WingGui:HideWingDetail()
     if self.upgradeButton then self.upgradeButton:SetVisible(false) end
     if self.equipButton then self.equipButton:SetVisible(false) end
     if self.unequipButton then self.unequipButton:SetVisible(false) end
+
+    -- 【新增】隐藏删除和锁定按钮
+    if self.deleteButton then self.deleteButton:SetVisible(false) end
+    if self.lockButton then self.lockButton:SetVisible(false) end
 end
 
 -- =================================

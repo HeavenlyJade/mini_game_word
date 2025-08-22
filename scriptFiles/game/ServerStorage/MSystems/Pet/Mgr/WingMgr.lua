@@ -685,4 +685,109 @@ function WingMgr.ClearPlayerWingData(uin)
     return success
 end
 
+-- =================================
+-- 自动装备最优翅膀相关方法
+-- =================================
+
+---【新增】删除翅膀
+---@param uin number 玩家ID
+---@param slotIndex number 槽位索引
+---@return boolean, string|nil
+function WingMgr.DeleteWing(uin, slotIndex)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if not wingManager then
+        return false, "玩家翅膀数据不存在"
+    end
+    
+    local success, errorMsg = wingManager:DeleteWing(slotIndex)
+    
+    if success then
+        --gg.log("删除翅膀成功", uin, "槽位", slotIndex)
+        -- 可以在这里触发客户端通知
+    end
+    
+    return success, errorMsg
+end
+
+---【新增】切换翅膀锁定状态
+---@param uin number 玩家ID
+---@param slotIndex number 槽位索引
+---@return boolean, string|nil, boolean|nil
+function WingMgr.ToggleWingLock(uin, slotIndex)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if not wingManager then
+        return false, "玩家翅膀数据不存在", nil
+    end
+    
+    local success, errorMsg, newLockStatus = wingManager:ToggleWingLock(slotIndex)
+    
+    if success then
+        --gg.log("切换翅膀锁定状态成功", uin, "槽位", slotIndex, "新状态", newLockStatus)
+    end
+    
+    return success, errorMsg, newLockStatus
+end
+
+---【新增】自动装备效果数值最高的翅膀
+---@param uin number 玩家ID
+---@param equipSlotId string 装备栏ID
+---@param excludeEquipped boolean|nil 是否排除已装备的翅膀
+---@return boolean, string|nil, number|nil
+function WingMgr.AutoEquipBestEffectWing(uin, equipSlotId, excludeEquipped)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if not wingManager then
+        return false, "玩家翅膀数据不存在", nil
+    end
+    
+    local success, errorMsg, slotIndex = wingManager:AutoEquipBestWing(equipSlotId, excludeEquipped)
+    
+    if success then
+        -- 更新模型显示和通知客户端
+        local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+        local player = serverDataMgr.getPlayerByUin(uin)
+        if player then
+            WingMgr.UpdateAllEquippedWingModels(player)
+        end
+        --gg.log("自动装备最优翅膀成功", uin, "装备栏", equipSlotId, "翅膀槽位", slotIndex)
+    end
+    
+    return success, errorMsg, slotIndex
+end
+
+---【新增】自动装备所有装备栏的最优翅膀
+---@param uin number 玩家ID
+---@param excludeEquipped boolean|nil 是否排除已装备的翅膀
+---@return table 装备结果
+function WingMgr.AutoEquipAllBestEffectWings(uin, excludeEquipped)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if not wingManager then
+        return { error = "玩家翅膀数据不存在" }
+    end
+    
+    local results = wingManager:AutoEquipAllBestWings(excludeEquipped)
+    
+    -- 更新模型显示
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local player = serverDataMgr.getPlayerByUin(uin)
+    if player then
+        WingMgr.UpdateAllEquippedWingModels(player)
+    end
+    
+    --gg.log("自动装备所有最优翅膀完成", uin, results)
+    return results
+end
+
+---【新增】获取翅膀效果数值排行
+---@param uin number 玩家ID
+---@param limit number|nil 返回数量限制
+---@return table 排行列表
+function WingMgr.GetWingEffectRanking(uin, limit)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if not wingManager then
+        return {}
+    end
+    
+    return wingManager:GetWingEffectRanking(limit)
+end
+
 return WingMgr 
