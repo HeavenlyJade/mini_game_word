@@ -305,7 +305,12 @@ function WingEventManager.NotifyWingListUpdate(uin, wingData)
         cmd = WingEventManager.NOTIFY.WING_LIST_UPDATE,
         companionList = wingData.companionList,
         activeSlots = wingData.activeSlots,
-        equipSlotIds = wingData.equipSlotIds
+        equipSlotIds = wingData.equipSlotIds,
+        companionCount = wingData.companionCount or 0, -- 【新增】翅膀数量
+        bagCapacity = wingData.maxSlots or 30,        -- 【新增】背包容量
+        unlockedEquipSlots = wingData.unlockedEquipSlots or 1, -- 【新增】已解锁的装备栏位数
+        maxEquipSlots = wingData.maxEquipSlots or 1,           -- 【新增】系统最大装备栏位数
+        companionType = wingData.companionType or "翅膀"        -- 【新增】翅膀类型标识
     })
 end
 
@@ -360,11 +365,10 @@ end
 ---@param errorCode number 错误码
 ---@param errorMsg string 错误信息
 function WingEventManager.NotifyError(uin, errorCode, errorMsg)
-    gg.network_channel:fireClient(uin, {
-        cmd = WingEventManager.RESPONSE.ERROR,
-        errorCode = errorCode,
-        errorMsg = errorMsg
-    })
+    local player = MServerDataManager.getPlayerByUin(uin)
+    if player then
+        player:SendHoverText(errorMsg)
+    end
 end
 
 return WingEventManager 

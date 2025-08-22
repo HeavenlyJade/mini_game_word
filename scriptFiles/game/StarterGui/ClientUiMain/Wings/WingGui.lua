@@ -168,8 +168,23 @@ function WingGui:OnWingListResponse(data)
         self.wingData = data.companionList
         self.activeSlots = data.activeSlots or {}
         self.equipSlotIds = data.equipSlotIds or {}
-        self.wingBagCapacity = data.wingSlots or 30
+        self.wingBagCapacity = data.bagCapacity or 30
         self.unlockedEquipSlots = data.unlockedEquipSlots or 1
+
+        -- 【新增】更新翅膀数量显示
+        local wingCount = data.companionCount or 0
+        if self.WingCarryNumLabel then
+            self.WingCarryNumLabel.node.Title = string.format("%d/%d", wingCount, self.wingBagCapacity)
+        end
+
+        -- 【新增】更新携带数量显示
+        if self.carryCountLabel then
+            local equippedCount = 0
+            for _ in pairs(self.activeSlots) do
+                equippedCount = equippedCount + 1
+            end
+            self.carryCountLabel.node.Title = string.format("%d/%d", equippedCount, self.unlockedEquipSlots)
+        end
 
         --gg.log("翅膀数据同步完成, 激活槽位:", self.activeSlots)
 
@@ -213,6 +228,15 @@ function WingGui:OnWingUpdateNotify(data)
 
         if data.activeSlots then
             self.activeSlots = data.activeSlots
+        end
+
+        -- 【新增】更新携带数量显示
+        if self.carryCountLabel then
+            local equippedCount = 0
+            for _ in pairs(self.activeSlots) do
+                equippedCount = equippedCount + 1
+            end
+            self.carryCountLabel.node.Title = string.format("携带数量: %d/%d", equippedCount, self.unlockedEquipSlots)
         end
 
         -- 刷新显示
@@ -383,6 +407,21 @@ function WingGui:RefreshWingList()
     for _, item in ipairs(wingList) do
         local wingInfo = item.info
         self:CreateWingSlotItem(wingInfo.slotIndex, wingInfo)
+    end
+
+    -- 【新增】更新翅膀数量显示
+    local wingCount = self:GetWingCount()
+    if self.WingCarryNumLabel then
+        self.WingCarryNumLabel.node.Title = string.format("翅膀数量: %d/%d", wingCount, self.wingBagCapacity)
+    end
+
+    -- 【新增】更新携带数量显示
+    if self.carryCountLabel then
+        local equippedCount = 0
+        for _ in pairs(self.activeSlots) do
+            equippedCount = equippedCount + 1
+        end
+        self.carryCountLabel.node.Title = string.format("携带数量: %d/%d", equippedCount, self.unlockedEquipSlots)
     end
 
     --gg.log("翅膀列表刷新完成")

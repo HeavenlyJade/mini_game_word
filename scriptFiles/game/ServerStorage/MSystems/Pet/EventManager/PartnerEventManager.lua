@@ -103,7 +103,7 @@ function PartnerEventManager.HandleEquipPartner(evt)
         end
     else
         --gg.log("装备伙伴失败", player.uin, errorMsg)
-        -- TODO: 发送错误信息给客户端
+        PartnerEventManager.NotifyError(player.uin, -1, errorMsg)
     end
 end
 
@@ -125,7 +125,7 @@ function PartnerEventManager.HandleUnequipPartner(evt)
         end
     else
         --gg.log("卸下伙伴失败", player.uin, errorMsg)
-        -- TODO: 发送错误信息给客户端
+        PartnerEventManager.NotifyError(player.uin, -1, errorMsg)
     end
 end
 
@@ -300,6 +300,17 @@ function PartnerEventManager.NotifyPartnerUpdate(uin, partnerInfo)
         cmd = PartnerEventManager.NOTIFY.PARTNER_UPDATE,
         partnerInfo = partnerInfo
     })
+end
+
+--- 通知客户端错误信息
+---@param uin number 玩家ID
+---@param errorCode number 错误码
+---@param errorMsg string 错误信息
+function PartnerEventManager.NotifyError(uin, errorCode, errorMsg)
+    local player = MServerDataManager.getPlayerByUin(uin)
+    if player then
+        player:SendHoverText(errorMsg)
+    end
 end
 
 return PartnerEventManager

@@ -521,11 +521,10 @@ end
 ---@param errorCode number 错误码
 ---@param errorMsg string 错误信息
 function PetEventManager.NotifyError(uin, errorCode, errorMsg)
-    gg.network_channel:fireClient(uin, {
-        cmd = PetEventManager.RESPONSE.ERROR,
-        errorCode = errorCode,
-        errorMsg = errorMsg
-    })
+    local player = MServerDataManager.getPlayerByUin(uin)
+    if player then
+        player:SendHoverText(errorMsg)
+    end
 end
 
 return PetEventManager
