@@ -523,6 +523,86 @@ function RankingMgr.UpdateRebirthRanking()
     end
 end
 
+--- 更新充值排行榜（使用批量安全更新）
+function RankingMgr.UpdateRechargeRanking()
+    local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
+
+    local rankType = RankingConfig.TYPES.RECHARGE
+    if not rankType then return end
+
+    local players = serverDataMgr.getAllPlayers()
+    local updates = {}
+
+    -- 收集需要更新的玩家数据
+    for uin, player in pairs(players) do
+        if player then
+            -- 获取玩家商城实例
+            local shopInstance = ShopMgr.GetPlayerShop(uin)
+            if shopInstance then
+                local totalPurchaseValue = shopInstance.totalPurchaseValue or 0
+                
+                if totalPurchaseValue > 0 then
+                    table.insert(updates, {uin, player.name, totalPurchaseValue})
+                end
+            end
+        end
+    end
+
+    -- 批量安全更新排行榜
+    if #updates > 0 then
+        local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
+        
+        -- 统计有意义的更新
+        local actualUpdates = 0
+        for _, result in pairs(results) do
+            if result.success and result.scoreChanged then
+                actualUpdates = actualUpdates + 1
+            end
+        end
+        
+        if actualUpdates > 0 then
+            gg.log("充值排行榜批量更新完成", "处理玩家:", #updates, "实际更新:", actualUpdates)
+        end
+    end
+end
+
+--- 更新战力排行榜（使用批量安全更新）
+function RankingMgr.UpdatePowerRanking()
+    local rankType = RankingConfig.TYPES.POWER
+    if not rankType then return end
+
+    local players = serverDataMgr.getAllPlayers()
+    local updates = {}
+
+    -- 收集需要更新的玩家数据
+    for uin, player in pairs(players) do
+        if player and player.variableSystem then
+            local maxPowerValue = player.variableSystem:GetVariable("数据_固定值_历史最大战力值", 0)
+            
+            if maxPowerValue and maxPowerValue > 0 then
+                table.insert(updates, {uin, player.name, maxPowerValue})
+            end
+        end
+    end
+
+    -- 批量安全更新排行榜
+    if #updates > 0 then
+        local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
+        
+        -- 统计有意义的更新
+        local actualUpdates = 0
+        for _, result in pairs(results) do
+            if result.success and result.scoreChanged then
+                actualUpdates = actualUpdates + 1
+            end
+        end
+        
+        if actualUpdates > 0 then
+            gg.log("战力排行榜批量更新完成", "处理玩家:", #updates, "实际更新:", actualUpdates)
+        end
+    end
+end
+
 --- 系统初始化
 function RankingMgr.SystemInit()
     gg.log("排行榜管理器初始化开始")
@@ -530,16 +610,6 @@ function RankingMgr.SystemInit()
     -- 初始化云数据管理器
     RankingCloudDataMgr.SystemInit()
     
-    -- 预加载常用排行榜类型（可选）
-    local commonRankTypes = {"power_ranking", "recharge_ranking"}
-    for _, rankType in pairs(commonRankTypes) do
-        local rankingInstance = RankingMgr.GetOrCreateRanking(rankType)
-        if rankingInstance then
-            gg.log("预加载排行榜成功", rankType)
-        else
-            gg.log("预加载排行榜失败", rankType)
-        end
-    end
     
     -- 重置维护时间
     lastMaintenanceTime = os.time()
@@ -550,12 +620,9 @@ function RankingMgr.SystemInit()
     timer.Delay = 10 -- 延迟10秒开始
     timer.Loop = true
     timer.Interval = 60 -- 每60秒更新一次
-    timer.Callback = RankingMgr.UpdateRebirthRanking
+    timer.Callback = RankingMgr.UpdateRanking
     timer:Start()
-    
-    gg.log("排行榜更新定时器已启动")
 
-    gg.log("排行榜管理器初始化完成")
 end
 
 --- 系统关闭
@@ -598,4 +665,15 @@ function RankingMgr.GetSystemStatus()
     return status
 end
 
+function RankingMgr.UpdateRanking()
+    RankingMgr.UpdateRebirthRanking()
+    RankingMgr.UpdateRechargeRanking()
+    RankingMgr.UpdatePowerRanking()
+    local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
+    local players = serverDataMgr.getAllPlayers()
+    -- 收集需要更新的玩家数据
+    for uin, player in pairs(players) do
+        RankingEventManager.NotifyAllDataToClient(uin)
+    end
+end
 return RankingMgr

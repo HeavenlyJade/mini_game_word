@@ -36,7 +36,8 @@ function WingGui:OnInit(node, config)
     self.starUI = self:Get("翅膀界面/翅膀显示栏/星级UI", ViewComponent) ---@type ViewComponent
     self.starList = self:Get("翅膀界面/翅膀显示栏/星级UI/星级", ViewList) ---@type ViewList
     self.nameLabel = self:Get("翅膀界面/翅膀显示栏/名字", ViewComponent) ---@type ViewComponent
-
+    self.WingCarryNumLabel = self:Get("翅膀界面/翅膀携带/携带数量", ViewComponent) ---@type ViewComponent
+    self.carryCountLabel = self:Get("翅膀界面/翅膀数量/携带数量", ViewComponent) ---@type ViewComponent
     -- 属性介绍UI
     self.attributeIntroComp = self:Get("翅膀界面/翅膀显示栏/属性介绍", ViewComponent) ---@type ViewComponent
     self.attributeList = self:Get("翅膀界面/翅膀显示栏/属性介绍/属性栏位", ViewList) ---@type ViewList

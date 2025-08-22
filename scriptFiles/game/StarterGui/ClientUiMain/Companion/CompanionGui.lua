@@ -36,6 +36,9 @@ function CompanionGui:OnInit(node, config)
     self.starUI = self:Get("伙伴界面/伙伴显示栏/星级UI", ViewComponent) ---@type ViewComponent
     self.starList = self:Get("伙伴界面/伙伴显示栏/星级UI/星级", ViewList) ---@type ViewList
     self.nameLabel = self:Get("伙伴界面/伙伴显示栏/名字", ViewComponent) ---@type ViewComponent
+    -- 伙伴携带
+    self.ComCarryNumLabel = self:Get("伙伴界面/伙伴携带/携带数量", ViewComponent) ---@type ViewComponent
+    self.carryCountLabel = self:Get("伙伴界面/伙伴数量/携带数量", ViewComponent) ---@type ViewComponent
 
     -- 【新增】属性介绍UI
     self.attributeIntroComp = self:Get("伙伴界面/伙伴显示栏/属性介绍", ViewComponent) ---@type ViewComponent
@@ -158,16 +161,24 @@ end
 
 --- 处理伙伴列表响应
 function CompanionGui:OnCompanionListResponse(data)
-    -- gg.log("收到伙伴数据响应:", data)
+    gg.log("收到伙伴数据响应:", data)
     if data and data.companionList then
         self.companionData = data.companionList
         self.activeSlots = data.activeSlots or {}
         self.equipSlotIds = data.equipSlotIds or {}
+        
+        -- 【新增】处理伙伴系统统计信息
+        self.companionCount = data.companionCount or 0
+        self.bagCapacity = data.bagCapacity or 30
+        self.unlockedEquipSlots = data.unlockedEquipSlots or 1
+        self.maxEquipSlots = data.maxEquipSlots or 1
+        self.companionType = data.companionType or "伙伴"
 
-        ----gg.log("伙伴数据同步完成, 激活槽位:", self.activeSlots)
+        ----gg.log("伙伴数据同步完成, 激活槽位:", self.activeSlots, "伙伴数量:", self.companionCount, "背包容量:", self.bagCapacity)
 
         -- 刷新界面显示
         self:RefreshCompanionList()
+        self:RefreshCompanionCounts()
         self:SelectDefaultCompanion()
     else
         ----gg.log("伙伴数据响应格式错误")
@@ -358,6 +369,27 @@ end
 -- =================================
 -- UI刷新方法
 -- =================================
+
+--- 刷新伙伴携带和背包数量显示
+function CompanionGui:RefreshCompanionCounts()
+    -- 刷新伙伴携带数量
+    local equippedCount = 0
+    if self.activeSlots then
+        for _ in pairs(self.activeSlots) do
+            equippedCount = equippedCount + 1
+        end
+    end
+    local maxEquipped = self.unlockedEquipSlots or 1
+    if self.ComCarryNumLabel and self.ComCarryNumLabel.node then
+        self.ComCarryNumLabel.node.Title = string.format("%d/%d", equippedCount, maxEquipped)
+    end
+
+    -- 刷新伙伴背包数量
+    local bagCount = self:GetCompanionCount()
+    if self.carryCountLabel and self.carryCountLabel.node then
+        self.carryCountLabel.node.Title = string.format("%d/%d", bagCount, self.bagCapacity or 30)
+    end
+end
 
 --- 刷新伙伴列表
 function CompanionGui:RefreshCompanionList()

@@ -340,7 +340,7 @@ function RankingGui:DisplayTopRank(rank, rankData)
         playerNameNode.Title = playerName
     end
     if playerParamNode then
-        playerParamNode.Title = tostring(score)
+        playerParamNode.Title = gg.FormatLargeNumber(score)
     end
     
     -- 使用ViewList的AppendChild方法添加到排行榜位置容器
@@ -383,7 +383,7 @@ function RankingGui:DisplayOtherRank(rank, rankData)
         playerNameNode.Title = playerName
     end
     if playerParamNode then
-        playerParamNode.Title = tostring(score)
+        playerParamNode.Title = gg.FormatLargeNumber(score)
     end
     
     -- 使用ViewList的AppendChild方法添加到排行榜位置容器

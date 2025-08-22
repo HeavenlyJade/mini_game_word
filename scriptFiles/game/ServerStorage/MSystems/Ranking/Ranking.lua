@@ -28,7 +28,7 @@ local Ranking = ClassMgr.Class("Ranking")
 ---@param rankType string 排行榜类型
 function Ranking:OnInit(rankType)
     if not rankType or type(rankType) ~= "string" then
-        gg.log("排行榜初始化失败：排行榜类型无效", rankType)
+        --gg.log("排行榜初始化失败：排行榜类型无效", rankType)
         return
     end
     
@@ -47,21 +47,21 @@ function Ranking:OnInit(rankType)
         lastRefreshTime = 0,        -- 最后刷新时间
     }
     
-    gg.log("排行榜实例创建成功", rankType)
+    --gg.log("排行榜实例创建成功", rankType)
 end
 
 --- 初始化排行榜
 ---@return boolean 是否成功
 function Ranking:Initialize()
     if not self.rankType then
-        gg.log("初始化排行榜失败：排行榜类型未设置")
+        --gg.log("初始化排行榜失败：排行榜类型未设置")
         return false
     end
     
     -- 获取排行榜配置
     local config = RankingCloudDataMgr.GetRankingConfig(self.rankType)
     if not config then
-        gg.log("初始化排行榜失败：无法获取配置", self.rankType)
+        --gg.log("初始化排行榜失败：无法获取配置", self.rankType)
         return false
     end
     self.config = config
@@ -69,7 +69,7 @@ function Ranking:Initialize()
     -- 获取或创建CloudKVStore实例
     local cloudStore = RankingCloudDataMgr.GetOrCreateCloudStore(self.rankType)
     if not cloudStore then
-        gg.log("初始化排行榜失败：无法创建CloudKVStore", self.rankType)
+        --gg.log("初始化排行榜失败：无法创建CloudKVStore", self.rankType)
         return false
     end
     self.cloudStore = cloudStore
@@ -77,7 +77,7 @@ function Ranking:Initialize()
     -- 初始化排行榜存储
     local success = RankingCloudDataMgr.InitRankingStore(self.rankType)
     if not success then
-        gg.log("初始化排行榜失败：无法初始化存储", self.rankType)
+        --gg.log("初始化排行榜失败：无法初始化存储", self.rankType)
         return false
     end
     
@@ -85,7 +85,7 @@ function Ranking:Initialize()
     self.lastUpdateTime = os.time()
     self.stats.lastRefreshTime = os.time()
     
-    gg.log("排行榜初始化成功", self.rankType, self.config.displayName)
+    --gg.log("排行榜初始化成功", self.rankType, self.config.displayName)
     return true
 end
 
@@ -102,17 +102,17 @@ end
 ---@return boolean 是否成功
 function Ranking:UpdatePlayerScore(uin, playerName, score)
     if not self:IsAvailable() then
-        gg.log("更新玩家分数失败：排行榜未初始化", self.rankType)
+        --gg.log("更新玩家分数失败：排行榜未初始化", self.rankType)
         return false
     end
     
     if not uin or not playerName or not score then
-        gg.log("更新玩家分数失败：参数无效", self.rankType, uin, playerName, score)
+        --gg.log("更新玩家分数失败：参数无效", self.rankType, uin, playerName, score)
         return false
     end
     
     if type(uin) ~= "number" or type(score) ~= "number" then
-        gg.log("更新玩家分数失败：参数类型错误", self.rankType, type(uin), type(score))
+        --gg.log("更新玩家分数失败：参数类型错误", self.rankType, type(uin), type(score))
         return false
     end
     
@@ -122,9 +122,9 @@ function Ranking:UpdatePlayerScore(uin, playerName, score)
     if success then
         -- 更新统计信息
         self:UpdateStats(score)
-        --gg.log("更新玩家分数成功", self.rankType, uin, playerName, score)
+        ----gg.log("更新玩家分数成功", self.rankType, uin, playerName, score)
     else
-        gg.log("更新玩家分数失败", self.rankType, uin, playerName, score)
+        --gg.log("更新玩家分数失败", self.rankType, uin, playerName, score)
     end
     
     return success
@@ -137,13 +137,13 @@ end
 ---@param callback function|nil 回调函数
 function Ranking:UpdatePlayerScoreAsync(uin, playerName, score, callback)
     if not self:IsAvailable() then
-        gg.log("异步更新玩家分数失败：排行榜未初始化", self.rankType)
+        --gg.log("异步更新玩家分数失败：排行榜未初始化", self.rankType)
         if callback then callback(false) end
         return
     end
     
     if not uin or not playerName or not score then
-        gg.log("异步更新玩家分数失败：参数无效", self.rankType, uin, playerName, score)
+        --gg.log("异步更新玩家分数失败：参数无效", self.rankType, uin, playerName, score)
         if callback then callback(false) end
         return
     end
@@ -153,9 +153,9 @@ function Ranking:UpdatePlayerScoreAsync(uin, playerName, score, callback)
         if success then
             -- 更新统计信息
             self:UpdateStats(score)
-            --gg.log("异步更新玩家分数成功", self.rankType, uin, playerName, score)
+            ----gg.log("异步更新玩家分数成功", self.rankType, uin, playerName, score)
         else
-            gg.log("异步更新玩家分数失败", self.rankType, uin, playerName, score)
+            --gg.log("异步更新玩家分数失败", self.rankType, uin, playerName, score)
         end
         
         if callback then
@@ -170,7 +170,7 @@ end
 ---@return table 排行榜数据
 function Ranking:GetRankingList(startRank, count)
     if not self:IsAvailable() then
-        gg.log("获取排行榜列表失败：排行榜未初始化", self.rankType)
+        --gg.log("获取排行榜列表失败：排行榜未初始化", self.rankType)
         return {}
     end
     
@@ -179,7 +179,7 @@ function Ranking:GetRankingList(startRank, count)
     count = count or 10
     
     if startRank <= 0 or count <= 0 then
-        gg.log("获取排行榜列表失败：参数无效", self.rankType, startRank, count)
+        --gg.log("获取排行榜列表失败：参数无效", self.rankType, startRank, count)
         return {}
     end
     
@@ -187,7 +187,7 @@ function Ranking:GetRankingList(startRank, count)
     local maxCount = self.config.maxDisplayCount or 100
     if count > maxCount then
         count = maxCount
-        gg.log("获取排行榜列表：数量超限，已调整", self.rankType, count, maxCount)
+        --gg.log("获取排行榜列表：数量超限，已调整", self.rankType, count, maxCount)
     end
     
     local rankingData = {}
@@ -211,7 +211,7 @@ function Ranking:GetRankingList(startRank, count)
     -- 格式化返回数据
     local formattedData = self:FormatRankingData(rankingData, startRank)
     
-    --gg.log("获取排行榜列表成功", self.rankType, startRank, count, "实际返回:", #formattedData)
+    ----gg.log("获取排行榜列表成功", self.rankType, startRank, count, "实际返回:", #formattedData)
     return formattedData
 end
 
@@ -221,12 +221,12 @@ end
 ---@return table 排名信息 {rank: number, score: number, playerName: string}
 function Ranking:GetPlayerRank(uin, playerName)
     if not self:IsAvailable() then
-        gg.log("获取玩家排名失败：排行榜未初始化", self.rankType)
+        --gg.log("获取玩家排名失败：排行榜未初始化", self.rankType)
         return {rank = -1, score = 0, playerName = ""}
     end
     
     if not uin or type(uin) ~= "number" then
-        gg.log("获取玩家排名失败：UIN无效", self.rankType, uin)
+        --gg.log("获取玩家排名失败：UIN无效", self.rankType, uin)
         return {rank = -1, score = 0, playerName = ""}
     end
     
@@ -310,7 +310,7 @@ end
 ---@return boolean 是否成功
 function Ranking:Refresh()
     if not self:IsAvailable() then
-        gg.log("刷新排行榜失败：排行榜未初始化", self.rankType)
+        --gg.log("刷新排行榜失败：排行榜未初始化", self.rankType)
         return false
     end
     
@@ -319,7 +319,7 @@ function Ranking:Refresh()
     
     -- 可以在这里添加其他刷新逻辑，比如缓存清理等
     
-    gg.log("刷新排行榜成功", self.rankType)
+    --gg.log("刷新排行榜成功", self.rankType)
     return true
 end
 
@@ -327,7 +327,7 @@ end
 ---@return boolean 是否成功
 function Ranking:ClearRanking()
     if not self:IsAvailable() then
-        gg.log("清空排行榜失败：排行榜未初始化", self.rankType)
+        --gg.log("清空排行榜失败：排行榜未初始化", self.rankType)
         return false
     end
     
@@ -342,9 +342,9 @@ function Ranking:ClearRanking()
         self.stats.lastScoreUpdate = 0
         self.stats.lastRefreshTime = os.time()
         
-        gg.log("清空排行榜成功", self.rankType)
+        --gg.log("清空排行榜成功", self.rankType)
     else
-        gg.log("清空排行榜失败", self.rankType)
+        --gg.log("清空排行榜失败", self.rankType)
     end
     
     return success
@@ -355,12 +355,12 @@ end
 ---@return boolean 是否成功
 function Ranking:RemovePlayer(uin)
     if not self:IsAvailable() then
-        gg.log("移除玩家数据失败：排行榜未初始化", self.rankType)
+        --gg.log("移除玩家数据失败：排行榜未初始化", self.rankType)
         return false
     end
     
     if not uin or type(uin) ~= "number" then
-        gg.log("移除玩家数据失败：UIN无效", self.rankType, uin)
+        --gg.log("移除玩家数据失败：UIN无效", self.rankType, uin)
         return false
     end
     
@@ -368,9 +368,9 @@ function Ranking:RemovePlayer(uin)
     local success = RankingCloudDataMgr.RemovePlayer(self.rankType, tostring(uin))
     
     if success then
-        gg.log("移除玩家数据成功", self.rankType, uin)
+        --gg.log("移除玩家数据成功", self.rankType, uin)
     else
-        gg.log("移除玩家数据失败", self.rankType, uin)
+        --gg.log("移除玩家数据失败", self.rankType, uin)
     end
     
     return success
@@ -505,7 +505,7 @@ end
 
 --- 销毁排行榜实例
 function Ranking:Destroy()
-    gg.log("销毁排行榜实例", self.rankType)
+    --gg.log("销毁排行榜实例", self.rankType)
     
     -- 清理引用
     self.cloudStore = nil

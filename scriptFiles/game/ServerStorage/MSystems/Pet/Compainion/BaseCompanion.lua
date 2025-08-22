@@ -193,7 +193,9 @@ function BaseCompanion:GetCompanionList()
         equipSlotIds = availableEquipSlots, -- 【修改】只返回玩家当前可用的装备栏
         unlockedEquipSlots = self.unlockedEquipSlots, -- 【新增】返回已解锁栏位数
         maxEquipSlots = #self.equipSlotIds, -- 【新增】返回系统最大栏位数
-        companionType = self.companionType
+        companionType = self.companionType,
+        companionCount = self:GetCompanionCount(), -- 【新增】返回伙伴数量
+        maxSlots = self.maxSlots -- 【新增】返回背包容量
     }
 end
 

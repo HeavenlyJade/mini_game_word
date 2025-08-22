@@ -281,9 +281,14 @@ function PartnerEventManager.NotifyPartnerListUpdate(uin, partnerData)
     -- --gg.log("通知客户端伙伴列表更新", uin, partnerData)
     gg.network_channel:fireClient(uin, {
         cmd = PartnerEventManager.NOTIFY.PARTNER_LIST_UPDATE,
-        companionList = partnerData.companionList, -- 【修改】使用新字段名
-        activeSlots = partnerData.activeSlots,       -- 【修改】使用新字段名
-        equipSlotIds = partnerData.equipSlotIds      -- 【新增】发送可用装备栏
+        companionList = partnerData.companionList, -- 伙伴列表
+        activeSlots = partnerData.activeSlots,       -- 已装备的伙伴槽位映射
+        equipSlotIds = partnerData.equipSlotIds,     -- 可用的装备栏ID列表
+        companionCount = partnerData.companionCount or 0, -- 【新增】伙伴数量
+        bagCapacity = partnerData.maxSlots or 30,        -- 【新增】背包容量
+        unlockedEquipSlots = partnerData.unlockedEquipSlots or 1, -- 【新增】已解锁的装备栏位数
+        maxEquipSlots = partnerData.maxEquipSlots or 1,           -- 【新增】系统最大装备栏位数
+        companionType = partnerData.companionType or "伙伴"        -- 【新增】伙伴类型标识
     })
 end
 
