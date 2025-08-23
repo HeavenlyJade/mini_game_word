@@ -23,9 +23,10 @@ local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type g
 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+
 local MServerInitPlayer = require(ServerStorage.Manager.MServerInitPlayer) ---@type MServerInitPlayer
+
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
-local SceneNodeManager = require(ServerStorage.SceneInteraction.SceneNodeManager) ---@type SceneNodeManager
 
 -- 总入口
 
@@ -104,6 +105,7 @@ function MainServer.initModule()
     local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
     local MiniShopManager = require(ServerStorage.MiniGameMgr.MiniShopManager) ---@type MiniShopManager
     local RankingMgr = require(ServerStorage.MSystems.Ranking.RankingMgr) ---@type RankingMgr
+    local SceneNodeManager = require(ServerStorage.SceneInteraction.SceneNodeManager) ---@type SceneNodeManager
 
     RewardMgr.Init()
     -- 延迟加载RewardMgr以避免循环引用
