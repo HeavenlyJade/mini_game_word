@@ -16,6 +16,7 @@ local PlayerInitType = require(MainStorage.Code.Common.TypeConfig.PlayerInitType
 local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType)
 local AchievementType = require(MainStorage.Code.Common.TypeConfig.AchievementType)
 local ActionCostType = require(MainStorage.Code.Common.TypeConfig.ActionCostType) ---@type ActionCostType
+local EffectLevelType = require(MainStorage.Code.Common.TypeConfig.EffectLevelType) ---@type EffectLevelType
 local RewardType = require(MainStorage.Code.Common.TypeConfig.RewardType) ---@type RewardType
 local LotteryType = require(MainStorage.Code.Common.TypeConfig.LotteryType) ---@type LotteryType
 local ShopItemType = require(MainStorage.Code.Common.TypeConfig.ShopItemType) ---@type ShopItemType
@@ -23,6 +24,7 @@ local TeleportPointType = require(MainStorage.Code.Common.TypeConfig.TeleportPoi
 
 -- 引用所有 Config 的原始数据
 local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig)
+local EffectLevelConfig = require(MainStorage.Code.Common.Config.EffectLevelConfig)
 
 local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig)
 local SkillConfig = require(MainStorage.Code.Common.Config.SkillConfig)
@@ -64,6 +66,7 @@ ConfigLoader.Wings = {} -- 新增翅膀配置存储
 ConfigLoader.Trails = {} -- 新增尾迹配置存储
 ConfigLoader.TeleportPoints = {} -- 新增传送点配置存储
 ConfigLoader.ActionCosts = {}
+ConfigLoader.EffectLevels = {} -- 新增效果等级配置存储
 ConfigLoader.ItemTypes = {}
 ConfigLoader.PlayerInits = {}
 ConfigLoader.VariableNames = {}
@@ -116,6 +119,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(LotteryConfig, LotteryType, ConfigLoader.Lotteries, "Lottery")
     ConfigLoader.LoadConfig(ShopItemConfig, ShopItemType, ConfigLoader.ShopItems, "ShopItem")
     ConfigLoader.LoadConfig(TeleportPointConfig, TeleportPointType, ConfigLoader.TeleportPoints, "TeleportPoint")
+    ConfigLoader.LoadConfig(EffectLevelConfig, EffectLevelType, ConfigLoader.EffectLevels, "EffectLevel")
 
     -- 构建迷你币商品映射表
     ConfigLoader.BuildMiniShopMapping()
@@ -293,6 +297,17 @@ end
 ---@return ActionCostType
 function ConfigLoader.GetActionCost(id)
     return ConfigLoader.ActionCosts[id]
+end
+
+---@param id string
+---@return EffectLevelType
+function ConfigLoader.GetEffectLevel(id)
+    return ConfigLoader.EffectLevels[id]
+end
+
+---@return table<string, EffectLevelType>
+function ConfigLoader.GetAllEffectLevels()
+    return ConfigLoader.EffectLevels
 end
 
 ---@param id string

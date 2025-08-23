@@ -21,6 +21,7 @@ local OpenUICommand = require(ServerStorage.CommandSys.Commands.OpenUICommand) -
 local AnimationCommand = require(ServerStorage.CommandSys.Commands.MAnimationCom) ---@type AnimationCommand
 local ActorNodeCommand = require(ServerStorage.CommandSys.Commands.MActorNodeCom) ---@type ActorNodeCommand
 local ShopCommand = require(ServerStorage.CommandSys.Commands.MShopCom) ---@type ShopCommand
+local AchievementCommand = require(ServerStorage.CommandSys.Commands.MAchievementCom) ---@type AchievementCommand
 
 
 ---@class CommandManager
@@ -49,6 +50,7 @@ CommandManager.handlers = {
     ["animation"] = AnimationCommand.main,
     ["actornode"] = ActorNodeCommand.main,
     ["shop"] = ShopCommand.main,
+    ["achievement"] = AchievementCommand.main,
 
 
 

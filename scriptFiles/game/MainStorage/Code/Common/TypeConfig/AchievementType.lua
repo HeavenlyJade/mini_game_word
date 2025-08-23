@@ -101,6 +101,8 @@ end
 ---@param level number 天赋等级
 ---@return table[] 计算后的效果值列表，每个元素是 {["效果类型"]=string, ["效果字段名称"]=string, ["数值"]=any}
 function AchievementType:GetLevelEffectValue(level)
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+
     local results = {}
     if not self.levelEffects or #self.levelEffects == 0 then
         return results
@@ -108,7 +110,21 @@ function AchievementType:GetLevelEffectValue(level)
 
     for _, effectConfig in ipairs(self.levelEffects) do
         local formula = effectConfig["效果数值"]
-        local calculatedValue = AchievementRewardCal:CalculateEffectValue(formula, level, self)
+        local effectLevelConfigName = effectConfig["效果等级配置"]
+        local calculatedValue = nil
+        
+        -- 如果效果数值为空字符串或nil，且配置了效果等级配置，则从效果等级配置中获取
+        if (not formula or formula == "") and effectLevelConfigName then
+            local effectLevelConfig = ConfigLoader.GetEffectLevel(effectLevelConfigName)
+            
+            if effectLevelConfig then
+                -- 从效果等级配置中获取对应等级的效果数值
+                calculatedValue = effectLevelConfig:GetEffectValue(level)
+            end
+        else
+            -- 使用原有的公式计算逻辑
+            calculatedValue = AchievementRewardCal:CalculateEffectValue(formula, level, self)
+        end
         
         if calculatedValue then
             table.insert(results, {

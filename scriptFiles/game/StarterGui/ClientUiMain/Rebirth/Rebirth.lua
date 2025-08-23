@@ -216,13 +216,14 @@ function RebirthGui:RefreshDisplay()
         return
     end
 
-    if self.currentTalentLevel == 0 then
-        --gg.log("天赋等级为0，不显示任何重生选项")
-        -- 可选：显示一条提示信息
-        return
-    end
+    -- if self.currentTalentLevel == 0 then
+    --     --gg.log("天赋等级为0，不显示任何重生选项")
+    --     -- 可选：显示一条提示信息
+    --     return
+    -- end
 
     for level, costsAndEffects in pairs(self.costsByLevel) do
+        gg.log("level",level,"costsAndEffects",costsAndEffects)
         -- 1. 在客户端判断玩家资源是否足够
         local canAfford = true
         if costsAndEffects and #costsAndEffects > 0 then
