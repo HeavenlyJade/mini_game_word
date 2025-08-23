@@ -37,6 +37,17 @@ function AutoPlayEventManager.RegisterEventHandlers()
     --gg.log("已注册自动挂机事件处理器")
 end
 
+--- 【新增】通知客户端自动挂机已停止
+---@param player MPlayer 玩家对象
+---@param message string 停止原因
+function AutoPlayEventManager.NotifyAutoPlayStopped(player, message)
+    if not player then return end
+    AutoPlayEventManager.SendSuccessResponse(player.uin, AutoPlayEventManager.NOTIFY.AUTO_PLAY_STOPPED, {
+        enabled = false,
+        message = message or "自动挂机已停止"
+    })
+end
+
 -- 验证玩家
 ---@param evt table 事件参数
 ---@return MPlayer|nil 玩家对象

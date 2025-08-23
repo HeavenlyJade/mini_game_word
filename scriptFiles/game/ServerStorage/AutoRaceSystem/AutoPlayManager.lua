@@ -274,4 +274,22 @@ function AutoPlayManager.IsPlayerAutoPlaying(player)
     return playerAutoPlayState[player.uin] == true
 end
 
+--- 【新增】为特定玩家停止自动挂机
+---@param player MPlayer 玩家对象
+---@param reason string 停止原因
+function AutoPlayManager.StopAutoPlayForPlayer(player, reason)
+    if not player then return end
+
+    if AutoPlayManager.IsPlayerAutoPlaying(player) then
+        -- 1. 更新状态
+        AutoPlayManager.SetPlayerAutoPlayState(player, false)
+        
+        -- 2. 发送通知
+        local AutoPlayEventManager = require(ServerStorage.AutoRaceSystem.AutoPlayEvent) ---@type AutoPlayEventManager
+        AutoPlayEventManager.NotifyAutoPlayStopped(player, reason or "自动挂机已停止")
+        
+        --gg.log("玩家", player.uin, "已停止自动挂机，原因:", reason)
+    end
+end
+
 return AutoPlayManager

@@ -27,18 +27,18 @@ local RankingEventManager = {}
 function RankingEventManager.ValidatePlayer(evt)
     local env_player = evt.player
     if not env_player then
-        gg.log("排行榜事件缺少玩家参数")
+        --gg.log("排行榜事件缺少玩家参数")
         return nil
     end
     local uin = env_player.uin
     if not uin then
-        gg.log("排行榜事件缺少玩家UIN参数")
+        --gg.log("排行榜事件缺少玩家UIN参数")
         return nil
     end
 
     local player = MServerDataManager.getPlayerByUin(uin)
     if not player then
-        gg.log("排行榜事件找不到玩家: " .. uin)
+        --gg.log("排行榜事件找不到玩家: " .. uin)
         return nil
     end
 
@@ -53,7 +53,7 @@ function RankingEventManager.HandleGetRankingList(evt)
 
     local data = evt.args
     if not data then
-        gg.log("获取排行榜列表失败：参数无效")
+        --gg.log("获取排行榜列表失败：参数无效")
         return
     end
     
@@ -63,13 +63,13 @@ function RankingEventManager.HandleGetRankingList(evt)
     
     -- 参数验证
     if not rankType or type(rankType) ~= "string" then
-        gg.log("获取排行榜列表失败：排行榜类型无效", player.uin, rankType)
+        --gg.log("获取排行榜列表失败：排行榜类型无效", player.uin, rankType)
         RankingEventManager.NotifyError(player.uin, -1, "排行榜类型无效")
         return
     end
     
     if startRank <= 0 or count <= 0 or count > 100 then
-        gg.log("获取排行榜列表失败：参数范围无效", player.uin, startRank, count)
+        --gg.log("获取排行榜列表失败：参数范围无效", player.uin, startRank, count)
         RankingEventManager.NotifyError(player.uin, -1, "参数范围无效")
         return
     end
@@ -96,7 +96,7 @@ function RankingEventManager.HandleGetRankingList(evt)
         rankingList = filteredRankingList,
         timestamp = os.time()
     })
-    --gg.log("发送排行榜列表响应成功", player.uin, rankType, #rankingList)
+    ----gg.log("发送排行榜列表响应成功", player.uin, rankType, #rankingList)
 end
 
 --- 处理获取我的排名请求
@@ -107,7 +107,7 @@ function RankingEventManager.HandleGetMyRank(evt)
 
     local data = evt.args
     if not data then
-        gg.log("获取我的排名失败：参数无效")
+        --gg.log("获取我的排名失败：参数无效")
         return
     end
     
@@ -115,7 +115,7 @@ function RankingEventManager.HandleGetMyRank(evt)
     
     -- 参数验证
     if not rankType or type(rankType) ~= "string" then
-        gg.log("获取我的排名失败：排行榜类型无效", player.uin, rankType)
+        --gg.log("获取我的排名失败：排行榜类型无效", player.uin, rankType)
         RankingEventManager.NotifyError(player.uin, -1, "排行榜类型无效")
         return
     end
@@ -135,7 +135,7 @@ function RankingEventManager.HandleGetMyRank(evt)
         isOnRanking = rankInfo.rank and rankInfo.rank > 0,
         timestamp = os.time()
     })
-    --gg.log("发送我的排名响应成功", player.uin, rankType, rankInfo.rank)
+    ----gg.log("发送我的排名响应成功", player.uin, rankType, rankInfo.rank)
 end
 
 --- 处理获取指定玩家排名请求
@@ -146,7 +146,7 @@ function RankingEventManager.HandleGetPlayerRank(evt)
 
     local data = evt.args
     if not data then
-        gg.log("获取玩家排名失败：参数无效")
+        --gg.log("获取玩家排名失败：参数无效")
         return
     end
     
@@ -155,13 +155,13 @@ function RankingEventManager.HandleGetPlayerRank(evt)
     
     -- 参数验证
     if not rankType or type(rankType) ~= "string" then
-        gg.log("获取玩家排名失败：排行榜类型无效", player.uin, rankType)
+        --gg.log("获取玩家排名失败：排行榜类型无效", player.uin, rankType)
         RankingEventManager.NotifyError(player.uin, -1, "排行榜类型无效")
         return
     end
     
     if not targetUin or type(targetUin) ~= "number" then
-        gg.log("获取玩家排名失败：目标玩家UIN无效", player.uin, targetUin)
+        --gg.log("获取玩家排名失败：目标玩家UIN无效", player.uin, targetUin)
         RankingEventManager.NotifyError(player.uin, -1, "目标玩家UIN无效")
         return
     end
@@ -182,7 +182,7 @@ function RankingEventManager.HandleGetPlayerRank(evt)
         isOnRanking = rankInfo.rank and rankInfo.rank > 0,
         timestamp = os.time()
     })
-    --gg.log("发送玩家排名响应成功", player.uin, targetUin, rankType, rankInfo.rank)
+    ----gg.log("发送玩家排名响应成功", player.uin, targetUin, rankType, rankInfo.rank)
 end
 
 --- 处理刷新排行榜请求
@@ -193,7 +193,7 @@ function RankingEventManager.HandleRefreshRanking(evt)
 
     local data = evt.args
     if not data then
-        gg.log("刷新排行榜失败：参数无效")
+        --gg.log("刷新排行榜失败：参数无效")
         return
     end
     
@@ -201,7 +201,7 @@ function RankingEventManager.HandleRefreshRanking(evt)
     
     -- 参数验证
     if not rankType or type(rankType) ~= "string" then
-        gg.log("刷新排行榜失败：排行榜类型无效", player.uin, rankType)
+        --gg.log("刷新排行榜失败：排行榜类型无效", player.uin, rankType)
         RankingEventManager.NotifyError(player.uin, -1, "排行榜类型无效")
         return
     end
@@ -217,7 +217,7 @@ function RankingEventManager.HandleRefreshRanking(evt)
         message = success and "刷新成功" or "刷新失败",
         timestamp = os.time()
     })
-    gg.log("发送排行榜刷新响应", player.uin, rankType, success)
+    --gg.log("发送排行榜刷新响应", player.uin, rankType, success)
 end
 
 --- 处理获取支持的排行榜类型请求
@@ -237,7 +237,7 @@ function RankingEventManager.HandleGetRankingTypes(evt)
         count = #rankingTypes,
         timestamp = os.time()
     })
-    --gg.log("发送排行榜类型响应成功", player.uin, #rankingTypes)
+    ----gg.log("发送排行榜类型响应成功", player.uin, #rankingTypes)
 end
 
 --- 通知客户端错误信息
@@ -250,7 +250,7 @@ function RankingEventManager.NotifyError(uin, errorCode, errorMsg)
         errorCode = errorCode,
         errorMsg = errorMsg
     })
-    gg.log("发送排行榜错误响应", uin, errorMsg)
+    --gg.log("发送排行榜错误响应", uin, errorMsg)
 end
 
 --- 广播排行榜更新通知
@@ -281,14 +281,14 @@ function RankingEventManager.BroadcastRankingUpdate(rankType, updateData)
             gg.network_channel:fireClient(player.uin, notifyData)
         end
     end
-    --gg.log("广播排行榜更新通知", rankType, updateData.playerUin)
+    ----gg.log("广播排行榜更新通知", rankType, updateData.playerUin)
 end
 
 --- 向客户端同步所有排行榜数据
 ---@param uin number 玩家UIN
 function RankingEventManager.NotifyAllDataToClient(uin)
     if not uin then
-        gg.log("同步排行榜数据失败：玩家UIN无效")
+        --gg.log("同步排行榜数据失败：玩家UIN无效")
         return
     end
     
@@ -330,7 +330,7 @@ function RankingEventManager.NotifyAllDataToClient(uin)
             timestamp = os.time()
         })
         
-        gg.log("发送排行榜数据", rankType, "原始条目数:", #rankingList, "过滤后条目数:", #filteredRankingList, "玩家排名:", playerRankInfo.rank)
+        --gg.log("发送排行榜数据", rankType, "原始条目数:", #rankingList, "过滤后条目数:", #filteredRankingList, "玩家排名:", playerRankInfo.rank)
     end
     
     -- 发送排行榜类型列表
@@ -341,7 +341,7 @@ function RankingEventManager.NotifyAllDataToClient(uin)
         timestamp = os.time()
     })
     
-    gg.log("排行榜数据同步完成", uin, "排行榜类型数量:", #rankingTypes)
+    --gg.log("排行榜数据同步完成", uin, "排行榜类型数量:", #rankingTypes)
 end
 
 --- 推送玩家排名变化通知
@@ -373,7 +373,7 @@ function RankingEventManager.NotifyPlayerRankChange(player, rankType, oldRank, n
     }
     
     gg.network_channel:fireClient(player.uin, notifyData)
-    gg.log("推送排名变化通知", player.uin, rankType, oldRank, "->", newRank)
+    --gg.log("推送排名变化通知", player.uin, rankType, oldRank, "->", newRank)
 end
 
 --- 注册所有排行榜相关事件

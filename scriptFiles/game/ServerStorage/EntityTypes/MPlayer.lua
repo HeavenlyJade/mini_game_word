@@ -443,6 +443,12 @@ end
 
 --- 获取当前挂机点名称
 ---@return string|nil 当前挂机点名称
+function _MPlayer:GetCurrentIdleSpotName()
+    return self.currentIdleSpot
+end
+
+--- 获取当前挂机点名称
+---@return string|nil 当前挂机点名称
 function _MPlayer:GetCurrentIdleSpot()
     return self.currentIdleSpot
 end

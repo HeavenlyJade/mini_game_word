@@ -113,7 +113,7 @@ function AnimationCommand.handlers.stopFly(params, player)
     
     -- 检查玩家是否处于飞行状态
     if not playerStates[uin] or not playerStates[uin].isFlying then
-        player:SendHoverText("玩家未处于飞行状态")
+        -- player:SendHoverText("玩家未处于飞行状态")
         return false
     end
     

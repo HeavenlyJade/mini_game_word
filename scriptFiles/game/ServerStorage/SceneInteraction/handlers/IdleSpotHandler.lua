@@ -68,6 +68,18 @@ function IdleSpotHandler:OnEntityEnter(entity)
     -- 条件满足后，再调用父类方法处理通用逻辑
     SceneNodeHandlerBase.OnEntityEnter(self, entity)
 
+    -- 【新增】将玩家传送到此挂机点的精确传送位置
+    if self.teleportNode and self.teleportNode.Position then
+        local actor = entity.actor
+        if actor then
+            local TeleportService = game:GetService('TeleportService')
+            pcall(function()
+                TeleportService:Teleport(actor, self.teleportNode.Position)
+            end)
+            --gg.log(string.format("玩家 '%s' 已被传送到挂机点 '%s' 的精确位置", entity.name, self.name))
+        end
+    end
+
     local playerId = entity.uuid
 
     --gg.log(string.format("玩家 '%s' 进入挂机点 '%s'", entity.name, self.name))

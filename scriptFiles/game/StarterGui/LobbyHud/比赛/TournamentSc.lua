@@ -55,6 +55,7 @@ function TournamentSc:InitNodes()
 	self.doubleTrainingButton = self:Get("底图/双倍训练", ViewButton)
 	self.leaveRaceButton = self:Get("底图/离开比赛", ViewButton)
 	self.leaveAfkButton = self:Get("底图/离开挂机", ViewButton)
+	self.leaveAfkButton:SetVisible(false) -- 默认隐藏
 
 
 	-- 速度显示
@@ -160,7 +161,12 @@ end
 
 function TournamentSc:OnClickLeaveAfk()
 	--gg.log("点击离开挂机按钮")
-	-- 在此发送网络请求
+	-- 发送网络请求，通知服务端玩家想离开挂机状态
+	if gg and gg.network_channel then
+		gg.network_channel:fireServer({
+			cmd = EventPlayerConfig.REQUEST.REQUEST_LEAVE_IDLE
+		})
+	end
 end
 
 -- =================================
@@ -291,6 +297,14 @@ function TournamentSc:SetSpeedPointerRotation(angle)
 	if self.speedPointer.node.Rotation ~= nil then
 		self.speedPointer.node.Rotation = angle
 	end
+end
+
+--- 设置“离开挂机”按钮的可见性
+---@param visible boolean
+function TournamentSc:SetAfkButtonVisible(visible)
+    if self.leaveAfkButton then
+        self.leaveAfkButton:SetVisible(visible)
+    end
 end
 
 -- =================================
