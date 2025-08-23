@@ -110,14 +110,15 @@ function AutoRaceEventManager.HandleAutoRaceToggle(evt)
     local enabled = evt.enabled
     local uin = player.uin
     
-    -- 如果启用自动比赛，先检查并停止自动挂机
+    -- 如果启用自动比赛，先检查并停止所有挂机状态
     if enabled then
+        -- 1. 停止自动挂机
         local autoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
-        if autoPlayManager.IsPlayerAutoPlaying(player) then
-            -- 停止自动挂机
-            autoPlayManager.SetPlayerAutoPlayState(player, false)
-            
-        end
+        autoPlayManager.StopAutoPlayForPlayer(player, "切换到自动比赛模式")
+
+        -- 2. 强制离开手动挂机点
+        local SceneInteractionEventManager = require(ServerStorage.SceneInteraction.SceneInteractionEventManager) ---@type SceneInteractionEventManager
+        SceneInteractionEventManager.ForcePlayerLeaveIdleSpot(player)
     end
     
     -- 使用新的状态设置方法

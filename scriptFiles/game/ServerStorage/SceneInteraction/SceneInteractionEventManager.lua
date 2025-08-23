@@ -63,6 +63,37 @@ function SceneInteractionEventManager.OnRequestLeaveIdle(evt)
     end
 end
 
+--- 【新增】强制让一个玩家离开他当前的挂机点
+---@param player MPlayer
+function SceneInteractionEventManager.ForcePlayerLeaveIdleSpot(player)
+    if not player or not player:IsIdling() then
+        return
+    end
+
+    local idleSpotName = player:GetCurrentIdleSpotName()
+    if not idleSpotName then
+        return
+    end
+
+    local nodeConfig = ConfigLoader.GetSceneNode(idleSpotName)
+    if not nodeConfig then
+        return
+    end
+    
+    local handlerId = nodeConfig.uuid
+    if not handlerId then
+        return
+    end
+
+    local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local handler = ServerDataManager.getSceneNodeHandler(handlerId)
+
+    if handler and handler.ForceEntityLeave then
+        handler:ForceEntityLeave(player)
+        --gg.log(string.format("已强制玩家 '%s' 离开挂机点 '%s'", player.name, idleSpotName))
+    end
+end
+
 --- 初始化，订阅所有相关的客户端请求事件
 function SceneInteractionEventManager.Init()
     ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.REQUEST_LEAVE_IDLE, SceneInteractionEventManager.OnRequestLeaveIdle)
