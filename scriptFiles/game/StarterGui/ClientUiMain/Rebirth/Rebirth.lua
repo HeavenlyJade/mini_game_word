@@ -70,11 +70,6 @@ function RebirthGui:RegisterEvents()
         self:OnTalentLevelResponse(data)
     end)
 
-    -- 监听天赋动作执行结果（包括重生）
-    ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, function(data)
-        self:OnPerformActionResponse(data)
-    end)
-
     -- 【新增】监听玩家变量数据同步（战力值更新）
     local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
     ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
@@ -113,16 +108,9 @@ end
 -- 数据请求与响应
 -- =================================
 
-function RebirthGui:RequestTalentLevel()
-    --gg.log("请求天赋等级:", TALENT_ID)
-    gg.network_channel:fireServer({
-        cmd = AchievementEventConfig.REQUEST.GET_TALENT_LEVEL,
-        args = { talentId = TALENT_ID }
-    })
-end
 
 function RebirthGui:OnTalentLevelResponse(data)
-    --gg.log("收到天赋等级响应:", data)
+    gg.log("收到天赋等级响应:", data)
     self.currentTalentLevel = data.data.currentLevel
     self.costsByLevel = data.data.costsByLevel or {}
     self.maxExecutions = data.data.maxExecutions or 0
@@ -132,20 +120,7 @@ function RebirthGui:OnTalentLevelResponse(data)
     self:RefreshDisplay()
 end
 
-function RebirthGui:OnPerformActionResponse(responseData)
-    --gg.log("收到天赋动作执行响应:", responseData)
-    local eventData = responseData.data or {}
 
-    if eventData.success then
-        --gg.log("重生成功！等级:", eventData.executedLevel, "效果:", eventData.effectApplied)
-        -- 重生成功后，再次请求最新的天赋等级来刷新界面
-        self:RequestTalentLevel()
-    else
-        local errorMessage = AchievementEventConfig.GetErrorMessage(eventData.errorCode) or "未知错误"
-        --gg.log("重生失败:", errorMessage)
-        -- TODO: 向玩家显示错误提示
-    end
-end
 
 --- 新增：处理玩家变量数据同步（战力值更新）
 ---@param data table 变量同步数据
@@ -221,7 +196,7 @@ function RebirthGui:RefreshDisplay()
     --     -- 可选：显示一条提示信息
     --     return
     -- end
-
+    gg.log("self.costsByLevel",self.costsByLevel)
     for level, costsAndEffects in pairs(self.costsByLevel) do
         gg.log("level",level,"costsAndEffects",costsAndEffects)
         -- 1. 在客户端判断玩家资源是否足够
@@ -261,7 +236,7 @@ function RebirthGui:RefreshDisplay()
 
             local titleText = itemNode["可重生次数"]
             if titleText then
-                titleText.Title = string.format("可重生 %d 次", rebirthCount)
+                titleText.Title = string.format("可重生 %d 次", gg.FormatLargeNumber(costAmount))
             end
 
             local costText = itemNode["重生消耗"]

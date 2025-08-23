@@ -20,7 +20,7 @@ local RewardType = require(MainStorage.Code.Common.TypeConfig.RewardType) ---@ty
 local LotteryType = require(MainStorage.Code.Common.TypeConfig.LotteryType) ---@type LotteryType
 local ShopItemType = require(MainStorage.Code.Common.TypeConfig.ShopItemType) ---@type ShopItemType
 local TeleportPointType = require(MainStorage.Code.Common.TypeConfig.TeleportPointType) ---@type TeleportPointType
-
+local EffectLevelType = require(MainStorage.Code.Common.TypeConfig.EffectLevelType) ---@type EffectLevelType
 -- 引用所有 Config 的原始数据
 local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig)
 local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig)
@@ -39,7 +39,7 @@ local RewardConfig = require(MainStorage.Code.Common.Config.RewardConfig)
 local LotteryConfig = require(MainStorage.Code.Common.Config.LotteryConfig)
 local ShopItemConfig = require(MainStorage.Code.Common.Config.ShopItemConfig)
 local TeleportPointConfig = require(MainStorage.Code.Common.Config.TeleportPointConfig)
-
+local EffectLevelConfig = require(MainStorage.Code.Common.Config.EffectLevelConfig)
 -- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) -- 已移除
 -- local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) -- 已移除
 
@@ -114,7 +114,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(LotteryConfig, LotteryType, ConfigLoader.Lotteries, "Lottery")
     ConfigLoader.LoadConfig(ShopItemConfig, ShopItemType, ConfigLoader.ShopItems, "ShopItem")
     ConfigLoader.LoadConfig(TeleportPointConfig, TeleportPointType, ConfigLoader.TeleportPoints, "TeleportPoint")
-
+    ConfigLoader.LoadConfig(EffectLevelConfig, EffectLevelType, ConfigLoader.EffectLevels, "EffectLevel")
     -- 构建迷你币商品映射表
     ConfigLoader.BuildMiniShopMapping()
     print("配置装载结束")

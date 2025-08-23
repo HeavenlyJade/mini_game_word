@@ -112,15 +112,11 @@ function AchievementType:GetLevelEffectValue(level)
         local formula = effectConfig["效果数值"]
         local effectLevelConfigName = effectConfig["效果等级配置"]
         local calculatedValue = nil
-        
         -- 如果效果数值为空字符串或nil，且配置了效果等级配置，则从效果等级配置中获取
         if (not formula or formula == "") and effectLevelConfigName then
             local effectLevelConfig = ConfigLoader.GetEffectLevel(effectLevelConfigName)
+            calculatedValue = effectLevelConfig:GetEffectValue(level)
             
-            if effectLevelConfig then
-                -- 从效果等级配置中获取对应等级的效果数值
-                calculatedValue = effectLevelConfig:GetEffectValue(level)
-            end
         else
             -- 使用原有的公式计算逻辑
             calculatedValue = AchievementRewardCal:CalculateEffectValue(formula, level, self)
@@ -134,7 +130,7 @@ function AchievementType:GetLevelEffectValue(level)
             })
         end
     end
-    
+    gg.log("results",results)
     return results
 end
 

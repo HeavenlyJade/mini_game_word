@@ -42,7 +42,7 @@ end
 ---@param achievementType AchievementType|nil 成就类型（可选）
 ---@return number|nil 计算结果
 function AchievementRewardCal:CalculateEffectValue(formula, currentLevel, achievementType)
-    if not formula then
+    if not formula or formula == "" then
         return nil
     end
 
@@ -132,12 +132,12 @@ end
 ---@return boolean 数据是否有效
 function AchievementRewardCal:ValidateAchievementData(achievementData, achievementType)
     if not achievementData then
-        --gg.log("错误: [AchievementRewardCal] 成就数据为空")
+        gg.log("错误: [AchievementRewardCal] 成就数据为空")
         return false
     end
 
     if not achievementData.currentLevel or achievementData.currentLevel < 0 then
-        --gg.log("错误: [AchievementRewardCal] 成就等级无效:", tostring(achievementData.currentLevel))
+        gg.log("错误: [AchievementRewardCal] 成就等级无效:", tostring(achievementData.currentLevel))
         return false
     end
 

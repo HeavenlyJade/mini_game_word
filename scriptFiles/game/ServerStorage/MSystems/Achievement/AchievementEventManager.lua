@@ -444,7 +444,7 @@ function AchievementEventManager.HandleGetTalentLevel(event)
         maxExecutionTotalCost = maxExecutionTotalCost,
         playerResources = playerResources
     }
-
+    gg.log("responseData",responseData)
     AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE, responseData)
 end
 
@@ -740,21 +740,22 @@ function AchievementEventManager.HandlePerformRebirth(event)
     -- 6. 【新增】同步玩家所有战力值到客户端
     AchievementEventManager.SyncAllPlayerPowerValues(player)
 
-    -- 7. 发送成功响应
-    local responseData = {
-        success = true,
-        talentId = talentId,
-        executedLevel = targetLevel,
-        costsDeducted = costsToDeduct,
-        effectApplied = true
+    -- 7. 【重构】发送包含最新数据的响应，而不是简单的成功/失败消息
+    --    通过模拟事件对象并调用现有处理器来复用逻辑
+    local mockEvent = {
+        player = event.player,
+        uin = uin,
+        args = {
+            talentId = talentId
+        }
     }
-    AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
+    AchievementEventManager.HandleGetTalentLevel(mockEvent)
 
     -- 同步背包和变量变化到客户端
     SyncBagToClient(player)
     SyncPlayerVariablesToClient(player)
     
-    --gg.log("重生执行成功，已扣除消耗并应用效果")
+    --gg.log("重生执行成功，已扣除消耗、应用效果并同步最新数据")
 end
 
 
@@ -866,14 +867,15 @@ function AchievementEventManager.ExecuteMaxRebirthWithPrivilege(player, talentId
     local singleEffectValue = AchievementTypeIns:GetLevelEffectValue(1)[1]["数值"]
     local totalEffectValue = singleEffectValue * maxExecutions
 
-    -- 8. 发送成功响应
-    local responseData = {
-        success = true,
-        talentId = talentId,
-        executedLevel = maxExecutions,
-        effectApplied = totalEffectValue,
+    -- 8. 【重构】发送包含最新数据的响应
+    local mockEvent = {
+        player = player,
+        uin = player.uin,
+        args = {
+            talentId = talentId
+        }
     }
-    AchievementEventManager.SendSuccessResponse(player.uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
+    AchievementEventManager.HandleGetTalentLevel(mockEvent)
 
     -- 9. 同步背包和变量变化到客户端
     SyncBagToClient(player)
@@ -994,17 +996,6 @@ function AchievementEventManager.NotifyAllDataToClient(uin)
         data = achievementResponseData
     })
     --gg.log("已主动同步天赋成就数据到客户端:", uin, "天赋数量:", achievementResponseData)
-
-    -- 2. 为RebirthGui主动推送'重生'天赋的等级
-    local rebirthTalentLevel = playerAchievement:GetTalentLevel("重生")
-    gg.network_channel:fireClient(uin, {
-        cmd = AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE,
-        data = {
-            talentId = "重生",
-            currentLevel = rebirthTalentLevel
-        }
-    })
-    --gg.log("已为RebirthGui主动同步'重生'天赋等级:", rebirthTalentLevel)
 end
 
 
