@@ -7,6 +7,7 @@ local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
 
 -- UI配置
 local uiConfig = {
@@ -43,7 +44,9 @@ function TournamentSc:InitNodes()
 	self.GameUserMag1 = self:Get("底图/功能/比赛进度条1/玩家头像模板", ViewComponent)
 	self.GameUserMag2 = self:Get("底图/功能/比赛进度条2/玩家头像模板", ViewComponent)
 	self.GameUserMag3 = self:Get("底图/功能/比赛进度条3/玩家头像模板", ViewComponent)
-
+	self.GmaeDisTop = self:Get("底图/比赛距离实时", ViewComponent)
+	-- 距离节点默认隐藏，只在比赛时显示
+	self.GmaeDisTop:SetVisible(false)
 	-- 比赛进度条
 	self.progressBars = {}
 	for i = 1, 3 do
@@ -84,6 +87,12 @@ function TournamentSc:InitData()
 	self.elapsedTime = 0
 	self.remainingTime = 0
 	self.playerAvatars = {} -- uin -> avatarNode
+	self.currentPlayerDistance = 0 -- 当前玩家飞行距离
+	
+	-- 【新增】客户端飞行距离追踪数据
+	self.clientFlightData = {} -- userId -> FlightData
+	self.clientStartPositions = {} -- userId -> Vector3
+	self.distanceUpdateTimer = nil -- 距离更新定时器
 end
 
 -- 事件注册
@@ -164,6 +173,9 @@ function TournamentSc:OnClickLeaveRace()
 	if self.leaveRaceButton then self.leaveRaceButton:SetVisible(false) end
 	if self.speedPointer then self.speedPointer:SetVisible(false) end
 	if self.speedDashboard then self.speedDashboard:SetVisible(false) end
+	
+	-- 【新增】停止客户端飞行距离追踪
+	self:StopClientDistanceTracking()
 end
 
 function TournamentSc:OnClickLeaveAfk()
@@ -186,6 +198,19 @@ function TournamentSc:OnContestShow(data)
 	if self.basePanel then
 		self.basePanel:SetVisible(true)
 	end
+	
+	-- 【新增】显示距离节点并初始化距离显示
+	if self.GmaeDisTop then
+		self.GmaeDisTop:SetVisible(true)
+		self.currentPlayerDistance = 0
+		self:UpdateDistanceDisplay(0)
+	end
+	
+	-- 【新增】在比赛开始时记录所有玩家的起始位置
+	self:RecordAllPlayersStartPositions()
+	
+	-- 【新增】启动客户端飞行距离追踪
+	self:StartClientDistanceTracking()
 end
 
 --- 比赛界面更新（来自服务器）
@@ -196,9 +221,8 @@ function TournamentSc:OnContestUpdate(data)
 	self.elapsedTime = data.elapsedTime or 0
 	self.remainingTime = data.remainingTime or 0
 
-	if data.allPlayersData then
-        self:UpdatePlayerProgress(data.allPlayersData)
-    end
+	-- 【已移除】不再使用服务端数据更新玩家进度
+	-- 现在完全依赖客户端的实时位置计算来更新UI
 end
 
 --- 比赛界面隐藏（来自服务器）
@@ -212,6 +236,11 @@ function TournamentSc:OnContestHide(data)
 	end
 	if self.speedDashboard then
 		self.speedDashboard:SetVisible(false)
+	end
+
+	-- 【新增】隐藏距离节点
+	if self.GmaeDisTop then
+		self.GmaeDisTop:SetVisible(false)
 	end
 
 	-- 可选：停止速度指针定时器
@@ -228,6 +257,12 @@ function TournamentSc:OnContestHide(data)
 		end
 	end
 	self.playerAvatars = {}
+	
+	-- 【新增】停止客户端飞行距离追踪
+	self:StopClientDistanceTracking()
+	
+	-- 【新增】重置距离数据
+	self.currentPlayerDistance = 0
 end
 
 --- 接收比赛开始(发射)事件，获取服务端携带的数据（含 variableData）
@@ -239,6 +274,34 @@ function TournamentSc:OnLaunchPlayer(data)
     self.speedPointer:SetVisible(true)
 	self.lastLaunchData = data or {}
 	self.variableData = (data and data.variableData) or {}
+	
+	-- 【新增】在发射时立即记录所有玩家的起始位置
+	local Players = game:GetService("Players")
+	local allPlayers = Players:GetPlayers()
+	
+	gg.log("=== 比赛发射时客户端玩家列表 ===")
+	for _, playerActor in ipairs(allPlayers) do
+		if playerActor and playerActor.UserId then
+			local uin = playerActor.UserId
+			gg.log("客户端玩家名称为: " .. tostring(uin))
+			
+			-- 记录每个玩家的起始位置
+			self.clientStartPositions[uin] = playerActor.Position
+			self.clientFlightData[uin] = {
+				userId = uin,
+				startPosition = playerActor.Position,
+				currentPosition = playerActor.Position,
+				flightDistance = 0,
+				isFinished = false
+			}
+			gg.log(string.format("TournamentSc: 玩家 %s 发射时起始位置已记录", uin))
+			
+			-- 🚨 新增：立即为每个玩家创建头像，确保所有玩家都能看到
+			self:UpdatePlayerAvatarPosition(uin, 0)
+		end
+	end
+	gg.log("=== 玩家列表结束 ===")
+	
 	-- 可在此根据需要刷新UI或缓存到本地数据系统
 
 	-- 启动速度指针旋转定时器：从 -90 度逐步旋转到 90 度，历时 recoveryDelay
@@ -315,7 +378,7 @@ function TournamentSc:SetSpeedPointerRotation(angle)
 	end
 end
 
---- 设置“离开挂机”按钮的可见性
+--- 设置"离开挂机"按钮的可见性
 ---@param visible boolean
 function TournamentSc:SetAfkButtonVisible(visible)
     if self.leaveAfkButton then
@@ -323,18 +386,201 @@ function TournamentSc:SetAfkButtonVisible(visible)
     end
 end
 
---- 【新增】更新玩家比赛进度显示
----@param allPlayersData table
-function TournamentSc:UpdatePlayerProgress(allPlayersData)
-    if not allPlayersData then return end
+--- 【新增】更新距离显示
+---@param distance number 飞行距离
+function TournamentSc:UpdateDistanceDisplay(distance)
+    if not self.GmaeDisTop or not self.GmaeDisTop.node then 
+        return 
+    end
+    
+    -- 更新UI显示
+    if self.GmaeDisTop.node.Title ~= nil then
+        self.GmaeDisTop.node.Title = gg.FormatLargeNumber(math.floor(distance + 0.5))
+    end
+end
 
-    -- 更新所有玩家的位置
-    for _, playerData in ipairs(allPlayersData) do
-        if playerData then
-            self:UpdatePlayerAvatarPosition(playerData.userId, playerData.flightDistance or 0)
+--- 【新增】记录所有玩家的起始位置
+function TournamentSc:RecordAllPlayersStartPositions()
+    local Players = game:GetService("Players")
+    local allPlayers = Players:GetPlayers()
+    
+    gg.log("=== 比赛开始时记录所有玩家起始位置 ===")
+    for _, playerActor in ipairs(allPlayers) do
+        if playerActor and playerActor.UserId then
+            local uin = playerActor.UserId
+            
+            -- 记录每个玩家的起始位置
+            self.clientStartPositions[uin] = playerActor.Position
+            self.clientFlightData[uin] = {
+                userId = uin,
+                startPosition = playerActor.Position,
+                currentPosition = playerActor.Position,
+                flightDistance = 0,
+                isFinished = false
+            }
+            gg.log(string.format("TournamentSc: 玩家 %s 起始位置已记录", uin))
+            
+            -- 🚨 新增：立即为每个玩家创建头像，确保所有玩家都能看到
+            self:UpdatePlayerAvatarPosition(uin, 0)
+        end
+    end
+    gg.log("=== 起始位置记录完成 ===")
+end
+
+--- 【新增】启动客户端飞行距离追踪
+function TournamentSc:StartClientDistanceTracking()
+    if self.distanceUpdateTimer then
+        self:StopClientDistanceTracking()
+    end
+    
+    -- 每0.2秒更新一次飞行距离（与服务端同步）
+    self.distanceUpdateTimer = SandboxNode.New("Timer", game.WorkSpace)
+    self.distanceUpdateTimer.Name = "TournamentSc_DistanceTimer"
+    self.distanceUpdateTimer.Delay = 0
+    self.distanceUpdateTimer.Loop = true
+    self.distanceUpdateTimer.Interval = 0.1
+    self.distanceUpdateTimer.Callback = function()
+        self:UpdateClientFlightDistances()
+    end
+    self.distanceUpdateTimer:Start()
+    
+    gg.log("TournamentSc: 启动客户端飞行距离追踪")
+end
+
+--- 【新增】停止客户端飞行距离追踪
+function TournamentSc:StopClientDistanceTracking()
+    if self.distanceUpdateTimer then
+        self.distanceUpdateTimer:Stop()
+        self.distanceUpdateTimer:Destroy()
+        self.distanceUpdateTimer = nil
+    end
+    
+    -- 清理飞行数据
+    self.clientFlightData = {}
+    self.clientStartPositions = {}
+    
+    gg.log("TournamentSc: 停止客户端飞行距离追踪")
+end
+
+--- 【新增】更新客户端飞行距离（基于所有比赛玩家的位置实时更新UI）
+function TournamentSc:UpdateClientFlightDistances()
+    -- 获取所有客户端玩家
+    local Players = game:GetService("Players")
+    local allPlayers = Players:GetPlayers()
+    
+    -- 遍历所有玩家，更新比赛进度UI
+    for _, playerActor in ipairs(allPlayers) do
+        if playerActor and playerActor.UserId then
+            local uin = playerActor.UserId
+            
+            -- 检查是否有起始位置记录
+            if not self.clientStartPositions[uin] then
+                -- 记录起始位置
+                self.clientStartPositions[uin] = playerActor.Position
+                -- 初始化飞行数据
+                self.clientFlightData[uin] = {
+                    userId = uin,
+                    startPosition = playerActor.Position,
+                    currentPosition = playerActor.Position,
+                    flightDistance = 0,
+                    isFinished = false
+                }
+                gg.log(string.format("TournamentSc: 玩家 %s 起始位置已记录", uin))
+            end
+            
+            local flightData = self.clientFlightData[uin]
+            if not flightData then
+                -- 🚨 修复：如果flightData不存在，跳过这个玩家，而不是整个方法返回
+                gg.log(string.format("TournamentSc: 警告 - 玩家 %s 的飞行数据不存在，跳过", uin))
+                goto continue
+            end
+            
+            if flightData.isFinished then
+                -- 🚨 修复：如果玩家已完成，跳过这个玩家，而不是整个方法返回
+                goto continue
+            end
+            
+            -- 获取当前位置
+            local currentPos = playerActor.Position
+            if currentPos then
+                flightData.currentPosition = currentPos
+                
+                -- 计算从起始位置到当前位置的距离
+                local startPos = flightData.startPosition
+                local distance = self:CalculateDistance(currentPos, startPos)
+                
+                -- 更新飞行距离（只增不减，取最大值）
+                if distance then
+                    local oldDistance = flightData.flightDistance
+                    flightData.flightDistance = math.max(flightData.flightDistance, distance)
+                    
+                    -- 🚨 修复：无论距离是否变化，都要更新UI显示
+                    -- 确保所有玩家的头像都能正确显示和更新
+                    self:UpdatePlayerAvatarPosition(uin, flightData.flightDistance)
+                    
+                    -- 如果是本地玩家，更新距离显示
+                    local localPlayer = gg.getClientLocalPlayer()
+                    if localPlayer and localPlayer.UserId == uin then
+                        self.currentPlayerDistance = flightData.flightDistance
+                        self:UpdateDistanceDisplay(flightData.flightDistance)
+                        
+                        -- 调试日志（每1000米左右记录一次）
+                        if flightData.flightDistance % 1000 < 100 then
+                            gg.log(string.format("TournamentSc: 本地玩家 %s 飞行距离更新: %.1f米", uin, flightData.flightDistance))
+                        end
+                    end
+                    
+                    -- 🚨 新增：为所有玩家记录距离更新日志（调试用）
+                    if flightData.flightDistance > oldDistance then
+                        gg.log(string.format("TournamentSc: 玩家 %s 飞行距离更新: %.1f米 -> %.1f米", 
+                            uin, oldDistance, flightData.flightDistance))
+                    end
+                end
+            end
+            
+            ::continue::
         end
     end
 end
+
+--- 【新增】计算两个Vector3之间的距离（复制自RaceGameMode）
+---@param pos1 Vector3 位置1
+---@param pos2 Vector3 位置2
+---@return number|nil 距离值，失败时返回nil
+function TournamentSc:CalculateDistance(pos1, pos2)
+    if not pos1 or not pos2 then
+        return nil
+    end
+    
+    -- 使用VectorUtils模块的距离计算方法（与服务端保持一致）
+    local success, distance = pcall(function()
+        return VectorUtils.Vec.Distance3(pos1, pos2)
+    end)
+    
+    if success and type(distance) == "number" then
+        return distance
+    else
+        -- 静默处理错误，避免日志干扰
+        return nil
+    end
+end
+
+--- 【新增】重置玩家飞行数据
+---@param userId number 玩家ID
+function TournamentSc:ResetPlayerFlightData(userId)
+    if userId then
+        self.clientFlightData[userId] = nil
+        self.clientStartPositions[userId] = nil
+    else
+        -- 重置所有玩家数据
+        self.clientFlightData = {}
+        self.clientStartPositions = {}
+    end
+    self.currentPlayerDistance = 0
+end
+
+-- 【已移除】UpdatePlayerProgress 方法不再使用
+-- 现在完全依赖客户端的实时位置计算来更新玩家头像位置
 
 --- 【新增】根据飞行距离确定玩家应该在哪个进度条（支持循环）
 ---@param distance number 飞行距离

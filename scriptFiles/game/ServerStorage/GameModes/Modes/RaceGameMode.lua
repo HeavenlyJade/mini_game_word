@@ -471,7 +471,7 @@ function RaceGameMode:_startFlightDistanceTracking()
     end
 
     -- 每0.5秒更新一次飞行距离和排名
-    self.distanceTimer = self:AddInterval(0.5, function()
+    self.distanceTimer = self:AddInterval(0.2, function()
         self:_updateFlightDistances()
         self:_updateRankings()
     end)
