@@ -50,6 +50,7 @@ function ClientMain.start_client()
 
     require(MainStorage.Code.Client.Graphic.DamagePool)
     require(MainStorage.Code.Client.Graphic.WorldTextAnim)
+    require(MainStorage.Code.Client.Graphic.SoundPool) -- 加载音效池管理
     ClientEventManager.Subscribe("FetchAnimDuration", function (evt)
         local animator = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast animator Animator
         if animator then
