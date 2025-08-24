@@ -493,7 +493,7 @@ function Bag:SyncToClient()
     self.dirtySyncSlots = {}
     self.deletedSlots = {}
 
-    gg.log("Bag:SyncToClient - ret:", ret)
+    --gg.log("Bag:SyncToClient - ret:", ret)
     gg.network_channel:fireClient(self.uin, ret)
 end
 

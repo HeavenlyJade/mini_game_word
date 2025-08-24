@@ -39,7 +39,7 @@ function TrailCommand.handlers.add(params, player)
 
     local success, actualSlot = TrailMgr.AddTrail(player, trailName, slotIndex)
     if success then
-        local msg = string.format("新增物品 %s 添加尾迹: %s 到槽位 %d", player.name, trailName, actualSlot)
+        local msg = string.format("成功给玩家 %s 添加尾迹: %s 到槽位 %d", player.name, trailName, actualSlot)
         player:SendHoverText(msg)
         --gg.log(msg)
         TrailCommand._syncToClient(player) -- 同步数据到客户端

@@ -54,6 +54,7 @@ function ShopMgr.OnPlayerJoin(player)
     ---@cast shopInstance Shop
     server_player_shop_data[uin] = shopInstance
     
+    gg.log("玩家商城实例创建成功", uin,shopData)
     return shopInstance
 end
 
@@ -99,72 +100,16 @@ function ShopMgr.GetOrCreatePlayerShop(player)
     return shopInstance
 end
 
--- 【新增】专门处理迷你币购买的函数
----@param player MPlayer 玩家对象
----@param shopItemId string 商品ID
----@param categoryName string|nil 商品分类
----@return boolean|string, string, table|nil 状态（true=成功, false=失败, "pending"=等待支付），结果消息，附加数据
-function ShopMgr.ProcessMiniCoinPurchase(player, shopItemId, categoryName)
-    gg.log("处理迷你币专用购买", player.name, shopItemId, categoryName)
-    
-    if not player or not shopItemId then
-        return false, "参数无效", nil
-    end
-    
-    -- 获取商城实例
-    local shopInstance = ShopMgr.GetOrCreatePlayerShop(player)
-    if not shopInstance then
-        return false, "商城系统异常", nil
-    end
-    
-    -- 获取商品配置
-    local shopItem = ConfigLoader.GetShopItem(shopItemId)
-    if not shopItem then
-        return false, "商品不存在", nil
-    end
-    
-    -- 验证商品是否支持迷你币购买
-    if not shopItem.price.miniCoinType or shopItem.price.miniCoinType ~= "迷你币" then
-        return false, "该商品不支持迷你币购买未配置", nil
-    end
-    
-    if not shopItem.price.miniCoinAmount or shopItem.price.miniCoinAmount <= 0 then
-        return false, "迷你币价格配置异常", nil
-    end
-    
-    -- 验证迷你商品ID配置
-    if not shopItem.specialProperties or 
-       not shopItem.specialProperties.miniItemId or 
-       shopItem.specialProperties.miniItemId <= 0 then
-        return false, "迷你币商品配置异常", nil
-    end
-    
-    -- 验证购买条件（限购、VIP等）
-    local canPurchase, reason = shopInstance:CanPurchase(shopItemId, player)
-    if not canPurchase then
-        return false, reason, nil
-    end
-    
-    -- 调用迷你币购买处理（弹出支付窗口）
-    return ShopMgr.ProcessMiniPurchase(player, shopItem, "迷你币")
-end
-
--- 【新增】专门处理非迷你币购买的函数
+-- 处理玩家购买请求
 ---@param player MPlayer 玩家对象
 ---@param shopItemId string 商品ID
 ---@param currencyType string 货币类型
 ---@param categoryName string|nil 商品分类
----@return boolean, string, table|nil 是否成功，结果消息，附加数据
-function ShopMgr.ProcessNormalPurchase(player, shopItemId, currencyType, categoryName)
-    gg.log("处理普通货币购买", player.name, shopItemId, currencyType, categoryName)
-    
+---@return boolean|string, string, table|nil 状态（true=成功, false=失败, "pending"=等待支付），结果消息，附加数据
+function ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
+    gg.log("处理玩家购买请求111", player.name, shopItemId, currencyType, categoryName)
     if not player or not shopItemId or not currencyType then
         return false, "参数无效", nil
-    end
-    
-    -- 明确拒绝迷你币
-    if currencyType == "迷你币" then
-        return false, "迷你币购买请使用专用接口", nil
     end
     
     -- 获取商城实例
@@ -178,9 +123,18 @@ function ShopMgr.ProcessNormalPurchase(player, shopItemId, currencyType, categor
     if not shopItem then
         return false, "商品不存在", nil
     end
+
     
-    -- 验证货币类型支持
-    if currencyType == "金币" then
+    -- 验证货币类型是否与商品配置匹配
+    if shopItem.price.miniCoinType and shopItem.price.miniCoinType == "迷你币" then
+        if  shopItem.price.miniCoinAmount <= 0 then
+            return false, "该商品不支持迷你币购买", nil
+        end
+            -- 检查迷你币商品
+        if shopItem.specialProperties.miniItemId and shopItem.specialProperties.miniItemId > 0 then
+            return ShopMgr.ProcessMiniPurchase(player, shopItem, currencyType)
+        end
+    elseif currencyType == "金币" then
         if not shopItem.price.amount or shopItem.price.amount <= 0 then
             return false, "该商品不支持金币购买", nil
         end
@@ -188,7 +142,9 @@ function ShopMgr.ProcessNormalPurchase(player, shopItemId, currencyType, categor
         return false, "不支持的货币类型：" .. currencyType, nil
     end
     
-    -- 直接执行购买（无需弹窗确认）
+
+    
+    -- 执行购买，传递货币类型
     local success, message, purchaseData = shopInstance:ExecutePurchase(shopItemId, player, currencyType)
     
     if success then
@@ -205,13 +161,13 @@ function ShopMgr.ProcessNormalPurchase(player, shopItemId, currencyType, categor
             purchaseTime = os.time()
         }
         
+        --gg.log("玩家购买成功", player.name, shopItemId, currencyType)
         return true, message, purchaseResult
     else
+        --gg.log("玩家购买失败", player.name, shopItemId, currencyType, message)
         return false, message, nil
     end
 end
-
-
 
 -- 处理迷你币商品购买
 ---@param player MPlayer 玩家对象
@@ -287,16 +243,6 @@ function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
     -- 记录购买与限购计数（以迷你币计）
     shopInstance:UpdatePurchaseRecord(targetItem.configName, targetItem, "迷你币")
     shopInstance:UpdateLimitCounter(targetItem.configName, targetItem)
-    -- 执行商品配置的额外指令（如果有）
-    if targetItem.executeCommands and type(targetItem.executeCommands) == "table" and #targetItem.executeCommands > 0 then
-        for _, commandStr in ipairs(targetItem.executeCommands) do
-            if type(commandStr) == "string" and commandStr ~= "" then
-                shopInstance:ExecuteRewardCommand(commandStr, player)
-            end
-        end
-    end
-    
-
     
     -- 持久化
     ShopMgr.SavePlayerShopData(player.uin)
@@ -317,12 +263,12 @@ function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
     end
     
     gg.network_channel:fireClient(player.uin, {
-        cmd = ShopEventConfig.RESPONSE.MINI_PURCHASE_RESPONSE,
+        cmd = ShopEventConfig.RESPONSE.PURCHASE_RESPONSE,
         success = true,
         data = {
-            status = "success",
             message = "奖励发放完成",
             purchaseResult = purchaseResult,
+            currencyType = "迷你币",
             categoryName = targetItem.category
         },
         errorMsg = nil
@@ -454,52 +400,6 @@ function ShopMgr.SavePlayerShopData(uin)
     
     local shopData = shopInstance:GetData()
     return ShopCloudDataMgr.SavePlayerShopData(uin, shopData)
-end
-
--- 清空指定玩家的商城数据并保存
----@param uin number 玩家UIN
----@return boolean 是否成功
-function ShopMgr.ClearPlayerShopData(uin)
-    if not uin then
-        return false
-    end
-
-    -- 创建默认数据并保存到云端
-    local defaultData = ShopCloudDataMgr.CreateDefaultShopData()
-    defaultData.uin = uin
-    ShopCloudDataMgr.SavePlayerShopData(uin, defaultData)
-
-    -- 如果内存中存在实例，同步重置其字段，避免旧数据残留
-    local shopInstance = server_player_shop_data[uin]
-    if shopInstance then
-        shopInstance.purchaseRecords = {}
-        shopInstance.limitCounters = {}
-        shopInstance.preferences = {}
-        shopInstance.vipLevel = 0
-        shopInstance.totalPurchaseValue = 0
-        shopInstance.totalCoinSpent = 0
-        shopInstance.dailyResetTime = defaultData.dailyResetTime
-        shopInstance.weeklyResetTime = defaultData.weeklyResetTime
-        shopInstance.monthlyResetTime = defaultData.monthlyResetTime
-    end
-
-    -- 确保有实例后推送同步
-    if not shopInstance then
-        local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
-        local player = MServerDataManager.getPlayerByUin(uin)
-        if player then
-            shopInstance = ShopMgr.OnPlayerJoin(player)
-        end
-    end
-
-    if shopInstance then
-        ShopMgr.PushShopDataToClient(uin)
-        gg.log("已清空玩家商城数据并同步:", uin)
-    else
-        gg.log("已清空玩家商城云数据，但未找到在线实例用于同步:", uin)
-    end
-
-    return true
 end
 
 -- 保存所有在线玩家的商城数据

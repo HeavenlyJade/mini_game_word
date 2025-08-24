@@ -33,21 +33,21 @@ function WingCommand.handlers.add(params, player)
     local slotIndex = params["槽位"] and tonumber(params["槽位"]) or nil
 
     if not wingName then
-        --player:SendHoverText("缺少 '翅膀' 字段")
+        player:SendHoverText("缺少 '翅膀' 字段")
         return false
     end
 
     local success, errorMsg, actualSlot = WingMgr.AddWingToSlot(player.uin, wingName, slotIndex)
     if success then
-        local msg = string.format("新增物品 %s 添加翅膀: %s 到槽位 %d", player.name, wingName, actualSlot)
-        --player:SendHoverText(msg)
+        local msg = string.format("成功给玩家 %s 添加翅膀: %s 到槽位 %d", player.name, wingName, actualSlot)
+        player:SendHoverText(msg)
         gg.log(msg)
         WingCommand._syncToClient(player) -- 同步数据到客户端
         WingMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("给玩家 %s 添加翅膀失败: %s", player.name, errorMsg)
-        --player:SendHoverText(msg)
+        player:SendHoverText(msg)
         gg.log(msg)
         return false
     end
@@ -60,14 +60,14 @@ function WingCommand.handlers.remove(params, player)
     local slotIndex = tonumber(params["槽位"])
 
     if not slotIndex then
-        --player:SendHoverText("缺少 '槽位' 字段")
+        player:SendHoverText("缺少 '槽位' 字段")
         return false
     end
 
     local wingInstance = WingMgr.GetWingInstance(player.uin, slotIndex)
     if not wingInstance then
         local msg = string.format("槽位 %d 上没有翅膀", slotIndex)
-        --player:SendHoverText(msg)
+        player:SendHoverText(msg)
         gg.log(msg)
         return false
     end
@@ -76,14 +76,14 @@ function WingCommand.handlers.remove(params, player)
     local success, errorMsg = WingMgr.RemoveWingFromSlot(player.uin, slotIndex)
     if success then
         local msg = string.format("成功移除玩家 %s 在槽位 %d 的翅膀: %s", player.name, slotIndex, wingName)
-        --player:SendHoverText(msg)
+        player:SendHoverText(msg)
         gg.log(msg)
         WingCommand._syncToClient(player) -- 同步数据到客户端
         WingMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("移除玩家 %s 的翅膀失败: %s", player.name, errorMsg)
-        --player:SendHoverText(msg)
+        player:SendHoverText(msg)
         gg.log(msg)
         return false
     end
@@ -98,18 +98,18 @@ function WingCommand.handlers.set(params, player)
     local star = tonumber(params["星级"])
 
     if not slotIndex then
-        --player:SendHoverText("缺少 '槽位' 字段")
+        player:SendHoverText("缺少 '槽位' 字段")
         return false
     end
 
     if not level and not star then
-        --player:SendHoverText("请至少提供 '等级' 或 '星级' 字段中的一个")
+        player:SendHoverText("请至少提供 '等级' 或 '星级' 字段中的一个")
         return false
     end
 
     local wingInstance = WingMgr.GetWingInstance(player.uin, slotIndex)
     if not wingInstance then
-        --player:SendHoverText("槽位 " .. slotIndex .. " 上没有翅膀")
+        player:SendHoverText("槽位 " .. slotIndex .. " 上没有翅膀")
         return false
     end
 
@@ -118,11 +118,11 @@ function WingCommand.handlers.set(params, player)
         local success, errorMsg = WingMgr.LevelUpWing(player.uin, slotIndex, level)
         if success then
             local msg = string.format("成功设置翅膀 %s (槽位 %d) 等级为 %d", wingInstance:GetConfigName(), slotIndex, level)
-            --player:SendHoverText(msg)
+            player:SendHoverText(msg)
             gg.log(msg)
         else
             local msg = string.format("设置翅膀 %s (槽位 %d) 等级失败: %s", wingInstance:GetConfigName(), slotIndex, errorMsg)
-            --player:SendHoverText(msg)
+            player:SendHoverText(msg)
             gg.log(msg)
         end
     end
@@ -138,7 +138,7 @@ function WingCommand.handlers.set(params, player)
                 local success, errorMsg = WingMgr.UpgradeWingStar(player.uin, slotIndex)
                 if not success then
                     local msg = string.format("升星失败: 从 %d 星升到 %d 星时出错: %s (请检查升星材料)", currentStar, currentStar + 1, errorMsg or '未知错误')
-                    --player:SendHoverText(msg)
+                    player:SendHoverText(msg)
                     gg.log(msg)
                     allSuccess = false
                     break
@@ -148,13 +148,13 @@ function WingCommand.handlers.set(params, player)
 
             if allSuccess then
                 local msg = string.format("成功将翅膀 %s (槽位 %d) 星级提升至 %d", wingInstance:GetConfigName(), slotIndex, star)
-                --player:SendHoverText(msg)
+                player:SendHoverText(msg)
                 gg.log(msg)
             end
         elseif star < currentStar then
-             --player:SendHoverText("目标星级不能低于当前星级")
+             player:SendHoverText("目标星级不能低于当前星级")
         else
-             --player:SendHoverText("翅膀已达到目标星级")
+             player:SendHoverText("翅膀已达到目标星级")
         end
     end
     WingCommand._syncToClient(player) -- 在所有操作后统一同步数据
@@ -170,7 +170,7 @@ function WingCommand.handlers.setslots(params, player)
     local bagCapacity = params["背包"] and tonumber(params["背包"])
 
     if not carryCount and not bagCapacity then
-        --player:SendHoverText("请至少提供 '可携带' 或 '背包' 字段中的一个")
+        player:SendHoverText("请至少提供 '可携带' 或 '背包' 字段中的一个")
         return false
     end
 
@@ -179,19 +179,19 @@ function WingCommand.handlers.setslots(params, player)
 
     if carryCount then
         if WingMgr.SetUnlockedEquipSlots(uin, carryCount) then
-            --player:SendHoverText("成功设置可携带翅膀栏位为: " .. carryCount)
+            player:SendHoverText("成功设置可携带翅膀栏位为: " .. carryCount)
             anythingChanged = true
         else
-            --player:SendHoverText("设置可携带栏位失败, 可能是玩家数据未加载")
+            player:SendHoverText("设置可携带栏位失败, 可能是玩家数据未加载")
         end
     end
 
     if bagCapacity then
         if WingMgr.SetWingBagCapacity(uin, bagCapacity) then
-            --player:SendHoverText("成功设置翅膀背包容量为: " .. bagCapacity)
+            player:SendHoverText("成功设置翅膀背包容量为: " .. bagCapacity)
             anythingChanged = true
         else
-            --player:SendHoverText("设置背包容量失败, 可能是玩家数据未加载")
+            player:SendHoverText("设置背包容量失败, 可能是玩家数据未加载")
         end
     end
 
@@ -219,14 +219,14 @@ function WingCommand.main(params, player)
     local operationType = params["操作类型"]
 
     if not operationType then
-        --player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '删除', '设置', '栏位设置'")
+        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '删除', '设置', '栏位设置'")
         return false
     end
 
     -- 将中文指令映射到英文处理器
     local handlerName = operationMap[operationType]
     if not handlerName then
-        --player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '删除', '设置', '栏位设置'")
+        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '删除', '设置', '栏位设置'")
         return false
     end
 
@@ -236,7 +236,7 @@ function WingCommand.main(params, player)
         return handler(params, player)
     else
         -- 理论上不会执行到这里，因为上面已经检查过了
-        --player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
+        player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
         return false
     end
 end

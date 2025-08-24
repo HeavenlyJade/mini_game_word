@@ -31,7 +31,7 @@ function _MPlayer:OnInit(info_)
     self.isPlayer = true
     ---@type VariableSystem
     self.variableSystem = VariableSystem.New("玩家", info_.variables or {})
-    self.currentScene = info_.currentScene or "init_map"
+
 
     -- 技能相关
     self.dict_btn_skill = nil -- 技能按钮映射
@@ -42,108 +42,8 @@ function _MPlayer:OnInit(info_)
     -- 网络状态
     self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
     self.loginTime = os.time() -- 登录时间
-    
-    -- 挂机状态
-    self.isIdling = false -- 是否正在挂机
-    self.currentIdleSpot = nil -- 当前挂机点名称
-    
-    -- 设置玩家初始属性值
-    self:SetPlayerInitialStats()
 end
 
--- 设置玩家初始属性值
-function _MPlayer:SetPlayerInitialStats()
-    -- 获取玩家当前的速度值（如果actor存在的话）
-    local currentSpeed = 800 -- 默认值
-    if self.actor and self.actor.Movespeed then
-        currentSpeed = self.actor.Movespeed
-    end
-    
-    local initialStats = {
-        ["攻击"] = 10,
-        ["防御"] = 5,
-        ["生命"] = 100,
-        ["魔法"] = 50,
-        ["速度"] = currentSpeed,
-        ["暴击率"] = 5,
-        ["暴击伤害"] = 150,
-        ["闪避率"] = 2,
-    }
-    
-    -- 批量设置初始属性
-    self:SetInitialStats(initialStats)
-    
-    -- 同时设置到当前属性系统（BASE来源）
-    for statName, value in pairs(initialStats) do
-        self:SetStat(statName, value, "BASE", false)
-    end
-    
-    -- 刷新属性（触发游戏表现更新）
-    self:RefreshStats()
-    
-    --gg.log(string.format("玩家 %s 的初始属性已设置，速度值: %s", self.name, tostring(currentSpeed)))
-end
-
--- 设置游戏场景中使用的actor实例
-function _MPlayer:setGameActor(actor_)
-    -- 调用父类方法
-    Entity.setGameActor(self, actor_)
-    
-    -- 确保actor存在后，同步属性到actor
-    self:SyncStatsToActor()
-end
-
--- 同步属性到actor
-function _MPlayer:SyncStatsToActor()
-    if not self.actor then return end
-    
-    -- 同步速度属性
-    local speedValue = self:GetStat("速度")
-    if speedValue > 0 then
-        self.actor.Movespeed = speedValue
-        --gg.log(string.format("玩家 %s 的速度已同步到actor: %s", self.name, tostring(speedValue)))
-    end
-    
-    -- 同步其他属性
-    local healthValue = self:GetStat("生命")
-    if healthValue > 0 then
-        self.actor.MaxHealth = healthValue
-        self.actor.Health = healthValue
-    end
-    
-    local manaValue = self:GetStat("魔法")
-    if manaValue > 0 and self.SetMaxMana then
-        self:SetMaxMana(manaValue)
-    end
-end
-
--- 强制刷新属性到actor
-function _MPlayer:ForceRefreshStatsToActor()
-    if not self.actor then 
-        --gg.log(string.format("玩家 %s 的actor不存在，无法刷新属性", self.name))
-        return 
-    end
-    
-    -- 强制同步所有属性到actor
-    local speedValue = self:GetStat("速度")
-    if speedValue > 0 then
-        self.actor.Movespeed = speedValue
-        --gg.log(string.format("玩家 %s 的速度已强制同步到actor: %s", self.name, tostring(speedValue)))
-    end
-    
-    local healthValue = self:GetStat("生命")
-    if healthValue > 0 then
-        self.actor.MaxHealth = healthValue
-        self.actor.Health = healthValue
-    end
-    
-    local manaValue = self:GetStat("魔法")
-    if manaValue > 0 and self.SetMaxMana then
-        self:SetMaxMana(manaValue)
-    end
-    
-    --gg.log(string.format("玩家 %s 的所有属性已强制刷新到actor", self.name))
-end
 
 --直接获得游戏中的actor的位置
 function _MPlayer:getPosition()
@@ -420,37 +320,6 @@ function _MPlayer:GetConsumableData()
         variableData = variableData,
         playerAttribute = playerAttribute
     }
-end
-
---- 设置挂机状态
----@param isIdling boolean 是否正在挂机
----@param idleSpotName string|nil 挂机点名称
-function _MPlayer:SetIdlingState(isIdling, idleSpotName)
-    self.isIdling = isIdling
-    self.currentIdleSpot = idleSpotName
-    
-    --gg.log(string.format("玩家 %s 挂机状态更新: %s, 挂机点: %s", 
-    --    self.name, 
-    --    isIdling and "开始挂机" or "停止挂机", 
-    --    idleSpotName or "无"))
-end
-
---- 检查是否正在挂机
----@return boolean 是否正在挂机
-function _MPlayer:IsIdling()
-    return self.isIdling == true
-end
-
---- 获取当前挂机点名称
----@return string|nil 当前挂机点名称
-function _MPlayer:GetCurrentIdleSpotName()
-    return self.currentIdleSpot
-end
-
---- 获取当前挂机点名称
----@return string|nil 当前挂机点名称
-function _MPlayer:GetCurrentIdleSpot()
-    return self.currentIdleSpot
 end
 
 

@@ -65,16 +65,13 @@ function RaceGameMode:OnPlayerEnter(player)
         end
     end
 
+    -- 注意：这里不再调用父类的 OnPlayerEnter, 因为父类将其作为字典处理
     -- 而比赛模式需要一个有序的列表来决定排名
     table.insert(self.participants, player)
 
     -- 如果是第一个加入的玩家，可以启动一个定时器开始比赛
     if #self.participants == 1 then
         self:Start()
-    elseif self.state == RaceState.RACING then
-        -- 【新增】比赛进行中：立即传送新玩家到开始位置并发射
-        --gg.log(string.format("比赛进行中，新玩家 %s 加入，立即传送并发射", player.name or player.uin))
-        self:_handleLateJoinPlayer(player)
     end
 end
 
@@ -109,14 +106,14 @@ function RaceGameMode:OnPlayerLeave(player)
     if self.state == "WAITING" then
         -- 准备阶段：如果所有玩家都离开了，直接清理比赛实例
         if #self.participants == 0 then
-            ----gg.log(string.format("比赛实例 %s：所有玩家在准备阶段离开，取消比赛并清理实例。", self.instanceId))
+            --gg.log(string.format("比赛实例 %s：所有玩家在准备阶段离开，取消比赛并清理实例。", self.instanceId))
             self:_cancelRaceAndCleanup()
             return
         end
     elseif self.state == "RACING" then
         -- 比赛进行中：如果剩余玩家不足，结束比赛
         if #self.participants <= 1 then
-            ----gg.log(string.format("比赛实例 %s：参赛玩家不足，提前结束比赛。", self.instanceId))
+            --gg.log(string.format("比赛实例 %s：参赛玩家不足，提前结束比赛。", self.instanceId))
             self:End()
             return
         end
@@ -164,22 +161,17 @@ function RaceGameMode:LaunchPlayer(player)
     if handler and handler.respawnNode and handler.respawnNode.Position then
         eventData.respawnPosition = handler.respawnNode.Position
     else
-        --gg.log("警告: [RaceGameMode] 无法为比赛实例 " .. self.instanceId .. " 找到有效的重生点位置。")
+        gg.log("警告: [RaceGameMode] 无法为比赛实例 " .. self.instanceId .. " 找到有效的重生点位置。")
     end
 
-
-    eventData.variableData = player.variableSystem:GetAllVariables()
-
     -- 【核心改造】通过网络通道向指定客户端发送事件
-    gg.network_channel:fireClient(player.uin, eventData)
-    
-    
-    -- 【新增】为当前发射的玩家执行游戏开始指令
-    self:_executeGameStartCommandsForPlayer(player)
+    if gg.network_channel then
+        gg.network_channel:fireClient(player.uin, eventData)
+    end
 end
 
 --- 【核心改造】处理玩家落地，由 RaceGameEventManager 调用
----@param player MPlayer 游戏结束事件处理
+---@param player MPlayer 已经确认落地并且属于本场比赛的玩家
 function RaceGameMode:OnPlayerLanded(player)
     -- 检查该玩家是否已经报告过落地
     if self.finishedPlayers[player.uin] then
@@ -208,7 +200,7 @@ function RaceGameMode:OnPlayerLanded(player)
     local flightData = self:GetPlayerFlightData(player.uin)
     local rankInfo = flightData and string.format("第%d名，飞行距离%.1f米", flightData.rank, flightData.flightDistance) or "排名计算中"
 
-    --player:SendHoverText(string.format("已落地！%s 等待其他玩家...", rankInfo))
+    player:SendHoverText(string.format("已落地！%s 等待其他玩家...", rankInfo))
 
     -- 使用正确的计数值检查是否所有人都已完成
     if finishedCount >= #self.participants then
@@ -232,19 +224,18 @@ function RaceGameMode:Start()
     self:AddDelay(prepareTime, function()
         if self.state == RaceState.WAITING then
             self.state = RaceState.RACING
-            --gg.log("比赛开始准备！")
+            gg.log("比赛开始准备！")
 
             -- 1. 先传送所有玩家到传送节点
             local teleportSuccess = self:TeleportAllPlayersToStartPosition()
-            --gg.log("玩家传送结束",teleportSuccess)
+            gg.log("玩家传送结束",teleportSuccess)
             if teleportSuccess then
                 -- 2. 给传送一点时间完成，然后发射玩家
                 self:AddDelay(0.5, function()
-                    --gg.log("传送完成，开始发射玩家！")
+                    gg.log("传送完成，开始发射玩家！")
                     for _, player in ipairs(self.participants) do
                         self:LaunchPlayer(player)
                     end
-                    
                     -- 启动实时飞行距离计算
                     self:_startFlightDistanceTracking()
                     -- 启动比赛界面更新
@@ -253,7 +244,7 @@ function RaceGameMode:Start()
                     self.raceStartTime = os.time()
                 end)
             else
-                --gg.log("传送失败，比赛无法开始！")
+                gg.log("传送失败，比赛无法开始！")
             end
         end
     end)
@@ -268,16 +259,13 @@ function RaceGameMode:End()
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
 
-    --gg.log("比赛结束！")
+    gg.log("比赛结束！")
 
     -- 停止实时飞行距离追踪
     self:_stopFlightDistanceTracking()
     
     -- 停止比赛界面更新
     self:_stopContestUIUpdates()
-
-    -- 【新增】执行游戏结算指令
-    self:_executeGameEndCommands()
 
     -- 最终排名确认（基于实际飞行距离）
     self:_updateRankings()
@@ -327,11 +315,11 @@ end
 --- 【核心重构】计算并发放奖励，直接使用 LevelType 实例
 function RaceGameMode:_calculateAndDistributeRewards()
     if not self.levelType then
-        --gg.log("错误: [RaceGameMode] 关卡实例(levelType)为空，无法发放奖励。")
+        gg.log("错误: [RaceGameMode] 关卡实例(levelType)为空，无法发放奖励。")
         return
     end
 
-    --gg.log(string.format("信息: [RaceGameMode] 开始计算奖励，参与玩家数: %d", #self.participants))
+    gg.log(string.format("信息: [RaceGameMode] 开始计算奖励，参与玩家数: %d", #self.participants))
 
     -- 【新增】清理已离开玩家的排名数据
     for i = #self.rankings, 1, -1 do
@@ -370,7 +358,7 @@ function RaceGameMode:_calculateAndDistributeRewards()
                     uin = flightData.uin
                 }
 
-                --gg.log(string.format("信息: [RaceGameMode] 开始为玩家 %s (第%d名) 计算奖励...", playerData.playerName, playerData.rank))
+                gg.log(string.format("信息: [RaceGameMode] 开始为玩家 %s (第%d名) 计算奖励...", playerData.playerName, playerData.rank))
 
                 -- 1. 计算原始奖励
                 local baseRewards = self.levelType:CalculateBaseRewards(playerData)
@@ -398,19 +386,19 @@ function RaceGameMode:_calculateAndDistributeRewards()
                 -- 5. 发放最终奖励
                 -- a. 发放基础奖励
                 if finalBaseRewards and next(finalBaseRewards) then
-                    --gg.log(" -> 开始发放基础奖励...")
+                    gg.log(" -> 开始发放基础奖励...")
                     for itemName, amount in pairs(finalBaseRewards) do
                         if amount > 0 then
                             self:_giveItemToPlayer(player, itemName, amount)
                         end
                     end
                 else
-                    --gg.log(" -> 无基础奖励可发放。")
+                    gg.log(" -> 无基础奖励可发放。")
                 end
 
                 -- b. 发放排名奖励
                 if finalRankRewards and next(finalRankRewards) then
-                    --gg.log(" -> 开始发放排名奖励...")
+                    gg.log(" -> 开始发放排名奖励...")
                     for itemName, amount in pairs(finalRankRewards) do
                         if amount > 0 then
                             self:_giveItemToPlayer(player, itemName, amount)
@@ -418,11 +406,11 @@ function RaceGameMode:_calculateAndDistributeRewards()
                     end
                 else
                     if not (rankRewardsArray and #rankRewardsArray > 0) then
-                        --gg.log(string.format(" -> 玩家 %s (第%d名) 无排名奖励可发放。", playerData.playerName, playerData.rank))
+                        gg.log(string.format(" -> 玩家 %s (第%d名) 无排名奖励可发放。", playerData.playerName, playerData.rank))
                     end
                 end
             else
-                --gg.log(string.format("警告: [RaceGameMode] 未找到 UIN %d 对应的玩家实例，无法发放奖励。", uin))
+                gg.log(string.format("警告: [RaceGameMode] 未找到 UIN %d 对应的玩家实例，无法发放奖励。", uin))
             end
         end
     end
@@ -434,23 +422,23 @@ end
 ---@param amount number 物品数量
 function RaceGameMode:_giveItemToPlayer(player, itemName, amount)
     if not player or not itemName or amount <= 0 then
-        --gg.log(string.format("RaceGameMode: 发放物品失败，参数无效 - player: %s, itemName: %s, amount: %s",tostring(player), tostring(itemName), tostring(amount)))
+        gg.log(string.format("RaceGameMode: 发放物品失败，参数无效 - player: %s, itemName: %s, amount: %s",tostring(player), tostring(itemName), tostring(amount)))
         return
     end
 
-    --gg.log(string.format("RaceGameMode: 尝试给玩家 %s 发放物品 %s x%d", player.name or "未知", itemName, amount))
+    gg.log(string.format("RaceGameMode: 尝试给玩家 %s 发放物品 %s x%d", player.name or "未知", itemName, amount))
 
     -- 使用统一奖励分发器发放物品
     local success, errorMsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemName, amount)
     
     if success then
-        --gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))
+        gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))
         -- 向玩家发送奖励通知
-        --player:SendHoverText(string.format("获得 %s x%d", itemName, amount))
+        player:SendHoverText(string.format("获得 %s x%d", itemName, amount))
     else
-        --gg.log(string.format("RaceGameMode: 物品发放失败 - %s x%d, 错误: %s", itemName, amount, errorMsg or "未知错误"))
+        gg.log(string.format("RaceGameMode: 物品发放失败 - %s x%d, 错误: %s", itemName, amount, errorMsg or "未知错误"))
         -- 发送失败提示
-        --player:SendHoverText(string.format("获得物品失败: %s x%d", itemName, amount))
+        player:SendHoverText(string.format("获得物品失败: %s x%d", itemName, amount))
     end
 end
 
@@ -589,7 +577,7 @@ function RaceGameMode:_startContestUIUpdates()
         self:RemoveTimer(self.contestUpdateTimer)
     end
 
-    --gg.log(string.format("RaceGameMode: 启动比赛界面更新，参赛者数量: %d", #self.participants))
+    gg.log(string.format("RaceGameMode: 启动比赛界面更新，参赛者数量: %d", #self.participants))
 
     -- 通知所有玩家显示比赛界面
     self:_broadcastContestUIShow()
@@ -698,73 +686,6 @@ function RaceGameMode:_getTopThreePlayersData()
     return topThree
 end
 
---- 【新增】处理迟到加入的玩家（比赛进行中）
----@param player MPlayer 迟到加入的玩家
-function RaceGameMode:_handleLateJoinPlayer(player)
-    if not player or not player.actor then
-        --gg.log("错误: [RaceGameMode] 迟到玩家数据无效，无法处理")
-        return
-    end
-
-    -- 1. 立即传送玩家到比赛开始位置
-    local teleportSuccess = self:_teleportPlayerToStartPosition(player)
-    if not teleportSuccess then
-        --gg.log(string.format("警告: [RaceGameMode] 玩家 %s 传送失败，无法参与比赛", player.name or player.uin))
-        return
-    end
-
-    -- 2. 给传送一点时间完成，然后发射玩家
-    self:AddDelay(0.5, function()
-        if self.state == RaceState.RACING and player.actor then
-            --gg.log(string.format("迟到玩家 %s 传送完成，开始发射", player.name or player.uin))
-            self:LaunchPlayer(player)
-            
-            -- 3. 通知其他玩家有新玩家加入
-            self:_notifyOtherPlayersNewPlayerJoined(player)
-        end
-    end)
-end
-
---- 【新增】传送单个玩家到比赛开始位置
----@param player MPlayer
----@return boolean 是否成功传送
-function RaceGameMode:_teleportPlayerToStartPosition(player)
-    if not player or not player.actor then
-        return false
-    end
-
-    -- 通过handlerId获取场景处理器
-    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
-    local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
-    
-    if not handler or not handler.teleportNode or not handler.teleportNode.Position then
-        --gg.log("错误: [RaceGameMode] 无法找到有效的传送节点位置")
-        return false
-    end
-
-    local targetPosition = handler.teleportNode.Position
-    local TeleportService = game:GetService('TeleportService')
-    
-    -- 执行传送
-    TeleportService:Teleport(player.actor, targetPosition)
-    --gg.log(string.format("玩家 %s 已传送到比赛开始位置", player.name or player.uin))
-    
-    return true
-end
-
---- 【新增】通知其他玩家有新玩家加入
----@param newPlayer MPlayer 新加入的玩家
-function RaceGameMode:_notifyOtherPlayersNewPlayerJoined(newPlayer)
-    if not newPlayer then return end
-    
-    -- 向其他参赛者发送新玩家加入通知
-    for _, player in ipairs(self.participants) do
-        if player.uin ~= newPlayer.uin then
-            --player:SendHoverText(string.format("新玩家 %s 加入了比赛！", newPlayer.name or newPlayer.uin))
-        end
-    end
-end
-
 --- 【新增】取消比赛并完全清理实例（用于准备阶段所有玩家离开）
 function RaceGameMode:_cancelRaceAndCleanup()
     -- 【新增】向剩余玩家发送停止倒计时事件（如果还有的话）
@@ -793,119 +714,11 @@ function RaceGameMode:_cancelRaceAndCleanup()
     
     if GameModeManager and GameModeManager.activeModes then
         GameModeManager.activeModes[self.instanceId] = nil
-        ----gg.log(string.format("比赛实例 %s 已被取消并从GameModeManager中移除。", self.instanceId))
+        --gg.log(string.format("比赛实例 %s 已被取消并从GameModeManager中移除。", self.instanceId))
     end
     
     -- 清理自身资源
     self:Destroy()
 end
-
---- 【新增】为单个玩家执行游戏开始指令
----@param player MPlayer 目标玩家
-function RaceGameMode:_executeGameStartCommandsForPlayer(player)
-    if not self.levelType then
-        --gg.log("警告: [RaceGameMode] 关卡配置为空，无法执行游戏开始指令")
-        return
-    end
-
-    local startCommands = self.levelType:GetGameStartCommands()
-    if not startCommands or #startCommands == 0 then
-        return -- 静默返回，避免日志干扰
-    end
-
-    --gg.log(string.format("信息: [RaceGameMode] 为玩家 %s 执行 %d 条游戏开始指令", player.name or player.uin, #startCommands))
-    
-    -- 遍历执行每条指令
-    for i, command in ipairs(startCommands) do
-        if command and type(command) == "string" then
-            --gg.log(string.format("信息: [RaceGameMode] 为玩家 %s 执行游戏开始指令 %d: %s", player.name or player.uin, i, command))
-            
-            -- 为单个玩家执行指令
-            self:_executeCommandForPlayer(command, "游戏开始", player)
-        end
-    end
-end
-
-
-
---- 【新增】执行游戏结算指令
-function RaceGameMode:_executeGameEndCommands()
-    if not self.levelType then
-        --gg.log("警告: [RaceGameMode] 关卡配置为空，无法执行游戏结算指令")
-        return
-    end
-
-    local endCommands = self.levelType:GetGameEndCommands()
-    if not endCommands or #endCommands == 0 then
-        --gg.log("信息: [RaceGameMode] 该关卡没有配置游戏结算指令")
-        return
-    end
-
-    --gg.log(string.format("信息: [RaceGameMode] 开始执行 %d 条游戏结算指令", #endCommands))
-    
-    -- 遍历执行每条指令，为所有参赛玩家执行
-    for i, command in ipairs(endCommands) do
-        if command and type(command) == "string" then
-            --gg.log(string.format("信息: [RaceGameMode] 执行游戏结算指令 %d: %s", i, command))
-            
-            -- 为所有参赛玩家执行结算指令
-            for _, player in ipairs(self.participants) do
-                if player then
-                    self:_executeCommandForPlayer(command, "游戏结算", player)
-                end
-            end
-        end
-    end
-end
-
---- 【新增】只为单个玩家执行游戏结算指令
----@param player MPlayer 目标玩家
-function RaceGameMode:_executeGameEndCommandsForPlayer(player)
-    if not self.levelType or not player then
-        return
-    end
-
-    local endCommands = self.levelType:GetGameEndCommands()
-    if not endCommands or #endCommands == 0 then
-        return
-    end
-
-    for _, command in ipairs(endCommands) do
-        if command and type(command) == "string" then
-            self:_executeCommandForPlayer(command, "游戏结算", player)
-        end
-    end
-end
-
---- 【新增】为单个玩家执行单条指令的辅助方法
----@param command string 指令字符串
----@param commandType string 指令类型（用于日志标识）
----@param player MPlayer 目标玩家
-function RaceGameMode:_executeCommandForPlayer(command, commandType, player)
-    if not command or type(command) ~= "string" then
-        --gg.log(string.format("警告: [RaceGameMode] 无效的%s指令: %s", commandType, tostring(command)))
-        return
-    end
-
-    if not player then
-        --gg.log(string.format("警告: [RaceGameMode] 目标玩家为空，无法执行%s指令", commandType))
-        return
-    end
-
-    -- 使用现有的CommandManager执行指令
-    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
-    
-    local success = CommandManager.ExecuteCommand(command, player, true) -- silent = true 避免重复日志
-    if success then
-        --gg.log(string.format("信息: [RaceGameMode] 玩家 %s 的%s指令执行成功: %s", 
-            -- player.name or player.uin, commandType, command))
-    else
-        --gg.log(string.format("警告: [RaceGameMode] 玩家 %s 的%s指令执行失败: %s", 
-            -- player.name or player.uin, commandType, command))
-    end
-end
-
-
-
 
 return RaceGameMode

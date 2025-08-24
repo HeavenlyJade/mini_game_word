@@ -14,21 +14,6 @@ local OpenUICommand = {}
 -- 子指令处理器
 OpenUICommand.handlers = {}
 
---- 根据玩家当前场景自动选择合适的抽奖档次
----@param currentScene string 玩家当前场景
----@return string 场景适配的抽奖类型
-function OpenUICommand.GetSceneBasedLotteryType(currentScene)
-    -- 场景到抽奖档次的映射规则
-    local sceneTierMap = {
-        ["init_map"] = "初级",    -- 初始地图显示初级抽奖
-        ["map2"] = "中级",       -- map2显示中级抽奖
-        ["map3"] = "高级"        -- map3显示高级抽奖
-    }
-    local tier = sceneTierMap[currentScene] 
-
-    return tier
-end
-
 --- 打开界面处理器
 ---@param params table 指令参数
 ---@param player MPlayer 目标玩家
@@ -49,19 +34,15 @@ function OpenUICommand.handlers.open(params, player)
             return false
         end
         
-        -- 【新增】根据玩家当前场景自动选择合适的抽奖档次
-        local sceneBasedLotteryType = OpenUICommand.GetSceneBasedLotteryType( player.currentScene)
-        
         -- 发送打开抽奖界面事件到客户端
+   
         gg.network_channel:fireClient(player.uin, {
             cmd = "OpenLotteryUI",
             operation = "打开界面",
-            lotteryType = lotteryType,
-            sceneBasedType = sceneBasedLotteryType, -- 新增：基于场景的抽奖类型
-            currentScene = player.currentScene -- 新增：当前场景信息
+            lotteryType = lotteryType
         })
         
-        --gg.log("向玩家", player.name, "发送打开抽奖界面事件，类型:", lotteryType, "场景:", player.currentScene, "场景适配类型:", sceneBasedLotteryType)
+        --gg.log("向玩家", player.name, "发送打开抽奖界面事件，类型:", lotteryType)
         return true
         
     elseif uiName == "WaypointGui" then
@@ -167,29 +148,15 @@ return OpenUICommand
 --[[
 使用示例:
 
-1. 打开翅膀抽奖界面（自动根据场景适配档次）:
+1. 打开翅膀抽奖界面:
 openui {"操作类型": "打开界面", "界面名": "LotteryGui", "抽奖类型": "翅膀"}
-- 在init_map场景：自动打开"初级翅膀"抽奖
-- 在map2场景：自动打开"中级翅膀"抽奖  
-- 在map3场景：自动打开"高级翅膀"抽奖
 
-2. 打开宠物抽奖界面（自动根据场景适配档次）:
+2. 打开宠物抽奖界面:
 openui {"操作类型": "打开界面", "界面名": "LotteryGui", "抽奖类型": "宠物"}
-- 在init_map场景：自动打开"初级宠物"抽奖
-- 在map2场景：自动打开"中级宠物"抽奖
-- 在map3场景：自动打开"高级宠物"抽奖
 
-3. 打开伙伴抽奖界面（自动根据场景适配档次）:
+3. 打开伙伴抽奖界面:
 openui {"操作类型": "打开界面", "界面名": "LotteryGui", "抽奖类型": "伙伴"}
-- 在init_map场景：自动打开"初级伙伴"抽奖
-- 在map2场景：自动打开"中级伙伴"抽奖
-- 在map3场景：自动打开"高级伙伴"抽奖
 
 4. 打开其他通用界面:
 openui {"操作类型": "打开界面", "界面名": "ShopDetailGui"}
-
-场景映射规则:
-- init_map -> 初级抽奖
-- map2 -> 中级抽奖  
-- map3 -> 高级抽奖
 --]]

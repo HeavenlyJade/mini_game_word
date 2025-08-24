@@ -8,16 +8,13 @@ local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local cloudDataMgr = require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type MCloudDataMgr
 local VariableNameConfig = require(MainStorage.Code.Common.Config.VariableNameConfig) ---@type VariableNameConfig
 local BaseUntils = require(ServerStorage.ServerUntils.BaseUntils) ---@type BaseUntils
-local BonusCalculator = require(ServerStorage.ServerUntils.BonusCalculator) ---@type BonusCalculator
-local DependencyRuleChecker = require(ServerStorage.ServerUntils.DependencyRuleChecker) ---@type DependencyRuleChecker
+local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
 
 ---@class VariableCommand
 local VariableCommand = {}
 
 -- 子命令处理器
 VariableCommand.handlers = {}
-
-
 
 --- 验证变量名是否存在于配置中
 ---@param variableName string
@@ -32,12 +29,130 @@ local function isValidVariableName(variableName)
     return false
 end
 
-
+--- 计算所有类型的加成（玩家变量加成 + 宠物/伙伴携带加成）
+---@param player MPlayer 玩家对象
+---@param baseValue number 基础数值
+---@param playerVariableBonuses table 玩家变量加成列表
+---@param otherBonuses table 其他加成类型列表 ["宠物", "伙伴", "尾迹", "翅膀"]
+---@param targetVariable string 目标变量名（用于匹配携带效果）
+---@return number, string finalValue, bonusInfo
+local function CalculateAllBonuses(player, baseValue, playerVariableBonuses, otherBonuses, targetVariable)
+    local totalBonus = 0
+    local bonusDescriptions = {}
+    
+    -- 1. 计算玩家变量加成
+    local variableBonus, variableInfo = BonusManager.CalculatePlayerVariableBonuses(player, baseValue, playerVariableBonuses)
+    totalBonus = totalBonus + (variableBonus - baseValue)
+    table.insert(bonusDescriptions, "玩家变量加成")
+    
+    
+    -- 2. 携带加成（需要匹配目标变量）
+    if otherBonuses and type(otherBonuses) == "table" then
+        for _, bonusType in ipairs(otherBonuses) do
+            if bonusType == "宠物" then
+                local petBonuses = BonusManager.GetPetItemBonuses(player)
+                gg.log("[VariableCommand调试] 宠物加成数据:", petBonuses)
+                
+                for itemName, bonusData in pairs(petBonuses) do
+                    gg.log(string.format("[VariableCommand调试] 检查宠物加成: itemName=%s, targetVariable=%s, itemTarget=%s, 指令目标=%s", tostring(itemName), tostring(bonusData.targetVariable), tostring(bonusData.itemTarget), tostring(targetVariable)))
+                    
+                    -- 检查目标变量匹配
+                    local isMatch = bonusData.targetVariable == targetVariable or (not bonusData.targetVariable and bonusData.itemTarget == targetVariable)
+                    gg.log(string.format("[VariableCommand调试] 宠物加成匹配结果: %s", tostring(isMatch)))
+                    
+                    if isMatch then
+                        if bonusData.fixed and bonusData.fixed > 0 then
+                            totalBonus = totalBonus + bonusData.fixed
+                            table.insert(bonusDescriptions, string.format("宠物携带加成(%s, +%d)", itemName, bonusData.fixed))
+                            gg.log(string.format("[VariableCommand调试] 应用宠物固定加成: %s +%d", itemName, bonusData.fixed))
+                        end
+                        if bonusData.percentage and bonusData.percentage > 0 then
+                            local percentageBonus = math.floor(baseValue * bonusData.percentage / 100)
+                            totalBonus = totalBonus + percentageBonus
+                            table.insert(bonusDescriptions, string.format("宠物携带加成(%s, +%d%%)", itemName, bonusData.percentage))
+                            gg.log(string.format("[VariableCommand调试] 应用宠物百分比加成: %s +%d%% (计算值: %d)", itemName, bonusData.percentage, percentageBonus))
+                        end
+                    end
+                end
+            elseif bonusType == "伙伴" then
+                local partnerBonuses = BonusManager.GetPartnerItemBonuses(player)
+                gg.log("[VariableCommand调试] 伙伴加成数据:", partnerBonuses)
+                
+                for itemName, bonusData in pairs(partnerBonuses) do
+                    gg.log(string.format("[VariableCommand调试] 检查伙伴加成: itemName=%s, targetVariable=%s, itemTarget=%s, 指令目标=%s", tostring(itemName), tostring(bonusData.targetVariable), tostring(bonusData.itemTarget), tostring(targetVariable)))
+                    
+                    -- 检查目标变量匹配
+                    local isMatch = bonusData.targetVariable == targetVariable or (not bonusData.targetVariable and bonusData.itemTarget == targetVariable)
+                    gg.log(string.format("[VariableCommand调试] 伙伴加成匹配结果: %s", tostring(isMatch)))
+                    
+                    if isMatch then
+                        if bonusData.fixed and bonusData.fixed > 0 then
+                            totalBonus = totalBonus + bonusData.fixed
+                            table.insert(bonusDescriptions, string.format("伙伴携带加成(%s, +%d)", itemName, bonusData.fixed))
+                            gg.log(string.format("[VariableCommand调试] 应用伙伴固定加成: %s +%d", itemName, bonusData.fixed))
+                        end
+                        if bonusData.percentage and bonusData.percentage > 0 then
+                            local percentageBonus = math.floor(baseValue * bonusData.percentage / 100)
+                            totalBonus = totalBonus + percentageBonus
+                            table.insert(bonusDescriptions, string.format("伙伴携带加成(%s, +%d%%)", itemName, bonusData.percentage))
+                            gg.log(string.format("[VariableCommand调试] 应用伙伴百分比加成: %s +%d%% (计算值: %d)", itemName, bonusData.percentage, percentageBonus))
+                        end
+                    end
+                end
+            elseif bonusType == "尾迹" then
+                local trailBonuses = BonusManager.GetTrailItemBonuses(player)
+                for itemName, bonusData in pairs(trailBonuses) do
+                    local isMatch = bonusData.targetVariable == targetVariable or (not bonusData.targetVariable and bonusData.itemTarget == targetVariable)
+                    if isMatch then
+                        if bonusData.fixed and bonusData.fixed > 0 then
+                            totalBonus = totalBonus + bonusData.fixed
+                            table.insert(bonusDescriptions, string.format("尾迹携带加成(%s, +%d)", itemName, bonusData.fixed))
+                        end
+                        if bonusData.percentage and bonusData.percentage > 0 then
+                            local percentageBonus = math.floor(baseValue * bonusData.percentage / 100)
+                            totalBonus = totalBonus + percentageBonus
+                            table.insert(bonusDescriptions, string.format("尾迹携带加成(%s, +%d%%)", itemName, bonusData.percentage))
+                        end
+                    end
+                end
+            elseif bonusType == "翅膀" then
+                local wingBonuses = BonusManager.GetWingItemBonuses(player)
+                for itemName, bonusData in pairs(wingBonuses) do
+                    local isMatch = bonusData.targetVariable == targetVariable or (not bonusData.targetVariable and bonusData.itemTarget == targetVariable)
+                    if isMatch then
+                        if bonusData.fixed and bonusData.fixed > 0 then
+                            totalBonus = totalBonus + bonusData.fixed
+                            table.insert(bonusDescriptions, string.format("翅膀携带加成(%s, +%d)", itemName, bonusData.fixed))
+                        end
+                        if bonusData.percentage and bonusData.percentage > 0 then
+                            local percentageBonus = math.floor(baseValue * bonusData.percentage / 100)
+                            totalBonus = totalBonus + percentageBonus
+                            table.insert(bonusDescriptions, string.format("翅膀携带加成(%s, +%d%%)", itemName, bonusData.percentage))
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    local finalValue = baseValue + totalBonus
+    local bonusInfo = ""
+    if #bonusDescriptions > 0 then
+        bonusInfo = string.format("\n> 加成来源: %s.\n> 基础值: %s, 总加成: %s, 最终值: %s.",
+            table.concat(bonusDescriptions, ", "),
+            tostring(baseValue),
+            tostring(totalBonus),
+            tostring(finalValue)
+        )
+    end
+    
+    return finalValue, bonusInfo
+end
 
 --- 同步并保存玩家数据
 ---@param player MPlayer
 local function syncAndSave(player)
-    --gg.log("syncAndSave", player.variables)
+    gg.log("syncAndSave", player.variables)
     if player and player.variableSystem then
         player.variables = player.variableSystem.variables
         cloudDataMgr.SavePlayerData(player.uin, true)
@@ -49,7 +164,7 @@ local function syncAndSave(player)
             variableData = allVars,
         })
 
-        -- --gg.log("玩家 " .. player.name .. " 的变量数据已保存并同步到客户端。")
+        -- gg.log("玩家 " .. player.name .. " 的变量数据已保存并同步到客户端。")
     end
 end
 
@@ -59,8 +174,6 @@ end
 function VariableCommand.handlers.add(params, player)
     local variableName = params["变量名"]
     local value = tonumber(params["数值"])
-    local source = params["来源"] or "VariableCommand"
-    local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
 
@@ -74,20 +187,16 @@ function VariableCommand.handlers.add(params, player)
 
     local variableSystem = player.variableSystem
 
-    -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName)
+    -- 使用新的加成计算函数
+    local finalValue, bonusInfo = CalculateAllBonuses(player, value, playerVariableBonuses, otherBonuses, variableName)
     local valueToAdd = finalValue
 
     variableSystem:AddVariable(variableName, valueToAdd)
     local newValue = variableSystem:GetVariable(variableName)
 
-    local msg = string.format("成功为玩家 %s 的变量 '%s' 新增 %s (来源: %s)，新值为: %s.%s", player.name, variableName, tostring(valueToAdd), source, tostring(newValue), bonusInfo)
-    --gg.log(msg)
+    local msg = string.format("成功为 %s 的变量 '%s' 新增 %s, 新值为: %s.%s", player.name, variableName, tostring(valueToAdd), tostring(newValue), bonusInfo)
+    gg.log(msg)
     -- player:SendHoverText(msg)
-    
-    -- 检查依赖规则
-    DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
-    
     syncAndSave(player)
     return true
 end
@@ -98,10 +207,6 @@ end
 function VariableCommand.handlers.set(params, player)
     local variableName = params["变量名"]
     local value = tonumber(params["数值"])
-    local source = params["来源"] or "COMMAND"
-    local playerStatBonuses = params["玩家属性加成"]
-    local playerVariableBonuses = params["玩家变量加成"]
-    local otherBonuses = params["其他加成"]
 
     if not (variableName and value) then
         player:SendHoverText("缺少 '变量名' 或 '数值' 字段。")
@@ -112,20 +217,13 @@ function VariableCommand.handlers.set(params, player)
         player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
     end
 
-    -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName)
-
     local variableSystem = player.variableSystem
-    variableSystem:SetVariable(variableName, finalValue)
+    variableSystem:SetVariable(variableName, value)
     local newValue = variableSystem:GetVariable(variableName)
 
-    local msg = string.format("成功将玩家 %s 的变量 '%s' 设置为: %s (来源: %s).%s", player.name, variableName, tostring(newValue), source, bonusInfo)
+    local msg = string.format("成功将玩家 %s 的变量 '%s' 设置为: %s", player.name, variableName, newValue)
     player:SendHoverText(msg)
-    --gg.log(msg)
-    
-    -- 检查依赖规则
-    DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
-    
+    gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -136,8 +234,6 @@ end
 function VariableCommand.handlers.reduce(params, player)
     local variableName = params["变量名"]
     local value = tonumber(params["数值"])
-    local source = params["来源"] or "COMMAND"
-    local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
 
@@ -152,19 +248,15 @@ function VariableCommand.handlers.reduce(params, player)
 
     local variableSystem = player.variableSystem
 
-    -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName)
+    -- 使用新的加成计算函数
+    local finalValue, bonusInfo = CalculateAllBonuses(player, value, playerVariableBonuses, otherBonuses, variableName)
     local valueToReduce = finalValue
 
     variableSystem:SubtractVariable(variableName, valueToReduce)
     local newValue = variableSystem:GetVariable(variableName)
 
-    local msg = string.format("成功为玩家 %s 的变量 '%s' 减少 %s (来源: %s)，新值为: %s.%s", player.name, variableName, tostring(valueToReduce), source, tostring(newValue), bonusInfo)
-    --gg.log(msg)
-    
-    -- 检查依赖规则
-    DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
-    
+    local msg = string.format("成功为玩家 %s 的变量 '%s' 减少 %s，新值为: %s.%s", player.name, variableName, tostring(valueToReduce), tostring(newValue), bonusInfo)
+    gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -210,10 +302,7 @@ function VariableCommand.handlers.view(params, player)
 
         local fullMessage = table.concat(response, "\n")
         player:SendHoverText(fullMessage)
-        local lines = gg.split(fullMessage, "\n")
-        for _, line in ipairs(lines) do
-            gg.log(line)
-        end
+        gg.log(fullMessage)
     else
         -- 查看所有变量的详细信息
         local allVars = variableSystem:GetAllVariables()
@@ -249,11 +338,8 @@ function VariableCommand.handlers.view(params, player)
         end
 
         local fullMessage = table.concat(response, "\n")
-        -- player:SendHoverText(fullMessage)
-        local lines = gg.split(fullMessage, "\n")
-        for _, line in ipairs(lines) do
-            gg.log(line)
-        end
+        player:SendHoverText(fullMessage)
+        gg.log(fullMessage)
     end
     return true
 end
@@ -263,63 +349,17 @@ end
 ---@param player MPlayer
 function VariableCommand.handlers.testbonus(params, player)
     local baseValue = tonumber(params["基础值"]) or 100
-    local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
-    local targetVariable = params["目标变量"] or "测试变量"
 
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, targetVariable)
+    local finalValue, bonusInfo = CalculateAllBonuses(player, baseValue, playerVariableBonuses, otherBonuses, "测试变量")
     
     local msg = string.format("加成测试结果:\n基础值: %s\n最终值: %s%s", 
         tostring(baseValue), tostring(finalValue), bonusInfo)
     
-    --gg.log(msg)
+    gg.log(msg)
     return true
 end
-
---- 仅应用加成（不包含基础数值）
----@param params table
----@param player MPlayer
-function VariableCommand.handlers.bonusonly(params, player)
-    local variableName = params["变量名"]
-    local source = params["来源"] or "COMMAND"
-    local playerStatBonuses = params["玩家属性加成"]
-    local playerVariableBonuses = params["玩家变量加成"]
-    local otherBonuses = params["其他加成"]
-
-    if not variableName then
-        player:SendHoverText("缺少 '变量名' 字段。")
-        return false
-    end
-
-    local variableSystem = player.variableSystem
-
-    -- 使用BonusCalculator计算加成，基础值设为0
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, 0, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName)
-    
-    -- 只应用加成部分，不包含基础值
-    local bonusValue = finalValue - 0  -- 减去基础值0，得到纯加成值
-    
-    if bonusValue > 0 then
-        variableSystem:AddVariable(variableName, bonusValue)
-        local newValue = variableSystem:GetVariable(variableName)
-        
-        local msg = string.format("成功为玩家 %s 的变量 '%s' 应用加成 %s (来源: %s)，新值为: %s.%s", 
-            player.name, variableName, tostring(bonusValue), source, tostring(newValue), bonusInfo)
-        player:SendHoverText(msg)
-        --gg.log(msg)
-    else
-        local msg = string.format("玩家 %s 的变量 '%s' 没有可应用的加成，保持原值。%s", 
-            player.name, variableName, bonusInfo)
-        player:SendHoverText(msg)
-        --gg.log(msg)
-    end
-    
-    syncAndSave(player)
-    return true
-end
-
-
 
 -- 中文到英文的映射
 local operationMap = {
@@ -327,8 +367,7 @@ local operationMap = {
     ["设置"] = "set",
     ["减少"] = "reduce",
     ["查看"] = "view",
-    ["测试加成"] = "testbonus",
-    ["仅加成"] = "bonusonly"
+    ["测试加成"] = "testbonus"
 }
 
 --- 变量操作指令入口
@@ -339,25 +378,25 @@ function VariableCommand.main(params, player)
     local operationType = params["操作类型"]
 
     if not operationType then
-        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '设置', '减少', '查看', '测试加成', '仅加成'")
+        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '设置', '减少', '查看', '测试加成'")
         return false
     end
 
     local handlerName = operationMap[operationType]
     if not handlerName then
-        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '设置', '减少', '查看', '测试加成', '仅加成'")
+        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '设置', '减少', '查看', '测试加成'")
         return false
     end
 
     if not player.variableSystem then
         player:SendHoverText("错误：找不到玩家的变量系统实例。")
-        --gg.log("错误：玩家 " .. player.name .. " 的variableSystem为空。")
+        gg.log("错误：玩家 " .. player.name .. " 的variableSystem为空。")
         return false
     end
 
     local handler = VariableCommand.handlers[handlerName]
     if handler then
-        --gg.log("变量命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
+        gg.log("变量命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
         return handler(params, player)
     else
         -- This case should not be reached due to the handlerName check above
@@ -367,6 +406,7 @@ function VariableCommand.main(params, player)
 end
 
 return VariableCommand
+
 -- ============================= 使用示例 =============================
 -- 
 -- 1. 基础变量操作（仅玩家变量加成）
@@ -374,7 +414,6 @@ return VariableCommand
 --   "操作类型": "新增",
 --   "变量名": "金币",
 --   "数值": 100,
---   "来源": "装备",  -- 可选，默认为"COMMAND"
 --   "玩家变量加成": [
 --     {
 --       "名称": "加成_百分比_金币加成",
@@ -384,39 +423,11 @@ return VariableCommand
 --   ]
 -- }
 --
--- 2. 包含玩家属性加成的变量操作
+-- 2. 包含宠物和伙伴携带加成的变量操作
 -- {
 --   "操作类型": "新增",
 --   "变量名": "金币",
 --   "数值": 100,
---   "玩家属性加成": [
---     {
---       "名称": "数据_固定值_攻击力",
---       "作用类型": "单独相加",
---       "缩放倍率": 0
---     }
---   ],
---   "玩家变量加成": [
---     {
---       "名称": "加成_百分比_金币加成",
---       "作用类型": "单独相加",
---       "目标变量": "金币"
---     }
---   ]
--- }
---
--- 3. 包含宠物和伙伴携带加成的变量操作
--- {
---   "操作类型": "新增",
---   "变量名": "金币",
---   "数值": 100,
---   "玩家属性加成": [
---     {
---       "名称": "数据_固定值_攻击力",
---       "作用类型": "单独相加",
---       "缩放倍率": 0
---     }
---   ],
 --   "玩家变量加成": [
 --     {
 --       "名称": "加成_百分比_金币加成",
@@ -427,39 +438,10 @@ return VariableCommand
 --   "其他加成": ["宠物", "伙伴"]
 -- }
 --
--- 4. 仅应用加成（不包含基础数值）
--- {
---   "操作类型": "仅加成",
---   "变量名": "金币",
---   "玩家属性加成": [
---     {
---       "名称": "数据_固定值_攻击力",
---       "作用类型": "单独相加",
---       "缩放倍率": 0
---     }
---   ],
---   "玩家变量加成": [
---     {
---       "名称": "加成_百分比_金币加成",
---       "作用类型": "单独相加",
---       "目标变量": "金币"
---     }
---   ],
---   "其他加成": ["宠物", "伙伴"]
--- }
---
--- 5. 测试加成计算
+-- 3. 测试加成计算
 -- {
 --   "操作类型": "测试加成",
 --   "基础值": 100,
---   "目标变量": "金币",
---   "玩家属性加成": [
---     {
---       "名称": "数据_固定值_攻击力",
---       "作用类型": "单独相加",
---       "缩放倍率": 0
---     }
---   ],
 --   "玩家变量加成": [
 --     {
 --       "名称": "加成_百分比_金币加成",
@@ -483,17 +465,3 @@ return VariableCommand
 -- 测试用例：
 -- 指令操作"数据_固定值_战力值"时，应该只匹配第二个携带效果（targetVariable="数据_固定值_战力值"）
 -- 指令操作"金币"时，应该只匹配第一个携带效果（itemTarget="金币"）
---
--- ============================= 升级说明 =============================
---
--- 新增功能：支持玩家属性加成
--- 1. 新增"来源"参数，用于标识变量操作的来源（如"装备"、"任务"等）
--- 2. 新增"玩家属性加成"参数，支持从玩家属性系统读取加成值
--- 3. 统一使用BonusCalculator.CalculateAllBonuses进行加成计算
--- 4. 删除重复的CalculateAllBonuses函数，避免代码重复
---
--- 参数一致性：现在VariableCommand与StatCommand的参数完全一致
--- - 都支持"来源"、"玩家属性加成"、"玩家变量加成"、"其他加成"参数
--- - 都使用相同的加成计算逻辑
--- - 都提供相同的加成测试功能
-

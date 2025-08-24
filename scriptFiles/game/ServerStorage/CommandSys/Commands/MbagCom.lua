@@ -29,7 +29,7 @@ function BagCommand.add(params, player)
 
     local success = BagMgr.AddItem(player, itemType, amount)
     if success then
-        local msg = string.format("获取物品 %s x%d", itemType, amount)
+        local msg = string.format("成功给玩家 %s 添加物品: %s x%d", player.name, itemType, amount)
         player:SendHoverText(msg)
         gg.log(msg)
         BagMgr.ForceSyncToClient(player.uin)

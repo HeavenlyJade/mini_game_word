@@ -193,9 +193,7 @@ function BaseCompanion:GetCompanionList()
         equipSlotIds = availableEquipSlots, -- 【修改】只返回玩家当前可用的装备栏
         unlockedEquipSlots = self.unlockedEquipSlots, -- 【新增】返回已解锁栏位数
         maxEquipSlots = #self.equipSlotIds, -- 【新增】返回系统最大栏位数
-        companionType = self.companionType,
-        companionCount = self:GetCompanionCount(), -- 【新增】返回伙伴数量
-        maxSlots = self.maxSlots -- 【新增】返回背包容量
+        companionType = self.companionType
     }
 end
 
@@ -473,7 +471,7 @@ function BaseCompanion:UpgradeCompanionStar(slotIndex)
                 -- 检查材料是否充足（排除当前升星的伙伴）
                 local candidates = self:FindCompanionsByCondition(companionName, needStar, slotIndex)
                 if #candidates < actualNeedCount then
-                    return false, string.format("材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
+                    return false, string.format("伙伴材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
                 end
 
                 -- 消耗材料
@@ -573,7 +571,7 @@ function BaseCompanion:CanCompanionUpgradeStar(slotIndex)
             if actualNeedCount > 0 then
                 local candidates = self:FindCompanionsByCondition(companionName, needStar, slotIndex)
                 if #candidates < actualNeedCount then
-                    return false, string.format("材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
+                    return false, string.format("伙伴材料不足：需要%d个%d星%s", actualNeedCount, needStar, companionName)
                 end
             end
         end
@@ -652,179 +650,6 @@ function BaseCompanion:UpgradeAllPossibleCompanions()
     end
 
     return totalUpgradedCount
-end
-
--- =================================
--- 自动装备最优宠物相关方法
--- =================================
-
----检查指定槽位的宠物是否已装备
----@param slotIndex number 槽位索引
----@return boolean 是否已装备
-function BaseCompanion:IsCompanionEquipped(slotIndex)
-    for _, equippedSlotId in pairs(self.activeCompanionSlots) do
-        if equippedSlotId == slotIndex then
-            return true
-        end
-    end
-    return false
-end
-
----检查装备栏ID是否有效
----@param equipSlotId string 装备栏ID
----@return boolean 是否有效
-function BaseCompanion:IsValidEquipSlotId(equipSlotId)
-    for _, validId in ipairs(self.equipSlotIds) do
-        if validId == equipSlotId then
-            return true
-        end
-    end
-    return false
-end
-
----查找效果数值最高的宠物
----@param excludeEquipped boolean|nil 是否排除已装备的宠物
----@return CompanionInstance|nil, number|nil 最优宠物实例和槽位索引
-function BaseCompanion:FindBestEffectCompanion(excludeEquipped)
-    local bestInstance = nil
-    local bestSlotIndex = nil
-    local bestValue = -1
-    
-    for slotIndex, companionInstance in pairs(self.companionInstances) do
-        -- 如果需要排除已装备的宠物
-        if not (excludeEquipped and self:IsCompanionEquipped(slotIndex)) then
-            -- 计算当前宠物的效果数值
-            local effectValue = companionInstance:CalculateTotalEffectValue()
-            
-            -- 如果效果数值更高，则更新最优选择
-            if effectValue > bestValue then
-                bestValue = effectValue
-                bestInstance = companionInstance
-                bestSlotIndex = slotIndex
-            end
-        end
-    end
-    
-    return bestInstance, bestSlotIndex
-end
-
----自动装备效果数值最高的宠物到指定装备栏
----@param equipSlotId string 装备栏ID
----@param excludeEquipped boolean|nil 是否排除已装备的宠物，默认true
----@return boolean, string|nil, number|nil 是否成功、错误信息、装备的宠物槽位
-function BaseCompanion:AutoEquipBestEffectCompanion(equipSlotId, excludeEquipped)
-    if excludeEquipped == nil then excludeEquipped = true end
-    
-    -- 检查装备栏是否有效
-    if not self:IsValidEquipSlotId(equipSlotId) then
-        return false, "无效的装备栏ID: " .. tostring(equipSlotId), nil
-    end
-    
-    -- 查找效果数值最高的宠物
-    local bestInstance, bestSlotIndex = self:FindBestEffectCompanion(excludeEquipped)
-    
-    if not bestInstance or not bestSlotIndex then
-        return false, "没有找到可装备的宠物", nil
-    end
-    
-    -- 装备该宠物
-    local success, errorMsg = self:EquipCompanion(bestSlotIndex, equipSlotId)
-    
-    if success then
-        return true, nil, bestSlotIndex
-    else
-        return false, errorMsg, nil
-    end
-end
-
----自动装备所有装备栏的最优宠物
----@param excludeEquipped boolean|nil 是否排除已装备的宠物，默认true
----@return table 装备结果 {equipSlotId: {success: boolean, slotIndex: number|nil, errorMsg: string|nil}}
-function BaseCompanion:AutoEquipAllBestEffectCompanions(excludeEquipped)
-    if excludeEquipped == nil then excludeEquipped = true end
-    
-    local results = {}
-    local equippedSlots = {} -- 记录已装备的槽位，避免重复装备
-    
-    -- 获取已解锁的装备栏数量
-    local unlockedCount = self.unlockedEquipSlots or 1
-    
-    for i = 1, math.min(unlockedCount, #self.equipSlotIds) do
-        local equipSlotId = self.equipSlotIds[i]
-        
-        -- 查找最优宠物（排除已装备的）
-        local bestInstance, bestSlotIndex = nil, nil
-        local bestValue = -1
-        
-        for slotIndex, companionInstance in pairs(self.companionInstances) do
-            -- 排除已装备的宠物和本轮已使用的宠物
-            local shouldSkip = (excludeEquipped and self:IsCompanionEquipped(slotIndex)) or 
-                              equippedSlots[slotIndex]
-            
-            if not shouldSkip then
-                local effectValue = companionInstance:CalculateTotalEffectValue()
-                if effectValue > bestValue then
-                    bestValue = effectValue
-                    bestInstance = companionInstance
-                    bestSlotIndex = slotIndex
-                end
-            end
-        end
-        
-        if bestInstance and bestSlotIndex then
-            local success, errorMsg = self:EquipCompanion(bestSlotIndex, equipSlotId)
-            results[equipSlotId] = {
-                success = success,
-                slotIndex = success and bestSlotIndex or nil,
-                errorMsg = errorMsg
-            }
-            
-            if success then
-                equippedSlots[bestSlotIndex] = true -- 标记为已使用
-            end
-        else
-            results[equipSlotId] = {
-                success = false,
-                slotIndex = nil,
-                errorMsg = "没有可装备的宠物"
-            }
-        end
-    end
-    
-    return results
-end
-
----获取所有宠物的效果数值排行
----@param limit number|nil 返回数量限制
----@return table 排行列表 {{slotIndex: number, instance: CompanionInstance, effectValue: number}}
-function BaseCompanion:GetEffectValueRanking(limit)
-    local ranking = {}
-    
-    -- 收集所有宠物的效果数值
-    for slotIndex, companionInstance in pairs(self.companionInstances) do
-        local effectValue = companionInstance:CalculateTotalEffectValue()
-        table.insert(ranking, {
-            slotIndex = slotIndex,
-            instance = companionInstance,
-            effectValue = effectValue
-        })
-    end
-    
-    -- 按效果数值降序排序
-    table.sort(ranking, function(a, b)
-        return a.effectValue > b.effectValue
-    end)
-    
-    -- 限制返回数量
-    if limit and limit > 0 then
-        local limitedRanking = {}
-        for i = 1, math.min(limit, #ranking) do
-            table.insert(limitedRanking, ranking[i])
-        end
-        return limitedRanking
-    end
-    
-    return ranking
 end
 
 return BaseCompanion

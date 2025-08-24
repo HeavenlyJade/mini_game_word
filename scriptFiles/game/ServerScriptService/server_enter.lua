@@ -10,6 +10,8 @@
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local Code = MainStorage:WaitForChild('Code')
+local Untils = Code:WaitForChild('Untils')
+Untils:WaitForChild('ClassMgr')
 
 local MainServer = require(ServerStorage.Manager.MServerMain) ---@type MainServer
 MainServer.start_server()

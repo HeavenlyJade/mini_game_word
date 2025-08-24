@@ -6,7 +6,6 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
-local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
 
 ---@class PlayerAnimationAction : Class
 -- 玩家动画控制模块，处理各种动画和状态控制
@@ -110,27 +109,8 @@ function PlayerAnimationAction:StartFlyAnimation(data, actor)
 
     -- 设置飞行状态
     actor.Gravity = gravityValue
-    actor.JumpBaseSpeed = 0
-
-    -- 清理可能存在的旧定时器
-    if self.animationTimer then
-        ScheduledTask.Remove(self.animationTimer)
-        self.animationTimer = nil
-    end
-
-    -- 立即播放一次，并启动定时器以确保动画持续
     actor.Animator:Play(animationName, 0, 0)
-    self.animationTimer = ScheduledTask.AddInterval(1, "PlayerAnimationActionTimer", function()
-        if actor and actor.Animator and not actor.isDestroyed then
-            actor.Animator:Play(animationName, 0, 0)
-        else
-            -- 如果actor失效，也清理定时器
-            if self.animationTimer then
-                ScheduledTask.Remove(self.animationTimer)
-                self.animationTimer = nil
-            end
-        end
-    end)
+    
     
     -- 禁用移动控制
     if disableMovement then
@@ -142,15 +122,13 @@ function PlayerAnimationAction:StartFlyAnimation(data, actor)
     self.isIdleScene = isIdleScene
     self.sceneType = sceneType
     
-    -- 如果是挂机场景，显示“离开挂机”按钮并设置速度为0
 
-    actor.Movespeed = 0
-    ---@type TournamentSc
-    local tournamentSc = ViewBase.GetUI("TournamentSc")
-    if tournamentSc then
-        tournamentSc:SetAfkButtonVisible(true)
+    -- 如果指定了持续时间，设置自动恢复
+    if duration and duration > 0 then
+        self.recoveryTimer = ScheduledTask.AddDelay(duration, "PlayerAnimation_AutoRecover", function()
+            self:StopFlyAnimation(actor)
+        end)
     end
-    
 end
 
 --- 停止飞行动画
@@ -189,7 +167,7 @@ function PlayerAnimationAction:StopFlyAnimation(actor)
     -- 恢复物理状态
     actor.Gravity = targetGravity
     actor.Movespeed = targetMoveSpeed
-    actor.JumpBaseSpeed = targetJumpSpeed or 400
+    actor.JumpBaseSpeed = targetJumpSpeed
     
     -- 停止当前动作
     actor:StopMove()
@@ -279,7 +257,7 @@ function PlayerAnimationAction:ForceStop(actor)
     actor.Animator:Play("Base Layer.Idle", 0, 0)
     actor.Gravity = self.originalGravity
     actor.Movespeed = self.originalMoveSpeed
-    actor.JumpBaseSpeed = self.originalJumpSpeed or 400
+    actor.JumpBaseSpeed = self.originalJumpSpeed
     
     -- 停止所有动作
     actor:StopMove()
@@ -306,15 +284,6 @@ function PlayerAnimationAction:OnEnd()
     end
     
     --gg.log("PlayerAnimationAction: 模块结束，正在清理")
-    
-    -- 如果是挂机场景，隐藏“离开挂机”按钮
-
-    ---@type TournamentSc
-    local tournamentSc = ViewBase.GetUI("TournamentSc")
-    if tournamentSc then
-        tournamentSc:SetAfkButtonVisible(false)
-    end
-
     
     -- 清理定时器
     if self.animationTimer then

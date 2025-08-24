@@ -49,15 +49,6 @@ function WingEventManager.RegisterEventHandlers()
 
     -- 一键升星
     ServerEventManager.Subscribe(WingEventManager.REQUEST.UPGRADE_ALL_WINGS, function(evt) WingEventManager.HandleUpgradeAllWings(evt) end)
-    
-    -- 【新增】删除/锁定翅膀
-    ServerEventManager.Subscribe(WingEventManager.REQUEST.DELETE_WING, function(evt) WingEventManager.HandleDeleteWing(evt) end)
-    ServerEventManager.Subscribe(WingEventManager.REQUEST.TOGGLE_WING_LOCK, function(evt) WingEventManager.HandleToggleWingLock(evt) end)
-    
-    -- 【新增】自动装备最优翅膀
-    ServerEventManager.Subscribe(WingEventManager.REQUEST.AUTO_EQUIP_BEST_WING, function(evt) WingEventManager.HandleAutoEquipBestWing(evt) end)
-    ServerEventManager.Subscribe(WingEventManager.REQUEST.AUTO_EQUIP_ALL_BEST_WINGS, function(evt) WingEventManager.HandleAutoEquipAllBestWings(evt) end)
-    ServerEventManager.Subscribe(WingEventManager.REQUEST.GET_WING_EFFECT_RANKING, function(evt) WingEventManager.HandleGetWingEffectRanking(evt) end)
 end
 
 --- 验证玩家
@@ -219,7 +210,6 @@ function WingEventManager.HandleUpgradeWingStar(evt)
         end
         --gg.log("翅膀升星成功", player.uin, "槽位", slotIndex)
     else
-        WingEventManager.NotifyError(player.uin, -1, errorMsg)
         --gg.log("翅膀升星失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
     end
 end
@@ -287,9 +277,22 @@ function WingEventManager.HandleUpgradeAllWings(evt)
     if not player then return end
 
     local upgradedCount = WingMgr.UpgradeAllPossibleWings(player.uin)
-    local updatedData = WingMgr.GetPlayerWingList(player.uin)
-    if updatedData then
-        WingEventManager.NotifyWingListUpdate(player.uin, updatedData)
+
+    if upgradedCount > 0 then
+        --gg.log("一键升星成功", player.uin, "总共升级次数", upgradedCount)
+        -- 发送响应事件到客户端
+        gg.network_channel:fireClient(player.uin, {
+            cmd = WingEventManager.RESPONSE.WING_BATCH_UPGRADE,
+            success = true,
+            upgradedCount = upgradedCount
+        })
+    else
+        --gg.log("一键升星：没有可升星的翅膀", player.uin)
+        gg.network_channel:fireClient(player.uin, {
+            cmd = WingEventManager.RESPONSE.WING_BATCH_UPGRADE,
+            success = false,
+            errorMsg = "没有可升星的翅膀"
+        })
     end
 end
 
@@ -302,12 +305,7 @@ function WingEventManager.NotifyWingListUpdate(uin, wingData)
         cmd = WingEventManager.NOTIFY.WING_LIST_UPDATE,
         companionList = wingData.companionList,
         activeSlots = wingData.activeSlots,
-        equipSlotIds = wingData.equipSlotIds,
-        companionCount = wingData.companionCount or 0, -- 【新增】翅膀数量
-        bagCapacity = wingData.maxSlots or 30,        -- 【新增】背包容量
-        unlockedEquipSlots = wingData.unlockedEquipSlots or 1, -- 【新增】已解锁的装备栏位数
-        maxEquipSlots = wingData.maxEquipSlots or 1,           -- 【新增】系统最大装备栏位数
-        companionType = wingData.companionType or "翅膀"        -- 【新增】翅膀类型标识
+        equipSlotIds = wingData.equipSlotIds
     })
 end
 
@@ -362,151 +360,11 @@ end
 ---@param errorCode number 错误码
 ---@param errorMsg string 错误信息
 function WingEventManager.NotifyError(uin, errorCode, errorMsg)
-    local player = MServerDataManager.getPlayerByUin(uin)
-    if player then
-        player:SendHoverText(errorMsg)
-    end
-end
-
--- =================================
--- 新增功能事件处理
--- =================================
-
----处理删除翅膀请求
----@param evt table 事件数据
-function WingEventManager.HandleDeleteWing(evt)
-    local player = WingEventManager.ValidatePlayer(evt)
-    if not player then return end
-
-    local args = evt.args or {}
-    local slotIndex = args.slotIndex
-
-    if not slotIndex then
-        WingEventManager.NotifyError(player.uin, -1, "删除翅膀缺少槽位参数")
-        return
-    end
-
-    local success, errorMsg = WingMgr.DeleteWing(player.uin, slotIndex)
-
-    if success then
-        --gg.log("删除翅膀成功", player.uin, "槽位", slotIndex)
-        -- 刷新翅膀列表
-        local updatedData = WingMgr.GetPlayerWingList(player.uin)
-        if updatedData then
-            WingEventManager.NotifyWingListUpdate(player.uin, updatedData)
-        end
-    else
-        --gg.log("删除翅膀失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
-        WingEventManager.NotifyError(player.uin, -1, errorMsg or "删除翅膀失败")
-    end
-end
-
----处理切换翅膀锁定状态请求
----@param evt table 事件数据
-function WingEventManager.HandleToggleWingLock(evt)
-    local player = WingEventManager.ValidatePlayer(evt)
-    if not player then return end
-
-    local args = evt.args or {}
-    local slotIndex = args.slotIndex
-
-    if not slotIndex then
-        WingEventManager.NotifyError(player.uin, -1, "切换锁定状态缺少槽位参数")
-        return
-    end
-
-    local success, errorMsg, newLockStatus = WingMgr.ToggleWingLock(player.uin, slotIndex)
-
-    if success then
-        --gg.log("切换翅膀锁定状态成功", player.uin, "槽位", slotIndex, "新状态", newLockStatus)
-        -- 刷新翅膀列表
-        local updatedData = WingMgr.GetPlayerWingList(player.uin)
-        if updatedData then
-            WingEventManager.NotifyWingListUpdate(player.uin, updatedData)
-        end
-    else
-        --gg.log("切换翅膀锁定状态失败", player.uin, "槽位", slotIndex, "错误", errorMsg)
-        WingEventManager.NotifyError(player.uin, -1, errorMsg or "切换锁定状态失败")
-    end
-end
-
----处理自动装备最优翅膀请求
----@param evt table 事件数据
-function WingEventManager.HandleAutoEquipBestWing(evt)
-    local player = WingEventManager.ValidatePlayer(evt)
-    if not player then return end
-
-    local args = evt.args or {}
-    local equipSlotId = args.equipSlotId
-    local excludeEquipped = args.excludeEquipped
-
-    if not equipSlotId then
-        WingEventManager.NotifyError(player.uin, -1, "自动装备翅膀缺少装备栏参数")
-        return
-    end
-
-    local success, errorMsg, slotIndex = WingMgr.AutoEquipBestEffectWing(player.uin, equipSlotId, excludeEquipped)
-
-    if success then
-        --gg.log("自动装备最优翅膀成功", player.uin, "装备栏", equipSlotId, "翅膀槽位", slotIndex)
-        -- 刷新翅膀列表
-        local updatedData = WingMgr.GetPlayerWingList(player.uin)
-        if updatedData then
-            WingEventManager.NotifyWingListUpdate(player.uin, updatedData)
-        end
-    else
-        --gg.log("自动装备最优翅膀失败", player.uin, "装备栏", equipSlotId, "错误", errorMsg)
-        WingEventManager.NotifyError(player.uin, -1, errorMsg or "自动装备翅膀失败")
-    end
-end
-
----处理自动装备所有最优翅膀请求
----@param evt table 事件数据
-function WingEventManager.HandleAutoEquipAllBestWings(evt)
-    local player = WingEventManager.ValidatePlayer(evt)
-    if not player then return end
-
-    local args = evt.args or {}
-    local excludeEquipped = args.excludeEquipped
-
-    local results = WingMgr.AutoEquipAllBestEffectWings(player.uin, excludeEquipped)
-
-    -- 获取效果排行用于响应
-    local ranking = WingMgr.GetWingEffectRanking(player.uin, 10)
-
-    -- 发送效果排行响应
-    gg.network_channel:fireClient(player.uin, {
-        cmd = WingEventManager.RESPONSE.WING_EFFECT_RANKING,
-        ranking = ranking,
-        results = results
+    gg.network_channel:fireClient(uin, {
+        cmd = WingEventManager.RESPONSE.ERROR,
+        errorCode = errorCode,
+        errorMsg = errorMsg
     })
-
-    -- 刷新翅膀列表
-    local updatedData = WingMgr.GetPlayerWingList(player.uin)
-    if updatedData then
-        WingEventManager.NotifyWingListUpdate(player.uin, updatedData)
-    end
-
-    --gg.log("自动装备所有最优翅膀完成", player.uin, results)
-end
-
----处理获取翅膀效果排行请求
----@param evt table 事件数据
-function WingEventManager.HandleGetWingEffectRanking(evt)
-    local player = WingEventManager.ValidatePlayer(evt)
-    if not player then return end
-
-    local args = evt.args or {}
-    local limit = args.limit or 10
-
-    local ranking = WingMgr.GetWingEffectRanking(player.uin, limit)
-
-    gg.network_channel:fireClient(player.uin, {
-        cmd = WingEventManager.RESPONSE.WING_EFFECT_RANKING,
-        ranking = ranking
-    })
-
-    --gg.log("获取翅膀效果排行完成", player.uin, "数量", #ranking)
 end
 
 return WingEventManager 

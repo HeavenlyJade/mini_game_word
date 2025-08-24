@@ -19,8 +19,9 @@ end
 --- 注册事件处理器
 function RaceGameEventManager.RegisterEventHandlers()
     -- 注册玩家落地事件
+    local landedEventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
 
-    ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.PLAYER_LANDED, RaceGameEventManager.HandlePlayerLanded)
+    ServerEventManager.Subscribe(landedEventName, RaceGameEventManager.HandlePlayerLanded)
 
 end
 
@@ -48,16 +49,13 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
 
     -- 如果玩家在模式中，并且模式有OnPlayerLanded方法，则直接调用
     if currentMode and type(currentMode.OnPlayerLanded) == "function" then
+        -- 移除不必要的ClassName检查，因为此管理器专用于RaceGame
+        --gg.log(string.format("RaceEventManager: 收到玩家 %s 的落地报告，转发给比赛实例 %s", player.name, currentMode.instanceId))
+        -- 3. 调用该【具体实例】的 OnPlayerLanded 方法
         currentMode:OnPlayerLanded(player)
     else
         -- 仅在调试时打印，正常游戏时此日志可能过于频繁
         -- --gg.log(string.format("RaceEventManager: 收到玩家 %s 的落地报告，但玩家不在比赛中或模式不匹配，忽略。", player.name))
-    end
-
-    -- 如果是手动离开，强制通知客户端结束比赛界面与模块
-    local finalState = evt.finalState
-    if finalState == "ManualExit" then
-        RaceGameEventManager.SendRaceEndNotification(player)
     end
 end
 
@@ -137,6 +135,12 @@ function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTim
         return
     end
     
+    local eventData = {
+        cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN,
+        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
+        prepareTime = prepareTime
+    }
+    
     -- 【核心修改】从MServerDataManager获取所有在线玩家，向所有玩家发送倒计时
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     local allPlayers = serverDataMgr.getAllPlayers()
@@ -147,16 +151,7 @@ function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTim
     -- 向所有在线玩家发送倒计时事件
     for uin, player in pairs(allPlayers) do
         if player and player.uin then
-            -- 【新增】为每个玩家创建包含场景信息的个性化事件数据
-            local playerEventData = {
-                cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN,
-                gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
-                prepareTime = prepareTime,
-                -- 【新增】包含玩家当前场景信息
-                playerScene = player.currentScene or "init_map"
-            }
-            
-            gg.network_channel:fireClient(player.uin, playerEventData)
+            gg.network_channel:fireClient(player.uin, eventData)
             successCount = successCount + 1
         end
         totalPlayers = totalPlayers + 1

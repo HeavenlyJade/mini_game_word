@@ -151,6 +151,9 @@ function gg.evaluateCondition(expression)
     return false
 end
 
+--- 复杂数学表达式计算器，支持中文符号和数学函数
+---@param expr string 数学表达式
+---@return number 计算结果
 function gg.eval(expr)
     -- 自动修正常见中文符号为英文
     expr = expr
@@ -645,21 +648,21 @@ end
 ---@param delim string 分隔符
 ---@return table|nil 分割后的字符串数组
 function gg.split(s, delim)
-    if type(delim) ~= "string" or string.len(delim) <= 0 then
+    if type(delim) ~= "string" or string_len(delim) <= 0 then
         return
     end
     local start = 1
     local t = {}
     while true do
-        local pos = string.find(s, delim, start, true) -- plain find
+        local pos = string_find(s, delim, start, true) -- plain find
         if not pos then
             break
         end
 
-        table.insert(t, string.sub(s, start, pos - 1))
-        start = pos + string.len(delim)
+        table_insert(t, string_sub(s, start, pos - 1))
+        start = pos + string_len(delim)
     end
-    table.insert(t, string.sub(s, start))
+    table_insert(t, string_sub(s, start))
     return t
 end
 
@@ -834,7 +837,7 @@ function gg.GetChild(node, path)
         if part ~= "" then
             lastPart = part
             if not node then
-                -- gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在", root.Name, path,fullPath))
+                --gg.log(string.format("[%s]获取路径[%s]失败: 在[%s]处节点不存在", root.Name, path,ullPath))
                 return nil
             end
             node = node[part]
@@ -1091,6 +1094,125 @@ function gg.ifClientBagFull()
         end
     end
     return true
+end
+
+function gg.eval(expr)
+    -- 自动修正常见中文符号为英文
+    expr = expr
+        :gsub("，", ",")
+        :gsub("（", "(")
+        :gsub("）", ")")
+        :gsub("－", "-")
+        :gsub("−", "-")
+        :gsub("—", "-")
+        :gsub("＋", "+")
+        :gsub("×", "*")
+        :gsub("＊", "*")
+        :gsub("÷", "/")
+        :gsub("／", "/")
+        :gsub("．", ".")
+    local ok, result = pcall(function()
+        expr = expr:gsub("%s+", "")  -- 移除空格
+        local pos = 1
+
+        -- 先声明所有函数（避免未定义错误）
+        local parseExpr, parseMulDiv, parsePower, parseAtom, parseNumber
+
+        parseNumber = function()
+            local start = pos
+            if expr:sub(pos, pos) == "-" then pos = pos + 1 end
+            while pos <= #expr and (expr:sub(pos, pos):match("%d") or expr:sub(pos, pos) == ".") do
+                pos = pos + 1
+            end
+            return tonumber(expr:sub(start, pos - 1))
+        end
+
+        parseAtom = function()
+            -- 支持 max/min 函数
+            local func3 = expr:sub(pos, pos+2)
+            if func3 == "max" or func3 == "min" then
+                pos = pos + 3
+                assert(expr:sub(pos, pos) == "(", "Missing '(' after function name")
+                pos = pos + 1
+                local args = {}
+                args[1] = parseExpr()
+                while expr:sub(pos, pos) == "," do
+                    pos = pos + 1
+                    args[#args+1] = parseExpr()
+                end
+                assert(expr:sub(pos, pos) == ")", "Missing ')' after function arguments")
+                pos = pos + 1
+                if func3 == "max" then
+                    return math.max(unpack(args))
+                else
+                    return math.min(unpack(args))
+                end
+            elseif expr:sub(pos, pos) == "(" then
+                pos = pos + 1
+                local val = parseExpr()
+                if expr:sub(pos, pos) ~= ")" then error("Missing closing parenthesis") end
+                pos = pos + 1
+                return val
+            else
+                return parseNumber()
+            end
+        end
+
+        parsePower = function()
+            local left = parseAtom()
+            while pos <= #expr and expr:sub(pos, pos) == "^" do
+                pos = pos + 1
+                left = left ^ parseAtom()  -- 右结合（如 2^3^2 = 2^(3^2)）
+            end
+            return left
+        end
+
+        parseMulDiv = function()
+            local left = parsePower()
+            while pos <= #expr do
+                local op = expr:sub(pos, pos)
+                if op == "*" or op == "/" then
+                    pos = pos + 1
+                    local right = parsePower()
+                    if op == "*" then
+                        left = left * right
+                    else
+                        left = left / right
+                    end
+                else
+                    break
+                end
+            end
+            return left
+        end
+
+        parseExpr = function()
+            local left = parseMulDiv()
+            while pos <= #expr do
+                local op = expr:sub(pos, pos)
+                if op == "+" or op == "-" then
+                    pos = pos + 1
+                    local right = parseMulDiv()
+                    if op == "+" then
+                        left = left + right
+                    else
+                        left = left - right
+                    end
+                else
+                    break
+                end
+            end
+            return left
+        end
+
+        return parseExpr()
+    end)
+    if ok then
+        return result
+    else
+        --gg.log("[gg.eval] 公式计算失败: " .. tostring(result) .. "，表达式: " .. tostring(expr))
+        return 0
+    end
 end
 
 -- 添加table.contains函数

@@ -1,7 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
 
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
-local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local gg = require(MainStorage.Code.Untils.MGlobal)
 
 ---@class RewardBase : Class
 ---@field calcType string 计算器类型名称
@@ -49,14 +49,14 @@ function RewardBase:EvaluateFormula(formula, playerData, levelInstance)
     local processedFormula = self:_ReplaceVariables(formula, context)
 
     if not processedFormula then
-        gg.log(string.format("错误: [%s] 变量替换失败，公式: %s", self.calcType, formula))
+        --gg.log(string.format("错误: [%s] 变量替换失败，公式: %s", self.calcType, formula))
         return nil
     end
 
     local success, result = pcall(function() return gg.eval(processedFormula) end)
 
     if not success or type(result) ~= "number" then
-        gg.log(string.format("错误: [%s] 公式计算失败 '%s' -> '%s': %s",self.calcType, formula, processedFormula, tostring(result)))
+        --gg.log(string.format("错误: [%s] 公式计算失败 '%s' -> '%s': %s",self.calcType, formula, processedFormula, tostring(result)))
         return nil
     end
 
@@ -79,7 +79,7 @@ function RewardBase:_ReplaceVariables(formula, context)
         if type(varValue) == "number" then
             varValue = tostring(varValue)
         elseif type(varValue) ~= "string" then
-            gg.log(string.format("警告: [%s] 变量 '%s' 的值类型无效: %s", self.calcType, varName, type(varValue)))
+            --gg.log(string.format("警告: [%s] 变量 '%s' 的值类型无效: %s", self.calcType, varName, type(varValue)))
             return nil
         end
         result = string.gsub(result, "%f[%w_]" .. varName .. "%f[^%w_]", varValue)
@@ -93,7 +93,7 @@ end
 ---@param levelInstance LevelType 关卡实例，包含所有配置
 ---@return table<string, number>|nil 基础奖励 {物品名称: 数量}
 function RewardBase:CalcBaseReward(playerData, levelInstance)
-    gg.log(string.format("警告: 计算器 %s 未实现 CalcBaseReward 方法", self.calcType))
+    --gg.log(string.format("警告: 计算器 %s 未实现 CalcBaseReward 方法", self.calcType))
     return nil
 end
 
@@ -102,7 +102,7 @@ end
 ---@param levelInstance LevelType 关卡实例，包含所有配置
 ---@return table[]|nil 排名奖励列表 {{物品: string, 数量: number}}
 function RewardBase:CalcRankReward(playerData, levelInstance)
-    gg.log(string.format("警告: 计算器 %s 未实现 CalcRankReward 方法", self.calcType))
+    --gg.log(string.format("警告: 计算器 %s 未实现 CalcRankReward 方法", self.calcType))
     return nil
 end
 
@@ -111,7 +111,7 @@ end
 ---@return boolean
 function RewardBase:ValidateLevel(levelInstance)
     if not levelInstance or not levelInstance:Is("LevelType") then
-        gg.log(string.format("错误: %s - 无效的关卡实例(LevelType)", self.calcType))
+        --gg.log(string.format("错误: %s - 无效的关卡实例(LevelType)", self.calcType))
         return false
     end
     return true
@@ -122,17 +122,17 @@ end
 ---@return boolean 数据是否有效
 function RewardBase:ValidatePlayerData(playerData)
     if not playerData then
-        gg.log(string.format("错误: %s - 玩家数据为空", self.calcType))
+        --gg.log(string.format("错误: %s - 玩家数据为空", self.calcType))
         return false
     end
 
     if not playerData.rank or playerData.rank <= 0 then
-        gg.log(string.format("错误: %s - 玩家排名无效: %s", self.calcType, tostring(playerData.rank)))
+        --gg.log(string.format("错误: %s - 玩家排名无效: %s", self.calcType, tostring(playerData.rank)))
         return false
     end
 
     if not playerData.uin then
-        gg.log(string.format("错误: %s - 玩家UIN无效", self.calcType))
+        --gg.log(string.format("错误: %s - 玩家UIN无效", self.calcType))
         return false
     end
 

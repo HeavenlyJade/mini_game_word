@@ -432,30 +432,4 @@ function Wing:SetWingBagCapacity(capacity)
     end
 end
 
--- =================================
--- 自动装备最优翅膀便捷方法
--- =================================
-
----自动装备效果数值最高的翅膀（翅膀专用接口）
----@param equipSlotId string 装备栏ID
----@param excludeEquipped boolean|nil 是否排除已装备的翅膀
----@return boolean, string|nil, number|nil
-function Wing:AutoEquipBestWing(equipSlotId, excludeEquipped)
-    return self:AutoEquipBestEffectCompanion(equipSlotId, excludeEquipped)
-end
-
----自动装备所有装备栏的最优翅膀（翅膀专用接口）
----@param excludeEquipped boolean|nil 是否排除已装备的翅膀
----@return table
-function Wing:AutoEquipAllBestWings(excludeEquipped)
-    return self:AutoEquipAllBestEffectCompanions(excludeEquipped)
-end
-
----获取翅膀效果数值排行（翅膀专用接口）
----@param limit number|nil 返回数量限制
----@return table
-function Wing:GetWingEffectRanking(limit)
-    return self:GetEffectValueRanking(limit)
-end
-
 return Wing 

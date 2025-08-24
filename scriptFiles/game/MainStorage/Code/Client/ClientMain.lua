@@ -94,8 +94,8 @@ end
 
 --  通过CoreUI 屏蔽默认的按钮组件
 function ClientMain.handleCoreUISettings()
-    -- local CoreUI = game:GetService("CoreUI")
-    -- CoreUI:HideCoreUi(Enum.CoreUiComponent.All )
+    local CoreUI = game:GetService("CoreUI")
+    CoreUI:HideCoreUi(Enum.CoreUiComponent.All )
 
 end
 

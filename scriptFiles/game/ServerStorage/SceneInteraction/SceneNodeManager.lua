@@ -4,9 +4,10 @@
 local ServerStorage = game:GetService("ServerStorage")
 local MainStorage = game:GetService("MainStorage")
 
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local gg = require(MainStorage.Code.Untils.MGlobal)  ---@type gg
-gg.log(3333333333333332)
+
 ---@class SceneNodeManager
 local SceneNodeManager = {}
 
@@ -23,8 +24,6 @@ local HANDLER_TYPE_MAP = {
 
 --- 初始化所有在配置中定义的场景节点
 function SceneNodeManager.Init()
-    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
-
     --gg.log("SceneNodeManager: 开始初始化场景交互节点...")
     local allNodeConfigs = ConfigLoader.GetAllSceneNodes()
     if not allNodeConfigs or next(allNodeConfigs) == nil then

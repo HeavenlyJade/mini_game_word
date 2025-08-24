@@ -14,7 +14,7 @@ local AutoRaceEventManager = {}
 
 -- 事件名称定义
 AutoRaceEventManager.REQUEST = {
-    AUTO_RACE_TOGGLE = EventPlayerConfig.REQUEST.AUTO_RACE_TOGGLE
+    AUTO_RACE_TOGGLE = "AutoRaceToggle"
 }
 
 AutoRaceEventManager.RESPONSE = {
@@ -52,33 +52,13 @@ function AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, messag
         return
     end
     
-    -- 将 Vector3 转换为 table 以便网络传输
-    local positionData = { x = targetPosition.x, y = targetPosition.y, z = targetPosition.z }
-    
     gg.network_channel:fireClient(uin, {
         cmd = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION,
-        position = positionData,
+        position = targetPosition,
         message = message or "导航到指定位置"
     })
     
     --gg.log("已发送导航指令给玩家", uin, "，目标位置:", tostring(targetPosition))
-end
-
--- 发送停止导航指令到客户端
----@param uin number 玩家UIN
----@param message string 可选的消息
-function AutoRaceEventManager.SendStopNavigation(uin, message)
-    if not uin then
-        --gg.log("停止导航指令参数不完整")
-        return
-    end
-    
-    gg.network_channel:fireClient(uin, {
-        cmd = "STOP_NAVIGATION",
-        message = message or "停止导航"
-    })
-    
-    --gg.log("已发送停止导航指令给玩家", uin)
 end
 
 -- 验证玩家
@@ -109,17 +89,6 @@ function AutoRaceEventManager.HandleAutoRaceToggle(evt)
 
     local enabled = evt.enabled
     local uin = player.uin
-    
-    -- 如果启用自动比赛，先检查并停止所有挂机状态
-    if enabled then
-        -- 1. 停止自动挂机
-        local autoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
-        autoPlayManager.StopAutoPlayForPlayer(player, "切换到自动比赛模式")
-
-        -- 2. 强制离开手动挂机点
-        local SceneInteractionEventManager = require(ServerStorage.SceneInteraction.SceneInteractionEventManager) ---@type SceneInteractionEventManager
-        SceneInteractionEventManager.ForcePlayerLeaveIdleSpot(player)
-    end
     
     -- 使用新的状态设置方法
     AutoRaceManager.SetPlayerAutoRaceState(player, enabled)

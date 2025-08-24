@@ -58,13 +58,15 @@ function RaceGameAction:OnStart(data)
     actor.Animator:Play("Base Layer.fei", 0, 0)
 
     -- 4. 启动"持续前推"定时器，实现向前滑行效果
-    self.pushTimer = ScheduledTask.AddInterval(0.5, "RaceGameAction_PushForward", function()
+    self.pushTimer = ScheduledTask.AddInterval(1, "RaceGameAction_PushForward", function()
         -- if actor:GetCurMoveState() == Enum.BehaviorState.Fly then
             -- 使用 Move 指令让角色相对于相机稳定前移
         actor.Animator:Play("Base Layer.fei", 0, 0)
         -- 修改：使用 relativeToCamera = false，让移动方向不受摄像机旋转影响
         actor:Move(Vector3.new(0, 0, 1), false)
+        -- actor.Animator:Play("Base Layer.fei", 0, 0)
 
+        -- actor.Animator:Play("Base Layer.fei", 0, 0)w
 
     end)
 

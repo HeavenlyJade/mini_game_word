@@ -75,8 +75,6 @@ function PrivilegedVIPGui:InitData()
     self.privilegeData = {}
     self.selectedPrivilege = nil
     self.currencyMap = {}
-    self.shopData = nil
-    self.isVipPurchased = false
 
     -- 先尝试从配置中读取"会员特权"分类下 名称为"玩家特权卡"的商品
     local vipShopItem = nil ---@type ShopItemType
@@ -131,18 +129,14 @@ end
 -- 注册客户端事件
 function PrivilegedVIPGui:RegisterEvents()
     --gg.log("注册特权系统事件监听")
-    ClientEventManager.Subscribe(ShopEventConfig.RESPONSE.MINI_PURCHASE_RESPONSE, function(data)
-        self:OnMiniPurchaseResponse(data)
+    ClientEventManager.Subscribe(ShopEventConfig.RESPONSE.PURCHASE_RESPONSE, function(data)
+        self:OnPurchaseResponse(data)
     end)
     ClientEventManager.Subscribe(ShopEventConfig.RESPONSE.ERROR, function(data)
         self:OnShopErrorResponse(data)
     end)
     ClientEventManager.Subscribe(BagEventConfig.RESPONSE.SYNC_INVENTORY_ITEMS, function(data)
         self:OnSyncInventoryItems(data)
-    end)
-    -- 监听商城数据同步，判断VIP是否已购买
-    ClientEventManager.Subscribe(ShopEventConfig.NOTIFY.SHOP_DATA_SYNC, function(data)
-        self:OnShopDataSync(data)
     end)
 end
 
@@ -184,24 +178,31 @@ function PrivilegedVIPGui:OnClickPurchase()
     
     local shopItemId = self.vipShopItem.configName
     local categoryName = self.vipShopItem.category -- 从ShopItemType实例获取分类
+    local miniCoinType = self.vipShopItem.price.miniCoinType -- 从ShopItemType实例获取迷你币类型
+    local currencyType = self.vipShopItem.price.currencyType -- 从ShopItemType实例获取货币类型
+    gg.log("点击购买VIP特权卡: " .. shopItemId .. "，分类: " .. categoryName .. "，迷你币类型: " .. (miniCoinType or "无"))
+    
+    -- 验证商品支持迷你币类型购买
+    if not miniCoinType or miniCoinType == "" then
+        gg.log("错误：该商品不支持迷你币类型购买")
+    
+    end
     
     if not self.vipShopItem.price.miniCoinAmount or self.vipShopItem.price.miniCoinAmount <= 0 then
         gg.log("错误：该商品迷你币数量无效")
         return
     end
     
-    gg.log("点击购买VIP特权卡: " .. shopItemId .. "，分类: " .. categoryName .. "，迷你币数量: " .. self.vipShopItem.price.miniCoinAmount)
-    
-    -- 发送迷你币购买请求
-    self:SendMiniCoinPurchaseRequest(shopItemId, categoryName)
+    -- 发送购买请求，使用迷你币类型作为货币类型
+    self:SendPurchaseRequest(shopItemId, categoryName, miniCoinType or currencyType)
 end
 
---- 发送迷你币购买请求
-function PrivilegedVIPGui:SendMiniCoinPurchaseRequest(shopItemId, categoryName)
-    gg.log("发送迷你币购买请求, 商品ID: " .. shopItemId .. ", 分类: " .. categoryName)
+--- 发送购买请求
+function PrivilegedVIPGui:SendPurchaseRequest(shopItemId, categoryName, currencyType)
+    --gg.log("发送购买请求, 商品ID: " .. shopItemId)
     gg.network_channel:fireServer({
-        cmd = ShopEventConfig.REQUEST.PURCHASE_MINI_ITEM,
-        args = { shopItemId = shopItemId, categoryName = categoryName }
+        cmd = ShopEventConfig.REQUEST.PURCHASE_ITEM,
+        args = { shopItemId = shopItemId, categoryName = categoryName, currencyType = currencyType }
     })
 end
 
@@ -220,23 +221,13 @@ end
 -- 事件响应
 -------------------------------------------------------------------
 
-function PrivilegedVIPGui:OnMiniPurchaseResponse(data)
+function PrivilegedVIPGui:OnPurchaseResponse(data)
     if data and data.success then
-        if data.data.status == "pending" then
-            --gg.log("迷你币支付弹窗已拉起: " .. (data.data.message or ""))
-        elseif data.data.status == "success" then
-            --gg.log("迷你币购买成功: " .. (data.data.message or ""))
-            -- 刷新界面数据
-            self:RefreshInterface()
-            -- 如果返回的商品是VIP特权卡，则隐藏购买按钮
-            local pr = data.data and data.data.purchaseResult
-            if pr and self.vipShopItem and pr.shopItemId == self.vipShopItem.configName then
-                self.isVipPurchased = true
-                self:UpdatePurchaseButtonVisibility()
-            end
-        end
+        --gg.log("购买成功: " .. (data.data and data.data.message or ""))
+        -- 刷新界面数据
+        self:RefreshInterface()
     else
-        --gg.log("迷你币购买失败: " .. (data and data.errorMsg or "未知错误"))
+        --gg.log("购买失败: " .. (data and data.errorMsg or "未知错误"))
     end
 end
 
@@ -288,17 +279,11 @@ function PrivilegedVIPGui:RefreshPrivilegeDisplay()
     
     -- 刷新购买按钮状态
     self:RefreshPurchaseButtons()
-    self:UpdatePurchaseButtonVisibility()
 end
 
 function PrivilegedVIPGui:RefreshPurchaseButtons()
     -- 刷新购买按钮状态
     if not self.vipShopItem or not self.purchaseButton then return end
-    if self.isVipPurchased then
-        self.purchaseButton:SetVisible(false)
-        if self.priceFrame then self.priceFrame:SetVisible(false) end
-        return
-    end
     
     -- 获取商品价格信息
     local cost = self.vipShopItem:GetCost()
@@ -308,35 +293,6 @@ function PrivilegedVIPGui:RefreshPurchaseButtons()
     local enough = have >= cost.amount
     self.purchaseButton:SetGray(not enough)
     self.purchaseButton:SetTouchEnable(enough, nil)
-end
-
--------------------------------------------------------------------
--- 商城数据同步与按钮显示控制
--------------------------------------------------------------------
-
-function PrivilegedVIPGui:OnShopDataSync(data)
-    -- data.data.shopData 为完整商城数据
-    local payload = data and data.data
-    if not payload or not payload.shopData then return end
-    self.shopData = payload.shopData
-
-    -- 判断VIP是否已购买：以 configName 作为购买记录键
-    if self.vipShopItem and self.shopData.purchaseRecords then
-        local record = self.shopData.purchaseRecords[self.vipShopItem.configName]
-        if record and (record.purchaseCount or 0) > 0 then
-            self.isVipPurchased = true
-        else
-            self.isVipPurchased = false
-        end
-        self:UpdatePurchaseButtonVisibility()
-    end
-end
-
-function PrivilegedVIPGui:UpdatePurchaseButtonVisibility()
-    if not self.purchaseButton then return end
-    local visible = not self.isVipPurchased
-    self.purchaseButton:SetVisible(visible)
-    if self.priceFrame then self.priceFrame:SetVisible(visible) end
 end
 
 return PrivilegedVIPGui.New(script.Parent, uiConfig)

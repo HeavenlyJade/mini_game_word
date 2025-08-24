@@ -20,8 +20,7 @@ local DEFAULT_CLEAR_RANGE = {
     ["宠物"] = true,
     ["伙伴"] = true,
     ["翅膀"] = true,
-    ["尾迹"] = true,
-    ["商城"] = true
+    ["尾迹"] = true
 }
 
 --- 清空背包数据
@@ -151,21 +150,6 @@ local function clearTrailData(player)
     return success
 end
 
---- 清空商城数据
----@param player MPlayer 目标玩家
----@return boolean 是否成功
-local function clearShopData(player)
-    gg.log("清空商城数据", player.name)
-    local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
-    local ok = ShopMgr.ClearPlayerShopData(player.uin)
-    if ok then
-        gg.log("已清空玩家商城数据:", player.name)
-    else
-        gg.log("清空玩家商城数据失败:", player.name)
-    end
-    return ok
-end
-
 --- 保存非核心数据
 ---@param player MPlayer 目标玩家
 local function saveOtherData(player)
@@ -257,7 +241,6 @@ function ClearDataCommand.main(params, executor)
         ["伙伴"] = clearPartnerData,
         ["翅膀"] = clearWingData,
         ["尾迹"] = clearTrailData,
-        ["商城"] = clearShopData,
     }
 
     -- 因为“基础数据”和“变量”现在由“核心数据”统一处理，所以需要对用户的输入进行适配

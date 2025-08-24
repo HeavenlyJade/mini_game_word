@@ -47,6 +47,9 @@ end
 --- 当玩家进入挂机点时
 ---@param entity Entity
 function IdleSpotHandler:OnEntityEnter(entity)
+    -- 调用父类方法处理通用逻辑
+    SceneNodeHandlerBase.OnEntityEnter(self, entity)
+
     -- 只处理玩家
     if not entity or not entity.isPlayer then
         return
@@ -54,39 +57,16 @@ function IdleSpotHandler:OnEntityEnter(entity)
 
     ---@cast entity MPlayer
     
-    -- 检查进入条件 - 提前检查，避免不必要的父类调用
+    -- 检查进入条件
     if not self:checkEnterConditions(entity) then
         --gg.log(string.format("玩家 '%s' 不满足挂机点 '%s' 的进入条件，拒绝进入", entity.name, self.name))
-        -- 重要：如果条件不满足，需要从entitiesInZone中移除，避免后续TouchEnded事件误触发
-        local entityId = entity.uuid
-        if self.entitiesInZone[entityId] then
-            self.entitiesInZone[entityId] = nil
-        end
         return
-    end
-
-    -- 条件满足后，再调用父类方法处理通用逻辑
-    SceneNodeHandlerBase.OnEntityEnter(self, entity)
-
-    -- 【新增】将玩家传送到此挂机点的精确传送位置
-    if self.teleportNode and self.teleportNode.Position then
-        local actor = entity.actor
-        if actor then
-            local TeleportService = game:GetService('TeleportService')
-            pcall(function()
-                TeleportService:Teleport(actor, self.teleportNode.Position)
-            end)
-            --gg.log(string.format("玩家 '%s' 已被传送到挂机点 '%s' 的精确位置", entity.name, self.name))
-        end
     end
 
     local playerId = entity.uuid
 
     --gg.log(string.format("玩家 '%s' 进入挂机点 '%s'", entity.name, self.name))
 
-    -- 设置玩家挂机状态
-    entity:SetIdlingState(true, self.name)
-    
     -- 执行进入指令
     if self.config.enterCommand and self.config.enterCommand ~= "" then
         executeCommand(entity, self.config.enterCommand, self)
@@ -135,6 +115,9 @@ end
 --- 当玩家离开挂机点时
 ---@param entity Entity
 function IdleSpotHandler:OnEntityLeave(entity)
+    -- 调用父类方法处理通用逻辑
+    SceneNodeHandlerBase.OnEntityLeave(self, entity)
+
     -- 只处理玩家
     if not entity or not entity.isPlayer then
         return
@@ -143,15 +126,8 @@ function IdleSpotHandler:OnEntityLeave(entity)
     ---@cast entity MPlayer
     local playerId = entity.uuid
 
-
-    -- 调用父类方法处理通用逻辑
-    SceneNodeHandlerBase.OnEntityLeave(self, entity)
-
     --gg.log(string.format("玩家 '%s' 离开挂机点 '%s'", entity.name, self.name))
 
-    -- 设置玩家挂机状态
-    entity:SetIdlingState(false, nil)
-    
     -- 停止定时奖励
     self:stopIdleRewards(entity)
 

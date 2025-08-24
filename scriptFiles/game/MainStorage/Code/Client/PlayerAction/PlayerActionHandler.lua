@@ -9,6 +9,7 @@ local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type E
 local ActionModules = {
     [EventPlayerConfig.GAME_MODES.RACE_GAME] = require(MainStorage.Code.Client.PlayerAction.ActionModules.RaceGameAction),
     [EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION] = require(MainStorage.Code.Client.PlayerAction.ActionModules.PlayerAnimationAction),
+
     -- 未来新增其他模式的模块，在此处注册即可
 }
 
@@ -18,7 +19,7 @@ local ActionModules = {
 local PlayerActionHandler = ClassMgr.Class("PlayerActionHandler")
 
 function PlayerActionHandler:OnInit()
-    -- --gg.log("PlayerActionHandler 初始化...")
+    --gg.log("PlayerActionHandler 初始化...")
     self:SubscribeServerEvents()
     self:ListenToPlayerEvents()
     self.activeModule = nil -- 当前激活的行为模块
@@ -33,6 +34,7 @@ function PlayerActionHandler:ListenToPlayerEvents()
         return
     end
 
+    --gg.log("PlayerActionHandler: 成功获取本地玩家 Actor，开始监听事件...")
 
     -- 监听移动状态变化，并转发给当前模块
     -- actor.MoveStateChange:Connect(function(before, after)
@@ -58,7 +60,6 @@ function PlayerActionHandler:OnModuleFinished(module)
     if self.activeModule == module then
         --gg.log("PlayerActionHandler: 已收到模块结束通知，正在清理。")
         self.activeModule = nil
-        self.gameMode = nil
     end
 end
 
@@ -75,28 +76,12 @@ function PlayerActionHandler:SubscribeServerEvents()
     ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION, function(data)
         self:OnNavigateToPosition(data)
     end)
-
-    -- 订阅停止导航事件
-    ClientEventManager.Subscribe("STOP_NAVIGATION", function(data)
-        self:OnStopNavigation(data)
-    end)
-
-    
-
-    -- 新增：比赛界面隐藏事件强制结束当前行为模块
-    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_CONTEST_HIDE, function(_)
-        if self.activeModule and self.activeModule.OnEnd then
-            self.activeModule:OnEnd()
-            self.activeModule = nil
-            self.gameMode = nil
-        end
-    end)
 end
 
 --- 处理来自服务端的通用"发射"或"开始特殊模式"指令
 ---@param data LaunchPlayerParams
 function PlayerActionHandler:OnReceiveLaunchCommand(data)
-    -- --gg.log("PlayerActionHandler: 接收到启动指令, 数据: ", gg.table2str(data))
+    -- gg.log("PlayerActionHandler: 接收到启动指令, 数据: ", gg.table2str(data))
 
     -- 1. 如果有旧模块在运行，先调用其 OnEnd() 强制结束
     if self.activeModule and self.activeModule.OnEnd then
@@ -148,7 +133,7 @@ function PlayerActionHandler:CheckAndExecuteFlyingAnimation(data)
     -- 获取当前飞行状态
     local isFlying = actor.Flying.Value
     
-    -- --gg.log("PlayerActionHandler: 检查飞行动画执行条件", {
+    -- gg.log("PlayerActionHandler: 检查飞行动画执行条件", {
     --     isIdleScene = isIdleScene,
     --     isRaceScene = isRaceScene,
     --     isFlying = isFlying,
@@ -164,7 +149,7 @@ end
 --- 处理导航到指定位置的请求
 ---@param data NavigateToPositionParams 导航数据
 function PlayerActionHandler:OnNavigateToPosition(data)
-    --gg.log("PlayerActionHandler: 接收到导航请求, 数据: ", --gg.log(data))
+    --gg.log("PlayerActionHandler: 接收到导航请求, 数据: ", gg.table2str(data))
     if not data or not data.position then
         --gg.log("PlayerActionHandler: 导航请求缺少位置信息")
         return
@@ -176,33 +161,13 @@ function PlayerActionHandler:OnNavigateToPosition(data)
         return
     end
     
-    -- 从表中重建 Vector3
-    local positionData = data.position
-    local targetPosition = Vector3.New(positionData.x, positionData.y, positionData.z)
-    
     -- 执行导航
-    actor:NavigateTo(targetPosition)
+    actor:NavigateTo(data.position)
     
     if data.message then
         --gg.log("PlayerActionHandler: " .. data.message)
     else
-    --gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition))
-    end
-end
-
---- 处理停止导航请求
----@param data table 停止导航数据
-function PlayerActionHandler:OnStopNavigation(data)
-    local actor = gg.getClientLocalPlayer()
-    if not actor then
-        return
-    end
-    
-    -- 停止当前导航
-    actor:StopNavigate()
-    
-    if data.message then
-        --gg.log("PlayerActionHandler: " .. data.message)
+    --gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(data.position))
     end
 end
 

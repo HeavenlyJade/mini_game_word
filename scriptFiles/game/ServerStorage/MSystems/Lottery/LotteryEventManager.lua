@@ -9,17 +9,16 @@ local pairs = pairs
 local MainStorage = game:GetService('MainStorage')
 local ServerStorage = game:GetService('ServerStorage')
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
--- 引入事件系统
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local LotteryEvent = require(MainStorage.Code.Event.LotteryEvent) ---@type LotteryEvent
 local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
-local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 ---@class LotteryEventManager
 local LotteryEventManager = {}
 
 --- 初始化事件监听器
 function LotteryEventManager.Init()
+    gg.log("抽奖系统事件管理器初始化")
 
     -- 订阅客户端请求事件
     ServerEventManager.Subscribe(LotteryEvent.REQUEST.GET_LOTTERY_DATA, LotteryEventManager.OnGetLotteryData)
@@ -30,6 +29,7 @@ function LotteryEventManager.Init()
     ServerEventManager.Subscribe(LotteryEvent.REQUEST.GET_AVAILABLE_POOLS, LotteryEventManager.OnGetAvailablePools)
     ServerEventManager.Subscribe(LotteryEvent.REQUEST.GET_POOL_STATS, LotteryEventManager.OnGetPoolStats)
 
+    gg.log("抽奖系统事件监听器注册完成")
 end
 
 --- 处理获取抽奖数据请求
@@ -102,14 +102,12 @@ function LotteryEventManager.OnSingleDraw(event)
 
     -- 如果抽奖成功，发送成功通知
     if result.success then
+        gg.log("抽奖成功，发送成功通知")
         LotteryEventManager.SendNotification(uin, LotteryEvent.NOTIFY.DRAW_SUCCESS, {
             poolName = poolName,
             drawType = "single",
             rewards = result.rewards
         })
-        
-        -- 发送物品获得通知给NoticeGui
-        LotteryEventManager.SendItemAcquiredNotification(uin, result.rewards, poolName)
     else
         gg.log("抽奖失败:", result.errorMsg)
     end
@@ -143,7 +141,7 @@ function LotteryEventManager.OnFiveDraw(event)
 
     gg.log("开始调用LotteryMgr.FiveDraw...")
     local result = LotteryMgr.FiveDraw(uin, poolName)
-    -- gg.log("LotteryMgr.FiveDraw返回结果:", result)
+    gg.log("LotteryMgr.FiveDraw返回结果:", result)
 
     -- 发送抽奖结果给客户端
     LotteryEventManager.SendSuccessResponse(uin, LotteryEvent.RESPONSE.DRAW_RESULT, {
@@ -159,14 +157,12 @@ function LotteryEventManager.OnFiveDraw(event)
 
     -- 如果抽奖成功，发送成功通知
     if result.success then
+        gg.log("抽奖成功，发送成功通知")
         LotteryEventManager.SendNotification(uin, LotteryEvent.NOTIFY.DRAW_SUCCESS, {
             poolName = poolName,
             drawType = "five",
             rewards = result.rewards
         })
-        
-        -- 发送物品获得通知给NoticeGui
-        LotteryEventManager.SendItemAcquiredNotification(uin, result.rewards, poolName)
     else
         gg.log("抽奖失败:", result.errorMsg)
     end
@@ -212,9 +208,6 @@ function LotteryEventManager.OnTenDraw(event)
             drawType = "ten",
             rewards = result.rewards
         })
-        
-        -- 发送物品获得通知给NoticeGui
-        LotteryEventManager.SendItemAcquiredNotification(uin, result.rewards, poolName)
     end
 end
 
@@ -396,59 +389,6 @@ function LotteryEventManager.NotifyAllDataToClient(uin)
     })
 
     gg.log("已主动同步抽奖数据到客户端:", uin)
-end
-
---- 发送物品获得通知给NoticeGui
----@param uin number 玩家UIN
----@param rewards table[] 奖励列表
----@param poolName string 抽奖池名称
-function LotteryEventManager.SendItemAcquiredNotification(uin, rewards, poolName)
-    if not rewards or #rewards == 0 then
-        return
-    end
-    
-    -- 转换奖励数据格式为NoticeGui需要的格式
-    local noticeRewards = {}
-    for _, reward in ipairs(rewards) do
-        -- 从抽奖系统的奖励记录中获取正确的类型和名称
-        local itemType = reward.rewardType or "物品" -- 使用抽奖系统返回的rewardType
-        local itemName = reward.rewardName or "未知物品" -- 使用抽奖系统返回的rewardName
-        gg.log("奖励类型:", itemType,itemName)
-        -- 如果itemType是中文，直接使用；如果是英文，转换为中文
-        if itemType == "pet" then
-            itemType = "宠物"
-        elseif itemType == "partner" then
-            itemType = "伙伴"
-        elseif itemType == "wing" then
-            itemType = "翅膀"
-        elseif itemType == "trail" then
-            itemType = "尾迹"
-        elseif itemType == "item" then
-            itemType = "物品"
-        end
-        
-        table.insert(noticeRewards, {
-            itemType = itemType,
-            itemName = itemName,
-            amount = reward.quantity or 1
-        })
-    end
-    
-    -- 发送物品获得通知
-    gg.network_channel:fireClient(uin, {
-        cmd = EventPlayerConfig.NOTIFY.ITEM_ACQUIRED_NOTIFY,
-        data = {
-            rewards = noticeRewards,
-            source = "抽奖获得",
-            message = string.format("恭喜在%s中获得了以下物品！", poolName or "抽奖池")
-        }
-    })
-    
-    gg.log("已发送物品获得通知给玩家", uin, "奖励数量:", #noticeRewards)
-    -- 打印详细的奖励信息用于调试
-    for i, reward in ipairs(noticeRewards) do
-        gg.log(string.format("奖励%d: 类型=%s, 名称=%s, 数量=%d", i, reward.itemType, reward.itemName, reward.amount))
-    end
 end
 
 return LotteryEventManager

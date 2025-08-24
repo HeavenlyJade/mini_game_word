@@ -248,7 +248,7 @@ function LotteryMgr.CheckAndConsumeCost(uin, poolName, drawType)
     -- 检查是否有足够的货币
     local hasEnough = playerBag:HasItems({ [cost.costItem] = cost.costAmount })
     if not hasEnough then
-        gg.log("错误：货币不足，需要:", cost.costAmount, "当前货币:" ,playerBag:GetItemAmount(cost.costItem))
+        gg.log("错误：货币不足，需要:", cost.costAmount, "当前货币:", cost.costItem)
         return false, "货币不足"
     end
 

@@ -29,7 +29,7 @@ function HudAvatar:OnInit(node, config)
     headNode.Position = PlayerHead.Position
     headNode.Size = PlayerHead.Size
     headNode.Pivot = PlayerHead.Pivot
-    -- gg.log("玩家的头像",headNode)
+    gg.log("玩家的头像",headNode)
     self.questList = self:Get("头像背景/任务列表", ViewList, function (node)
         local button = ViewButton.New(node, self)
         button.clickCb = function (ui, button)

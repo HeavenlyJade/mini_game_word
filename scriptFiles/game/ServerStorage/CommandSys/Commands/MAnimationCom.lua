@@ -113,7 +113,7 @@ function AnimationCommand.handlers.stopFly(params, player)
     
     -- 检查玩家是否处于飞行状态
     if not playerStates[uin] or not playerStates[uin].isFlying then
-        -- player:SendHoverText("玩家未处于飞行状态")
+        player:SendHoverText("玩家未处于飞行状态")
         return false
     end
     
@@ -157,7 +157,7 @@ function AnimationCommand.handlers.setAnimation(params, player)
     
     -- 准备发送给客户端的数据
     local clientData = {
-        cmd = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, -- 添加事件名称
+        cmd = "S2C_LaunchPlayer", -- 添加事件名称
         gameMode = "PLAYER_ANIMATION",
         operationType = "设置动画",
         animationName = animationName
@@ -187,7 +187,7 @@ function AnimationCommand.handlers.setGravity(params, player)
     
     -- 准备发送给客户端的数据
     local clientData = {
-        cmd = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, -- 添加事件名称
+        cmd = "S2C_LaunchPlayer", -- 添加事件名称
         gameMode = "PLAYER_ANIMATION",
         operationType = "设置重力",
         gravityValue = gravityValue
@@ -217,7 +217,7 @@ function AnimationCommand.handlers.setMoveSpeed(params, player)
     
     -- 准备发送给客户端的数据
     local clientData = {
-        cmd =   EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, -- 添加事件名称
+        cmd = "S2C_LaunchPlayer", -- 添加事件名称
         gameMode = "PLAYER_ANIMATION",
         operationType = "设置移动速度",
         moveSpeed = moveSpeed
@@ -242,7 +242,7 @@ function AnimationCommand.handlers.forceStop(params, player)
     
     -- 准备发送给客户端的数据
     local clientData = {
-        cmd = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER, -- 添加事件名称
+        cmd = "S2C_LaunchPlayer", -- 添加事件名称
         gameMode = "PLAYER_ANIMATION",
         operationType = "强制停止"
     }

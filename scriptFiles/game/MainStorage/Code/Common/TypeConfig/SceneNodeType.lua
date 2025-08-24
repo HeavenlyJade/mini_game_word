@@ -3,7 +3,6 @@
 
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
-local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal) ---@type ActionCosteRewardCal
 
 
 ---@class SceneNodeType : Class
@@ -19,7 +18,6 @@ local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Acti
 ---@field raceScenePath string 比赛场景
 ---@field requirementDescNode string 需求描述节点
 ---@field effectDescNode string 作用描述节点
----@field countdownDisplayNode string 倒计时显示节点
 ---@field linkedLevel string 关联关卡
 ---@field gameplayRules table 玩法规则
 ---@field soundAsset string 音效资源
@@ -51,22 +49,37 @@ function SceneNodeType:OnInit(data)
     self.raceScenePath = self.areaConfig["比赛场景"] or ""
     self.requirementDescNode = self.areaConfig["需求描述节点"] or ""
     self.effectDescNode = self.areaConfig["作用描述节点"] or ""
-    self.countdownDisplayNode = self.areaConfig["倒计时显示节点"] or ""
     
     self.linkedLevel = data["关联关卡"] or ""
     self.gameplayRules = data["玩法规则"] or {}
     self.soundAsset = data["音效资源"] or ""
     self.requirementDesc = data["需求描述"] or ""
     self.effectDesc = data["作用描述"] or ""
-    -- 新增：数值化的效率配置，直接用于效率比较
-    self.effectValueConfig = data["作数值的配置"] or 0
     self.enterConditions = data["进入条件列表"] or {}
     self.enterCommand = data["进入指令"] or ""
     self.leaveCommand = data["离开指令"] or ""
     self.timedCommands = data["定时指令列表"] or {}
 end
 
-
+-- 通过所属场景找到场景类型为飞行比赛的配置节点
+---@param belongScene string 所属场景名称
+---@return SceneNodeType[] 找到的飞行比赛场景节点列表
+function SceneNodeType.FindRaceNodesByScene(belongScene)
+    local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig) ---@type SceneNodeConfig
+    local foundNodes = {}
+    
+    -- 遍历所有场景节点配置
+    for nodeName, nodeData in pairs(SceneNodeConfig.Data) do
+        -- 检查所属场景和场景类型
+        if nodeData["所属场景"] == belongScene and nodeData["场景类型"] == "飞行比赛" then
+            -- 创建SceneNodeType实例并添加到结果列表
+            local sceneNodeType = SceneNodeType.New(nodeData)
+            table.insert(foundNodes, sceneNodeType)
+        end
+    end
+    
+    return foundNodes
+end
 
 -- 检查场景节点配置是否为飞行比赛类型
 ---@return boolean 是否为飞行比赛类型
@@ -74,29 +87,5 @@ function SceneNodeType:IsRaceGame()
     return self.sceneType == "飞行比赛"
 end
 
---- 检查变量表达公式是否满足条件
----@param playerData table 玩家数据
----@param bagData table|nil 背包数据（可选）
----@param externalContext table|nil 外部上下文（可选）
----@return boolean, string
-function SceneNodeType:CheckVariableCondition(playerData, bagData, externalContext)
-    if not self.enterConditions or #self.enterConditions == 0 then
-        return true, '无变量条件限制'
-    end
-    
-    -- 检查所有进入条件，任何一个不满足就返回false
-    for _, condition in ipairs(self.enterConditions) do
-        local conditionFormula = condition["条件公式"]
-        if conditionFormula and conditionFormula ~= "" then
-            -- 使用ActionCosteRewardCal的条件检查逻辑
-            local result = ActionCosteRewardCal:_CalculateValue(conditionFormula, playerData, bagData, externalContext)
-            if result == false then
-                return false, '变量条件不满足: ' .. conditionFormula
-            end
-        end
-    end
-    
-    return true, '变量条件满足'
-end
 
 return SceneNodeType 
