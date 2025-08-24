@@ -14,6 +14,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field adMode string 广告模式
 ---@field adCount number 广告次数
 
+
 ---@class ShopItemPurchaseCondition
 ---@field conditionType string 条件类型
 ---@field conditionValue any 条件值
@@ -110,12 +111,12 @@ end
 function ShopItemType:ParsePrice(priceData)
     return {
         currencyType = priceData["货币类型"] or nil,
-        amount = priceData["价格数量"] or -1,
+        amount = tonumber(priceData["价格数量"]) or -1,
         miniCoinType = priceData["迷你币类型"],
-        miniCoinAmount = priceData["迷你币数量"] or -1,
+        miniCoinAmount =priceData["迷你币数量"] or -1,
         variableKey = priceData["变量键"] or "",
         adMode = priceData["广告模式"] or "不可看广告",
-        adCount = priceData["广告次数"] or 0
+        adCount = priceData["广告次数"] or 0,
     }
 end
 

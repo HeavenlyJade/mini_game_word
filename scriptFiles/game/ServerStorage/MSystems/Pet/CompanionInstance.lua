@@ -638,6 +638,28 @@ function CompanionInstance:GetItemBonuses()
             -- 保存目标变量信息
             itemBonuses[targetVar].targetVariable = targetVar
         end
+        
+        -- 【新增】处理玩家属性加成类型（翅膀等使用）
+        if effectData.bonusType == "玩家属性" and effectData.targetVariable then
+            local bonusValue = effectData.value or 0
+            local targetVar = effectData.targetVariable
+
+            if not itemBonuses[targetVar] then
+                itemBonuses[targetVar] = { fixed = 0, percentage = 0, targetVariable = targetVar }
+            end
+
+            -- 【修复】根据 isPercentage 标志将加成分配到不同字段
+            if effectData.isPercentage then
+                itemBonuses[targetVar].percentage = (itemBonuses[targetVar].percentage or 0) + (bonusValue * 100)
+                --gg.log(string.format("[CompanionInstance调试] 添加玩家属性百分比加成: %s +%d%%", targetVar, bonusValue * 100))
+            else
+                itemBonuses[targetVar].fixed = (itemBonuses[targetVar].fixed or 0) + bonusValue
+                --gg.log(string.format("[CompanionInstance调试] 添加玩家属性固定加成: %s +%d", targetVar, bonusValue))
+            end
+            
+            -- 保存目标变量信息
+            itemBonuses[targetVar].targetVariable = targetVar
+        end
     end
 
     -- 【日志2】打印最终筛选出的、准备返回给上层的物品加成
@@ -645,6 +667,24 @@ function CompanionInstance:GetItemBonuses()
     --gg.log(itemBonuses)
 
     return itemBonuses
+end
+
+---计算宠物的携带效果总数值（复用现有GetItemBonuses方法）
+---@return number 总效果数值
+function CompanionInstance:CalculateTotalEffectValue()
+    local itemBonuses = self:GetItemBonuses() -- 复用现有方法
+    local totalValue = 0
+    
+    for targetName, bonusData in pairs(itemBonuses) do
+        -- 将固定加成和百分比加成合并计算
+        local fixedValue = bonusData.fixed or 0
+        local percentageValue = bonusData.percentage or 0
+        
+        -- 简单的权重计算：固定加成直接相加，百分比加成作为权重
+        totalValue = totalValue + fixedValue + percentageValue
+    end
+    
+    return totalValue
 end
 
 return CompanionInstance

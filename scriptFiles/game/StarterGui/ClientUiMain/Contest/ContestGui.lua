@@ -69,7 +69,8 @@ function ContestGui:InitNodes()
 				self.rankComponents[nodeName] = {
 					container = childComponent,
 					nameComponent = nil,
-					avatarComponent = nil
+					avatarComponent = nil,
+					userId = nil -- 新增：用于跟踪当前排名显示的玩家ID
 				}
 			end
 		end
@@ -121,7 +122,12 @@ end
 -- 处理比赛准备倒计时
 function ContestGui:OnPrepareCountdown(eventData)
 	local prepareTime = eventData.prepareTime or 10
-	gg.log("收到比赛准备倒计时，准备时间: " .. prepareTime .. "秒")
+	local playerScene = eventData.playerScene or "init_map" -- 【新增】从服务端获取玩家场景
+	
+	gg.log("收到比赛准备倒计时，准备时间: " .. prepareTime .. "秒，玩家场景: " .. playerScene)
+	
+	-- 保存玩家场景信息
+	self.currentPlayerScene = playerScene
 	
 	-- 显示准备倒计时界面
 	self:SetVisible(true)
@@ -136,10 +142,19 @@ end
 
 -- 设置倒计时节点
 function ContestGui:SetupCountdownNode(prepareTime)
+	-- 【修改】使用服务端提供的玩家场景信息
+	local currentScene = self.currentPlayerScene or "init_map"
+	if not currentScene then
+		gg.log("警告: ContestGui - 无法获取玩家当前场景")
+		return
+	end
+	
+	gg.log("使用服务端提供的场景信息:", currentScene)
+	
 	-- 从NodeConf获取倒计时节点路径
-	local countdownPath = NodeConf["倒计时"]
+	local countdownPath = NodeConf["倒计时"][currentScene]
 	if not countdownPath then
-		gg.log("警告: ContestGui - 无法从NodeConf获取倒计时节点路径")
+		gg.log("警告: ContestGui - 无法从NodeConf获取场景 " .. currentScene .. " 的倒计时节点路径")
 		return
 	end
 	
@@ -169,6 +184,54 @@ function ContestGui:SetupCountdownNode(prepareTime)
 	self.sceneCountdownNode = countdownNode
 end
 
+-- 【新增】设置比赛剩余时间显示
+function ContestGui:SetupRaceTimeDisplay(raceTime)
+
+	
+	-- 设置初始比赛剩余时间文本
+	local timeText = string.format("剩余时间: %02d:%02d", 
+		math.floor(raceTime / 60), 
+		raceTime % 60)
+	
+	if self.countDown.Title then
+		self.countDown.Title = timeText
+		gg.log("成功设置比赛剩余时间文本: " .. timeText)
+	else
+		gg.log("警告: ContestGui - 倒计时节点没有Title属性")
+	end
+	
+end
+-- 获取当前玩家所在场景
+function ContestGui:GetCurrentPlayerScene()
+	-- 【修改】优先使用服务端提供的场景信息
+	if self.currentPlayerScene then
+		gg.log("使用服务端提供的场景信息:", self.currentPlayerScene)
+		return self.currentPlayerScene
+	end
+	
+	-- 尝试从本地玩家数据获取场景信息
+	local localPlayer = Players.LocalPlayer
+	if not localPlayer then
+		return nil
+	end
+	
+	local uin = localPlayer.UserId
+	gg.log("当前玩家ID: " .. uin)
+	if not uin then
+		return nil
+	end
+	
+	-- 从全局映射中获取场景信息（备用方案）
+	local scene = gg.player_scene_map and gg.player_scene_map[uin]
+	if scene then
+		gg.log("从全局场景映射获取场景:", scene)
+		return scene
+	end
+	
+	-- 默认返回init_map
+	gg.log("使用默认场景: init_map")
+	return "init_map"
+end
 
 -- 开始准备倒计时
 function ContestGui:StartPrepareCountdown(prepareTime)
@@ -256,6 +319,7 @@ function ContestGui:OnStopPrepareCountdown(eventData)
 	-- 清理场景倒计时节点的文本
 	if self.sceneCountdownNode and self.sceneCountdownNode.Title then
 		self.sceneCountdownNode.Title = ""
+		gg.log("已清理场景倒计时节点文本")
 	end
 	
 	-- 清理场景节点引用
@@ -272,12 +336,27 @@ function ContestGui:OnContestShow(eventData)
 	gg.log("显示比赛界面，比赛时长: " .. (eventData.raceTime or 60) .. "秒")
 	self:SetVisible(true)
 	self.countDown:SetVisible(true)
+	self.rankContainer:SetVisible(true) -- 比赛开始时显示排行榜
+		-- 设置初始比赛剩余时间文本
+	local timeText = string.format("剩余时间: %02d:%02d", 
+	math.floor(eventData.raceTime / 60), eventData.raceTime % 60)
+
+	self.countDown.node.Title = timeText
+
 end
 
 -- 隐藏比赛界面
 function ContestGui:OnContestHide(eventData)
     gg.log("隐藏比赛界面")
     self:SetVisible(false)
+    self.rankContainer:SetVisible(false) -- 比赛结束时隐藏排行榜
+
+    -- 清理排行榜信息
+    if self.rankComponents then
+        for _, rankComponent in pairs(self.rankComponents) do
+            self:HidePlayerRank(rankComponent)
+        end
+    end
     
     -- 清理准备倒计时定时器
     if self.prepareTimer then
@@ -287,10 +366,9 @@ function ContestGui:OnContestHide(eventData)
     end
 end
 
--- 更新比赛数据
+
 function ContestGui:OnContestUpdate(eventData)
 	if not eventData then return end
-	
 	-- 更新内部数据
 	self.raceData = eventData
 	
@@ -305,9 +383,9 @@ end
 function ContestGui:UpdateCountdown(remainingTime)
 	if not remainingTime then return end
 	
-	local minutes = math.floor(remainingTime / 60)
-	local seconds = remainingTime % 60
-	local timeText = string.format("%02d:%02d", minutes, seconds)
+	local timeText = string.format("剩余时间: %02d:%02d", 
+	math.floor(remainingTime / 60), remainingTime % 60)
+	self.countDown:SetVisible(true)
 	
 	-- 假设倒计时节点有Title属性
 	if self.countDown and self.countDown.node and self.countDown.node.Title then
@@ -357,15 +435,22 @@ function ContestGui:ShowPlayerRank(rankComponent, playerData, rank)
 	-- 显示容器
 	container:SetVisible(true)
 	
+	-- 优化：如果玩家ID未变，则不更新头像
+	if rankComponent.userId and rankComponent.userId == playerData.userId then
+		return
+	end
+	
 	-- 更新玩家头像
 	self:UpdatePlayerAvatar(rankComponent, playerData.userId)
-
+	-- 保存新的玩家ID
+	rankComponent.userId = playerData.userId
 end
 
 -- 隐藏玩家排名信息
 function ContestGui:HidePlayerRank(rankComponent)
 	if rankComponent and rankComponent.container then
 		rankComponent.container:SetVisible(false)
+		rankComponent.userId = nil -- 清除玩家ID
 	end
 end
 

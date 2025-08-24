@@ -35,10 +35,8 @@ function RaceGameAction:OnStart(data)
     end
     --gg.log("游戏启动",actor,data)
     -- 1. 解析参数
-    local jumpSpeed = data.jumpSpeed
-    local moveSpeed = data.moveSpeed
+    local moveSpeed = data.moveSpeed or 400
     local recoveryDelay = data.recoveryDelay or 60  -- 使用服务端传来的比赛时长，默认60秒
-    local gravity = data.gravity -- 新增：接收重力参数
     self.respawnPosition = data.respawnPosition -- 【新增】保存重生点坐标
 
     -- 2. 保存原始属性
@@ -58,15 +56,13 @@ function RaceGameAction:OnStart(data)
     actor.Animator:Play("Base Layer.fei", 0, 0)
 
     -- 4. 启动"持续前推"定时器，实现向前滑行效果
-    self.pushTimer = ScheduledTask.AddInterval(1, "RaceGameAction_PushForward", function()
+    self.pushTimer = ScheduledTask.AddInterval(0.5, "RaceGameAction_PushForward", function()
         -- if actor:GetCurMoveState() == Enum.BehaviorState.Fly then
             -- 使用 Move 指令让角色相对于相机稳定前移
         actor.Animator:Play("Base Layer.fei", 0, 0)
         -- 修改：使用 relativeToCamera = false，让移动方向不受摄像机旋转影响
         actor:Move(Vector3.new(0, 0, 1), false)
-        -- actor.Animator:Play("Base Layer.fei", 0, 0)
 
-        -- actor.Animator:Play("Base Layer.fei", 0, 0)w
 
     end)
 
@@ -87,7 +83,7 @@ function RaceGameAction:OnStart(data)
     local forceGravityDelay = math.min(recoveryDelay ,70) 
     self.forceGravityTimer = ScheduledTask.AddDelay(forceGravityDelay, "RaceGameAction_ForceGravity", function()
         if actor and not self.isEnding then
-            actor.Gravity = -50 -- 恢复正常重力，确保玩家能落地
+            actor.Gravity = 500 -- 恢复正常重力，确保玩家能落地
         end
     end)
 

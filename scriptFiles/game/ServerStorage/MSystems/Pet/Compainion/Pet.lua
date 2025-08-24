@@ -359,4 +359,76 @@ function Pet:AddUnlockedEquipSlots(count)
     end
 end
 
+-- =================================
+-- 栏位和容量管理方法
+-- =================================
+
+---减少可携带栏位数量
+---@param count number 减少的数量
+---@return boolean
+function Pet:ReduceUnlockedEquipSlots(count)
+    if count and count > 0 then
+        self.unlockedEquipSlots = math.max(1, (self.unlockedEquipSlots or 1) - count)
+        --gg.log("玩家", self.uin, "宠物可携带栏位减少", count, "个，当前总数:", self.unlockedEquipSlots)
+        return true
+    end
+    return false
+end
+
+---增加宠物背包容量
+---@param capacity number 增加的容量
+---@return boolean
+function Pet:AddPetBagCapacity(capacity)
+    if capacity and capacity > 0 then
+        self.maxSlots = (self.maxSlots or 50) + capacity
+        --gg.log("玩家", self.uin, "宠物背包容量增加", capacity, "个，当前总数:", self.maxSlots)
+        return true
+    end
+    return false
+end
+
+---减少宠物背包容量
+---@param capacity number 减少的容量
+---@return boolean
+function Pet:ReducePetBagCapacity(capacity)
+    if capacity and capacity > 0 then
+        local newCapacity = math.max(1, (self.maxSlots or 50) - capacity)
+        if newCapacity >= self:GetPetCount() then
+            self.maxSlots = newCapacity
+            --gg.log("玩家", self.uin, "宠物背包容量减少", capacity, "个，当前总数:", self.maxSlots)
+            return true
+        else
+            --gg.log("玩家", self.uin, "宠物背包容量减少失败，当前宠物数量超过新容量")
+            return false
+        end
+    end
+    return false
+end
+
+-- =================================
+-- 自动装备最优宠物便捷方法
+-- =================================
+
+---自动装备效果数值最高的宠物（宠物专用接口）
+---@param equipSlotId string 装备栏ID
+---@param excludeEquipped boolean|nil 是否排除已装备的宠物
+---@return boolean, string|nil, number|nil
+function Pet:AutoEquipBestPet(equipSlotId, excludeEquipped)
+    return self:AutoEquipBestEffectCompanion(equipSlotId, excludeEquipped)
+end
+
+---自动装备所有装备栏的最优宠物（宠物专用接口）
+---@param excludeEquipped boolean|nil 是否排除已装备的宠物
+---@return table
+function Pet:AutoEquipAllBestPets(excludeEquipped)
+    return self:AutoEquipAllBestEffectCompanions(excludeEquipped)
+end
+
+---获取宠物效果数值排行（宠物专用接口）
+---@param limit number|nil 返回数量限制
+---@return table
+function Pet:GetPetEffectRanking(limit)
+    return self:GetEffectValueRanking(limit)
+end
+
 return Pet

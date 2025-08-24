@@ -64,10 +64,6 @@ local function CalculateMaxTalentActionExecutions(player, AchievementTypeIns, cu
                 if player.variableSystem then
                     playerTotalAmount = player.variableSystem:GetVariable(resourceName) or 0
                 end
-            else -- 默认为背包物品
-                if playerBag then
-                    playerTotalAmount = playerBag:GetItemAmount(resourceName)
-                end
             end
 
             -- 4. 计算此单一资源能支持的最大次数
@@ -85,24 +81,6 @@ local function CalculateMaxTalentActionExecutions(player, AchievementTypeIns, cu
 
     return maxExecutions
 end
-
---- 计算天赋动作消耗
----@param AchievementTypeIns AchievementType 天赋配置
----@param targetLevel number 目标等级
----@param player table 玩家对象
----@return table|nil 消耗列表，失败时返回nil
-local function CalculateTalentActionCosts(AchievementTypeIns, targetLevel, player)
-    if not AchievementTypeIns or not player then
-        return nil
-    end
-
-    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-    local playerBag = BagMgr.GetPlayerBag(player.uin)
-    local playerConsumableData = player:GetConsumableData()
-    local costs = AchievementTypeIns:GetActionCosts(targetLevel, playerConsumableData, playerBag)
-    return costs
-end
-
 
 
 local function SyncPlayerVariablesToClient(player)
@@ -219,6 +197,15 @@ function AchievementEventManager.RegisterNetworkHandlers()
     -- 新增：处理执行最大化天赋动作的请求
     ServerEventManager.Subscribe(AchievementEventConfig.REQUEST.PERFORM_MAX_TALENT_ACTION, function(event)
         AchievementEventManager.HandlePerformMaxTalentAction(event)
+    end, 100)
+
+    -- 新增：处理重生专用事件
+    ServerEventManager.Subscribe(AchievementEventConfig.REQUEST.PERFORM_REBIRTH, function(event)
+        AchievementEventManager.HandlePerformRebirth(event)
+    end, 100)
+
+    ServerEventManager.Subscribe(AchievementEventConfig.REQUEST.PERFORM_MAX_REBIRTH, function(event)
+        AchievementEventManager.HandlePerformMaxRebirth(event)
     end, 100)
 
 end
@@ -457,7 +444,7 @@ function AchievementEventManager.HandleGetTalentLevel(event)
         maxExecutionTotalCost = maxExecutionTotalCost,
         playerResources = playerResources
     }
-
+    gg.log("responseData",responseData)
     AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE, responseData)
 end
 
@@ -635,6 +622,306 @@ function AchievementEventManager.HandlePerformMaxTalentAction(event)
 end
 
 
+--- 新增：处理单次重生请求
+---@param event table 事件对象
+function AchievementEventManager.HandlePerformRebirth(event)
+    local playerNode = event.player
+    local uin = playerNode.uin
+    local playerId = uin
+    local args = event.args
+    local talentId = args.talentId
+    local targetLevel = args.targetLevel
+
+    if not talentId or not targetLevel or targetLevel <= 0 then
+        return
+    end
+
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local player = MServerDataManager.getPlayerByUin(playerId)
+    if not player then
+        return
+    end
+
+    -- 1. 校验资格
+    local currentTalentLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
+    if currentTalentLevel < targetLevel then
+        --gg.log("资格不足: 当前天赋等级", currentTalentLevel, "目标动作等级", targetLevel)
+        return
+    end
+
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local AchievementTypeIns = ConfigLoader.GetAchievement(talentId)
+    if not AchievementTypeIns or not AchievementTypeIns:IsTalentAchievement() then
+        return
+    end
+
+    -- 2. 【重构】使用已配置好的AchievementType:GetActionCosts方法获取重生消耗配置
+    local playerData = player:GetConsumableData()
+    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
+    local playerBag = BagMgr.GetPlayerBag(player.uin)
+    
+    -- 使用现有的GetActionCosts方法获取消耗配置
+    local rebirthCosts = AchievementTypeIns:GetActionCosts(targetLevel, playerData, playerBag)
+    if not rebirthCosts or #rebirthCosts == 0 then
+        --gg.log("无法获取重生消耗配置")
+        return
+    end
+
+    -- 3. 【重构】检查对应消耗配置是否满足
+    local canAfford = true
+    local costsToDeduct = {}
+    
+    for _, costInfo in ipairs(rebirthCosts) do
+        local costName = costInfo.item
+        local costAmount = costInfo.amount
+        local costType = costInfo.costType
+        
+        if costAmount > 0 then
+            local playerAmount = 0
+            if costType == "玩家变量" then
+                -- 从变量系统获取
+                if player.variableSystem then
+                    playerAmount = player.variableSystem:GetVariable(costName) or 0
+                end
+            else
+                -- 从背包获取
+                if playerBag then
+                    playerAmount = playerBag:GetItemAmount(costName)
+                end
+            end
+            
+            if playerAmount < costAmount then
+                canAfford = false
+                --gg.log("消耗不足:", costName, "需要:", costAmount, "拥有:", playerAmount)
+                break
+            end
+            
+            -- 记录需要扣除的消耗
+            table.insert(costsToDeduct, {
+                item = costName,
+                amount = costAmount,
+                costType = costType
+            })
+        end
+    end
+    
+    if not canAfford then
+        --gg.log("重生消耗不足，无法执行")
+        return
+    end
+
+    -- 4. 【重构】扣除消耗（将对应的消耗类型的消耗名称变量设置为0）
+    for _, costInfo in ipairs(costsToDeduct) do
+        if costInfo.costType == "玩家变量" then
+            -- 变量类型：设置为0
+            if player.variableSystem then
+                player.variableSystem:SetVariable(costInfo.item, 0)
+                --gg.log("已扣除变量消耗:", costInfo.item, "设置为0")
+            end
+        else
+
+        end
+    end
+
+    -- 5. 应用重生效果
+    -- 修复：根据目标等级动态计算效果数值，而不是固定为1
+    local LevelEffectTable = AchievementTypeIns:GetLevelEffectValue(targetLevel)
+    local executionCount = 1
+    if LevelEffectTable and #LevelEffectTable > 0 then
+        executionCount = LevelEffectTable[1]["数值"] or 1
+    end
+    
+    local successCount = ApplyTalentActionEffects(AchievementTypeIns, player, playerId, executionCount)
+    if successCount == 0 then
+        --gg.log("应用重生效果失败")
+        return
+    end
+
+    -- 6. 【新增】同步玩家所有战力值到客户端
+    AchievementEventManager.SyncAllPlayerPowerValues(player)
+
+    -- 7. 【重构】发送包含最新数据的响应，而不是简单的成功/失败消息
+    --    通过模拟事件对象并调用现有处理器来复用逻辑
+    local mockEvent = {
+        player = event.player,
+        uin = uin,
+        args = {
+            talentId = talentId
+        }
+    }
+    AchievementEventManager.HandleGetTalentLevel(mockEvent)
+
+    -- 同步背包和变量变化到客户端
+    SyncBagToClient(player)
+    SyncPlayerVariablesToClient(player)
+    
+    --gg.log("重生执行成功，已扣除消耗、应用效果并同步最新数据")
+end
+
+
+--- 新增：处理最大重生请求
+---@param event table 事件对象
+function AchievementEventManager.HandlePerformMaxRebirth(event)
+    local playerNode = event.player
+    local uin = playerNode.uin
+    local playerId = uin
+    local args = event.args or {}
+    local talentId = args.talentId
+
+    if not talentId then
+        return
+    end
+
+    local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+    local player = MServerDataManager.getPlayerByUin(playerId)
+    if not player then
+        return
+    end
+
+    -- 1. 检查玩家是否有最大重生特权
+    local hasMaxRebirthPrivilege = false
+    if player.variableSystem then
+        local privilegeValue = player.variableSystem:GetVariable("特权_固定值_最大重生")
+        -- 修复：GetVariable返回的是数字，直接比较即可
+        hasMaxRebirthPrivilege = (privilegeValue and privilegeValue >= 1)
+    end
+
+    if not hasMaxRebirthPrivilege then
+        -- 没有特权，通过商城购买
+        local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
+        local success, message, data = ShopMgr.ProcessMiniCoinPurchase(player, "最大重生", "重生特权")
+        
+        if success then
+            -- 购买成功，直接执行最大重生
+            AchievementEventManager.ExecuteMaxRebirthAfterPurchase(player, talentId)
+        else
+            -- 购买失败，发送错误响应
+            local responseData = {
+                success = false,
+                errorCode = "NO_PRIVILEGE",
+                message = "需要购买最大重生特权"
+            }
+            AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
+        end
+        return
+    end
+
+    -- 2. 有特权，执行最大重生逻辑
+    AchievementEventManager.ExecuteMaxRebirthWithPrivilege(player, talentId)
+end
+
+
+--- 新增：执行最大重生（有特权的情况）
+---@param player MPlayer 玩家对象
+---@param talentId string 天赋ID
+function AchievementEventManager.ExecuteMaxRebirthWithPrivilege(player, talentId)
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local AchievementTypeIns = ConfigLoader.GetAchievement(talentId)
+    if not AchievementTypeIns or not AchievementTypeIns:IsTalentAchievement() then
+        return
+    end
+
+    -- 1. 获取当前天赋等级
+    local currentTalentLevel = AchievementMgr.GetTalentLevel(player.uin, talentId)
+    if currentTalentLevel < 1 then
+        --gg.log("最大化重生失败: 天赋等级不足，当前等级", currentTalentLevel)
+        return
+    end
+
+    -- 2. 计算可执行的最大次数
+    local maxExecutions = CalculateMaxTalentActionExecutions(player, AchievementTypeIns, currentTalentLevel)
+    if maxExecutions <= 0 then
+        --gg.log("最大化重生失败: 无法计算最大执行次数或资源不足")
+        return
+    end
+
+    -- 3. 计算总消耗
+    local totalCosts = CalculateTotalTalentActionCosts(AchievementTypeIns, player, maxExecutions)
+    if not totalCosts then
+        --gg.log("最大化重生失败: 无法计算总消耗")
+        return
+    end
+
+    -- 4. 检查并扣除总消耗
+    if not BaseUntils.CheckCosts(player, totalCosts) then
+        --gg.log("最大化重生失败: 检查总消耗失败")
+        return
+    end
+
+    if not BaseUntils.DeductCosts(player, totalCosts) then
+        --gg.log("最大化重生失败: 扣除总消耗失败")
+        return
+    end
+
+    -- 5. 应用效果
+    local successCount = ApplyTalentActionEffects(AchievementTypeIns, player, player.uin, maxExecutions)
+    if successCount == 0 then
+        --gg.log("最大化重生：应用效果失败")
+        return
+    end
+
+    -- 6. 【新增】同步玩家所有战力值到客户端
+    AchievementEventManager.SyncAllPlayerPowerValues(player)
+
+    -- 7. 计算总效果值
+    local singleEffectValue = AchievementTypeIns:GetLevelEffectValue(1)[1]["数值"]
+    local totalEffectValue = singleEffectValue * maxExecutions
+
+    -- 8. 【重构】发送包含最新数据的响应
+    local mockEvent = {
+        player = player,
+        uin = player.uin,
+        args = {
+            talentId = talentId
+        }
+    }
+    AchievementEventManager.HandleGetTalentLevel(mockEvent)
+
+    -- 9. 同步背包和变量变化到客户端
+    SyncBagToClient(player)
+    SyncPlayerVariablesToClient(player)
+
+    --gg.log(string.format("最大化重生完成，共执行 %d 次，成功应用效果 %d 次", maxExecutions, successCount))
+end
+
+
+--- 新增：购买特权后执行最大重生
+---@param player MPlayer 玩家对象
+---@param talentId string 天赋ID
+function AchievementEventManager.ExecuteMaxRebirthAfterPurchase(player, talentId)
+    -- 购买特权成功后，直接调用有特权的最大重生逻辑
+    AchievementEventManager.ExecuteMaxRebirthWithPrivilege(player, talentId)
+end
+
+
+--- 新增：同步玩家所有战力值到客户端
+---@param player MPlayer 玩家对象
+function AchievementEventManager.SyncAllPlayerPowerValues(player)
+    if not player or not player.variableSystem then
+        return
+    end
+
+    -- 获取所有战力相关的变量
+    local powerVariables = {}
+    local allVars = player.variableSystem.variables
+    
+    for varName, varData in pairs(allVars) do
+        if string.find(varName, "战力") then
+            powerVariables[varName] = varData
+        end
+    end
+
+    -- 向客户端同步战力数据
+    if next(powerVariables) then
+        gg.network_channel:fireClient(player.uin, {
+            cmd = require(MainStorage.Code.Event.EventPlayer).NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
+            variableData = powerVariables,
+            isPowerSync = true -- 标记这是战力同步
+        })
+        --gg.log("已同步玩家战力值到客户端:", player.uin)
+    end
+end
+
 --- 发送成就解锁通知
 ---@param uin number 玩家UIN
 ---@param achievementId string 成就ID
@@ -709,17 +996,6 @@ function AchievementEventManager.NotifyAllDataToClient(uin)
         data = achievementResponseData
     })
     --gg.log("已主动同步天赋成就数据到客户端:", uin, "天赋数量:", achievementResponseData)
-
-    -- 2. 为RebirthGui主动推送'重生'天赋的等级
-    local rebirthTalentLevel = playerAchievement:GetTalentLevel("重生")
-    gg.network_channel:fireClient(uin, {
-        cmd = AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE,
-        data = {
-            talentId = "重生",
-            currentLevel = rebirthTalentLevel
-        }
-    })
-    --gg.log("已为RebirthGui主动同步'重生'天赋等级:", rebirthTalentLevel)
 end
 
 

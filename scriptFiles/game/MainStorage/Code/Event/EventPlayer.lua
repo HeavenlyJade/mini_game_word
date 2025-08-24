@@ -16,6 +16,7 @@ local EventPlayerConfig = {}
 ---@field position Vector3 目标位置
 ---@field message string 可选的消息
 
+
 --[[
 ===================================
 网络事件定义
@@ -26,6 +27,10 @@ local EventPlayerConfig = {}
 EventPlayerConfig.REQUEST = {
     -- e.g., REQUEST_JUMP = "PlayerRequest_Jump"
     PLAYER_LANDED = "cmd_player_landed", -- 新增：玩家落地事件
+    AUTO_RACE_TOGGLE = "AutoRaceToggle", -- 自动比赛开关
+    AUTO_PLAY_TOGGLE = "AutoPlayToggle", -- 自动挂机开关
+    UNSTUCK_PLAYER = "UnstuckPlayer", -- 脱离卡死
+    REQUEST_LEAVE_IDLE = "RequestLeaveIdle", -- 新增：请求离开挂机
 }
 
 
@@ -33,6 +38,7 @@ EventPlayerConfig.REQUEST = {
 -- 这些是由服务器主动发起的，用于指令客户端对玩家进行操作的事件
 EventPlayerConfig.NOTIFY = {
     LAUNCH_PLAYER = "S2C_LaunchPlayer",
+    PLAYER_ANIMATION_CONTROL = "S2C_PlayerAnimationControl",
     PLAYER_DATA_SYNC_VARIABLE = "PlayerDataSync_Variable", -- 同步变量
     PLAYER_DATA_SYNC_QUEST = "PlayerDataSync_Quest", -- 同步任务
     PLAYER_DATA_LOADED = "PlayerDataLoaded", -- 玩家数据加载完成
@@ -43,6 +49,7 @@ EventPlayerConfig.NOTIFY = {
     RACE_CONTEST_HIDE = "RaceContestHide", -- 隐藏比赛界面
     RACE_PREPARE_COUNTDOWN = "RacePrepareCountdown", -- 比赛准备倒计时
     RACE_PREPARE_COUNTDOWN_STOP = "RacePrepareCountdownStop", -- 停止比赛准备倒计时
+    ITEM_ACQUIRED_NOTIFY = "ItemAcquiredNotify", -- 获得物品通知
 }
 
 --[[
@@ -57,7 +64,7 @@ EventPlayerConfig.ACTION_PARAMS = {
     -- 使用事件名作为键，方便查找
     [EventPlayerConfig.NOTIFY.LAUNCH_PLAYER] = {
         jumpSpeed = 200,     -- 发射高度
-        moveSpeed = 1000,     -- 发射远度
+        moveSpeed = 400,      -- 速度（修改为100）
         jumpDuration = 0.5    -- Jump(true)的持续时间
     }
 }
@@ -109,7 +116,29 @@ EventPlayerConfig.GAME_MODES = {
     NONE = nil, -- 无特殊模式
     RACE_GAME = "飞车挑战赛" -- 飞车挑战赛
 }
+
+-- 物品类型枚举
+EventPlayerConfig.ITEM_TYPES = {
+    ITEM = "物品",           -- 背包物品
+    PET = "宠物",            -- 宠物
+    PARTNER = "伙伴",        -- 伙伴
+    WING = "翅膀",           -- 翅膀
+    TRAIL = "尾迹",          -- 尾迹
+}
+
+-- 物品通知数据结构
+---@class ItemAcquiredReward
+---@field itemType string 物品类型（使用ITEM_TYPES中的值）
+---@field itemName string 物品名称（配置名称）
+---@field amount number 物品数量
+
+---@class ItemAcquiredNotifyData
+---@field rewards ItemAcquiredReward[] 获得的物品列表
+---@field source string 来源描述（如"抽奖获得"、"在线奖励"等）
+---@field message string 通知消息（如"恭喜获得以下物品！"）
+
 EventPlayerConfig.PLAYER_ACTION = {
     PLAYER_ANIMATION = "PLAYER_ANIMATION",
 }
+
 return EventPlayerConfig

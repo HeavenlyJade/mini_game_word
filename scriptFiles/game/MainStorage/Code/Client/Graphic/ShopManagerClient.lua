@@ -99,6 +99,6 @@ end
 ClientEventManager.Subscribe("ViewMiniGood", function (evt)
     gg.log("调用了客户端的迷你币弹出")
     local storeList = GetStoreList()
-    gg.log("storeList = ", storeList)
+    -- gg.log("storeList = ", storeList)
     store:BuyGoods(evt.goodId, evt.desc, evt.amount)
 end)

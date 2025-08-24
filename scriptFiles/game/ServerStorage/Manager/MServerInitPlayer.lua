@@ -28,6 +28,7 @@ local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@ty
 local PlayerInitMgr = require(ServerStorage.MSystems.PlayerInitMgr) ---@type PlayerInitMgr
 
 local cloudDataMgr  = require(ServerStorage.CloundDataMgr.MCloudDataMgr)    ---@type MCloudDataMgr
+local NodeCloneGenerator = require(ServerStorage.ServerUntils.NodeCloneGenerator) ---@type NodeCloneGenerator
 
 
 ---@class MServerInitPlayer
@@ -98,9 +99,9 @@ function MServerInitPlayer.player_enter_game(player)
 
     local player_actor_ = player.Character
     player_actor_.CollideGroupID = 4
-    player_actor_.Movespeed = 800
+    player_actor_.Movespeed = 400
 
-    --加载数据 1 玩家历史等级经验值
+    --加载数据   1 玩家历史等级经验值
     local ret1_, cloud_player_data_ = cloudDataMgr.ReadPlayerData(uin_)
     if ret1_ == 0 then
         --gg.log('clould_player_data ok:', uin_, cloud_player_data_)
@@ -139,7 +140,9 @@ function MServerInitPlayer.player_enter_game(player)
     
     -- 【新增】初始化玩家场景为init_map
     gg.player_scene_map[uin_] = 'init_map'
-    
+        if cloud_player_data_ == nil or next(cloud_player_data_) == nil then
+        PlayerInitMgr.InitializeNewPlayer(player_)
+    end
     AchievementMgr.OnPlayerJoin(uin_)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
@@ -166,7 +169,7 @@ function MServerInitPlayer.player_enter_game(player)
     TrailMgr.UpdateAllEquippedTrailModels(player_)
 
     MServerInitPlayer.syncPlayerDataToClient(player_)
-    MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_)
+    MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_,player_)
     gg.log("玩家碰撞组设置验证:", player.name, "CollideGroupID:", player_actor_.CollideGroupID)
     gg.log("玩家进入了游戏", gg.player_scene_map,player)
 
@@ -174,10 +177,13 @@ function MServerInitPlayer.player_enter_game(player)
 end
 
 -- 【新增】确保装饰性对象的同步设置正确
-function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor)
+function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor,player)
     if not player_actor then
         return
     end
+
+    -- 生成玩家名称节点（如果未生成）
+    NodeCloneGenerator.GeneratePlayerNameDisplay(player)
 
     -- 装饰性对象的名称列表
     local decorativeObjectNames = {
@@ -194,6 +200,8 @@ function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor)
             decorativeNode.IgnoreStreamSync = true
         end
     end
+
+
     
 
 end
@@ -240,6 +248,9 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)
 
+    -- 【新增】同步排行榜数据
+    local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
+    RankingEventManager.NotifyAllDataToClient(uin)
 
     gg.log("已向客户端", uin, "同步完整玩家数据")
 end

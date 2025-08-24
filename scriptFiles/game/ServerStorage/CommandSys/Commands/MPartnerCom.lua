@@ -39,7 +39,7 @@ function PartnerCommand.handlers.add(params, player)
 
     local success, errorMsg, actualSlot = PartnerMgr.AddPartnerToSlot(player.uin, partnerName, slotIndex)
     if success then
-        local msg = string.format("成功给玩家 %s 添加伙伴: %s 到槽位 %d", player.name, partnerName, actualSlot)
+        local msg = string.format("获取伙伴 %s 到槽位 %d", partnerName, actualSlot)
         player:SendHoverText(msg)
         --gg.log(msg)
         PartnerCommand._syncToClient(player) -- 【修复】同步数据到客户端

@@ -20,13 +20,11 @@ local RewardType = require(MainStorage.Code.Common.TypeConfig.RewardType) ---@ty
 local LotteryType = require(MainStorage.Code.Common.TypeConfig.LotteryType) ---@type LotteryType
 local ShopItemType = require(MainStorage.Code.Common.TypeConfig.ShopItemType) ---@type ShopItemType
 local TeleportPointType = require(MainStorage.Code.Common.TypeConfig.TeleportPointType) ---@type TeleportPointType
-
+local EffectLevelType = require(MainStorage.Code.Common.TypeConfig.EffectLevelType) ---@type EffectLevelType
 -- 引用所有 Config 的原始数据
 local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig)
-
 local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig)
 local SkillConfig = require(MainStorage.Code.Common.Config.SkillConfig)
-local EffectTypeConfig = require(MainStorage.Code.Common.Config.EffectTypeConfig)
 local LevelConfig = require(MainStorage.Code.Common.Config.LevelConfig)
 local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig)
 local AchievementConfig = require(MainStorage.Code.Common.Config.AchievementConfig)
@@ -41,7 +39,7 @@ local RewardConfig = require(MainStorage.Code.Common.Config.RewardConfig)
 local LotteryConfig = require(MainStorage.Code.Common.Config.LotteryConfig)
 local ShopItemConfig = require(MainStorage.Code.Common.Config.ShopItemConfig)
 local TeleportPointConfig = require(MainStorage.Code.Common.Config.TeleportPointConfig)
-
+local EffectLevelConfig = require(MainStorage.Code.Common.Config.EffectLevelConfig)
 -- local NpcConfig = require(MainStorage.Code.Common.Config.NpcConfig) -- 已移除
 -- local ItemQualityConfig = require(MainStorage.Code.Common.Config.ItemQualityConfig) -- 已移除
 
@@ -64,6 +62,7 @@ ConfigLoader.Wings = {} -- 新增翅膀配置存储
 ConfigLoader.Trails = {} -- 新增尾迹配置存储
 ConfigLoader.TeleportPoints = {} -- 新增传送点配置存储
 ConfigLoader.ActionCosts = {}
+ConfigLoader.EffectLevels = {} -- 新增效果等级配置存储
 ConfigLoader.ItemTypes = {}
 ConfigLoader.PlayerInits = {}
 ConfigLoader.VariableNames = {}
@@ -98,7 +97,6 @@ end
 
 -- 模块初始化函数，一次性加载所有配置
 function ConfigLoader.Init()
-    print("开始装载配置")
     ConfigLoader.LoadConfig(ActionCostConfig, ActionCostType, ConfigLoader.ActionCosts, "ActionCost")
     ConfigLoader.LoadConfig(ItemTypeConfig, ItemType, ConfigLoader.Items, "Item")
     ConfigLoader.LoadConfig(LevelConfig, LevelType, ConfigLoader.Levels, "Level")
@@ -116,9 +114,10 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(LotteryConfig, LotteryType, ConfigLoader.Lotteries, "Lottery")
     ConfigLoader.LoadConfig(ShopItemConfig, ShopItemType, ConfigLoader.ShopItems, "ShopItem")
     ConfigLoader.LoadConfig(TeleportPointConfig, TeleportPointType, ConfigLoader.TeleportPoints, "TeleportPoint")
-
+    ConfigLoader.LoadConfig(EffectLevelConfig, EffectLevelType, ConfigLoader.EffectLevels, "EffectLevel")
     -- 构建迷你币商品映射表
     ConfigLoader.BuildMiniShopMapping()
+    print("配置装载结束")
 
     -- ConfigLoader.LoadConfig(ItemQualityConfig, nil, ConfigLoader.ItemQualities, "ItemQuality") -- 暂无ItemQualityType
     -- ConfigLoader.LoadConfig(MailConfig, nil, ConfigLoader.Mails, "Mail") -- 暂无MailType
@@ -128,7 +127,6 @@ end
 --- 构建迷你币商品映射表
 --- 提取所有配置了迷你币支付且有miniItemId的商品，建立miniItemId -> ShopItemType的映射
 function ConfigLoader.BuildMiniShopMapping()
-    print("开始构建迷你币商品映射表")
     local count = 0
     
     for shopItemId, shopItem in pairs(ConfigLoader.ShopItems) do
@@ -153,10 +151,10 @@ function ConfigLoader.BuildMiniShopMapping()
             ConfigLoader.MiniShopItems[miniItemId] = shopItem
             count = count + 1
             
-            print(string.format("注册迷你币商品：ID=%d, 名称=%s, 价格=%d迷你币", 
-                miniItemId, 
-                shopItem.configName, 
-                shopItem.price.miniCoinAmount or 0))
+            -- print(string.format("注册迷你币商品：ID=%d, 名称=%s, 价格=%d迷你币", 
+            --     miniItemId, 
+            --     shopItem.configName, 
+            --     shopItem.price.miniCoinAmount or 0))
         end
     end
     
@@ -219,6 +217,22 @@ function ConfigLoader.GetAllSceneNodes()
     return ConfigLoader.SceneNodes
 end
 
+--- 按所属场景与场景类型筛选场景节点
+---@param belongScene string|nil 所属场景，nil 表示不过滤
+---@param sceneType string|nil 场景类型，nil 表示不过滤
+---@return SceneNodeType[] 满足条件的场景节点列表
+function ConfigLoader.GetSceneNodesBy(belongScene, sceneType)
+    local result = {}
+    for _, node in pairs(ConfigLoader.SceneNodes) do
+        local matchScene = (belongScene == nil) or (node.belongScene == belongScene)
+        local matchType = (sceneType == nil) or (node.sceneType == sceneType)
+        if matchScene and matchType then
+            table.insert(result, node)
+        end
+    end
+    return result
+end
+
 ---@param id string
 ---@return AchievementType
 function ConfigLoader.GetAchievement(id)
@@ -278,6 +292,17 @@ end
 ---@return ActionCostType
 function ConfigLoader.GetActionCost(id)
     return ConfigLoader.ActionCosts[id]
+end
+
+---@param id string
+---@return EffectLevelType
+function ConfigLoader.GetEffectLevel(id)
+    return ConfigLoader.EffectLevels[id]
+end
+
+---@return table<string, EffectLevelType>
+function ConfigLoader.GetAllEffectLevels()
+    return ConfigLoader.EffectLevels
 end
 
 ---@param id string

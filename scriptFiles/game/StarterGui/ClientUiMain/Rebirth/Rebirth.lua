@@ -35,7 +35,8 @@ function RebirthGui:OnInit(node, config)
     -- "最大重生"节点的子控件
     self.maxRebirthCountText = self:Get("重生界面/重生栏位/最大重生/可重生次数") ---@type UITextLabel
     self.maxRebirthCostText = self:Get("重生界面/重生栏位/最大重生/重生消耗") ---@type UITextLabel
-
+    self.autoRebirt = self:Get("重生界面/自动重生") ---@type ViewButton
+    self.autoRebirt:SetVisible(false)
     -- 模板节点
     self.rebirthTemplate = self:Get("重生界面/模版界面/重生", ViewComponent) ---@type ViewComponent
     if self.rebirthTemplate and self.rebirthTemplate.node then
@@ -45,7 +46,10 @@ function RebirthGui:OnInit(node, config)
     -- 2. 数据存储
     self.currentTalentLevel = 0 -- 当前重生天赋等级
     self.costsByLevel = {} -- 存储每个等级的消耗
+    self.maxExecutions = 0 -- 最大可执行次数
+    self.maxExecutionTotalCost = 0 -- 最大执行总消耗
     self.playerResources = {} -- 玩家持有的资源
+    self.playerVariableData = {} -- 玩家变量数据缓存（战力值等）
 
     -- 3. 事件注册
     self:RegisterEvents()
@@ -66,9 +70,10 @@ function RebirthGui:RegisterEvents()
         self:OnTalentLevelResponse(data)
     end)
 
-    -- 监听天赋动作执行结果
-    ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, function(data)
-        self:OnPerformActionResponse(data)
+    -- 【新增】监听玩家变量数据同步（战力值更新）
+    local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
+        self:OnPlayerVariableSync(data)
     end)
 end
 
@@ -103,16 +108,9 @@ end
 -- 数据请求与响应
 -- =================================
 
-function RebirthGui:RequestTalentLevel()
-    --gg.log("请求天赋等级:", TALENT_ID)
-    gg.network_channel:fireServer({
-        cmd = AchievementEventConfig.REQUEST.GET_TALENT_LEVEL,
-        args = { talentId = TALENT_ID }
-    })
-end
 
 function RebirthGui:OnTalentLevelResponse(data)
-    --gg.log("收到天赋等级响应:", data)
+    gg.log("收到天赋等级响应:", data)
     self.currentTalentLevel = data.data.currentLevel
     self.costsByLevel = data.data.costsByLevel or {}
     self.maxExecutions = data.data.maxExecutions or 0
@@ -122,18 +120,28 @@ function RebirthGui:OnTalentLevelResponse(data)
     self:RefreshDisplay()
 end
 
-function RebirthGui:OnPerformActionResponse(responseData)
-    --gg.log("收到天赋动作执行响应:", responseData)
-    local eventData = responseData.data or {}
 
-    if eventData.success then
-        --gg.log("重生成功！等级:", eventData.executedLevel, "效果:", eventData.effectApplied)
-        -- 重生成功后，再次请求最新的天赋等级来刷新界面
-        self:RequestTalentLevel()
-    else
-        local errorMessage = AchievementEventConfig.GetErrorMessage(eventData.errorCode) or "未知错误"
-        --gg.log("重生失败:", errorMessage)
-        -- TODO: 向玩家显示错误提示
+
+--- 新增：处理玩家变量数据同步（战力值更新）
+---@param data table 变量同步数据
+function RebirthGui:OnPlayerVariableSync(data)
+    if not data or not data.variableData then
+        return
+    end
+
+    -- 更新玩家变量数据缓存
+    if not self.playerVariableData then
+        self.playerVariableData = {}
+    end
+
+    -- 合并新数据到现有缓存中
+    for variableName, variableData in pairs(data.variableData) do
+        self.playerVariableData[variableName] = variableData
+    end
+
+    -- 如果是战力同步，刷新界面显示
+    if data.isPowerSync then
+        self:RefreshDisplay()
     end
 end
 
@@ -145,9 +153,9 @@ end
 function RebirthGui:OnClickRebirthLevel(level)
     --gg.log(string.format("点击重生等级 %d 按钮", level))
 
-    -- 发送执行天赋动作的请求
+    -- 发送执行单次重生的请求
     gg.network_channel:fireServer({
-        cmd = AchievementEventConfig.REQUEST.PERFORM_TALENT_ACTION,
+        cmd = AchievementEventConfig.REQUEST.PERFORM_REBIRTH,
         args = {
             talentId = TALENT_ID,
             targetLevel = level
@@ -159,7 +167,7 @@ function RebirthGui:OnClickMaxRebirth()
     --gg.log("点击最大重生按钮")
 
     gg.network_channel:fireServer({
-        cmd = AchievementEventConfig.REQUEST.PERFORM_MAX_TALENT_ACTION,
+        cmd = AchievementEventConfig.REQUEST.PERFORM_MAX_REBIRTH,
         args = {
             talentId = TALENT_ID,
         }
@@ -183,18 +191,28 @@ function RebirthGui:RefreshDisplay()
         return
     end
 
-    if self.currentTalentLevel == 0 then
-        --gg.log("天赋等级为0，不显示任何重生选项")
-        -- 可选：显示一条提示信息
-        return
-    end
-
+    -- if self.currentTalentLevel == 0 then
+    --     --gg.log("天赋等级为0，不显示任何重生选项")
+    --     -- 可选：显示一条提示信息
+    --     return
+    -- end
+    gg.log("self.costsByLevel",self.costsByLevel)
     for level, costsAndEffects in pairs(self.costsByLevel) do
+        gg.log("level",level,"costsAndEffects",costsAndEffects)
         -- 1. 在客户端判断玩家资源是否足够
         local canAfford = true
         if costsAndEffects and #costsAndEffects > 0 then
             for _, costInfo in ipairs(costsAndEffects) do
-                local playerAmount = self.playerResources[costInfo.item] or 0
+                local playerAmount = 0
+                
+                -- 优先使用缓存的变量数据
+                if self.playerVariableData and self.playerVariableData[costInfo.item] then
+                    playerAmount = self.playerVariableData[costInfo.item].base or 0
+                else
+                    -- 回退到服务器返回的资源数据
+                    playerAmount = self.playerResources[costInfo.item] or 0
+                end
+                
                 if playerAmount < costInfo.amount then
                     canAfford = false
                     break -- 只要有一项资源不够，就跳出循环
@@ -218,7 +236,9 @@ function RebirthGui:RefreshDisplay()
 
             local titleText = itemNode["可重生次数"]
             if titleText then
-                titleText.Title = string.format("可重生 %d 次", rebirthCount)
+                local formattedNumber = gg.FormatLargeNumber(costAmount)
+                gg.log("调试 RebirthGui:RefreshDisplay - costAmount:", rebirthCount, "formattedNumber:", formattedNumber, "type:", type(formattedNumber))
+                titleText.Title = string.format("可重生 %s 次", gg.FormatLargeNumber(rebirthCount))
             end
 
             local costText = itemNode["重生消耗"]
@@ -231,7 +251,7 @@ function RebirthGui:RefreshDisplay()
             -- 默认显示
             local titleText = itemNode["可重生次数"]
             if titleText then
-                titleText.Title = string.format("可重生 %d 次", 0)
+                titleText.Title = string.format("可重生 %s 次", 0)
             end
             local costText = itemNode["重生消耗"]
             if costText then

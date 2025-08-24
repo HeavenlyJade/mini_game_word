@@ -37,8 +37,12 @@ end
 
 -- 节点初始化
 function TournamentSc:InitNodes()
+	self.CoreUI = game:GetService("CoreUI")
 	self.basePanel = self:Get("底图", ViewComponent)
 	self.functionPanel = self:Get("底图/功能", ViewComponent)
+	self.GameUserMag1 = self:Get("底图/功能/比赛进度条1/玩家头像模板", ViewComponent)
+	self.GameUserMag2 = self:Get("底图/功能/比赛进度条2/玩家头像模板", ViewComponent)
+	self.GameUserMag3 = self:Get("底图/功能/比赛进度条3/玩家头像模板", ViewComponent)
 
 	-- 比赛进度条
 	self.progressBars = {}
@@ -48,6 +52,8 @@ function TournamentSc:InitNodes()
 			container = self:Get(basePath, ViewComponent),
 			trophy = self:Get(basePath .. "/奖杯", ViewComponent),
 			countLabel = self:Get(basePath .. "/数量", ViewComponent),
+			currentUserId = nil,
+			avatarNode = nil,
 		}
 	end
 
@@ -77,6 +83,7 @@ function TournamentSc:InitData()
 	self.raceTime = 0
 	self.elapsedTime = 0
 	self.remainingTime = 0
+	self.playerAvatars = {} -- uin -> avatarNode
 end
 
 -- 事件注册
@@ -179,14 +186,6 @@ function TournamentSc:OnContestShow(data)
 	if self.basePanel then
 		self.basePanel:SetVisible(true)
 	end
-
-	-- 重置三个进度条显示文本
-	for i = 1, 3 do
-		local bar = self.progressBars[i]
-		if bar and bar.countLabel and bar.countLabel.node then
-			bar.countLabel.node.Title = ""
-		end
-	end
 end
 
 --- 比赛界面更新（来自服务器）
@@ -197,6 +196,9 @@ function TournamentSc:OnContestUpdate(data)
 	self.elapsedTime = data.elapsedTime or 0
 	self.remainingTime = data.remainingTime or 0
 
+	if data.allPlayersData then
+        self:UpdatePlayerProgress(data.allPlayersData)
+    end
 end
 
 --- 比赛界面隐藏（来自服务器）
@@ -218,6 +220,14 @@ function TournamentSc:OnContestHide(data)
 		self.speedPointerTimer:Destroy()
 		self.speedPointerTimer = nil
 	end
+
+	-- 【新增】清理所有玩家头像
+	for userId, avatarData in pairs(self.playerAvatars) do
+		if avatarData and avatarData.node and not avatarData.node.isDestroyed then
+			avatarData.node:Destroy()
+		end
+	end
+	self.playerAvatars = {}
 end
 
 --- 接收比赛开始(发射)事件，获取服务端携带的数据（含 variableData）
@@ -268,7 +278,13 @@ function TournamentSc:OnLaunchPlayer(data)
 
 	-- 计算并显示战力相关数值到 速度2/3/4/5
 	local variableData = self.variableData or {}
-	local basePower = tonumber(variableData["数据_固定值_战力值"]) or 0
+	local basePower = tonumber(variableData["数据_固定值_战力值"]) or 100
+	
+	-- 确保basePower最小值为100
+	if basePower < 100 then
+		basePower = 100
+	end
+	
 	local A = basePower * 1.5
 	local v2 = A * 0.25
 	local v3 = A * 0.5
@@ -307,22 +323,171 @@ function TournamentSc:SetAfkButtonVisible(visible)
     end
 end
 
+--- 【新增】更新玩家比赛进度显示
+---@param allPlayersData table
+function TournamentSc:UpdatePlayerProgress(allPlayersData)
+    if not allPlayersData then return end
+
+    -- 更新所有玩家的位置
+    for _, playerData in ipairs(allPlayersData) do
+        if playerData then
+            self:UpdatePlayerAvatarPosition(playerData.userId, playerData.flightDistance or 0)
+        end
+    end
+end
+
+--- 【新增】根据飞行距离确定玩家应该在哪个进度条（支持循环）
+---@param distance number 飞行距离
+---@return number 进度条编号 (1-3)
+function TournamentSc:GetProgressBarByDistance(distance)
+    -- 计算当前循环周期（每10万米为一个周期）
+    local cycle = math.floor(distance / 100000)
+    -- 计算当前周期内的相对距离
+    local relativeDistance = distance % 100000
+    
+    if relativeDistance <= 30000 then
+        return 1
+    elseif relativeDistance <= 50000 then
+        return 2
+    else
+        return 3
+    end
+end
+
+--- 【新增】计算玩家在当前进度条上的位置百分比（支持循环）
+---@param distance number 飞行距离
+---@param progressBarIndex number 进度条编号
+---@return number 位置百分比 (0-1)
+function TournamentSc:CalculatePositionPercentage(distance, progressBarIndex)
+    -- 计算当前循环周期内的相对距离
+    local relativeDistance = distance % 100000
+    
+    if progressBarIndex == 1 then
+        -- 进度条1: 0-30000
+        return math.min(1, relativeDistance / 30000)
+    elseif progressBarIndex == 2 then
+        -- 进度条2: 30000-50000
+        return math.min(1, (relativeDistance - 30000) / 20000)
+    else
+        -- 进度条3: 50000-100000
+        return math.min(1, (relativeDistance - 50000) / 50000)
+    end
+end
+
+--- 【新增】更新玩家头像位置（支持循环进度条）
+---@param userId number 玩家ID
+---@param distance number 飞行距离
+function TournamentSc:UpdatePlayerAvatarPosition(userId, distance)
+    if not userId then return end
+
+    -- 确定应该在哪个进度条
+    local targetProgressBar = self:GetProgressBarByDistance(distance)
+    
+    -- 查找玩家当前的头像
+    local currentAvatar = self.playerAvatars[userId]
+    
+    -- 如果玩家头像不存在或需要切换进度条，创建新头像
+    if not currentAvatar or currentAvatar.progressBarIndex ~= targetProgressBar then
+        self:CreatePlayerAvatar(userId, targetProgressBar)
+        currentAvatar = self.playerAvatars[userId]
+    end
+    
+    if not currentAvatar then return end
+    
+    -- 计算位置百分比
+    local positionPercent = self:CalculatePositionPercentage(distance, targetProgressBar)
+    
+    -- 更新头像位置
+    self:UpdateAvatarXPosition(currentAvatar, positionPercent)
+end
+
+--- 【新增】创建玩家头像
+---@param userId number 玩家ID
+---@param progressBarIndex number 进度条编号
+function TournamentSc:CreatePlayerAvatar(userId, progressBarIndex)
+    -- 清理旧头像
+    if self.playerAvatars[userId] then
+        if self.playerAvatars[userId].node and not self.playerAvatars[userId].node.isDestroyed then
+            self.playerAvatars[userId].node:Destroy()
+        end
+        self.playerAvatars[userId] = nil
+    end
+    
+    -- 获取对应的头像模板
+    local avatarTemplate
+    if progressBarIndex == 1 then 
+        avatarTemplate = self.GameUserMag1
+    elseif progressBarIndex == 2 then 
+        avatarTemplate = self.GameUserMag2
+    elseif progressBarIndex == 3 then 
+        avatarTemplate = self.GameUserMag3
+    end
+    
+    if not avatarTemplate or not avatarTemplate.node then
+        --gg.log("警告: 找不到进度条 " .. progressBarIndex .. " 的头像模板")
+        return
+    end
+    
+    -- 获取玩家头像节点
+    local headNode = self.CoreUI:GetHeadNode(tostring(userId))
+    if not headNode then 
+        --gg.log("警告: 无法获取玩家头像，userId: " .. tostring(userId))
+        return 
+    end
+    
+    -- 设置头像属性
+    headNode.Parent = avatarTemplate.node.Parent
+    headNode.Position = avatarTemplate.node.Position
+    headNode.Size = avatarTemplate.node.Size
+    headNode.Pivot = avatarTemplate.node.Pivot
+    headNode.Visible = true
+    
+    -- 获取进度条容器大小
+    local progressBar = self.progressBars[progressBarIndex]
+    local progressBarSize = 0
+    if progressBar and progressBar.container and progressBar.container.node then
+        progressBarSize = progressBar.container.node.Size.x
+    end
+    
+    -- 保存头像信息
+    self.playerAvatars[userId] = {
+        node = headNode,
+        progressBarIndex = progressBarIndex,
+        progressBarSize = progressBarSize,
+        basePosition = headNode.Position
+    }
+    
+    -- 隐藏模板
+    avatarTemplate:SetVisible(false)
+end
+
+--- 【新增】更新头像X轴位置
+---@param avatarData table 头像数据
+---@param positionPercent number 位置百分比 (0-1)
+function TournamentSc:UpdateAvatarXPosition(avatarData, positionPercent)
+    if not avatarData or not avatarData.node or avatarData.node.isDestroyed then
+        return
+    end
+    
+    -- 计算新的X位置
+    local moveDistance = avatarData.progressBarSize * positionPercent
+    local basePos = avatarData.basePosition
+    
+    -- UI节点使用Vector2而不是Vector3
+    local newPosition = Vector2.new(
+        basePos.x + moveDistance,
+        basePos.y
+    )
+    
+    -- 更新位置
+    avatarData.node.Position = newPosition
+end
+
 -- =================================
 -- UI刷新方法（本地辅助）
 -- =================================
 
---- 更新比赛进度（保留示例接口）
--- @param data table 进度数据, 例如: { progress = { {count=10}, {count=20}, {count=30} } }
-function TournamentSc:OnUpdateProgress(data)
-	if not data or not data.progress then return end
 
-	for i, progressData in ipairs(data.progress) do
-		local bar = self.progressBars[i]
-		if bar and bar.countLabel and bar.countLabel.node then
-			bar.countLabel.node.Title = tostring(progressData.count or 0)
-		end
-	end
-end
 
 --- 更新速度显示（保留示例接口）
 -- @param data table 速度数据, 例如: { speed = 150 }

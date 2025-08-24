@@ -28,14 +28,14 @@ GameModeManager.playerModes = {}
 ---@param handlerId string 触发此模式的场景处理器的ID
 function GameModeManager:AddPlayerToMode(mPlayer, modeName, instanceId, levelType, handlerId)
     if not mPlayer then
-        --gg.log("错误: GameModeManager:AddPlayerToMode - 传入了无效的mPlayer实例。")
+        gg.log("错误: GameModeManager:AddPlayerToMode - 传入了无效的mPlayer实例。")
         return
     end
 
     -- 检查玩家是否已经在另一场比赛中
     local existingInstanceId = self.playerModes[mPlayer.uin]
     if existingInstanceId and existingInstanceId ~= instanceId then
-        --gg.log(string.format("警告: 玩家 %s 已在另一场比赛 (%s) 中，无法加入 %s。", mPlayer.name, existingInstanceId, instanceId))
+        gg.log(string.format("警告: 玩家 %s 已在另一场比赛 (%s) 中，无法加入 %s。", mPlayer.name, existingInstanceId, instanceId))
         return
     end
 
@@ -48,9 +48,9 @@ function GameModeManager:AddPlayerToMode(mPlayer, modeName, instanceId, levelTyp
             mode = modeClass.New(instanceId, modeName, levelType)  -- 传递LevelType实例
             mode.handlerId = handlerId -- 将处理器ID存入比赛实例中
             self.activeModes[instanceId] = mode
-            --gg.log(string.format("游戏模式管理器: 已激活新模式'%s'，实例ID为'%s'，关卡: %s", modeName, instanceId, levelType.levelName or "未知"))
+            gg.log(string.format("游戏模式管理器: 已激活新模式'%s'，实例ID为'%s'，关卡: %s", modeName, instanceId, levelType.levelName or "未知"))
         else
-            --gg.log(string.format("错误: 未找到游戏模式'%s'。", modeName))
+            gg.log(string.format("错误: 未找到游戏模式'%s'。", modeName))
             return
         end
     end
@@ -82,7 +82,7 @@ function GameModeManager:RemovePlayerFromCurrentMode(mPlayer)
     if #mode.participants == 0 then
         mode:Destroy() -- 清理定时器等资源
         self.activeModes[instanceId] = nil
-        --gg.log(string.format("游戏模式管理器: 实例'%s'已空，已被移除。", instanceId))
+        gg.log(string.format("游戏模式管理器: 实例'%s'已空，已被移除。", instanceId))
         -- 这里可以调用一个 mode:Destroy() 方法来做一些清理工作，如果需要的话
     end
 end
@@ -107,7 +107,7 @@ game:GetService("Players").PlayerRemoving:Connect(function(player)
         local instanceId = GameModeManager.playerModes[player.uin]
         if instanceId then
              GameModeManager.playerModes[player.uin] = nil
-             --gg.log(string.format("游戏模式管理器: 玩家(UIN: %d)的实例已不存在，但已成功从比赛记录中移除。", player.uin))
+             gg.log(string.format("游戏模式管理器: 玩家(UIN: %d)的实例已不存在，但已成功从比赛记录中移除。", player.uin))
         end
     end
 end)

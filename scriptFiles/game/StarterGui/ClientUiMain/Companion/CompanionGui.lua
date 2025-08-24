@@ -24,7 +24,10 @@ function CompanionGui:OnInit(node, config)
     -- 1. 节点初始化
     self.companionPanel = self:Get("伙伴界面", ViewComponent) ---@type ViewComponent
     self.closeButton = self:Get("伙伴界面/关闭", ViewButton) ---@type ViewButton
-
+    self.Synthesis= self:Get("伙伴界面/伙伴显示栏/一键合成", ViewButton) ---@type ViewButton
+    self.UltimateEqu = self:Get("伙伴界面/伙伴显示栏/装备最佳", ViewButton) ---@type ViewButton
+    self.deleteButton = self:Get("伙伴界面/删除", ViewButton) ---@type ViewButton
+    self.lockButton = self:Get("伙伴界面/锁定", ViewButton) ---@type ViewButton
     -- 伙伴显示栏
     self.displayBar = self:Get("伙伴界面/伙伴显示栏", ViewComponent) ---@type ViewComponent
     self.upgradeButton = self:Get("伙伴界面/伙伴显示栏/升星", ViewButton) ---@type ViewButton
@@ -36,6 +39,9 @@ function CompanionGui:OnInit(node, config)
     self.starUI = self:Get("伙伴界面/伙伴显示栏/星级UI", ViewComponent) ---@type ViewComponent
     self.starList = self:Get("伙伴界面/伙伴显示栏/星级UI/星级", ViewList) ---@type ViewList
     self.nameLabel = self:Get("伙伴界面/伙伴显示栏/名字", ViewComponent) ---@type ViewComponent
+    -- 伙伴携带
+    self.ComCarryNumLabel = self:Get("伙伴界面/伙伴携带/携带数量", ViewComponent) ---@type ViewComponent
+    self.carryCountLabel = self:Get("伙伴界面/伙伴数量/携带数量", ViewComponent) ---@type ViewComponent
 
     -- 【新增】属性介绍UI
     self.attributeIntroComp = self:Get("伙伴界面/伙伴显示栏/属性介绍", ViewComponent) ---@type ViewComponent
@@ -103,6 +109,11 @@ function CompanionGui:RegisterEvents()
     ClientEventManager.Subscribe(PartnerEventConfig.RESPONSE.ERROR, function(data)
         self:OnCompanionErrorResponse(data)
     end)
+
+    -- 【新增】监听自动装备结果响应
+    ClientEventManager.Subscribe(PartnerEventConfig.RESPONSE.PARTNER_EFFECT_RANKING, function(data)
+        self:OnAutoEquipResultResponse(data)
+    end)
 end
 
 function CompanionGui:RegisterButtonEvents()
@@ -124,6 +135,34 @@ function CompanionGui:RegisterButtonEvents()
     -- 卸下按钮
     self.unequipButton.clickCb = function()
         self:OnClickUnequipCompanion()
+    end
+
+    -- 【新增】一键合成按钮
+    if self.Synthesis then
+        self.Synthesis.clickCb = function()
+            self:OnClickSynthesis()
+        end
+    end
+
+    -- 【新增】装备最佳按钮
+    if self.UltimateEqu then
+        self.UltimateEqu.clickCb = function()
+            self:OnClickUltimateEquip()
+        end
+    end
+
+    -- 【新增】删除按钮
+    if self.deleteButton then
+        self.deleteButton.clickCb = function()
+            self:OnClickDeleteCompanion()
+        end
+    end
+
+    -- 【新增】锁定按钮
+    if self.lockButton then
+        self.lockButton.clickCb = function()
+            self:OnClickLockCompanion()
+        end
     end
 
     ----gg.log("伙伴界面按钮事件注册完成")
@@ -158,16 +197,24 @@ end
 
 --- 处理伙伴列表响应
 function CompanionGui:OnCompanionListResponse(data)
-    -- gg.log("收到伙伴数据响应:", data)
+    gg.log("收到伙伴数据响应:", data)
     if data and data.companionList then
         self.companionData = data.companionList
         self.activeSlots = data.activeSlots or {}
         self.equipSlotIds = data.equipSlotIds or {}
+        
+        -- 【新增】处理伙伴系统统计信息
+        self.companionCount = data.companionCount or 0
+        self.bagCapacity = data.bagCapacity or 30
+        self.unlockedEquipSlots = data.unlockedEquipSlots or 1
+        self.maxEquipSlots = data.maxEquipSlots or 1
+        self.companionType = data.companionType or "伙伴"
 
-        ----gg.log("伙伴数据同步完成, 激活槽位:", self.activeSlots)
+        ----gg.log("伙伴数据同步完成, 激活槽位:", self.activeSlots, "伙伴数量:", self.companionCount, "背包容量:", self.bagCapacity)
 
         -- 刷新界面显示
         self:RefreshCompanionList()
+        self:RefreshCompanionCounts()
         self:SelectDefaultCompanion()
     else
         ----gg.log("伙伴数据响应格式错误")
@@ -239,6 +286,35 @@ function CompanionGui:OnCompanionErrorResponse(data)
     local errorMessage = data.errorMessage or "操作失败"
     ----gg.log("错误信息:", errorMessage)
     -- TODO: 显示错误提示给玩家
+end
+
+--- 【新增】处理自动装备结果响应
+function CompanionGui:OnAutoEquipResultResponse(data)
+    ----gg.log("收到自动装备结果响应:", data)
+    
+    if data.ranking then
+        ----gg.log("自动装备完成，伙伴效果排行:", data.ranking)
+        
+        -- 刷新界面显示
+        self:RequestCompanionData() -- 重新请求伙伴数据以获取最新的装备状态
+        
+        -- 恢复装备最佳按钮状态
+        if self.UltimateEqu then
+            self.UltimateEqu:SetGray(false)
+            self.UltimateEqu:SetTouchEnable(true, nil)
+        end
+        
+        -- 可以在这里添加成功提示
+        ----gg.log("自动装备所有最优伙伴完成！")
+    else
+        ----gg.log("自动装备失败或没有响应数据")
+        
+        -- 恢复装备最佳按钮状态
+        if self.UltimateEqu then
+            self.UltimateEqu:SetGray(false)
+            self.UltimateEqu:SetTouchEnable(true, nil)
+        end
+    end
 end
 
 --- 检查界面是否已打开
@@ -316,6 +392,68 @@ function CompanionGui:OnClickUnequipCompanion()
     self:SendUnequipCompanionRequest(equipSlotId)
 end
 
+--- 【新增】一键合成按钮点击
+function CompanionGui:OnClickSynthesis()
+    ----gg.log("点击了一键合成按钮，发送升星请求")
+    local requestData = {
+        cmd = PartnerEventConfig.REQUEST.UPGRADE_ALL_PARTNERS,
+        args = {}
+    }
+    gg.network_channel:fireServer(requestData)
+end
+
+--- 【新增】装备最佳按钮点击
+function CompanionGui:OnClickUltimateEquip()
+    ----gg.log("点击了装备最佳按钮，发送自动装备所有最优伙伴请求")
+    
+    -- 发送自动装备所有最优伙伴的请求
+    local requestData = {
+        cmd = PartnerEventConfig.REQUEST.AUTO_EQUIP_ALL_BEST_PARTNERS,
+        args = {
+            excludeEquipped = true -- 排除已装备的伙伴，避免重复装备
+        }
+    }
+    
+    ----gg.log("发送自动装备所有最优伙伴请求:", requestData.args)
+    gg.network_channel:fireServer(requestData)
+    
+    -- 按钮变灰并禁用触摸，等待服务端响应
+    if self.UltimateEqu then
+        self.UltimateEqu:SetGray(true)
+        self.UltimateEqu:SetTouchEnable(false, nil)
+        -- 按钮状态将在收到服务端响应后恢复
+    end
+end
+
+--- 【新增】删除伙伴按钮点击
+function CompanionGui:OnClickDeleteCompanion()
+    if not self.selectedCompanion then
+        ----gg.log("未选择伙伴，无法删除")
+        return
+    end
+
+    if self.selectedCompanion.isLocked then
+        ----gg.log("伙伴已锁定，无法删除")
+        -- TODO: 可以向玩家显示提示
+        return
+    end
+
+    -- TODO: 在实际项目中，这里应该弹出一个二次确认对话框
+    ----gg.log("请求删除伙伴:", self.selectedCompanion.slotIndex)
+    self:SendDeleteCompanionRequest(self.selectedCompanion.slotIndex)
+end
+
+--- 【新增】锁定伙伴按钮点击
+function CompanionGui:OnClickLockCompanion()
+    if not self.selectedCompanion then
+        ----gg.log("未选择伙伴，无法切换锁定状态")
+        return
+    end
+
+    ----gg.log("请求切换伙伴锁定状态:", self.selectedCompanion.slotIndex)
+    self:SendToggleLockRequest(self.selectedCompanion.slotIndex)
+end
+
 -- =================================
 -- 网络请求发送
 -- =================================
@@ -354,10 +492,51 @@ function CompanionGui:SendUnequipCompanionRequest(equipSlotId)
     gg.network_channel:fireServer(requestData)
 end
 
+--- 【新增】发送删除伙伴请求
+function CompanionGui:SendDeleteCompanionRequest(slotIndex)
+    local requestData = {
+        cmd = PartnerEventConfig.REQUEST.DELETE_PARTNER,
+        args = { slotIndex = slotIndex }
+    }
+    ----gg.log("发送删除伙伴请求:", requestData.args)
+    gg.network_channel:fireServer(requestData)
+end
+
+--- 【新增】发送切换锁定状态请求
+function CompanionGui:SendToggleLockRequest(slotIndex)
+    local requestData = {
+        cmd = PartnerEventConfig.REQUEST.TOGGLE_PARTNER_LOCK,
+        args = { slotIndex = slotIndex }
+    }
+    ----gg.log("发送切换锁定状态请求:", requestData.args)
+    gg.network_channel:fireServer(requestData)
+end
+
 
 -- =================================
 -- UI刷新方法
 -- =================================
+
+--- 刷新伙伴携带和背包数量显示
+function CompanionGui:RefreshCompanionCounts()
+    -- 刷新伙伴携带数量
+    local equippedCount = 0
+    if self.activeSlots then
+        for _ in pairs(self.activeSlots) do
+            equippedCount = equippedCount + 1
+        end
+    end
+    local maxEquipped = self.unlockedEquipSlots or 1
+    if self.ComCarryNumLabel and self.ComCarryNumLabel.node then
+        self.ComCarryNumLabel.node.Title = string.format("%d/%d", equippedCount, maxEquipped)
+    end
+
+    -- 刷新伙伴背包数量
+    local bagCount = self:GetCompanionCount()
+    if self.carryCountLabel and self.carryCountLabel.node then
+        self.carryCountLabel.node.Title = string.format("%d/%d", bagCount, self.bagCapacity or 30)
+    end
+end
 
 --- 刷新伙伴列表
 function CompanionGui:RefreshCompanionList()
@@ -439,6 +618,11 @@ function CompanionGui:SetupCompanionSlotDisplay(slotNode, slotIndex, companionIn
     local isEquipped = self:IsCompanionEquipped(slotIndex)
     self:UpdateActiveState(slotNode, isEquipped)
 
+    -- 【新增】更新锁定状态显示
+    local lockNode = slotNode:FindFirstChild("锁定")
+    if lockNode then
+        lockNode.Visible = companionInfo.isLocked or false
+    end
 end
 
 --- 更新星级显示
@@ -482,7 +666,8 @@ function CompanionGui:OnCompanionSlotClick(slotIndex, companionInfo)
         companionName = companionInfo.companionName,
         level = companionInfo.level,
         starLevel = companionInfo.starLevel,
-        isEquipped = isEquipped -- 【修改】使用 isEquipped 替代 isActive
+        isEquipped = isEquipped, -- 【修改】使用 isEquipped 替代 isActive
+        isLocked = companionInfo.isLocked or false -- 【新增】添加锁定状态
     }
 
     -- 刷新选中伙伴的详细显示
@@ -647,8 +832,23 @@ function CompanionGui:UpdateButtonStates(companion)
         self.equipButton:SetTouchEnable(canEquip, nil)
     end
     if self.unequipButton then
-        -- 仅在“已装备”时显示卸下按钮
+        -- 仅在"已装备"时显示卸下按钮
         self.unequipButton:SetVisible(isEquipped)
+    end
+
+    -- 【新增】更新删除和锁定按钮的状态
+    if self.deleteButton then
+        -- 只有在未锁定的情况下才可删除
+        self.deleteButton:SetVisible(true)
+        self.deleteButton:SetGray(companion.isLocked)
+        self.deleteButton:SetTouchEnable(not companion.isLocked, nil)
+    end
+
+    if self.lockButton then
+        self.lockButton:SetVisible(true)
+        -- TODO: 可以根据锁定状态改变按钮文本或图标
+        -- local lockText = self.lockButton.node:FindFirstChild("Text")
+        -- if lockText then lockText.Title = companion.isLocked and "解锁" or "锁定" end
     end
 end
 
@@ -682,6 +882,14 @@ function CompanionGui:HideCompanionDetail()
     end
     if self.unequipButton then
         self.unequipButton:SetVisible(false)
+    end
+
+    -- 【新增】隐藏删除和锁定按钮
+    if self.deleteButton then
+        self.deleteButton:SetVisible(false)
+    end
+    if self.lockButton then
+        self.lockButton:SetVisible(false)
     end
 end
 

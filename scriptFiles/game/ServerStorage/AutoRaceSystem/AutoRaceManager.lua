@@ -84,17 +84,20 @@ function AutoRaceManager.StartAutoRace(mPlayer)
         return
     end
     
-    -- 查找飞行比赛节点
-    local raceNodes = SceneNodeType.FindRaceNodesByScene("init_map")
+    -- 查找当前玩家所在场景的飞行比赛节点
+    local currentScene = mPlayer.currentScene 
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local raceNodes = ConfigLoader.GetSceneNodesBy(currentScene, "飞行比赛")
+    --gg.log("raceNodes",raceNodes)
     if #raceNodes == 0 then
-        --gg.log("未找到可用的飞行比赛节点")
+        --gg.log("未找到可用的飞行比赛节点，所属场景:", tostring(currentScene))
         return
     end
     
     -- 选择第一个比赛节点
     local raceNode = raceNodes[1]
     local nodePath = raceNode.nodePath
-    
+    --gg.log("nodePath", nodePath,raceNodes)
     -- 解析节点路径，获取场景节点
     local sceneNode = gg.GetChild(game.WorkSpace, nodePath)
     if not sceneNode then
@@ -118,6 +121,7 @@ function AutoRaceManager.StartAutoRace(mPlayer)
     
     -- 通过事件管理器发送导航指令到客户端
     local targetPosition = navNode.Position
+    --gg.log("targetPosition",targetPosition,navNode)
     local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
     AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, "自动导航到比赛节点位置")
     
@@ -130,7 +134,13 @@ function AutoRaceManager.StopAutoRace(mPlayer)
     if not mPlayer then return end
     
     local uin = mPlayer.uin
+    -- 确保完全清理状态
     playerAutoRaceState[uin] = nil
+    
+    -- 向客户端发送停止导航指令
+    local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+    AutoRaceEventManager.SendStopNavigation(uin, "自动比赛已停止，停止导航")
+    
     --gg.log("已停止玩家", uin, "的自动比赛")
 end
 
@@ -146,15 +156,21 @@ function AutoRaceManager.SetPlayerAutoRaceState(mPlayer, enabled)
         -- 立即启动一次自动比赛
         AutoRaceManager.StartAutoRace(mPlayer)
     else
+        -- 确保完全清理状态
         playerAutoRaceState[uin] = nil
+        
+        -- 停止导航
+        local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+        AutoRaceEventManager.SendStopNavigation(uin, "自动比赛已停止，停止导航")
     end
 end
 
 -- 检查玩家是否在自动比赛中
----@param uin number 玩家uin
+---@param player MPlayer 玩家实例
 ---@return boolean 是否在自动比赛中
-function AutoRaceManager.IsPlayerInAutoRace(uin)
-    return playerAutoRaceState[uin] == true
+function AutoRaceManager.IsPlayerAutoRacing(player)
+    if not player then return false end
+    return playerAutoRaceState[player.uin] == true
 end
 
 return AutoRaceManager

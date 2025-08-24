@@ -23,9 +23,10 @@ local gg                = require(MainStorage.Code.Untils.MGlobal)    ---@type g
 
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+
 local MServerInitPlayer = require(ServerStorage.Manager.MServerInitPlayer) ---@type MServerInitPlayer
+
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
-local SceneNodeManager = require(ServerStorage.SceneInteraction.SceneNodeManager) ---@type SceneNodeManager
 
 -- 总入口
 
@@ -103,7 +104,8 @@ function MainServer.initModule()
     local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
     local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
     local MiniShopManager = require(ServerStorage.MiniGameMgr.MiniShopManager) ---@type MiniShopManager
-
+    local RankingMgr = require(ServerStorage.MSystems.Ranking.RankingMgr) ---@type RankingMgr
+    local SceneNodeManager = require(ServerStorage.SceneInteraction.SceneNodeManager) ---@type SceneNodeManager
 
     RewardMgr.Init()
     -- 延迟加载RewardMgr以避免循环引用
@@ -118,6 +120,8 @@ function MainServer.initModule()
     serverDataMgr.RewardMgr = RewardMgr  -- 延迟加载
     serverDataMgr.LotteryMgr = LotteryMgr
     serverDataMgr.MiniShopManager = MiniShopManager:OnInit()
+    serverDataMgr.RankingMgr = RankingMgr
+    RankingMgr.SystemInit()
     gg.log("初始化事件管理器和命令管理器")
     -- 初始化事件管理器和命令管理器
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
@@ -134,6 +138,8 @@ function MainServer.initModule()
     local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
     local ShopEventManager = require(ServerStorage.MSystems.Shop.ShopEventManager) ---@type ShopEventManager
     local CommonEventManager = require(ServerStorage.MiniGameMgr.CommonEventManager) ---@type CommonEventManager
+    local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
+    local SceneInteractionEventManager = require(ServerStorage.SceneInteraction.SceneInteractionEventManager) ---@type SceneInteractionEventManager
 
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
@@ -150,14 +156,20 @@ function MainServer.initModule()
     LotteryEventManager.Init()
     ShopEventManager.Init()
     CommonEventManager.Init()
+    RankingEventManager.Init()
+    SceneInteractionEventManager.Init()
 
 
  
     SceneNodeManager.Init()
     local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
     local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
+    local AutoPlayEventManager = require(ServerStorage.AutoRaceSystem.AutoPlayEvent) ---@type AutoPlayEventManager
+    local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
     AutoRaceManager.Init()
     AutoRaceEventManager.Init()
+    AutoPlayManager.Init()
+    AutoPlayEventManager.Init()
 
 
 
@@ -167,10 +179,8 @@ end
 -- --设置碰撞组
 function MainServer.SetCollisionGroup()
     --设置碰撞组
-    gg.log("设置碰撞组1111")
     local WS = game:GetService("PhysXService")
     WS:SetCollideInfo(4, 4, false)   --玩家不与玩家碰撞
-    gg.log("设置碰撞组")
     -- WS:SetCollideInfo(1, 1, false)   --怪物不与怪物碰撞
     -- WS:SetCollideInfo(0, 1, false)   --玩家不与怪物碰撞
 end

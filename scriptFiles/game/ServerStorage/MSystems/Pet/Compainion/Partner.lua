@@ -421,4 +421,30 @@ function Partner:GetMoodStatistics()
     return moodStats
 end
 
+-- =================================
+-- 自动装备最优伙伴便捷方法
+-- =================================
+
+---自动装备效果数值最高的伙伴（伙伴专用接口）
+---@param equipSlotId string 装备栏ID
+---@param excludeEquipped boolean|nil 是否排除已装备的伙伴
+---@return boolean, string|nil, number|nil
+function Partner:AutoEquipBestPartner(equipSlotId, excludeEquipped)
+    return self:AutoEquipBestEffectCompanion(equipSlotId, excludeEquipped)
+end
+
+---自动装备所有装备栏的最优伙伴（伙伴专用接口）
+---@param excludeEquipped boolean|nil 是否排除已装备的伙伴
+---@return table
+function Partner:AutoEquipAllBestPartners(excludeEquipped)
+    return self:AutoEquipAllBestEffectCompanions(excludeEquipped)
+end
+
+---获取伙伴效果数值排行（伙伴专用接口）
+---@param limit number|nil 返回数量限制
+---@return table
+function Partner:GetPartnerEffectRanking(limit)
+    return self:GetEffectValueRanking(limit)
+end
+
 return Partner

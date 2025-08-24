@@ -27,11 +27,15 @@ end
 
 -- 注册网络事件处理器
 function ShopEventManager.RegisterNetworkHandlers()
-    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
     
-    -- 购买商品
+    -- 购买商品（金币/其他货币）
     ServerEventManager.Subscribe(ShopEventConfig.REQUEST.PURCHASE_ITEM, function(evt)
         ShopEventManager.HandlePurchaseItem(evt)
+    end, 100)
+    
+    -- 【新增】迷你币专用购买事件
+    ServerEventManager.Subscribe(ShopEventConfig.REQUEST.PURCHASE_MINI_ITEM, function(evt)
+        ShopEventManager.HandlePurchaseMiniItem(evt)
     end, 100)
     
     -- 验证购买条件
@@ -64,10 +68,10 @@ end
 
 -- 事件处理函数 --------------------------------------------------------
 
---- 处理购买商品请求
+--- 【修改】处理非迷你币购买请求
 ---@param evt table 事件对象
 function ShopEventManager.HandlePurchaseItem(evt)
-    gg.log("处理购买商品请求", evt)
+    gg.log("处理非迷你币购买请求", evt)
     local player = PartnerEventManager.ValidatePlayer(evt)
     local args = evt.args or {}
     
@@ -89,10 +93,17 @@ function ShopEventManager.HandlePurchaseItem(evt)
         return
     end
     
-    -- 执行购买，传递货币类型和分类名
-    local success, message, purchaseResult = ShopMgr.ProcessPurchase(player, shopItemId, currencyType, categoryName)
+    -- 拒绝迷你币购买请求，引导使用专用接口
+    if currencyType == "迷你币" then
+        gg.log("迷你币购买请求被拒绝，请使用专用接口", player.name, shopItemId)
+        player:SendHoverText("请使用迷你币专用购买接口")
+        return
+    end
     
-    if success == true then
+    -- 执行非迷你币购买
+    local success, message, purchaseResult = ShopMgr.ProcessNormalPurchase(player, shopItemId, currencyType, categoryName)
+    
+    if success then
         gg.log("商品购买成功", player.name, shopItemId, currencyType)
         
         -- 发送成功响应
@@ -107,11 +118,50 @@ function ShopEventManager.HandlePurchaseItem(evt)
             },
             errorMsg = nil
         })
-    elseif success == "pending" then
-        gg.log("迷你币支付已发起，等待用户完成", player.name, shopItemId, currencyType)
-        
     else
         gg.log("商品购买失败", player.name, shopItemId, currencyType, message)
+        player:SendHoverText(message)
+    end
+end
+
+--- 【新增】迷你币专用购买事件处理器
+---@param evt table 事件对象
+function ShopEventManager.HandlePurchaseMiniItem(evt)
+    gg.log("处理迷你币购买请求", evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    local args = evt.args or {}
+    
+    if not player then
+        return
+    end
+    
+    local shopItemId = args.shopItemId
+    local categoryName = args.categoryName
+    
+    if not shopItemId then
+        player:SendHoverText("商品ID不能为空")
+        return
+    end
+    
+    -- 执行迷你币购买（自动弹出支付窗口）
+    local status, message, data = ShopMgr.ProcessMiniCoinPurchase(player, shopItemId, categoryName)
+    
+    if status == "pending" then
+        gg.log("迷你币支付弹窗已拉起", player.name, shopItemId)
+        -- 发送pending状态响应
+        gg.network_channel:fireClient(player.uin, {
+            cmd = ShopEventConfig.RESPONSE.MINI_PURCHASE_RESPONSE,
+            success = true,
+            data = {
+                status = "pending",
+                message = message,
+                shopItemId = shopItemId,
+                categoryName = categoryName
+            },
+            errorMsg = nil
+        })
+    else
+        gg.log("迷你币购买失败", player.name, shopItemId, message)
         player:SendHoverText(message)
     end
 end

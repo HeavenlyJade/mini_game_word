@@ -38,27 +38,13 @@ local SceneNodeHandlerBase = ClassMgr.Class("SceneNodeHandlerBase")
 ---当实体确认进入时调用
 ---@param entity Entity
 function SceneNodeHandlerBase:OnEntityEnter(entity)
-    -- 只处理玩家的通用进入/离开事件
-    if entity.isPlayer then
-        --gg.log(string.format("DEBUG: SceneNodeHandlerBase:OnEntityEnter - 玩家 '%s' (uin: %s) 进入了一个由 '%s' 管理的区域。", (entity.GetName and entity:GetName()) or entity.uuid, entity.uin, self.name))
-        ---@cast entity MPlayer
-        if not self.players[entity.uin] then
-            self.players[entity.uin] = entity
-            ServerEventManager.Publish("PlayerEnterSceneEvent", { player = entity, scene = self })
-        end
-    end
+
 end
 
 ---当实体确认离开时调用
 ---@param entity Entity
 function SceneNodeHandlerBase:OnEntityLeave(entity)
-    if entity.isPlayer then
-        ---@cast entity MPlayer
-        if self.players[entity.uin] then
-            self.players[entity.uin] = nil
-            ServerEventManager.Publish("PlayerLeaveSceneEvent", { player = entity, scene = self })
-        end
-    end
+
 end
 
 ---用于周期性更新，需要子类设置 self.updateInterval > 0 才会启用

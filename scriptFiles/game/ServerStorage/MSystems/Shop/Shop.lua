@@ -161,11 +161,11 @@ function Shop:ExecutePurchase(shopItemId, player, currencyType)
     
     -- 发放奖励
     local rewardSuccess, rewardReason = self:GrantRewards(shopItem, player)
-    if not rewardSuccess then
-        -- 购买失败，需要退款
-        self:RefundPayment(shopItem, player, currencyType)
-        return false, "发放奖励失败：" .. rewardReason
-    end
+    -- if not rewardSuccess then
+    --     -- 购买失败，需要退款
+    --     self:RefundPayment(shopItem, player, currencyType)
+    --     return false, "发放奖励失败：" .. rewardReason
+    -- end
     
     -- 更新购买记录
     self:UpdatePurchaseRecord(shopItemId, shopItem, currencyType)
@@ -173,7 +173,15 @@ function Shop:ExecutePurchase(shopItemId, player, currencyType)
     -- 更新限购计数器
     self:UpdateLimitCounter(shopItemId, shopItem)
 
-    
+    -- 执行商品配置的额外指令（如果有）
+    if shopItem.executeCommands ~= nil and #shopItem.executeCommands > 0 then
+        for _, commandStr in ipairs(shopItem.executeCommands) do
+            if type(commandStr) == "string" and commandStr ~= "" then
+                self:ExecuteRewardCommand(commandStr, player)
+            end
+        end
+    end
+
     -- 构建购买结果数据
     local purchaseData = {
         shopItemId = shopItemId,
@@ -213,7 +221,7 @@ function Shop:ProcessPayment(shopItem, player, currencyType)
         -- 使用BagMgr获取玩家金币数量
         local currentCoin = BagMgr.GetItemAmount(player, "金币")
         if currentCoin < priceAmount then
-            return false, string.format("金币不足，需要%.0f个，当前拥有%.0f个", priceAmount, currentCoin)
+            return false, string.format("金币不足，需要%s，当前拥有%s", gg.FormatLargeNumber(priceAmount), gg.FormatLargeNumber(currentCoin))
         end
         
         -- 使用BagMgr扣除玩家金币

@@ -10,7 +10,7 @@ RaceTrackConfig.trackPaths = {
 
 -- 克隆参数配置
 RaceTrackConfig.cloneSettings = {
-    cloneCount = 50,        -- 每个赛道的克隆数量
+    cloneCount = 300,        -- 每个赛道的克隆数量
     xOffset = 0,          -- X轴偏移量
     zOffset = 4150,          -- Z轴偏移量
     transparency = 0.8      -- 空气墙透明度

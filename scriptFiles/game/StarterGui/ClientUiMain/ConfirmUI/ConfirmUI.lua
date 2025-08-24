@@ -6,7 +6,7 @@ local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventMana
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
 
-print("ConfirmUI LOCAL SCRIPT")
+
 
 local uiConfig = {
     uiName = "ConfirmUI",
@@ -18,7 +18,6 @@ local uiConfig = {
 local ConfirmUI = ClassMgr.Class("ConfirmUI", ViewBase)
 
 function ConfirmUI:OnInit(node, config)
-    print("ConfirmUI OnInit")
     self.title = self:Get("ui/title/title_text").node ---@type UITextLabel
     self.content = self:Get("ui/content").node ---@type UITextLabel
     self.confirmBtn = self:Get("ui/b_confirm", ViewButton) ---@type ViewButton

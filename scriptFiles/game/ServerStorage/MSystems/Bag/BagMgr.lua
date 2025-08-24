@@ -348,7 +348,7 @@ function BagMgr.ForceSyncToClient(uin)
     if bag then
         bag:MarkDirty(true)  -- 标记为全量同步
         bag:SyncToClient()
-        --gg.log("BagMgr.ForceSyncToClient: 强制同步背包数据", uin)
+        gg.log("BagMgr.ForceSyncToClient: 强制同步背包数据", uin)
     end
 end
 

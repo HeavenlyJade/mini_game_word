@@ -16,3 +16,7 @@ RaceTrack.InitializeRaceTrack()
 local InitAutoSpotNodes = require(game:GetService("MainStorage"):WaitForChild('Code').Client.SceneNode.InitAutoSpotNodes) ---@type InitAutoSpotNodes
 InitAutoSpotNodes.InitializeAllAutoSpotNodes()
 
+-- 导入并初始化地图背景音乐
+local MapBackgroundMusic = require(game:GetService("MainStorage"):WaitForChild('Code').Client.SceneNode.MapBackgroundMusic) ---@type MapBackgroundMusic
+MapBackgroundMusic.InitializeBackgroundMusic()
+
