@@ -85,11 +85,6 @@ function LevelType:OnInit(data)
     -- 【新增】缓存计算器实例
     self._calculator = nil
 
-    -- 调试信息：显示关卡配置加载结果
-    local gg = require(game:GetService("MainStorage").Code.Untils.MGlobal)
-    --gg.log(string.format("LevelType 初始化完成 - 关卡: %s, 基础奖励数: %d, 每米得分: %.1f, 实时奖励规则数: %d, 场景配置: %s", 
-        --self.name, #self.baseRewards, self.scorePerMeter, #self.realTimeRewardRules, 
-        --self:HasSceneConfig() and self.sceneConfig or "无"))
 end
 
 --- 【新增】获取或创建并缓存奖励计算器

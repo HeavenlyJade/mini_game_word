@@ -31,6 +31,8 @@ EventPlayerConfig.REQUEST = {
     AUTO_PLAY_TOGGLE = "AutoPlayToggle", -- 自动挂机开关
     UNSTUCK_PLAYER = "UnstuckPlayer", -- 脱离卡死
     REQUEST_LEAVE_IDLE = "RequestLeaveIdle", -- 新增：请求离开挂机
+    LEVEL_REWARD_NODE_TRIGGERED = "LevelRewardNodeTriggered", -- 关卡奖励节点触发
+
 }
 
 

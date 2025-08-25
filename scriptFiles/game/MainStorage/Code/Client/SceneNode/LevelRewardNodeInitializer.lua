@@ -6,6 +6,7 @@ local MainStorage = game:GetService("MainStorage")
 local WorkSpace = game:GetService("WorkSpace")
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 ---@class LevelRewardNodeInitializer
 local LevelRewardNodeInitializer = {}
@@ -208,7 +209,7 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
     
     -- 构建发送到服务端的消息数据
     local messageData = {
-        cmd = "LevelRewardNodeTriggered",           -- 命令类型
+        cmd = EventPlayerConfig.REQUEST.LEVEL_REWARD_NODE_TRIGGERED,           -- 命令类型
         playerId = playerId,                        -- 玩家ID
         uniqueId = uniqueId,                        -- 奖励节点唯一ID
         configName = configName,                    -- 配置名称

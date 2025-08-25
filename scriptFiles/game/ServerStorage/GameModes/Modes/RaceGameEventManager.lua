@@ -4,6 +4,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
+
 ---@class RaceGameEventManager
 local RaceGameEventManager = {
 }
@@ -21,6 +22,12 @@ function RaceGameEventManager.RegisterEventHandlers()
     -- 注册玩家落地事件
 
     ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.PLAYER_LANDED, RaceGameEventManager.HandlePlayerLanded)
+
+    -- 【新增】关卡奖励节点触发事件处理器（高优先级）
+    ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.LEVEL_REWARD_NODE_TRIGGERED, function(evt)
+        RaceGameEventManager.HandleLevelRewardNodeTriggered(evt)
+    end, 100)
+
 
 end
 
@@ -59,6 +66,46 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
     if finalState == "ManualExit" then
         RaceGameEventManager.SendRaceEndNotification(player)
     end
+end
+
+--- 【新增】处理关卡奖励节点触发事件
+---@param evt table 事件数据 { player: MPlayer, uniqueId: string, configName: string, mapName?: string }
+function RaceGameEventManager.HandleLevelRewardNodeTriggered(evt)
+    local player = evt and evt.player
+    local uniqueId = evt and evt.uniqueId
+    local configName = evt and evt.configName
+    local mapName = evt and evt.mapName
+
+    if not player or not uniqueId or not configName then
+        gg.log("关卡奖励节点触发事件参数不完整")
+        return
+    end
+
+    gg.log(string.format("收到玩家 %s 触发关卡奖励节点 - 配置:%s, ID:%s, 地图:%s",
+        player.name or player.uin, tostring(configName), tostring(uniqueId), mapName or "unknown"))
+
+    -- 通过 MServerDataManager 获取 GameModeManager 实例
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local GameModeManager = serverDataMgr and serverDataMgr.GameModeManager
+    if not GameModeManager then
+        return
+    end
+
+    -- 获取玩家所在的游戏模式实例
+    local instanceId = GameModeManager.playerModes[player.uin]
+    if not instanceId then
+        gg.log(string.format("玩家 %s 不在任何比赛中，忽略关卡奖励触发", player.name or player.uin))
+        return
+    end
+
+    local currentMode = GameModeManager.activeModes[instanceId] ---@type RaceGameMode
+    if not currentMode or type(currentMode.HandleLevelRewardTrigger) ~= "function" then
+        gg.log(string.format("玩家 %s 的比赛模式无效或不支持关卡奖励处理", player.name or player.uin))
+        return
+    end
+
+    -- 委托给比赛模式处理
+    currentMode:HandleLevelRewardTrigger(player, evt)
 end
 
 --- 【新增】向指定玩家发送比赛开始通知

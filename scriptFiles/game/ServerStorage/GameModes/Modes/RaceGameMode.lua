@@ -23,6 +23,7 @@ local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEvent
 ---@field raceStartTime number 比赛开始时间戳
 ---@field contestUpdateTimer Timer 比赛界面更新定时器
 ---@field realtimeRewardsGiven table<number, table<string, boolean>> 实时奖励发放记录 (uin -> {ruleId -> true})
+---@field levelRewardsGiven table<number, table<string, boolean>> 关卡奖励发放记录 (uin -> {uniqueId -> true})
 local RaceGameMode = ClassMgr.Class("RaceGameMode", GameModeBase)
 
 -- 比赛状态
@@ -55,6 +56,8 @@ function RaceGameMode:OnInit(instanceId, modeName, levelType)
     self.raceStartTime = 0 -- 比赛开始时间戳
     self.contestUpdateTimer = nil -- 比赛界面更新定时器
     self.realtimeRewardsGiven = {} -- 实时奖励发放记录 (uin -> {ruleIndex -> true})
+    self.levelRewardsGiven = {} -- 关卡奖励发放记录 (uin -> {uniqueId -> true})
+    gg.log(string.format("RaceGameMode 初始化完成 - 实例ID: %s, 关卡: %s", tostring(instanceId), levelType and (levelType.levelName or "未知") or "未知"))
 end
 
 --- 当有玩家进入此游戏模式时调用
@@ -78,6 +81,12 @@ function RaceGameMode:OnPlayerEnter(player)
         gg.log(string.format("比赛进行中，新玩家 %s 加入，立即传送并发射", player.name or player.uin))
         self:_handleLateJoinPlayer(player)
     end
+
+    -- 【新增】初始化玩家的关卡奖励发放记录
+    if not self.levelRewardsGiven[player.uin] then
+        self.levelRewardsGiven[player.uin] = {}
+    end
+    gg.log(string.format("玩家 %s 加入比赛，关卡奖励记录已初始化", player.name or player.uin))
 end
 
 --- 当有玩家离开此游戏模式时调用
@@ -111,6 +120,12 @@ function RaceGameMode:OnPlayerLeave(player)
     if self.realtimeRewardsGiven then
         self.realtimeRewardsGiven[player.uin] = nil
     end
+
+    -- 【新增】清理玩家的关卡奖励发放记录
+    if self.levelRewardsGiven and self.levelRewardsGiven[player.uin] then
+        self.levelRewardsGiven[player.uin] = nil
+    end
+    gg.log(string.format("玩家 %s 离开比赛，关卡奖励记录已清理", player.name or player.uin))
     
     -- 【核心优化】处理玩家离开后的比赛状态
     if self.state == "WAITING" then
@@ -127,6 +142,188 @@ function RaceGameMode:OnPlayerLeave(player)
             self:End()
             return
         end
+    end
+end
+
+--- 【新增】处理关卡奖励节点触发
+---@param player MPlayer 触发的玩家
+---@param eventData table 事件数据
+function RaceGameMode:HandleLevelRewardTrigger(player, eventData)
+    if not player or not eventData then return end
+
+    local uniqueId = eventData.uniqueId
+    local configName = eventData.configName
+    local mapName = eventData.mapName
+    local rewardType = eventData.rewardType or ""
+    local itemType = eventData.itemType or ""
+    local itemCount = eventData.itemCount or 0
+    local rewardCondition = eventData.rewardCondition or ""
+
+    gg.log(string.format("处理玩家 %s 的关卡奖励触发 - ID:%s, 类型:%s, 物品:%s x%d",
+        player.name or player.uin, tostring(uniqueId), tostring(rewardType), tostring(itemType), tonumber(itemCount) or 0))
+
+    if not uniqueId or not configName then
+        return
+    end
+
+    -- 防重复：检查是否已发放
+    if self.levelRewardsGiven[player.uin] and self.levelRewardsGiven[player.uin][uniqueId] then
+        gg.log(string.format("玩家 %s 已获得过关卡奖励 %s，跳过发放", player.name or player.uin, tostring(uniqueId)))
+        return
+    end
+
+    -- 获取关卡奖励配置
+    local rewardConfig = self:GetLevelRewardConfig(configName, uniqueId)
+    if not rewardConfig then
+        gg.log(string.format("找不到关卡奖励配置 - 配置名:%s, ID:%s", tostring(configName), tostring(uniqueId)))
+        return
+    end
+
+    -- 发放奖励
+    local success = self:DistributeLevelReward(player, rewardConfig, uniqueId)
+    if success then
+        if not self.levelRewardsGiven[player.uin] then
+            self.levelRewardsGiven[player.uin] = {}
+        end
+        self.levelRewardsGiven[player.uin][uniqueId] = true
+        gg.log(string.format("关卡奖励发放成功 - 玩家:%s, ID:%s", player.name or player.uin, tostring(uniqueId)))
+    else
+        gg.log(string.format("关卡奖励发放失败 - 玩家:%s, ID:%s", player.name or player.uin, tostring(uniqueId)))
+    end
+end
+
+--- 【新增】获取关卡奖励配置
+---@param configName string 配置名称
+---@param uniqueId string 唯一ID
+---@return table|nil 奖励配置项
+function RaceGameMode:GetLevelRewardConfig(configName, uniqueId)
+    if not self.levelType or not self.levelType.HasSceneConfig or not self.levelType:HasSceneConfig() then
+        gg.log("当前关卡没有场景配置")
+        return nil
+    end
+
+    local sceneConfigName = self.levelType.GetSceneConfig and self.levelType:GetSceneConfig() or nil
+    if sceneConfigName and configName and sceneConfigName ~= configName then
+        gg.log(string.format("场景配置名称不匹配 - 期望:%s, 实际:%s", tostring(sceneConfigName), tostring(configName)))
+        return nil
+    end
+
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local levelRewardConfig = ConfigLoader.GetLevelNodeReward and ConfigLoader.GetLevelNodeReward(configName) or nil
+    if not levelRewardConfig then
+        gg.log(string.format("找不到关卡奖励配置:%s", tostring(configName)))
+        return nil
+    end
+
+    if levelRewardConfig.GetRewardNodeById then
+        local rewardNode = levelRewardConfig:GetRewardNodeById(uniqueId)
+        if not rewardNode then
+            gg.log(string.format("在配置 %s 中找不到ID为 %s 的奖励节点", tostring(configName), tostring(uniqueId)))
+            return nil
+        end
+        return rewardNode
+    end
+
+    return nil
+end
+
+--- 【新增】分发关卡奖励
+---@param player MPlayer 目标玩家
+---@param rewardConfig table 奖励配置
+---@param uniqueId string 唯一ID
+---@return boolean 是否发放成功
+function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
+    if not player or not rewardConfig then
+        return false
+    end
+
+    local rewardType = rewardConfig["奖励类型"] or ""
+    local itemType = rewardConfig["物品类型"] or ""
+    local itemCount = rewardConfig["物品数量"] or 0
+    local rewardCondition = rewardConfig["奖励条件"] or ""
+
+    if rewardCondition ~= "" and not self:CheckRewardCondition(player, rewardCondition) then
+        gg.log(string.format("玩家 %s 不满足奖励条件:%s", player.name or player.uin, tostring(rewardCondition)))
+        return false
+    end
+
+    local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
+    if not PlayerRewardDispatcher then
+        gg.log("PlayerRewardDispatcher 未初始化，无法发放奖励")
+        return false
+    end
+
+    -- 统一走单项发放，避免接口差异
+    local success, errmsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemType, itemCount)
+    if success then
+        self:SendLevelRewardNotification(player, rewardConfig, uniqueId)
+        gg.log(string.format("关卡奖励发放成功: 玩家 %s 获得 %s x%d (ID:%s)", player.name or player.uin, tostring(itemType), tonumber(itemCount) or 0, tostring(uniqueId)))
+        return true
+    else
+        gg.log(string.format("关卡奖励发放失败: 玩家 %s, 物品 %s x%d (ID:%s), 错误:%s", player.name or player.uin, tostring(itemType), tonumber(itemCount) or 0, tostring(uniqueId), tostring(errmsg)))
+        return false
+    end
+end
+
+--- 【新增】检查奖励条件
+---@param player MPlayer 玩家
+---@param condition string 奖励条件
+---@return boolean 是否满足条件
+function RaceGameMode:CheckRewardCondition(player, condition)
+    if not condition or condition == "" then
+        return true
+    end
+    gg.log(string.format("检查玩家 %s 的奖励条件:%s (暂时跳过检查)", player.name or player.uin, tostring(condition)))
+    return true
+end
+
+--- 【新增】发送关卡奖励通知给客户端
+---@param player MPlayer 玩家
+---@param rewardConfig table 奖励配置
+---@param uniqueId string 唯一ID
+function RaceGameMode:SendLevelRewardNotification(player, rewardConfig, uniqueId)
+    if not player or not player.uin then
+        return
+    end
+
+    local itemType = rewardConfig["物品类型"] or ""
+    local itemCount = rewardConfig["物品数量"] or 0
+    local rewardType = rewardConfig["奖励类型"] or ""
+
+    if gg.network_channel then
+        local eventData = {
+            cmd = "LevelRewardReceived",
+            uniqueId = uniqueId,
+            rewardType = rewardType,
+            itemType = itemType,
+            itemCount = itemCount,
+            message = string.format("获得关卡奖励: %s x%d", tostring(itemType), tonumber(itemCount) or 0),
+            timestamp = os.time()
+        }
+        gg.network_channel:fireClient(player.uin, eventData)
+        gg.log(string.format("已向玩家 %s 发送关卡奖励通知", player.name or player.uin))
+    end
+end
+
+--- 【新增】获取玩家的关卡奖励发放记录
+---@param player MPlayer 玩家
+---@return table<string, boolean>
+function RaceGameMode:GetPlayerLevelRewardRecord(player)
+    if not player or not player.uin then
+        return {}
+    end
+    return self.levelRewardsGiven[player.uin] or {}
+end
+
+--- 【新增】重置玩家的关卡奖励发放记录
+---@param player MPlayer 玩家
+function RaceGameMode:ResetPlayerLevelRewardRecord(player)
+    if not player or not player.uin then
+        return
+    end
+    if self.levelRewardsGiven[player.uin] then
+        self.levelRewardsGiven[player.uin] = {}
+        gg.log(string.format("已重置玩家 %s 的关卡奖励发放记录", player.name or player.uin))
     end
 end
 
@@ -162,7 +359,12 @@ function RaceGameMode:LaunchPlayer(player)
     -- 获取关卡配置的比赛时长
     local raceTime = self.levelType.raceTime or 60
 
-    local eventData = gg.clone(launchParams) or {} -- 克隆参数表，如果为nil则创建一个新表
+    -- 克隆参数表（launchParams 可能为 nil，需先判空）
+    local clonedParams = {}
+    if type(launchParams) == "table" then
+        clonedParams = gg.clone(launchParams) or {}
+    end
+    local eventData = clonedParams
     eventData.cmd = eventName
     eventData.gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME
     eventData.gravity = 0
