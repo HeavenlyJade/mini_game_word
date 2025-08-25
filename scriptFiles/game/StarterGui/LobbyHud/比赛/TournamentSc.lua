@@ -55,18 +55,33 @@ function TournamentSc:InitNodes()
 	self.distanceNodes[1] = {}
 	for i = 1, 10 do
 		self.distanceNodes[1][i] = self:Get("底图/功能/比赛进度条1/距离" .. i, ViewComponent)
+		-- 【新增】设置距离节点显示文本
+		local distanceValue = NodeConf["节点显示距离"]["init_map"]["进度条1"][i]
+		if self.distanceNodes[1][i] and self.distanceNodes[1][i].node and self.distanceNodes[1][i].node.Title ~= nil and distanceValue then
+			self.distanceNodes[1][i].node.Title = gg.FormatLargeNumber(distanceValue)
+		end
 	end
 	
 	-- 比赛进度条2: 距离1到4
 	self.distanceNodes[2] = {}
 	for i = 1, 4 do
 		self.distanceNodes[2][i] = self:Get("底图/功能/比赛进度条2/距离" .. i, ViewComponent)
+		-- 【新增】设置距离节点显示文本
+		local distanceValue = NodeConf["节点显示距离"]["init_map"]["进度条2"][i]
+		if self.distanceNodes[2][i] and self.distanceNodes[2][i].node and self.distanceNodes[2][i].node.Title ~= nil and distanceValue then
+			self.distanceNodes[2][i].node.Title = gg.FormatLargeNumber(distanceValue)
+		end
 	end
 	
 	-- 比赛进度条3: 距离1到3
 	self.distanceNodes[3] = {}
 	for i = 1, 3 do
 		self.distanceNodes[3][i] = self:Get("底图/功能/比赛进度条3/距离" .. i, ViewComponent)
+		-- 【新增】设置距离节点显示文本
+		local distanceValue = NodeConf["节点显示距离"]["init_map"]["进度条3"][i]
+		if self.distanceNodes[3][i] and self.distanceNodes[3][i].node and self.distanceNodes[3][i].node.Title ~= nil and distanceValue then
+			self.distanceNodes[3][i].node.Title = gg.FormatLargeNumber(distanceValue)
+		end
 	end
 	
 	-- 比赛进度条
