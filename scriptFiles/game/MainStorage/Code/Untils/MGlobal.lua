@@ -579,8 +579,8 @@ end
 
 -- 获取ui_root
 ---@return SandboxNode UI根节点
-function gg.get_ui_root()
-    return Players.LocalPlayer.PlayerGui.ui_root
+function gg.get_player_gui()
+    return Players.LocalPlayer.PlayerGui
 end
 
 

@@ -7,6 +7,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
+local ClientUtils = require(MainStorage.Code.Untils.ClientUtils) ---@type ClientUtils
 
 ---@class PlayerAnimationAction : Class
 -- 玩家动画控制模块，处理各种动画和状态控制
@@ -151,6 +152,9 @@ function PlayerAnimationAction:StartFlyAnimation(data, actor)
         tournamentSc:SetAfkButtonVisible(true)
     end
     
+    -- 【新增】启动飞行时隐藏跳跃按钮
+    ClientUtils.HideUINode("TouchUIMain/BtnJump")
+    
 end
 
 --- 停止飞行动画
@@ -200,6 +204,9 @@ function PlayerAnimationAction:StopFlyAnimation(actor)
         local Controller = require(MainStorage.Code.Client.MController) ---@type Controller
         Controller.m_enableMove = self.originalEnableMove
     end
+    
+    -- 【新增】停止飞行时显示跳跃按钮
+    ClientUtils.ShowUINode("TouchUIMain/BtnJump")
     
     -- 记录恢复后的状态
 
@@ -291,6 +298,9 @@ function PlayerAnimationAction:ForceStop(actor)
         Controller.m_enableMove = self.originalEnableMove
     end
     
+    -- 【新增】强制停止时显示跳跃按钮
+    ClientUtils.ShowUINode("TouchUIMain/BtnJump")
+    
     --gg.log("PlayerAnimationAction: 强制停止完成")
     
     -- 结束模块
@@ -314,7 +324,9 @@ function PlayerAnimationAction:OnEnd()
     if tournamentSc then
         tournamentSc:SetAfkButtonVisible(false)
     end
-
+    
+    -- 【新增】模块结束时显示跳跃按钮
+    ClientUtils.ShowUINode("TouchUIMain/BtnJump")
     
     -- 清理定时器
     if self.animationTimer then
