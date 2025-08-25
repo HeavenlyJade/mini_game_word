@@ -16,7 +16,7 @@ LevelRewardNodeInitializer.clonedNodes = {}
 
 --- 初始化所有关卡奖励节点
 function LevelRewardNodeInitializer.InitializeAllLevelRewardNodes()
-    gg.log("开始初始化关卡奖励节点器")
+    --gg.log("开始初始化关卡奖励节点器")
     
     -- 获取所有关卡奖励配置
     local allLevelRewards = ConfigLoader.GetAllLevelNodeRewards()
@@ -25,7 +25,7 @@ function LevelRewardNodeInitializer.InitializeAllLevelRewardNodes()
     local targetMaps = {"init_map", "map2", "map3"}
     
     for _, mapName in ipairs(targetMaps) do
-        gg.log("正在初始化地图:", mapName, "的关卡奖励节点")
+        --gg.log("正在初始化地图:", mapName, "的关卡奖励节点")
         
         -- 筛选当前地图的配置
         local mapConfigs = LevelRewardNodeInitializer.GetConfigsByMap(allLevelRewards, mapName)
@@ -35,7 +35,7 @@ function LevelRewardNodeInitializer.InitializeAllLevelRewardNodes()
         end
     end
     
-    gg.log("关卡奖励节点器初始化完成，共克隆节点数:", #LevelRewardNodeInitializer.clonedNodes)
+    --gg.log("关卡奖励节点器初始化完成，共克隆节点数:", #LevelRewardNodeInitializer.clonedNodes)
 end
 
 --- 根据地图名称筛选配置
@@ -50,7 +50,7 @@ function LevelRewardNodeInitializer.GetConfigsByMap(allConfigs, mapName)
         local sceneName = config:GetSceneName()
         if sceneName and sceneName == mapName then
             result[configId] = config
-            gg.log("找到地图", mapName, "的关卡奖励配置:", config:GetName())
+            --gg.log("找到地图", mapName, "的关卡奖励配置:", config:GetName())
         end
     end
     
@@ -62,41 +62,41 @@ end
 ---@param mapName string 地图名称
 function LevelRewardNodeInitializer.InitializeSingleLevelReward(config, mapName)
     if not config then 
-        gg.log("错误：关卡奖励配置为空")
+        --gg.log("错误：关卡奖励配置为空")
         return 
     end
     
-    gg.log("初始化关卡奖励配置:", config:GetName())
+    --gg.log("初始化关卡奖励配置:", config:GetName())
     
     -- 获取场景节点路径
     local sceneNodePath = config:GetSceneNodePath()
     if not sceneNodePath or sceneNodePath == "" then
-        gg.log("错误：关卡奖励配置", config:GetName(), "没有配置场景节点路径")
+        --gg.log("错误：关卡奖励配置", config:GetName(), "没有配置场景节点路径")
         return
     end
     
     -- 在场景中查找原始节点
     local originalNode = gg.GetChild(WorkSpace, sceneNodePath)
     if not originalNode then
-        gg.log("错误：找不到场景节点，路径:", sceneNodePath)
+        --gg.log("错误：找不到场景节点，路径:", sceneNodePath)
         return
     end
     
     -- 获取节点的父容器
     local parentNode = originalNode.Parent
     if not parentNode then
-        gg.log("错误：原始节点没有父容器，路径:", sceneNodePath)
+        --gg.log("错误：原始节点没有父容器，路径:", sceneNodePath)
         return
     end
     
     -- 循环_idMap进行节点克隆
     local idMap = config._idMap
     if not idMap or not next(idMap) then
-        gg.log("警告：配置", config:GetName(), "没有可用的_idMap数据")
+        --gg.log("警告：配置", config:GetName(), "没有可用的_idMap数据")
         return
     end
     
-    gg.log("开始克隆节点，_idMap项目数:", LevelRewardNodeInitializer.GetTableCount(idMap))
+    --gg.log("开始克隆节点，_idMap项目数:", LevelRewardNodeInitializer.GetTableCount(idMap))
     
     local cloneIndex = 0
     for uniqueId, rewardNode in pairs(idMap) do
@@ -160,8 +160,8 @@ function LevelRewardNodeInitializer.CloneSingleRewardNode(originalNode, parentNo
         distanceConfig = distanceConfig
     })
     
-    gg.log(string.format("克隆节点完成 - 配置:%s, ID:%s, 位置:(%g,%g,%g), 距离配置:%g", 
-        configName, uniqueId, newPosition.X, newPosition.Y, newPosition.Z, distanceConfig))
+    --gg.log(string.format("克隆节点完成 - 配置:%s, ID:%s, 位置:(%g,%g,%g), 距离配置:%g", 
+        -- configName, uniqueId, newPosition.X, newPosition.Y, newPosition.Z, distanceConfig))
 end
 
 --- 绑定TriggerBox触发事件
@@ -175,12 +175,12 @@ function LevelRewardNodeInitializer.BindTriggerBoxEvent(clonedNode, uniqueId, re
     local triggerBox = clonedNode:FindFirstChild("TriggerBox") -- 递归查找
     
     if not triggerBox then
-        gg.log("警告：在克隆节点中找不到TriggerBox，节点:", clonedNode.Name)
+        --gg.log("警告：在克隆节点中找不到TriggerBox，节点:", clonedNode.Name)
         return
     end
     
     if triggerBox.ClassType ~= 'TriggerBox' then
-        gg.log("警告：找到的节点不是TriggerBox类型，节点:", triggerBox.Name, "类型:", triggerBox.ClassType)
+        --gg.log("警告：找到的节点不是TriggerBox类型，节点:", triggerBox.Name, "类型:", triggerBox.ClassType)
         return
     end
     
@@ -189,7 +189,7 @@ function LevelRewardNodeInitializer.BindTriggerBoxEvent(clonedNode, uniqueId, re
         LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName)
     end)
     
-    gg.log("TriggerBox触发事件绑定完成 - 节点:", clonedNode.Name, "ID:", uniqueId)
+    --gg.log("TriggerBox触发事件绑定完成 - 节点:", clonedNode.Name, "ID:", uniqueId)
 end
 
 --- TriggerBox触发事件处理
@@ -205,7 +205,7 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
     end
     
     local playerId = actor.UserId
-    gg.log("玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
+    --gg.log("玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
     
     -- 构建发送到服务端的消息数据
     local messageData = {
@@ -226,8 +226,8 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
     LevelRewardNodeInitializer.SendToServer(messageData)
     
     -- 记录详细日志用于调试
-    gg.log(string.format("关卡奖励触发详情 - 奖励类型:%s, 物品类型:%s, 数量:%d, 条件:%s", 
-        messageData.rewardType, messageData.itemType, messageData.itemCount, messageData.rewardCondition))
+    --gg.log(string.format("关卡奖励触发详情 - 奖励类型:%s, 物品类型:%s, 数量:%d, 条件:%s", 
+        -- messageData.rewardType, messageData.itemType, messageData.itemCount, messageData.rewardCondition))
 end
 
 --- 发送消息到服务端
@@ -236,9 +236,9 @@ function LevelRewardNodeInitializer.SendToServer(messageData)
     -- 使用项目的网络通道发送消息到服务端
     if gg.network_channel then
         gg.network_channel:fireServer(messageData)
-        gg.log("关卡奖励消息已发送到服务端, 命令:", messageData.cmd, "玩家:", messageData.playerId)
+        --gg.log("关卡奖励消息已发送到服务端, 命令:", messageData.cmd, "玩家:", messageData.playerId)
     else
-        gg.log("错误：无法找到网络通道，无法发送消息到服务端")
+        --gg.log("错误：无法找到网络通道，无法发送消息到服务端")
     end
 end
 
@@ -255,19 +255,19 @@ end
 
 --- 清理所有克隆的节点（用于重置或清理）
 function LevelRewardNodeInitializer.CleanupClonedNodes()
-    gg.log("开始清理克隆的关卡奖励节点")
+    --gg.log("开始清理克隆的关卡奖励节点")
     
     for i, nodeInfo in ipairs(LevelRewardNodeInitializer.clonedNodes) do
         if nodeInfo.node and nodeInfo.node.Parent then
             nodeInfo.node:Destroy()
-            gg.log("销毁克隆节点:", nodeInfo.configName, "ID:", nodeInfo.uniqueId)
+            --gg.log("销毁克隆节点:", nodeInfo.configName, "ID:", nodeInfo.uniqueId)
         end
     end
     
     -- 清空引用数组
     LevelRewardNodeInitializer.clonedNodes = {}
     
-    gg.log("关卡奖励节点清理完成")
+    --gg.log("关卡奖励节点清理完成")
 end
 
 --- 获取指定地图的所有克隆节点信息
