@@ -205,7 +205,7 @@ function LotteryType:GetFormattedProbability(rewardItem)
     if math.floor(probability) == probability then
         return string.format("%d%%", probability)
     else
-        return string.format("%.2f%%", probability)
+        return string.format("%.1f%%", probability)
     end
 end
 

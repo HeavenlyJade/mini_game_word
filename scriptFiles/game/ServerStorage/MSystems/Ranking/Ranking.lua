@@ -274,7 +274,7 @@ function Ranking:FindPlayerInRankingData(uin)
             return {
                 rank = rank,
                 score = data.value or 0,
-                playerName = data.name or "",
+                playerName = data.nick or "",
                 uin = uin
             }
         end

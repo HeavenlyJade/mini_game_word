@@ -59,7 +59,7 @@ function InitAutoSpotNodes.InitializeSingleAutoSpotNode(sceneNode)
     end
     -- 设置作用描述节点
     local effectNode = InitAutoSpotNodes.SetNodeTitleByPath(targetNode, sceneNode.effectDescNode, effectDesc)
-    
+    wait(0.1)  -- 等待0.1秒后处理下一个
     --gg.log("挂机点", sceneNode.name, "配置完成")
 end
 

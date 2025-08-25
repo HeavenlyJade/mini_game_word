@@ -40,7 +40,7 @@ function RankingGui:OnInit(node, config)
     -- 4. 按钮点击事件注册
     self:RegisterButtonEvents()
     
-    ----gg.log("RankingGui 初始化完成")
+    --gg.log("RankingGui 初始化完成")
 end
 
 -- 节点初始化
@@ -58,7 +58,8 @@ function RankingGui:InitNodes()
     
     -- 排行榜内容区域
     self.rankingPosition = self:Get("排行榜界面/排行榜位置", ViewList) ---@type ViewList
-    
+    self.Tmplsit = self:Get("排行榜界面/排行榜位置模板", ViewList) ---@type ViewList
+    self.Tmplsit:SetVisible(false)
     -- 前三名排名节点
     self.firstRank = self:Get("排行榜界面/排行榜位置模板/排名第一", ViewComponent) ---@type ViewComponent
 
@@ -72,8 +73,10 @@ function RankingGui:InitNodes()
     self.rankingButtonPos = self:Get("排行榜界面/右侧底图/排行榜按钮位置", ViewList) ---@type ViewList
    
     self.TemrankingButton = self:Get("排行榜界面/右侧底图/排行榜按钮位置模版/排行按钮", ViewButton) ---@type ViewButton
-    
-    ----gg.log("RankingGui 节点初始化完成")
+    self.TemrangkList = self:Get("排行榜界面/右侧底图/排行榜按钮位置模版", ViewList) ---@type ViewList
+    self.TemrankingButton:SetVisible(false)
+    self.TemrangkList:SetVisible(false)
+    --gg.log("RankingGui 节点初始化完成")
 end
 
 -- 数据初始化
@@ -87,7 +90,7 @@ function RankingGui:InitData()
     -- 读取排行榜配置
     self:LoadRankingConfig()
     
-    ----gg.log("RankingGui 数据初始化完成")
+    --gg.log("RankingGui 数据初始化完成")
 end
 
 --- 加载排行榜配置并生成按钮
@@ -97,13 +100,13 @@ function RankingGui:LoadRankingConfig()
     
     -- 检查模板按钮是否存在
     if not self.TemrankingButton then
-        ----gg.log("排行榜模板按钮不存在，无法生成排行榜按钮")
+        --gg.log("排行榜模板按钮不存在，无法生成排行榜按钮")
         return
     end
     
     -- 检查按钮位置容器是否存在
     if not self.rankingButtonPos then
-        ----gg.log("排行榜按钮位置容器不存在，无法生成排行榜按钮")
+        --gg.log("排行榜按钮位置容器不存在，无法生成排行榜按钮")
         return
     end
     
@@ -117,6 +120,7 @@ function RankingGui:LoadRankingConfig()
         local rankingPositionNode = self.rankingPosition.node:Clone()
         rankingPositionNode.Name = rankType
         buttonNode.Name = "排行榜_" .. rankType
+        buttonNode.Visible = true
         
         -- 设置按钮名称标签
         local buttonNameLabel = buttonNode:FindFirstChild("按钮名称")
@@ -140,10 +144,10 @@ function RankingGui:LoadRankingConfig()
         self.rankingButtons[rankType] = viewButton
         self.rankingButtonsPos[rankType] = rankingPositionNode
         
-        ----gg.log("生成排行榜按钮成功", rankType, config.name)
+        --gg.log("生成排行榜按钮成功", rankType, config.name)
     end
     
-    ----gg.log("排行榜按钮生成完成，总数:", #RankingConfig.CONFIGS)
+    --gg.log("排行榜按钮生成完成，总数:", #RankingConfig.CONFIGS)
 end
 
 -- 事件注册
@@ -161,7 +165,7 @@ function RankingGui:RegisterEvents()
         self:OnRankingTypesSync(data)
     end)
     
-    ----gg.log("RankingGui 事件注册完成")
+    --gg.log("RankingGui 事件注册完成")
 end
 
 -- 按钮事件注册
@@ -173,12 +177,12 @@ function RankingGui:RegisterButtonEvents()
         end
     end
     
-    ----gg.log("RankingGui 按钮事件注册完成")
+    --gg.log("RankingGui 按钮事件注册完成")
 end
 
 -- 关闭按钮点击事件
 function RankingGui:OnCloseButtonClicked()
-    ----gg.log("点击关闭排行榜界面")
+    --gg.log("点击关闭排行榜界面")
     self:SetVisible(false)
 end
 
@@ -186,7 +190,7 @@ end
 ---@param rankType string 排行榜类型
 ---@param config table 排行榜配置
 function RankingGui:OnRankingTypeButtonClicked(rankType, config)
-    ----gg.log("点击排行榜类型按钮", rankType, config.name)
+    --gg.log("点击排行榜类型按钮", rankType, config.name)
     
     -- 设置当前排行榜类型
     self.currentRankType = rankType
@@ -194,16 +198,14 @@ function RankingGui:OnRankingTypeButtonClicked(rankType, config)
     -- 显示排行榜界面
     self:ShowRanking(rankType)
     
-    -- 这里可以添加获取该排行榜详细数据的逻辑
-    -- 例如：请求服务器获取排行榜前100名数据
 end
 
 --- 处理排行榜数据同步事件
 ---@param data table 排行榜数据 {rankType, rankingConfig, rankingList, playerRankInfo, count}
 function RankingGui:OnRankingDataSync(data)
-    ----gg.log("获取到的排行榜数据", data)
+    --gg.log("获取到的排行榜数据", data)
     if not data or not data.rankType then
-        ----gg.log("排行榜数据同步事件数据无效")
+        --gg.log("排行榜数据同步事件数据无效")
         return
     end
     
@@ -221,22 +223,22 @@ function RankingGui:OnRankingDataSync(data)
     local playerRank = (data.playerRankInfo and data.playerRankInfo.rank) or -1
     local listCount = data.count or 0
     
-    ----gg.log("接收排行榜数据同步", rankType, "排行榜条目数:", listCount, "玩家排名:", playerRank)
+    --gg.log("接收排行榜数据同步", rankType, "排行榜条目数:", listCount, "玩家排名:", playerRank)
 end
 
 --- 处理排行榜类型同步事件
 ---@param data table 排行榜类型数据 {rankingTypes, count}
 function RankingGui:OnRankingTypesSync(data)
-    ----gg.log("排行榜数据",data)
+    --gg.log("排行榜数据",data)
     if not data or not data.rankingTypes then
-        ----gg.log("排行榜类型同步事件数据无效")
+        --gg.log("排行榜类型同步事件数据无效")
         return
     end
     
     -- 存储排行榜类型列表
     self.rankingTypes = data.rankingTypes or {}
     
-    ----gg.log("接收排行榜类型同步", "类型数量:", #self.rankingTypes)
+    --gg.log("接收排行榜类型同步", "类型数量:", #self.rankingTypes)
 end
 
 -- 显示排行榜界面
@@ -247,7 +249,7 @@ function RankingGui:ShowRanking(rankType)
     -- 获取排行榜数据
     local rankingData = self.rankingData[rankType]
     if not rankingData then
-        ----gg.log("显示排行榜界面失败：排行榜数据不存在", rankType)
+        --gg.log("显示排行榜界面失败：排行榜数据不存在", rankType)
         return
     end
     
@@ -266,7 +268,7 @@ end
 -- 隐藏排行榜界面
 function RankingGui:HideRanking()
     self:SetVisible(false)  
-    ----gg.log("隐藏排行榜界面")
+    --gg.log("隐藏排行榜界面")
 end
 
 --- 显示排行榜列表
@@ -275,10 +277,10 @@ function RankingGui:DisplayRankingList(rankingList)
        -- 先清理排行榜位置容器的所有子节点
     if self.rankingPosition then
         self.rankingPosition:ClearChildren()
-        ----gg.log("清理排行榜位置容器完成")
+        --gg.log("清理排行榜位置容器完成")
     end
     if not rankingList or #rankingList == 0 then
-        ----gg.log("排行榜列表为空，无法显示")
+        --gg.log("排行榜列表为空，无法显示")
         return
     end
     
@@ -302,7 +304,7 @@ function RankingGui:DisplayRankingList(rankingList)
         end
     end
     
-    ------gg.log("显示排行榜列表完成，共", #rankingList, "条数据")
+    ----gg.log("显示排行榜列表完成，共", #rankingList, "条数据")
 end
 
 --- 显示前三名排行榜数据
@@ -346,7 +348,7 @@ function RankingGui:DisplayTopRank(rank, rankData)
     -- 使用ViewList的AppendChild方法添加到排行榜位置容器
     if self.rankingPosition then
         self.rankingPosition:AppendChild(clonedRankNode)
-        ----gg.log("添加前三名排名", rank, ":", playerName, score)
+        --gg.log("添加前三名排名", rank, ":", playerName, score)
     end
 end
 
@@ -389,7 +391,7 @@ function RankingGui:DisplayOtherRank(rank, rankData)
     -- 使用ViewList的AppendChild方法添加到排行榜位置容器
     if self.rankingPosition then
         self.rankingPosition:AppendChild(otherRankNode)
-        ----gg.log("添加排名", rank, ":", playerName, score)
+        --gg.log("添加排名", rank, ":", playerName, score)
     end
 end
 
