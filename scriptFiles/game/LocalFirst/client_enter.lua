@@ -20,3 +20,7 @@ InitAutoSpotNodes.InitializeAllAutoSpotNodes()
 local MapBackgroundMusic = require(game:GetService("MainStorage"):WaitForChild('Code').Client.SceneNode.MapBackgroundMusic) ---@type MapBackgroundMusic
 MapBackgroundMusic.InitializeBackgroundMusic()
 
+-- 导入并初始化关卡奖励节点器
+local LevelRewardNodeInitializer = require(game:GetService("MainStorage"):WaitForChild('Code').Client.SceneNode.LevelRewardNodeInitializer) ---@type LevelRewardNodeInitializer
+LevelRewardNodeInitializer.InitializeAllLevelRewardNodes()
+
