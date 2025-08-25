@@ -4,10 +4,14 @@
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal) ---@type ActionCosteRewardCal
 
 ---@class LevelEffectData
 ---@field level number 等级
 ---@field effectValue number 效果数值
+---@field conditionType string|nil 条件类型
+---@field conditionFormula string|nil 条件公式
+---@field effectFormula string|nil 效果公式
 
 ---@class SpecialPetEffectData
 ---@field petId string 宠物ID
@@ -32,9 +36,22 @@ function EffectLevelType:OnInit(data)
     self.levelEffects = {}
     if data['等级效果列表'] then
         for _, effectData in ipairs(data['等级效果列表']) do
+            -- 处理空字符串转换为nil
+            local conditionType = effectData['条件类型']
+            if conditionType == '' then conditionType = nil end
+            
+            local conditionFormula = effectData['条件公式']
+            if conditionFormula == '' then conditionFormula = nil end
+            
+            local effectFormula = effectData['效果公式']
+            if effectFormula == '' then effectFormula = nil end
+            
             table.insert(self.levelEffects, {
                 level = effectData['等级'] or 1,
-                effectValue = effectData['效果数值'] or 0
+                effectValue = effectData['效果数值'] or 0,
+                conditionType = conditionType,
+                conditionFormula = conditionFormula,
+                effectFormula = effectFormula
             })
         end
     end
@@ -197,5 +214,47 @@ function EffectLevelType:GetLevelRange()
     
     return minLevel, maxLevel
 end
+
+--- 获取指定等级的条件类型
+---@param level number 等级
+---@return string|nil 条件类型，如果等级不存在则返回nil
+function EffectLevelType:GetConditionType(level)
+    local effect = self:GetLevelEffect(level)
+    return effect and effect.conditionType or nil
+end
+
+--- 获取指定等级的条件公式
+---@param level number 等级
+---@return string|nil 条件公式，如果等级不存在则返回nil
+function EffectLevelType:GetConditionFormula(level)
+    local effect = self:GetLevelEffect(level)
+    return effect and effect.conditionFormula or nil
+end
+
+--- 获取指定等级的效果公式
+---@param level number 等级
+---@return string|nil 效果公式，如果等级不存在则返回nil
+function EffectLevelType:GetEffectFormula(level)
+    local effect = self:GetLevelEffect(level)
+    return effect and effect.effectFormula or nil
+end
+
+--- 检查指定等级是否有条件
+---@param level number 等级
+---@return boolean 是否有条件
+function EffectLevelType:HasCondition(level)
+    local effect = self:GetLevelEffect(level)
+    return effect and (effect.conditionType ~= nil or effect.conditionFormula ~= nil)
+end
+
+--- 检查指定等级是否有效果公式
+---@param level number 等级
+---@return boolean 是否有效果公式
+function EffectLevelType:HasEffectFormula(level)
+    local effect = self:GetLevelEffect(level)
+    return effect and effect.effectFormula ~= nil
+end
+
+
 
 return EffectLevelType
