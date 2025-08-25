@@ -10,6 +10,7 @@ local ItemType = require(MainStorage.Code.Common.TypeConfig.ItemType)
 local SkillTypes = require(MainStorage.Code.Common.TypeConfig.SkillTypes) 
 local EffectType = require(MainStorage.Code.Common.TypeConfig.EffectType)
 local LevelType = require(MainStorage.Code.Common.TypeConfig.LevelType)
+local LevelNodeRewardType = require(MainStorage.Code.Common.TypeConfig.LevelNodeRewardType) ---@type LevelNodeRewardType
 local PetType = require(MainStorage.Code.Common.TypeConfig.PetType)
 local TrailType = require(MainStorage.Code.Common.TypeConfig.TrailType)
 local PlayerInitType = require(MainStorage.Code.Common.TypeConfig.PlayerInitType)
@@ -26,6 +27,7 @@ local ActionCostConfig = require(MainStorage.Code.Common.Config.ActionCostConfig
 local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig)
 local SkillConfig = require(MainStorage.Code.Common.Config.SkillConfig)
 local LevelConfig = require(MainStorage.Code.Common.Config.LevelConfig)
+local LevelNodeRewardConfig = require(MainStorage.Code.Common.Config.LevelNodeRewardConfig) ---@type LevelNodeRewardConfig
 local SceneNodeConfig = require(MainStorage.Code.Common.Config.SceneNodeConfig)
 local AchievementConfig = require(MainStorage.Code.Common.Config.AchievementConfig)
 local PetConfig = require(MainStorage.Code.Common.Config.PetConfig)
@@ -52,6 +54,7 @@ ConfigLoader.Skills = {}
 ConfigLoader.Effects = {}
 ConfigLoader.Talents = {}
 ConfigLoader.Levels = {}
+ConfigLoader.LevelNodeRewards = {} -- 新增关卡节点奖励配置存储
 ConfigLoader.ItemQualities = {}
 ConfigLoader.Npcs = {}
 ConfigLoader.SceneNodes = {}
@@ -100,6 +103,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(ActionCostConfig, ActionCostType, ConfigLoader.ActionCosts, "ActionCost")
     ConfigLoader.LoadConfig(ItemTypeConfig, ItemType, ConfigLoader.Items, "Item")
     ConfigLoader.LoadConfig(LevelConfig, LevelType, ConfigLoader.Levels, "Level")
+    ConfigLoader.LoadConfig(LevelNodeRewardConfig, LevelNodeRewardType, ConfigLoader.LevelNodeRewards, "LevelNodeReward")
     ConfigLoader.LoadConfig(PartnerConfig, PetType, ConfigLoader.Partners, "Partner")
     ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
     ConfigLoader.LoadConfig(WingConfig, PetType, ConfigLoader.Wings, "Wing")
@@ -193,6 +197,73 @@ end
 
 function ConfigLoader.GetLevel(id)
     return ConfigLoader.Levels[id]
+end
+
+---@param id string
+---@return LevelNodeRewardType
+function ConfigLoader.GetLevelNodeReward(id)
+    return ConfigLoader.LevelNodeRewards[id]
+end
+
+---@return table<string, LevelNodeRewardType>
+function ConfigLoader.GetAllLevelNodeRewards()
+    return ConfigLoader.LevelNodeRewards
+end
+
+--- 根据场景名称筛选关卡节点奖励配置
+---@param sceneName string 场景名称
+---@return LevelNodeRewardType[] 该场景下的所有关卡节点奖励配置
+function ConfigLoader.GetLevelNodeRewardsByScene(sceneName)
+    local result = {}
+    
+    if not sceneName or sceneName == "" then
+        return result
+    end
+    
+    for _, rewardConfig in pairs(ConfigLoader.LevelNodeRewards) do
+        if rewardConfig:GetSceneName() == sceneName then
+            table.insert(result, rewardConfig)
+        end
+    end
+    
+    return result
+end
+
+--- 根据配置名称筛选关卡节点奖励配置
+---@param configName string 配置名称（支持部分匹配）
+---@return LevelNodeRewardType[] 匹配的关卡节点奖励配置
+function ConfigLoader.GetLevelNodeRewardsByName(configName)
+    local result = {}
+    
+    if not configName or configName == "" then
+        return result
+    end
+    
+    for _, rewardConfig in pairs(ConfigLoader.LevelNodeRewards) do
+        local name = rewardConfig:GetName()
+        if name and string.find(name, configName, 1, true) then
+            table.insert(result, rewardConfig)
+        end
+    end
+    
+    return result
+end
+
+--- 获取关卡节点奖励配置数量
+---@return number 配置数量
+function ConfigLoader.GetLevelNodeRewardCount()
+    local count = 0
+    for _ in pairs(ConfigLoader.LevelNodeRewards) do
+        count = count + 1
+    end
+    return count
+end
+
+--- 检查指定ID的关卡节点奖励配置是否存在
+---@param id string 配置ID
+---@return boolean 是否存在
+function ConfigLoader.HasLevelNodeReward(id)
+    return ConfigLoader.LevelNodeRewards[id] ~= nil
 end
 
 ---@param id string

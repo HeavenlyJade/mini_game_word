@@ -27,6 +27,7 @@ local RewardManager = require(MainStorage.Code.GameReward.RewardManager) --[[@ty
 ---@field realTimeRewardRules RealTimeRewardRule[] 实时奖励规则列表
 ---@field gameStartCommands table<string> 游戏开始指令列表
 ---@field gameEndCommands table<string> 游戏结算指令列表
+---@field sceneConfig string 场景配置名称
 ---@field _calculator RewardBase 缓存的奖励计算器实例
 local LevelType = ClassMgr.Class("LevelType")
 
@@ -78,12 +79,17 @@ function LevelType:OnInit(data)
     -- 游戏结算指令
     self.gameEndCommands = data["游戏结算指令"] or {}
 
+    -- 场景配置
+    self.sceneConfig = data["场景配置"] or ""
+
     -- 【新增】缓存计算器实例
     self._calculator = nil
 
     -- 调试信息：显示关卡配置加载结果
     local gg = require(game:GetService("MainStorage").Code.Untils.MGlobal)
-    --gg.log(string.format("LevelType 初始化完成 - 关卡: %s, 基础奖励数: %d, 每米得分: %.1f, 实时奖励规则数: %d",self.name, #self.baseRewards, self.scorePerMeter, #self.realTimeRewardRules))
+    --gg.log(string.format("LevelType 初始化完成 - 关卡: %s, 基础奖励数: %d, 每米得分: %.1f, 实时奖励规则数: %d, 场景配置: %s", 
+        --self.name, #self.baseRewards, self.scorePerMeter, #self.realTimeRewardRules, 
+        --self:HasSceneConfig() and self.sceneConfig or "无"))
 end
 
 --- 【新增】获取或创建并缓存奖励计算器
@@ -315,6 +321,28 @@ end
 ---@return table<string>
 function LevelType:GetGameEndCommands()
     return self.gameEndCommands
+end
+
+--- 获取场景配置名称
+---@return string
+function LevelType:GetSceneConfig()
+    return self.sceneConfig
+end
+
+--- 检查是否有场景配置
+---@return boolean
+function LevelType:HasSceneConfig()
+    return self.sceneConfig and self.sceneConfig ~= ""
+end
+
+--- 获取场景配置信息摘要
+---@return table 场景配置信息摘要
+function LevelType:GetSceneConfigSummary()
+    return {
+        hasSceneConfig = self:HasSceneConfig(),
+        sceneConfigName = self.sceneConfig,
+        sceneConfigType = self:HasSceneConfig() and "关卡节点奖励配置" or "无"
+    }
 end
 
 --- 获取玩家限制信息
