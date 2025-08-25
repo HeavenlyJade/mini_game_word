@@ -7,6 +7,8 @@ local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
 local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
 local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
 local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
@@ -40,6 +42,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
         local actionType = bonusItem["作用类型"]
         local targetVar = bonusItem["目标变量"]
         local scalingRate = bonusItem["缩放倍率"] or 1
+        local effectFieldName = bonusItem["玩家效果字段"] -- 新增：获取玩家效果字段
 
         -- 如果指定了目标变量，只对匹配的变量生效
         if targetVariable and targetVar and targetVar ~= targetVariable then
@@ -48,8 +51,28 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
             if bonusVarName and actionType then
                 local parsed = variableSystem:ParseVariableName(bonusVarName)
                 if parsed then
-                    local bonusValue = variableSystem:GetRawBonusValue(bonusVarName)
-
+                    local bonusValue= 0
+                    if effectFieldName and effectFieldName ~= "" then
+                        local effectLevelConfig = ConfigLoader.GetEffectLevel(effectFieldName)
+                            -- 获取玩家背包数据
+                        local bagData = MServerDataManager.BagMgr.GetPlayerBag(player.uin)
+                  
+                        
+                        -- 构建外部上下文
+                        local externalContext = {}
+                        
+                        -- 获取满足条件的最大效果数值
+                        local maxEffectIndex = effectLevelConfig:GetMaxEffectIndex(player, bagData, externalContext)
+                      
+                        local maxEffectValue = effectLevelConfig.levelEffects[maxEffectIndex].effectValue
+                        bonusValue =  maxEffectValue
+                        
+                        table.insert(bonusDescriptions, string.format("效果等级配置加成(%s, +%s)", 
+                            effectFieldName, tostring(maxEffectValue)))
+                        
+                    else
+                        bonusValue = variableSystem:GetRawBonusValue(bonusVarName)
+                    end
                     if actionType == "单独相加" then
                         if parsed.method == "百分比" then
                             totalPercentBonus = totalPercentBonus + bonusValue

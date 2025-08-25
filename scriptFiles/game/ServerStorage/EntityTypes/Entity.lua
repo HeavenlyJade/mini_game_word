@@ -486,7 +486,8 @@ function _M:SetStat(statName, amount, source, refresh)
     self.stats[source][statName] = amount
 
     if self.actor and refresh and TRIGGER_STAT_TYPES[statName] then
-        TRIGGER_STAT_TYPES[statName](self, self:GetStat(statName))
+        -- 修改：直接使用传入的amount，而不是GetStat的累加值
+        TRIGGER_STAT_TYPES[statName](self, amount)
     end
 end
 

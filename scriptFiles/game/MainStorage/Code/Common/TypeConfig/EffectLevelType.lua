@@ -28,22 +28,22 @@ local EffectLevelType = ClassMgr.Class("EffectLevelType")
 --- 初始化效果等级配置类型
 ---@param data table 配置数据
 function EffectLevelType:OnInit(data)
-    gg.log("=== EffectLevelType:OnInit 开始 ===")
-    gg.log("原始配置数据:", data)
+    --gg.log("=== EffectLevelType:OnInit 开始 ===")
+    --gg.log("原始配置数据:", data)
     
     -- 基础配置信息
     self.configName = data['配置名称'] or ''
     self.configDesc = data['配置描述'] or ''
-    gg.log("配置名称:", self.configName)
-    gg.log("配置描述:", self.configDesc)
+    --gg.log("配置名称:", self.configName)
+    --gg.log("配置描述:", self.configDesc)
     
     -- 等级效果列表
     self.levelEffects = {}
     if data['等级效果列表'] then
-        gg.log("等级效果列表数量:", #data['等级效果列表'])
+        --gg.log("等级效果列表数量:", #data['等级效果列表'])
         for i, effectData in ipairs(data['等级效果列表']) do
-            gg.log(string.format("--- 处理等级效果%d ---", i))
-            gg.log("原始数据:", effectData)
+            --gg.log(string.format("--- 处理等级效果%d ---", i))
+            --gg.log("原始数据:", effectData)
             
             -- 处理空字符串转换为nil
             local conditionType = effectData['条件类型']
@@ -63,21 +63,21 @@ function EffectLevelType:OnInit(data)
                 effectFormula = effectFormula
             }
             
-            gg.log("处理后数据:", processedEffect)
+            --gg.log("处理后数据:", processedEffect)
             table.insert(self.levelEffects, processedEffect)
         end
     else
-        gg.log("警告：没有等级效果列表配置")
+        --gg.log("警告：没有等级效果列表配置")
     end
     
     -- 特殊宠物效果列表
     self.specialPetEffects = {}
     if data['特殊宠物效果列表'] then
-        gg.log("特殊宠物效果列表数量:", #data['特殊宠物效果列表'])
+        --gg.log("特殊宠物效果列表数量:", #data['特殊宠物效果列表'])
         for i, petEffectData in ipairs(data['特殊宠物效果列表']) do
-            gg.log(string.format("--- 处理特殊宠物效果%d ---", i))
-            gg.log("宠物ID:", petEffectData['宠物ID'])
-            gg.log("效果数值:", petEffectData['效果数值'])
+            --gg.log(string.format("--- 处理特殊宠物效果%d ---", i))
+            --gg.log("宠物ID:", petEffectData['宠物ID'])
+            --gg.log("效果数值:", petEffectData['效果数值'])
             
             table.insert(self.specialPetEffects, {
                 petId = petEffectData['宠物ID'] or '',
@@ -85,14 +85,14 @@ function EffectLevelType:OnInit(data)
             })
         end
     else
-        gg.log("没有特殊宠物效果列表配置")
+        --gg.log("没有特殊宠物效果列表配置")
     end
     
     -- 计算最大等级
     self.maxLevel = self:CalculateMaxLevel()
-    gg.log("计算出的最大等级:", self.maxLevel)
+    --gg.log("计算出的最大等级:", self.maxLevel)
     
-    gg.log("=== EffectLevelType:OnInit 结束 ===")
+    --gg.log("=== EffectLevelType:OnInit 结束 ===")
 end
 
 --- 计算最大等级
@@ -299,65 +299,65 @@ end
 function EffectLevelType:CalculateMatchingEffects(playerData, bagData, externalContext)
     local matchingEffects = {}
     
-    gg.log("=== EffectLevelType:CalculateMatchingEffects 开始 ===")
-    gg.log("配置名称:", self.configName)
-    gg.log("等级效果数量:", self.levelEffects and #self.levelEffects or 0)
-    gg.log("玩家数据:", playerData)
-    gg.log("背包数据:", bagData)
-    gg.log("外部上下文:", externalContext)
+    --gg.log("=== EffectLevelType:CalculateMatchingEffects 开始 ===")
+    --gg.log("配置名称:", self.configName)
+    --gg.log("等级效果数量:", self.levelEffects and #self.levelEffects or 0)
+    --gg.log("玩家数据:", playerData)
+    --gg.log("背包数据:", bagData)
+    --gg.log("外部上下文:", externalContext)
     
     if not self.levelEffects or #self.levelEffects == 0 then
-        gg.log("警告：没有等级效果配置，返回空列表")
+        --gg.log("警告：没有等级效果配置，返回空列表")
         return matchingEffects
     end
     
     for index, levelEffect in ipairs(self.levelEffects) do
-        gg.log(string.format("--- 处理第%d个等级效果 ---", index))
-        gg.log("等级:", levelEffect.level)
-        gg.log("效果数值:", levelEffect.effectValue)
-        gg.log("条件类型:", levelEffect.conditionType)
-        gg.log("条件公式:", levelEffect.conditionFormula)
-        gg.log("效果公式:", levelEffect.effectFormula)
+        --gg.log(string.format("--- 处理第%d个等级效果 ---", index))
+        --gg.log("等级:", levelEffect.level)
+        --gg.log("效果数值:", levelEffect.effectValue)
+        --gg.log("条件类型:", levelEffect.conditionType)
+        --gg.log("条件公式:", levelEffect.conditionFormula)
+        --gg.log("效果公式:", levelEffect.effectFormula)
         
         local conditionMet = false
         
         if levelEffect.conditionType == '公式' and levelEffect.conditionFormula then
-            gg.log("使用公式条件计算...")
+            --gg.log("使用公式条件计算...")
             -- 使用 ActionCosteRewardCal 计算公式条件
             local calculator = self:_GetCalculator()
             local result = calculator:_CalculateValue(levelEffect.conditionFormula, playerData, bagData, externalContext)
             conditionMet = (result == true)
-            gg.log("公式计算结果:", result, "条件满足:", conditionMet)
+            --gg.log("公式计算结果:", result, "条件满足:", conditionMet)
             
         elseif levelEffect.conditionType == '数值' then
-            gg.log("使用数值条件，直接满足")
+            --gg.log("使用数值条件，直接满足")
             -- 数值类型直接返回true（或者可以根据具体业务逻辑调整）
             conditionMet = true
             
         elseif not levelEffect.conditionType or levelEffect.conditionType == '' then
-            gg.log("无条件类型，默认满足")
+            --gg.log("无条件类型，默认满足")
             -- 没有条件类型，默认满足
             conditionMet = true
         end
         
         if conditionMet then
-            gg.log(string.format("条件满足，添加效果配置 - 索引:%d, 效果数值:%s", index, tostring(levelEffect.effectValue)))
+            --gg.log(string.format("条件满足，添加效果配置 - 索引:%d, 效果数值:%s", index, tostring(levelEffect.effectValue)))
             table.insert(matchingEffects, {
                 index = index,
                 effectValue = levelEffect.effectValue,
                 levelEffect = levelEffect
             })
         else
-            gg.log(string.format("条件不满足，跳过效果配置 - 索引:%d", index))
+            --gg.log(string.format("条件不满足，跳过效果配置 - 索引:%d", index))
         end
     end
     
-    gg.log("=== 最终结果 ===")
-    gg.log("满足条件的效果数量:", #matchingEffects)
+    --gg.log("=== 最终结果 ===")
+    --gg.log("满足条件的效果数量:", #matchingEffects)
     for i, effect in ipairs(matchingEffects) do
-        gg.log(string.format("效果%d: 索引=%d, 效果数值=%s", i, effect.index, tostring(effect.effectValue)))
+        --gg.log(string.format("效果%d: 索引=%d, 效果数值=%s", i, effect.index, tostring(effect.effectValue)))
     end
-    gg.log("=== EffectLevelType:CalculateMatchingEffects 结束 ===")
+    --gg.log("=== EffectLevelType:CalculateMatchingEffects 结束 ===")
     
     return matchingEffects
 end
@@ -368,32 +368,32 @@ end
 ---@param externalContext table|nil 外部上下文
 ---@return number|nil 最大效果数值对应的索引，如果没有满足条件的配置则返回nil
 function EffectLevelType:GetMaxEffectIndex(playerData, bagData, externalContext)
-    gg.log("=== EffectLevelType:GetMaxEffectIndex 开始 ===")
-    gg.log("配置名称:", self.configName)
+    --gg.log("=== EffectLevelType:GetMaxEffectIndex 开始 ===")
+    --gg.log("配置名称:", self.configName)
     
     local matchingEffects = self:CalculateMatchingEffects(playerData, bagData, externalContext)
     
     if #matchingEffects == 0 then
-        gg.log("没有满足条件的效果配置，返回nil")
+        --gg.log("没有满足条件的效果配置，返回nil")
         return nil
     end
     
     local maxEffectValue = matchingEffects[1].effectValue
     local maxIndex = matchingEffects[1].index
     
-    gg.log("初始最大效果值:", maxEffectValue, "对应索引:", maxIndex)
+    --gg.log("初始最大效果值:", maxEffectValue, "对应索引:", maxIndex)
     
     for i, effect in ipairs(matchingEffects) do
-        gg.log(string.format("比较效果%d: 索引=%d, 效果数值=%s", i, effect.index, tostring(effect.effectValue)))
+        --gg.log(string.format("比较效果%d: 索引=%d, 效果数值=%s", i, effect.index, tostring(effect.effectValue)))
         if effect.effectValue > maxEffectValue then
-            gg.log(string.format("发现更大的效果值: %s > %s，更新最大值", tostring(effect.effectValue), tostring(maxEffectValue)))
+            --gg.log(string.format("发现更大的效果值: %s > %s，更新最大值", tostring(effect.effectValue), tostring(maxEffectValue)))
             maxEffectValue = effect.effectValue
             maxIndex = effect.index
         end
     end
     
-    gg.log("最终结果: 最大效果值=", maxEffectValue, "对应索引=", maxIndex)
-    gg.log("=== EffectLevelType:GetMaxEffectIndex 结束 ===")
+    --gg.log("最终结果: 最大效果值=", maxEffectValue, "对应索引=", maxIndex)
+    --gg.log("=== EffectLevelType:GetMaxEffectIndex 结束 ===")
     
     return maxIndex
 end

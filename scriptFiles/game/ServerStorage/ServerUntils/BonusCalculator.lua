@@ -7,6 +7,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
 local AttributeMapping = require(MainStorage.Code.Common.Icon.AttributeMapping) ---@type AttributeMapping
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 
 ---@class BonusCalculator
 local BonusCalculator = {}
@@ -234,10 +235,7 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
                 local effectLevelConfig = ConfigLoader.GetEffectLevel(bonusStatName)
                 if effectLevelConfig then
                     -- 获取玩家背包数据
-                    local bagData = nil
-                    if player.bagSystem and player.bagSystem.GetBagData then
-                        bagData = player.bagSystem:GetBagData()
-                    end
+                    local bagData = MServerDataManager.BagMgr.GetPlayerBag(player.uin)
                     
                     -- 构建外部上下文（可根据需要扩展）
                     local externalContext = {}
