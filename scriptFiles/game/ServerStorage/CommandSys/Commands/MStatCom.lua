@@ -8,6 +8,7 @@ local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local cloudDataMgr = require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type MCloudDataMgr
 local AttributeMapping = require(MainStorage.Code.Common.Icon.AttributeMapping) ---@type AttributeMapping
 local BonusCalculator = require(ServerStorage.ServerUntils.BonusCalculator) ---@type BonusCalculator
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
 
 ---@class StatCommand
 local StatCommand = {}
@@ -22,7 +23,7 @@ StatCommand.handlers = {}
 local function syncAndSave(player)
     if player then
         cloudDataMgr.SavePlayerData(player.uin, true)
-        --gg.log("玩家 " .. player.name .. " 的属性数据已保存。")
+        gg.log("玩家 " .. player.name .. " 的属性数据已保存。")
     end
 end
 
@@ -53,7 +54,7 @@ function StatCommand.handlers.add(params, player)
     local msg = string.format("成功为玩家 %s 的属性 '%s' 新增 %s (来源: %s)，新值为: %s.%s", 
         player.name, statName, tostring(valueToAdd), source, tostring(newValue), bonusInfo)
     --player:SendHoverText(msg)
-    --gg.log(msg)
+    gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -83,7 +84,7 @@ function StatCommand.handlers.set(params, player)
     local msg = string.format("成功将玩家 %s 的属性 '%s' 设置为: %s (来源: %s).%s", 
         player.name, statName, tostring(newValue), source, bonusInfo)
     --player:SendHoverText(msg)
-    --gg.log(msg)
+    gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -115,7 +116,7 @@ function StatCommand.handlers.reduce(params, player)
     local msg = string.format("成功为玩家 %s 的属性 '%s' 减少 %s (来源: %s)，新值为: %s.%s", 
         player.name, statName, tostring(valueToReduce), source, tostring(newValue), bonusInfo)
     --player:SendHoverText(msg)
-    --gg.log(msg)
+    gg.log(msg)
     syncAndSave(player)
     return true
 end
@@ -136,7 +137,7 @@ function StatCommand.handlers.testbonus(params, player)
         tostring(baseValue), tostring(finalValue), bonusInfo)
     
     --player:SendHoverText(msg)
-    --gg.log(msg)
+    gg.log(msg)
     return true
 end
 
@@ -168,12 +169,12 @@ function StatCommand.handlers.bonusonly(params, player)
         local msg = string.format("成功为玩家 %s 的属性 '%s' 应用加成 %s (来源: %s)，新值为: %s.%s", 
             player.name, statName, tostring(bonusValue), source, tostring(newValue), bonusInfo)
         -- --player:SendHoverText(msg)
-        --gg.log(msg)
+        gg.log(msg)
     else
         local msg = string.format("玩家 %s 的属性 '%s' 没有可应用的加成，保持原值。%s", 
             player.name, statName, bonusInfo)
         --player:SendHoverText(msg)
-        --gg.log(msg)
+        gg.log(msg)
     end
     
     syncAndSave(player)
@@ -215,7 +216,7 @@ function StatCommand.handlers.view(params, player)
 
         local fullMessage = table.concat(response, "\n")
         --player:SendHoverText(fullMessage)
-        --gg.log(fullMessage)
+        gg.log(fullMessage)
     else
         -- 查看所有属性
         local response = {
@@ -248,7 +249,7 @@ function StatCommand.handlers.view(params, player)
 
         local fullMessage = table.concat(response, "\n")
         --player:SendHoverText(fullMessage)
-        --gg.log(fullMessage)
+        gg.log(fullMessage)
     end
     return true
 end
@@ -271,7 +272,7 @@ function StatCommand.handlers.restore(params, player)
             
             local msg = string.format("玩家 %s 的属性 '%s' 已恢复到初始值", player.name, statName)
             --player:SendHoverText(msg)
-            --gg.log(msg)
+            gg.log(msg)
         else
             --player:SendHoverText("错误：玩家对象不支持属性恢复功能")
             return false
@@ -288,7 +289,7 @@ function StatCommand.handlers.restore(params, player)
             
             local msg = string.format("玩家 %s 的 %d 个属性已恢复到初始值", player.name, restoredCount)
             --player:SendHoverText(msg)
-            --gg.log(msg)
+            gg.log(msg)
         else
             --player:SendHoverText("错误：玩家对象不支持属性恢复功能")
             return false
@@ -313,7 +314,7 @@ function StatCommand.handlers.refresh(params, player)
         
         local msg = string.format("玩家 %s 的属性已刷新", player.name)
         --player:SendHoverText(msg)
-        --gg.log(msg)
+        gg.log(msg)
     else
         --player:SendHoverText("错误：玩家对象不支持属性刷新功能")
         return false
@@ -354,7 +355,7 @@ function StatCommand.main(params, player)
 
     local handler = StatCommand.handlers[handlerName]
     if handler then
-        --gg.log("属性命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
+        gg.log("属性命令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
         return handler(params, player)
     else
         --player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)

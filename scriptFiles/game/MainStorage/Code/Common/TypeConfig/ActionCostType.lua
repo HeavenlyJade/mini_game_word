@@ -72,7 +72,7 @@ end
 ---@param externalContext table|nil 外部上下文，例如 { T_LVL = 5 }
 ---@return table<string, number> 消耗名称 -> 数量的映射表
 function ActionCostType:GetActionCosts(playerData, bagData, externalContext)
-    return ActionCosteRewardCal:CalculateCosts(self, playerData, bagData, externalContext)
+    return ActionCosteRewardCal:CalculateCosts(self.CostList, playerData, bagData, externalContext)
 end
 
 --- 获取作用目标列表

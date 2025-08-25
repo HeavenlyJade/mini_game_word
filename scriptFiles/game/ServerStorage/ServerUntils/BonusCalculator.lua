@@ -6,6 +6,8 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager
 local AttributeMapping = require(MainStorage.Code.Common.Icon.AttributeMapping) ---@type AttributeMapping
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+
 ---@class BonusCalculator
 local BonusCalculator = {}
 
@@ -211,25 +213,45 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
         local bonusStatName = bonusItem["名称"]
         local actionType = bonusItem["作用类型"]
         local scalingRate = bonusItem["缩放倍率"] or 0
+        local effectFieldName = bonusItem["玩家效果字段"] -- 新增：获取玩家效果字段
         --gg.log(string.format("[111111BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s, 作用类型: %s, 缩放倍率: %s", bonusStatName, actionType, scalingRate))
         if bonusStatName and actionType then
             local bonusValue = 0
             
-            -- 从玩家属性系统读取
-            
-            local playerStatValue = player:GetStat(bonusStatName) or 0
-            bonusValue = bonusValue + playerStatValue
-            -- 从玩家属性系统读取
+            -- 原有逻辑：从玩家属性系统读取
             local playerStatValue = 0
             if AttributeMapping.IsAttributeVariable(bonusStatName) then
-                -- 通过映射获取实际的属性名
                 local actualStatName = AttributeMapping.GetCorrespondingStat(bonusStatName)
                 playerStatValue = player:GetStat(actualStatName) or 0
-                --gg.log(string.format("[BonusCalculator调试] 变量 %s 映射到属性 %s，值: %s", bonusStatName, actualStatName, tostring(playerStatValue)))
             else
-                -- 如果没有映射，直接使用原名称
                 playerStatValue = player:GetStat(bonusStatName) or 0
-                --gg.log(string.format("[BonusCalculator调试] 变量 %s 无映射，直接读取，值: %s", bonusStatName, tostring(playerStatValue)))
+            end
+            
+            bonusValue = bonusValue + playerStatValue
+            
+            -- 新增逻辑：当玩家效果字段不为nil时，从EffectLevelType配置中获取最大效果值
+            if effectFieldName and effectFieldName ~= "" then
+                local effectLevelConfig = ConfigLoader.GetEffectLevel(bonusStatName)
+                if effectLevelConfig then
+                    -- 获取玩家背包数据
+                    local bagData = nil
+                    if player.bagSystem and player.bagSystem.GetBagData then
+                        bagData = player.bagSystem:GetBagData()
+                    end
+                    
+                    -- 构建外部上下文（可根据需要扩展）
+                    local externalContext = {}
+                    
+                    -- 获取满足条件的最大效果数值
+                    local maxEffectIndex = effectLevelConfig:GetMaxEffectIndex(player, bagData, externalContext)
+                    if maxEffectIndex then
+                        local maxEffectValue = effectLevelConfig.levelEffects[maxEffectIndex].effectValue
+                        bonusValue = bonusValue + maxEffectValue
+                        
+                        table.insert(bonusDescriptions, string.format("效果等级配置加成(%s, +%s)", 
+                            bonusStatName, tostring(maxEffectValue)))
+                    end
+                end
             end
             
             -- 从其他加成中读取同名属性配置

@@ -14,24 +14,24 @@ function ActionCosteRewardCal:OnInit()
     self.calcType = "可配置成本计算器"
 end
 
---- 计算给定ActionCost配置的所有成本
----@param actionCostType table ActionCostType的实例
+--- 计算给定CostList的所有成本
+---@param costList CostItem[] 消耗列表
 ---@param playerData MPlayer 玩家数据，包含变量、属性等信息
 ---@param bagData Bag 背包数据，包含物品信息
 ---@param externalContext table | nil 外部上下文, 例如 { T_LVL = 5 }
 ---@return table<string, number> 一个映射表，键是消耗名称，值是计算出的数量
-function ActionCosteRewardCal:CalculateCosts(actionCostType, playerData, bagData, externalContext)
+function ActionCosteRewardCal:CalculateCosts(costList, playerData, bagData, externalContext)
     local calculatedCosts = {}
     ----gg.log("[诊断][CalculateCosts] === 开始计算成本 ===")
     ----gg.log("[诊断][CalculateCosts] 外部上下文 (T_LVL):", externalContext)
-    ----gg.log("[诊断][CalculateCosts] 消耗列表 CostList:", actionCostType and actionCostType.CostList)
+    ----gg.log("[诊断][CalculateCosts] 消耗列表 CostList:", costList)
 
-    if not actionCostType or not actionCostType.CostList then
-        ----gg.log("错误: [ActionCosteRewardCal] 无效的 ActionCostType 或空的消耗列表。")
+    if not costList then
+        ----gg.log("错误: [ActionCosteRewardCal] 无效的消耗列表。")
         return calculatedCosts
     end
 
-    for i, costItem in ipairs(actionCostType.CostList) do
+    for i, costItem in ipairs(costList) do
         ----gg.log("[诊断][CalculateCosts] 正在处理第 " .. i .. " 个消耗项:", costItem.Name)
         local costAmount = self:_CalculateCostForItem(costItem, playerData, bagData, externalContext)
         ----gg.log("[诊断][CalculateCosts] 第 " .. i .. " 个消耗项 '".. costItem.Name .."' 计算结果: " .. tostring(costAmount))
@@ -142,42 +142,41 @@ function ActionCosteRewardCal:_ProcessExpression(expression, playerData, bagData
         return tostring(self:_GetPlayerAttribute(playerData, varName))
     end)
 
-    -- 3. 替换物品数量: [物品名]
+    -- 3. 替换物品数量: [物品名] (修正了正则表达式以支持中文)
     processed = string.gsub(processed, "%[([^%]]+)%]", function(itemName)
         return tostring(self:_GetItemCount(bagData, itemName))
     end)
 
-    -- 4. 替换特殊关键字 T_LVL
-    if externalContext and externalContext.T_LVL then
-        processed = string.gsub(processed, "T_LVL", tostring(externalContext.T_LVL))
+    -- 4. 替换外部上下文变量 (简单的变量名，通常是英文大写)
+    if externalContext then
+        for varName, varValue in pairs(externalContext) do
+            -- 使用单词边界确保完整匹配变量名
+            local pattern = "%f[%w_]" .. varName .. "%f[^%w_]"
+            processed = string.gsub(processed, pattern, tostring(varValue))
+        end
     end
 
     return processed
 end
 
 --- 获取玩家变量值
----@param playerData MPlayer 玩家数据
+---@param playerData table 玩家数据
 ---@param varName string 变量名
 ---@return number
 function ActionCosteRewardCal:_GetPlayerVariable(playerData, varName)
     --gg.log("[诊断][_GetPlayerVariable] 尝试获取变量:", varName)
-    --gg.log("[诊断][_GetPlayerVariable] playerData:", playerData)
-    --gg.log("[诊断][_GetPlayerVariable] playerData.variableData:", playerData and playerData.variableData)
-
-    if playerData and playerData.variableData and playerData.variableData[varName] then
-        local varData = playerData.variableData[varName]
+    if playerData.playerVariable and playerData.playerVariable[varName] then
+        local varData = playerData.playerVariable[varName]
         
-        -- 处理新的变量数据结构：{ base=value, sources={} }
-        if type(varData) == "table" and varData.base ~= nil then
-            local baseValue = varData.base
-            
-            -- 处理科学计数法
+        -- 检查是否是新的数据结构（带有baseValue）
+        if type(varData) == "table" and varData.baseValue ~= nil then
+            local baseValue = varData.baseValue
             if type(baseValue) == "string" then
-                -- 字符串格式的科学计数法转换为数字
-                local numValue = tonumber(baseValue)
-                if numValue then
-                    --gg.log("[诊断][_GetPlayerVariable] 找到变量值(字符串科学计数法):", varName, "=", baseValue, "->", numValue)
-                    return numValue
+                -- 尝试将字符串转换为数字
+                local numericValue = tonumber(baseValue)
+                if numericValue then
+                    --gg.log("[诊断][_GetPlayerVariable] 找到变量值(字符串转换):", varName, "=", baseValue, "->", numericValue)
+                    return numericValue
                 else
                     --gg.log("[诊断][_GetPlayerVariable] 无法转换字符串变量值:", varName, "=", baseValue)
                     return 0
