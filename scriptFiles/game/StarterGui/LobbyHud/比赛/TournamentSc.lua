@@ -8,6 +8,7 @@ local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventMana
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
+local NodeConf = require(MainStorage.Code.Common.Icon.NodeConf) ---@type NodeConf
 
 -- UI配置
 local uiConfig = {
@@ -47,6 +48,27 @@ function TournamentSc:InitNodes()
 	self.GmaeDisTop = self:Get("底图/比赛距离实时", ViewComponent)
 	-- 距离节点默认隐藏，只在比赛时显示
 	self.GmaeDisTop:SetVisible(false)
+	
+	-- 【新增】距离节点引用
+	self.distanceNodes = {}
+	-- 比赛进度条1: 距离1到10
+	self.distanceNodes[1] = {}
+	for i = 1, 10 do
+		self.distanceNodes[1][i] = self:Get("底图/功能/比赛进度条1/距离" .. i, ViewComponent)
+	end
+	
+	-- 比赛进度条2: 距离1到4
+	self.distanceNodes[2] = {}
+	for i = 1, 4 do
+		self.distanceNodes[2][i] = self:Get("底图/功能/比赛进度条2/距离" .. i, ViewComponent)
+	end
+	
+	-- 比赛进度条3: 距离1到3
+	self.distanceNodes[3] = {}
+	for i = 1, 3 do
+		self.distanceNodes[3][i] = self:Get("底图/功能/比赛进度条3/距离" .. i, ViewComponent)
+	end
+	
 	-- 比赛进度条
 	self.progressBars = {}
 	for i = 1, 3 do
@@ -59,7 +81,7 @@ function TournamentSc:InitNodes()
 			avatarNode = nil,
 		}
 	end
-
+	
 	-- 按钮
 	self.doubleTrainingButton = self:Get("底图/双倍训练", ViewButton)
 	self.leaveRaceButton = self:Get("底图/离开比赛", ViewButton)
@@ -93,6 +115,10 @@ function TournamentSc:InitData()
 	self.clientFlightData = {} -- userId -> FlightData
 	self.clientStartPositions = {} -- userId -> Vector3
 	self.distanceUpdateTimer = nil -- 距离更新定时器
+	
+	-- 【新增】当前地图的距离循环器配置（默认使用init_map）
+	self.currentMapConfig = "init_map"
+	self.distanceConfig = NodeConf["距离循环器"][self.currentMapConfig]
 end
 
 -- 事件注册
@@ -197,6 +223,14 @@ function TournamentSc:OnContestShow(data)
 	self.raceTime = data and data.raceTime or 0
 	if self.basePanel then
 		self.basePanel:SetVisible(true)
+	end
+	
+	-- 【新增】根据比赛数据设置地图配置
+	if data and data.mapName then
+		self:SetMapDistanceConfig(data.mapName)
+	else
+		-- 默认使用init_map配置
+		self:SetMapDistanceConfig("init_map")
 	end
 	
 	-- 【新增】显示距离节点并初始化距离显示
@@ -573,6 +607,20 @@ function TournamentSc:ResetPlayerFlightData(userId)
     self.currentPlayerDistance = 0
 end
 
+--- 【新增】设置当前地图的距离循环器配置
+---@param mapName string 地图名称 ("init_map", "map2", "map3")
+function TournamentSc:SetMapDistanceConfig(mapName)
+    if not mapName or not NodeConf["距离循环器"][mapName] then
+        -- 如果地图名称无效，使用默认的init_map配置
+        mapName = "init_map"
+    end
+    
+    self.currentMapConfig = mapName
+    self.distanceConfig = NodeConf["距离循环器"][mapName]
+    
+    --gg.log("TournamentSc: 切换到地图 " .. mapName .. " 的距离配置")
+end
+
 -- 【已移除】UpdatePlayerProgress 方法不再使用
 -- 现在完全依赖客户端的实时位置计算来更新玩家头像位置
 
@@ -580,18 +628,26 @@ end
 ---@param distance number 飞行距离
 ---@return number 进度条编号 (1-3)
 function TournamentSc:GetProgressBarByDistance(distance)
-    -- 计算当前循环周期（每10万米为一个周期）
-    local cycle = math.floor(distance / 100000)
-    -- 计算当前周期内的相对距离
-    local relativeDistance = distance % 100000
-    
-    if relativeDistance <= 30000 then
-        return 1
-    elseif relativeDistance <= 50000 then
-        return 2
-    else
-        return 3
+    if not self.distanceConfig then
+        -- 如果没有配置，使用默认的init_map配置
+        self.distanceConfig = NodeConf["距离循环器"]["init_map"]
     end
+    
+    -- 计算当前循环周期
+    local cycle = math.floor(distance / self.distanceConfig.cycleDistance)
+    -- 计算当前周期内的相对距离
+    local relativeDistance = distance % self.distanceConfig.cycleDistance
+    
+    -- 根据配置确定进度条
+    for i = 1, 3 do
+        local barConfig = self.distanceConfig.progressBars[i]
+        if relativeDistance >= barConfig.start and relativeDistance < barConfig.endDistance then
+            return i
+        end
+    end
+    
+    -- 如果都不匹配，返回最后一个进度条
+    return 3
 end
 
 --- 【新增】计算玩家在当前进度条上的位置百分比（支持循环）
@@ -599,19 +655,22 @@ end
 ---@param progressBarIndex number 进度条编号
 ---@return number 位置百分比 (0-1)
 function TournamentSc:CalculatePositionPercentage(distance, progressBarIndex)
-    -- 计算当前循环周期内的相对距离
-    local relativeDistance = distance % 100000
-    
-    if progressBarIndex == 1 then
-        -- 进度条1: 0-30000
-        return math.min(1, relativeDistance / 30000)
-    elseif progressBarIndex == 2 then
-        -- 进度条2: 30000-50000
-        return math.min(1, (relativeDistance - 30000) / 20000)
-    else
-        -- 进度条3: 50000-100000
-        return math.min(1, (relativeDistance - 50000) / 50000)
+    if not self.distanceConfig then
+        -- 如果没有配置，使用默认的init_map配置
+        self.distanceConfig = NodeConf["距离循环器"]["init_map"]
     end
+    
+    -- 计算当前循环周期内的相对距离
+    local relativeDistance = distance % self.distanceConfig.cycleDistance
+    
+    -- 根据配置计算位置百分比
+    local barConfig = self.distanceConfig.progressBars[progressBarIndex]
+    if barConfig then
+        local barDistance = relativeDistance - barConfig.start
+        return math.min(1, math.max(0, barDistance / barConfig.range))
+    end
+    
+    return 0
 end
 
 --- 【新增】更新玩家头像位置（支持循环进度条）

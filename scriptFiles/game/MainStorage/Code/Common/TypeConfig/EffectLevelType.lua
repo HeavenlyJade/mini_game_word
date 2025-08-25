@@ -368,8 +368,8 @@ end
 ---@param externalContext table|nil 外部上下文
 ---@return number|nil 最大效果数值对应的索引，如果没有满足条件的配置则返回nil
 function EffectLevelType:GetMaxEffectIndex(playerData, bagData, externalContext)
-    --gg.log("=== EffectLevelType:GetMaxEffectIndex 开始 ===")
-    --gg.log("配置名称:", self.configName)
+    gg.log("=== EffectLevelType:GetMaxEffectIndex 开始 ===")
+    gg.log("配置名称:", self.configName)
     
     local matchingEffects = self:CalculateMatchingEffects(playerData, bagData, externalContext)
     
@@ -392,8 +392,8 @@ function EffectLevelType:GetMaxEffectIndex(playerData, bagData, externalContext)
         end
     end
     
-    --gg.log("最终结果: 最大效果值=", maxEffectValue, "对应索引=", maxIndex)
-    --gg.log("=== EffectLevelType:GetMaxEffectIndex 结束 ===")
+    gg.log("最终结果: 最大效果值=", maxEffectValue, "对应索引=", maxIndex)
+    gg.log("=== EffectLevelType:GetMaxEffectIndex 结束 ===")
     
     return maxIndex
 end
