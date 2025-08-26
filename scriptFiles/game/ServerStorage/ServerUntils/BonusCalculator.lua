@@ -312,6 +312,7 @@ function BonusCalculator.CalculatePlayerVariableBonuses(player, baseValue, playe
 end
 
 --- 完整的加成计算（属性加成 + 变量加成 + 其他加成）
+--- 完整的加成计算（串行模式：属性加成 → 变量加成 → 其他加成）
 ---@param player MPlayer 玩家对象
 ---@param baseValue number 基础数值
 ---@param playerStatBonuses table 玩家属性加成列表
@@ -322,40 +323,71 @@ end
 function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, targetName)
     local allDescriptions = {}
     local originalBaseValue = baseValue
-    local totalBonus = 0
     
-    -- 1. 计算玩家属性加成
-    local statBonus, statDescriptions = BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerStatBonuses, otherBonuses)
-    totalBonus = totalBonus + statBonus
-    for _, desc in ipairs(statDescriptions) do
-        table.insert(allDescriptions, desc)
+    -- 阶段1：计算玩家属性加成
+    local currentValue = baseValue
+    local statBonus = 0
+    if playerStatBonuses and type(playerStatBonuses) == "table" and #playerStatBonuses > 0 then
+        local statBonusValue, statDescriptions = BonusCalculator.CalculatePlayerStatBonuses(player, currentValue, playerStatBonuses, otherBonuses)
+        statBonus = statBonusValue
+        currentValue = currentValue + statBonus
+        
+        for _, desc in ipairs(statDescriptions) do
+            table.insert(allDescriptions, desc)
+        end
+        
+        gg.log(string.format("属性加成阶段: 基础值 %s → 加成后 %s (增加 %s)", 
+            tostring(baseValue), tostring(currentValue), tostring(statBonus)))
     end
     
-    -- 2. 计算玩家变量加成
-    local variableBonus, variableDescriptions = BonusCalculator.CalculatePlayerVariableBonuses(player, baseValue, playerVariableBonuses, otherBonuses, targetName)
-    totalBonus = totalBonus + variableBonus
-    for _, desc in ipairs(variableDescriptions) do
-        table.insert(allDescriptions, desc)
+    -- 阶段2：计算玩家变量加成（基于属性加成后的值）
+    local variableBonus = 0
+    if playerVariableBonuses and type(playerVariableBonuses) == "table" and #playerVariableBonuses > 0 then
+        local variableFinalValue, variableInfo = BonusManager.CalculatePlayerVariableBonuses(player, currentValue, playerVariableBonuses, targetName)
+        variableBonus = variableFinalValue - currentValue  -- 计算净加成值
+        currentValue = variableFinalValue
+        
+        if variableInfo and variableInfo ~= "" then
+            table.insert(allDescriptions, "变量加成")
+        end
+        
+        -- gg.log(string.format("变量加成阶段: 输入值 %s → 加成后 %s (增加 %s)", 
+        --     tostring(currentValue - variableBonus), tostring(currentValue), tostring(variableBonus)))
     end
     
-    -- 3. 计算其他加成
-    local otherBonus, otherDescriptions = BonusCalculator.CalculateOtherBonuses(player, baseValue, otherBonuses, targetName)
-    totalBonus = totalBonus + otherBonus
-    for _, desc in ipairs(otherDescriptions) do
-        table.insert(allDescriptions, desc)
+    -- 阶段3：计算其他加成（宠物、伙伴等，基于变量加成后的值）
+    local otherBonus = 0
+    if otherBonuses and type(otherBonuses) == "table" and #otherBonuses > 0 then
+        local otherBonusValue, otherDescriptions = BonusCalculator.CalculateOtherBonuses(player, currentValue, otherBonuses, targetName)
+        otherBonus = otherBonusValue
+        currentValue = currentValue + otherBonus
+        
+        for _, desc in ipairs(otherDescriptions) do
+            table.insert(allDescriptions, desc)
+        end
+        
+        -- gg.log(string.format("其他加成阶段: 输入值 %s → 加成后 %s (增加 %s)", 
+        --     tostring(currentValue - otherBonus), tostring(currentValue), tostring(otherBonus)))
     end
     
-    local finalValue = baseValue + totalBonus
+    local finalValue = currentValue
+    local totalBonus = finalValue - originalBaseValue
+    
     local bonusInfo = ""
     if #allDescriptions > 0 then
-        bonusInfo = string.format("\n> 加成来源: %s.\n> 基础值: %s, 总加成: %s, 最终值: %s.",
+        bonusInfo = string.format(
+            "\n> 加成来源: %s.\n> 原始基础: %s, 最终值: %s, 总加成: %s.\n> 计算阶段: 属性加成(%s) → 变量加成(%s) → 其他加成(%s).",
             table.concat(allDescriptions, ", "),
             tostring(originalBaseValue),
+            tostring(finalValue),
             tostring(totalBonus),
-            tostring(finalValue)
+            tostring(statBonus),
+            tostring(variableBonus),
+            tostring(otherBonus)
         )
     end
     
+    -- gg.log("串行加成计算完成", bonusInfo)
     return finalValue, bonusInfo
 end
 

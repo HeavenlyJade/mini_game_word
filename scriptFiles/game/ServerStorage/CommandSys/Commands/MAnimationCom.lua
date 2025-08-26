@@ -126,7 +126,7 @@ function AnimationCommand.handlers.stopFly(params, player)
         gameMode = EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION,
         operationType = "取消飞行",
         originalGravity = 980, -- 发送原始重力值
-        originalMoveSpeed = 400, -- 发送原始移动速度
+        originalMoveSpeed = 800, -- 发送原始移动速度
         originalJumpSpeed = 400 -- 发送原始跳跃速度
     }
     

@@ -125,7 +125,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
             #finalMultipliers
         )
     end
-    --gg.log("加成计算信息",bonusInfo)
+    -- gg.log("加成计算信息",bonusInfo)
     return finalBonusValue, bonusInfo
 end
 

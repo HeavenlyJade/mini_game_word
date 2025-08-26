@@ -135,7 +135,7 @@ function AutoPlayManager.CanPlayerUseSpot(spot, player)
     
     local playerData = player.variableSystem:GetVariablesDictionary()
     local bagData = player.bagMgr
-    gg.log("playerData1111",playerData)
+    -- gg.log("playerData1111",playerData)
     local canEnter, message = spot:CheckVariableCondition(playerData, bagData, nil)
     -- gg.log("canEnter, messag",canEnter, message)
     return canEnter

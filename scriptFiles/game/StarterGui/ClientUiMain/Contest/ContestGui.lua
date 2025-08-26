@@ -65,6 +65,7 @@ function ContestGui:InitNodes()
 	for _, childComponent in ipairs(self.rankContainer.childrensList) do
 		if childComponent and childComponent.node then
 			local nodeName = childComponent.node.Name
+			childComponent.node["玩家头像"].Visible = false
 			if nodeName then
 				self.rankComponents[nodeName] = {
 					container = childComponent,
