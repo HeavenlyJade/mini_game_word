@@ -241,7 +241,8 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
                     local externalContext = {}
                     
                     -- 获取满足条件的最大效果数值
-                    local maxEffectIndex = effectLevelConfig:GetMaxEffectIndex(player, bagData, externalContext)
+                    local playerData =  player.variableSystem:GetVariablesDictionary()
+                    local maxEffectIndex = effectLevelConfig:GetMaxEffectIndex(playerData, bagData, externalContext)
                     if maxEffectIndex then
                         local maxEffectValue = effectLevelConfig.levelEffects[maxEffectIndex].effectValue
                         bonusValue = bonusValue + maxEffectValue

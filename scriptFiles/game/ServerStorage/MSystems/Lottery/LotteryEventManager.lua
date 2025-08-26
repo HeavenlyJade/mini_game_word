@@ -112,6 +112,7 @@ function LotteryEventManager.OnSingleDraw(event)
         LotteryEventManager.SendItemAcquiredNotification(uin, result.rewards, poolName)
     else
         gg.log("抽奖失败:", result.errorMsg)
+        player:SendHoverText("抽奖失败:"..result.errorMsg)
     end
 
     gg.log("=== 单次抽奖请求处理完成 ===")
@@ -169,6 +170,8 @@ function LotteryEventManager.OnFiveDraw(event)
         LotteryEventManager.SendItemAcquiredNotification(uin, result.rewards, poolName)
     else
         gg.log("抽奖失败:", result.errorMsg)
+        player:SendHoverText("抽奖失败:"..result.errorMsg)
+
     end
 
     gg.log("=== 五连抽请求处理完成 ===")

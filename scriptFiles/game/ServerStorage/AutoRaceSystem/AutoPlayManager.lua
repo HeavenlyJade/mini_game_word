@@ -111,6 +111,7 @@ function AutoPlayManager.FindBestAutoPlaySpot(player)
     for _, spot in ipairs(autoPlaySpots) do
         if AutoPlayManager.CanPlayerUseSpot(spot, player) then
             local efficiency = AutoPlayManager.CalculateEfficiency(spot, player)
+            gg.log("挂机点", spot.name, "效率", efficiency,bestEfficiency)
             if efficiency > bestEfficiency then
                 bestEfficiency = efficiency
                 bestSpot = spot
@@ -132,9 +133,11 @@ end
 function AutoPlayManager.CanPlayerUseSpot(spot, player)
     if not spot or not player then return false end
     
-    -- 使用SceneNodeType的CheckVariableCondition方法验证进入条件
-    local canEnter, message = spot:CheckVariableCondition(player)
-    
+    local playerData = player.variableSystem:GetVariablesDictionary()
+    local bagData = player.bagMgr
+    gg.log("playerData1111",playerData)
+    local canEnter, message = spot:CheckVariableCondition(playerData, bagData, nil)
+    -- gg.log("canEnter, messag",canEnter, message)
     return canEnter
 end
 

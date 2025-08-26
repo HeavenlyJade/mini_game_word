@@ -57,13 +57,8 @@ function VariableSystem:SetBaseValue(key, baseValue)
             sources = {}
         }
     end
-
-    local oldFinalValue = self:GetVariable(key)
     self.variables[key].base = baseValue
 
-    -- 触发变量变化事件
-    local newFinalValue = self:GetVariable(key)
-    self:TriggerVariableEvent("VariableChanged", key, oldFinalValue, newFinalValue)
 end
 
 --- 获取基础值
@@ -101,7 +96,6 @@ function VariableSystem:SetSourceValue(key, source, value, valueType)
 
     -- 触发变量变化事件
     local newFinalValue = self:GetVariable(key)
-    self:TriggerVariableEvent("VariableChanged", key, oldFinalValue, newFinalValue)
 end
 
 --- 添加来源值（在现有基础上累加）
@@ -140,7 +134,6 @@ function VariableSystem:RemoveSource(key, source)
 
     -- 触发变量变化事件
     local newFinalValue = self:GetVariable(key)
-    self:TriggerVariableEvent("VariableChanged", key, oldFinalValue, newFinalValue)
 end
 
 --- 根据模式移除来源
@@ -384,10 +377,6 @@ function VariableSystem:ClearAllVariables()
 
     self.variables = {}
 
-    -- 触发清空事件
-    for k, v in pairs(oldVariables) do
-        self:TriggerVariableEvent("VariableRemoved", k, v, nil)
-    end
 end
 
 --- 移除变量
@@ -405,9 +394,7 @@ function VariableSystem:RemoveVariable(key)
 
     for _, k in ipairs(keysToRemove) do
         self.variables[k] = nil
-
         -- 触发变量移除事件
-        self:TriggerVariableEvent("VariableRemoved", k, removedVars[k], nil)
     end
 end
 
@@ -594,23 +581,19 @@ function VariableSystem:DeserializeVariables(data)
     end
 end
 
+--- 获取变量的简单字典结构（k,v格式）
+---@return table<string, number> 变量名到最终值的映射
+function VariableSystem:GetVariablesDictionary()
+    local result = {}
+    for key, varData in pairs(self.variables) do
+        -- 只返回变量名和最终计算值
+        result[key] = self:GetVariable(key)
+    end
+    return result
+end
+
 -- 事件系统 --------------------------------------------------------
 
---- 触发变量事件
----@param eventType string 事件类型
----@param key string 变量名
----@param oldValue number|nil 旧值
----@param newValue number|nil 新值
-function VariableSystem:TriggerVariableEvent(eventType, key, oldValue, newValue)
-    local evt = {
-        eventType = eventType,
-        dataCategory = self.dataCategory,  -- 改为数据分类
-        key = key,
-        oldValue = oldValue,
-        newValue = newValue
-    }
-    ServerEventManager.Publish("VariableSystemEvent", evt)
-end
 
 
 return VariableSystem

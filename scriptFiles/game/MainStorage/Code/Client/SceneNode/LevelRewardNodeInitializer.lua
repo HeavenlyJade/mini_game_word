@@ -186,7 +186,7 @@ function LevelRewardNodeInitializer.BindTriggerBoxEvent(clonedNode, uniqueId, re
     
     -- 绑定触发事件
     triggerBox.Touched:Connect(function(actor)
-        LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName)
+        LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName,triggerBox)
     end)
     
     --gg.log("TriggerBox触发事件绑定完成 - 节点:", clonedNode.Name, "ID:", uniqueId)
@@ -198,7 +198,7 @@ end
 ---@param rewardNode LevelNodeRewardItem 奖励节点数据
 ---@param configName string 配置名称
 ---@param mapName string 地图名称
-function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName)
+function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName,triggerBox)
     -- 检查是否为玩家触发
     if not actor or not actor.UserId then
         return -- 只处理玩家触发
@@ -206,6 +206,9 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
     
     local playerId = actor.UserId
     --gg.log("玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
+    
+    -- 播放触发音效
+    LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
     
     -- 构建发送到服务端的消息数据
     local messageData = {
@@ -298,6 +301,33 @@ function LevelRewardNodeInitializer.GetClonedNodesByConfig(configName)
     end
     
     return result
+end
+
+--- 播放触发音效
+---@param triggerBox TriggerBox 触发器节点
+function LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
+    if not triggerBox then
+        return
+    end
+    
+    -- 获取触发音效自定义属性
+    local triggerSound = triggerBox:GetAttribute("触发音效")
+    if not triggerSound or triggerSound == "" then
+        return
+    end
+    
+    -- 导入SoundPool模块
+    local SoundPool = require(game:GetService("MainStorage").Code.Client.Graphic.SoundPool) ---@type SoundPool
+    
+    -- 播放音效
+    SoundPool.PlaySound({
+        soundAssetId = triggerSound,
+        volume = 1.0,
+        pitch = 1.0,
+        range = 6000
+    })
+    
+    --gg.log("播放触发音效:", triggerSound)
 end
 
 return LevelRewardNodeInitializer

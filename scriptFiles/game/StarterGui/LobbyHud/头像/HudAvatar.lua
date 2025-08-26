@@ -8,6 +8,8 @@ local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewB
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler)
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
 
 ---@class HudAvatar:ViewBase
 local HudAvatar = ClassMgr.Class("HudAvatar", ViewBase)
@@ -18,17 +20,30 @@ local uiConfig = {
     hideOnInit = false,
 }
 
+function HudAvatar:RegisterEvents()
+    -- 新事件：服务端指令 OpenWaypointGui
+
+    
+    -- 【修改】使用变量同步事件替代等级经验事件
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
+        self:OnPlayerVariableSync(data)
+    end)
+end
+
+
 function HudAvatar:OnInit(node, config)
     self.selectingCard = 0
     local localPlayer = game:GetService("Players").LocalPlayer
     self:Get("名字背景/玩家名").node.Title = localPlayer.Nickname
     self:Get("名字背景/UID").node.Title = tostring(localPlayer.UserId)
+    self.PowerVariableTitle = self:Get("最高战力/历史最高战力", ViewComponent) ---@type ViewComponent
     local headNode = CoreUI:GetHeadNode(tostring(localPlayer.UserId))
     local PlayerHead = self:Get("头像背景/玩家头像").node
     headNode.Parent = PlayerHead.Parent
     headNode.Position = PlayerHead.Position
     headNode.Size = PlayerHead.Size
     headNode.Pivot = PlayerHead.Pivot
+    self:RegisterEvents()
     -- gg.log("玩家的头像",headNode)
     self.questList = self:Get("头像背景/任务列表", ViewList, function (node)
         local button = ViewButton.New(node, self)
@@ -152,6 +167,40 @@ function HudAvatar:NavigateTo(pos, text)
             self._pointer.Position = Players.LocalPlayer.Character.Position
         end)
     end
+end
+
+
+-- 【修改】处理玩家变量数据同步
+function HudAvatar:OnPlayerVariableSync(data)
+    gg.log("HudAvatar收到玩家变量数据同步:", data)
+    if not data or not data.variableData then
+        return
+    end
+    
+    -- 更新玩家变量数据缓存
+    if not self.playerVariableData then
+        self.playerVariableData = {}
+    end
+    
+    -- 合并新数据到现有缓存中
+    for variableName, variableData in pairs(data.variableData) do
+        self.playerVariableData[variableName] = variableData
+        
+        -- 【调试】输出科学计数法变量的详细信息
+        if variableName == "数据_固定值_历史最大战力值" and variableData and variableData.base then
+            --gg.log("科学计数法变量详情:", variableName)
+            --gg.log("  原始值:", variableData.base, "类型:", type(variableData.base))
+            if type(variableData.base) == "number" then
+                --gg.log("  数字格式化:", string.format("%.0f", variableData.base))
+            elseif type(variableData.base) == "string" then
+                local numValue = tonumber(variableData.base)
+                --gg.log("  字符串转数字:", numValue)
+            end
+        end
+    end
+    local power = self.playerVariableData["数据_固定值_历史最大战力值"].base
+    gg.log("power",self.playerVariableData["数据_固定值_历史最大战力值"])
+    self.PowerVariableTitle.node.Title = gg.FormatLargeNumber(power)
 end
 
 return HudAvatar.New(script.Parent, uiConfig)

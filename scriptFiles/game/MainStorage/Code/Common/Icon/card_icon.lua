@@ -115,7 +115,7 @@ CardIcon.itemIconResources = {
     ["迷你豆"] = "sandboxId://FlyUi/迷你界面/物品图标/迷你豆.png",
     ["重生档位"] = "sandboxId://FlyUi/迷你界面/物品图标/重生档位.png",
     ["金币加成"] = "sandboxId://FlyUi/迷你界面/物品图标/金币加成.png",
-    ["至尊会员"] ="sandboxId://FlyUi/迷你界面/通用UI/至尊会员.png",
+    ["至尊会员"] ="sandboxId://FlyUi/迷你界面/物品图标/至尊VIP图标.png",
     ["宠物立绘"]="sandboxId://FlyUi/迷你界面/宠物立绘/飘飘小灵.png"
 
 }

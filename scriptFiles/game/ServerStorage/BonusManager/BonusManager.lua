@@ -62,7 +62,9 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
                         local externalContext = {}
                         
                         -- 获取满足条件的最大效果数值
-                        local maxEffectIndex = effectLevelConfig:GetMaxEffectIndex(player, bagData, externalContext)
+                        local playerData =  player.variableSystem:GetVariablesDictionary()
+
+                        local maxEffectIndex = effectLevelConfig:GetMaxEffectIndex(playerData, bagData, externalContext)
                       
                         local maxEffectValue = effectLevelConfig.levelEffects[maxEffectIndex].effectValue
                         bonusValue =  maxEffectValue

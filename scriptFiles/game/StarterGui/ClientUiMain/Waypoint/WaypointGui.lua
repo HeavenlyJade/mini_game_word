@@ -129,6 +129,14 @@ function WaypointGui:GetVariableValue(variableName)
     return (varData and varData.base) or 0
 end
 
+function WaypointGui:GetPlayerData()
+    local re_data = {}
+    for k,v in pairs(self.playerVariableData) do
+        re_data[k] = v.base
+    end
+    return re_data
+end
+
 -- 【修改】检查传送点是否解锁（基于变量条件）
 function WaypointGui:IsTeleportPointUnlocked(tp)
     if not tp then return false end
@@ -142,13 +150,11 @@ function WaypointGui:IsTeleportPointUnlocked(tp)
     local variableFormula = tp:GetVariableFormula()
     if variableFormula and variableFormula ~= '' then
         -- 构造正确的数据结构，ActionCosteRewardCal期望有variableData字段
-        local playerDataForCheck = {
-            variableData = self.playerVariableData
-        }
+        local playerDataForCheck = self:GetPlayerData()
         
         -- 使用传送点的变量条件检查方法，传入格式化后的玩家变量数据
         local canUse, message = tp:CheckVariableCondition(playerDataForCheck)
-        --gg.log("传送点条件检查:", tp:GetDisplayName(), "公式:", variableFormula, "结果:", canUse, "消息:", message)
+        -- gg.log("传送点条件检查:", tp:GetDisplayName(), "公式:", variableFormula, "结果:", canUse, "消息:", message)
         if not canUse then
             return false
         end

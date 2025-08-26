@@ -106,7 +106,7 @@ function IdleSpotHandler:checkEnterConditions(player)
     end
 
     -- 获取玩家数据 - 使用MPlayer的GetConsumableData方法构建统一数据结构
-    local playerData = player:GetConsumableData()
+    local playerData = player.variableSystem:GetVariablesDictionary()
     
     -- 获取玩家的背包数据
     local bagData = {}
@@ -123,7 +123,7 @@ function IdleSpotHandler:checkEnterConditions(player)
         if formula and formula ~= "" then
             -- 直接使用ActionCosteRewardCal的_CheckCondition方法
             -- 参数顺序：条件表达式, 玩家数据, 背包数据, 外部上下文
-            --gg.log("formula, playerData, bagData, externalContext",formula, playerData, bagData, externalContext)
+            gg.log("formula, playerData, bagData, externalContext",formula, playerData, bagData, externalContext)
             if not self.conditionCalculator:_CheckCondition(formula, playerData, bagData, externalContext) then
                 return false
             end
