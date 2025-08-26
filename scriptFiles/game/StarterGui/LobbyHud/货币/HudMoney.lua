@@ -339,8 +339,27 @@ function HudMoney:OnSyncPlayerVariables(data)
     for buttonName, variableName in pairs(ButtonTypeConfig.VARIABLE) do
         local variableData = data.variableData[variableName]
         if variableData then
-            local newValue = (variableData and variableData.base) or 0
-            local oldValue = (self.playerVariableData and self.playerVariableData[variableName] and self.playerVariableData[variableName].base) or 0
+            -- 【优化】安全地获取变量值，支持多种数据格式
+            local newValue = 0
+            if type(variableData) == "table" and variableData.base then
+                newValue = variableData.base
+            elseif type(variableData) == "number" then
+                newValue = variableData
+            elseif type(variableData) == "string" then
+                newValue = tonumber(variableData) or 0
+            end
+            
+            local oldValue = 0
+            local oldVarData = self.playerVariableData and self.playerVariableData[variableName]
+            if oldVarData then
+                if type(oldVarData) == "table" and oldVarData.base then
+                    oldValue = oldVarData.base
+                elseif type(oldVarData) == "number" then
+                    oldValue = oldVarData
+                elseif type(oldVarData) == "string" then
+                    oldValue = tonumber(oldVarData) or 0
+                end
+            end
             
             -- 【关键修复】在更新缓存前先检查动画
             if newValue > oldValue then
@@ -429,8 +448,18 @@ function HudMoney:UpdateVariableDisplay()
             if self:IsVariableButton(buttonName) then
                 local variableName = ButtonTypeConfig.GetVariableName(buttonName)
                 if variableName then
-                    local variableData = self.playerVariableData[variableName]
-                    local value = (variableData and variableData.base) or 0
+                                    local variableData = self.playerVariableData[variableName]
+                -- 【优化】安全地获取变量值，支持多种数据格式
+                local value = 0
+                if variableData then
+                    if type(variableData) == "table" and variableData.base then
+                        value = variableData.base
+                    elseif type(variableData) == "number" then
+                        value = variableData
+                    elseif type(variableData) == "string" then
+                        value = tonumber(variableData) or 0
+                    end
+                end
                     local textNode = button:Get("Text").node ---@cast textNode UITextLabel
                     
                     -- 根据变量类型设置不同的显示格式
@@ -455,7 +484,17 @@ end
 ---@return number 变量的base值，如果不存在则返回0
 function HudMoney:GetVariableValue(variableName)
     local varData = self.playerVariableData[variableName]
-    return (varData and varData.base) or 0
+    -- 【优化】安全地获取变量值，支持多种数据格式
+    if varData then
+        if type(varData) == "table" and varData.base then
+            return varData.base
+        elseif type(varData) == "number" then
+            return varData
+        elseif type(varData) == "string" then
+            return tonumber(varData) or 0
+        end
+    end
+    return 0
 end
 
 return HudMoney.New(script.Parent, uiConfig)

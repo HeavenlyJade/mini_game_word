@@ -32,7 +32,7 @@ end
 function Reward:OnInit(uin, data)
     self.uin = uin
     self.lastUpdateTime = gg.GetTimeStamp()
-    
+    self.claimingRewards ={}
     if data and data.online then
         -- 从已有数据加载
         self.onlineData = data.online
@@ -131,14 +131,13 @@ function Reward:GetAvailableOnlineRewards()
     return availableRewards
 end
 
---- 领取在线奖励
+--- 领取在线奖励（修复版本）
 ---@param index number 奖励索引
 ---@return table|nil 奖励内容
 ---@return string|nil 错误信息
 function Reward:ClaimOnlineReward(index)
     --gg.log("=== Reward:ClaimOnlineReward ===")
-    --gg.log(string.format("玩家 %d 尝试领取奖励索引: %d", self.uin, index))
-    --gg.log(string.format("当前在线时长: %d 秒", self.onlineData.roundOnlineTime))
+    --gg.log(string.format("玩家 %d 尝试领取奖励索引 %d", self.uin, index))
     
     if not self.onlineConfig then
         --gg.log("错误：配置未加载")
@@ -165,11 +164,8 @@ function Reward:ClaimOnlineReward(index)
     -- 严格检查时间是否满足
     if reward.timeNode then
         if self.onlineData.roundOnlineTime < reward.timeNode then
-   
             return nil, string.format("在线时长不足，需要 %d 秒，当前只有 %d 秒", 
                 reward.timeNode, self.onlineData.roundOnlineTime)
-        else
-       
         end
     else
         --gg.log("警告：奖励没有设置时间节点")
@@ -185,23 +181,29 @@ function Reward:ClaimOnlineReward(index)
         self:ResetOnlineReward()
     end
     
-    -- 执行临取指令
+    -- ========== 关键修复：防止双重发放 ==========
+    -- 优先使用临取指令，如果有指令就只执行指令，不返回奖励物品
     if reward.claimCommand and reward.claimCommand ~= "" then
         local player = self:GetPlayer()
         if player then
-            --gg.log(string.format("执行临取指令: %s", reward.claimCommand))
+            gg.log(string.format("通过指令发放奖励: %s", reward.claimCommand))
             executeCommand(player, reward.claimCommand)
         else
             --gg.log("警告：找不到玩家对象，无法执行临取指令")
         end
+        
+        --gg.log(string.format("玩家 %d 通过指令成功领取在线奖励 %d", self.uin, index))
+        --gg.log("=== Reward:ClaimOnlineReward 结束（指令模式） ===")
+        
+        -- 返回空表，表示奖励已通过指令发放，不需要外部再次发放
+        return {}
     else
-        --gg.log("该奖励没有临取指令")
+        -- 没有指令时，返回奖励物品供外部系统发放
+        --gg.log(string.format("玩家 %d 成功领取在线奖励 %d，返回物品供发放", self.uin, index))
+        --gg.log("=== Reward:ClaimOnlineReward 结束（物品模式） ===")
+        
+        return reward.rewardItems
     end
-    
-    --gg.log(string.format("玩家 %d 成功领取在线奖励 %d", self.uin, index))
-    --gg.log("=== Reward:ClaimOnlineReward 结束 ===")
-    
-    return reward.rewardItems
 end
 
 --- 一键领取所有可领取的在线奖励

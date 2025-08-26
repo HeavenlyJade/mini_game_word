@@ -41,18 +41,18 @@ end
 local function inputEnded( inputObj, bGameProcessd )
 	if inputObj.UserInputType == Enum.UserInputType.Keyboard.Value then
         if inputObj.KeyCode == Enum.KeyCode.Return.Value then
-            gg.network_channel:FireServer({ 
-                cmd = "ClientExecuteCommand", command = commandInput.Title 
+            gg.network_channel:FireServer({
+                cmd = "ClientExecuteCommand", command = commandInput.Title
             })
             table.insert(commandHistory, commandInput.Title)
             commandInput.Title = ""
-            
+
         elseif inputObj.KeyCode == Enum.KeyCode.PageDown.Value then
             if commandHistoryIndex < #commandHistory then
                 commandHistoryIndex = commandHistoryIndex + 1
             end
             commandInput.Title = commandHistory[commandHistoryIndex]
-        elseif inputObj.KeyCode == Enum.KeyCode.PageUp.Value then    
+        elseif inputObj.KeyCode == Enum.KeyCode.PageUp.Value then
             if commandHistoryIndex > 1 then
                 commandHistoryIndex = commandHistoryIndex - 1
             end
@@ -60,8 +60,8 @@ local function inputEnded( inputObj, bGameProcessd )
         elseif inputObj.KeyCode == Enum.KeyCode.F12.Value then
             if #commandHistory > 0 then
                 local lastCommand = commandHistory[#commandHistory]
-                gg.network_channel:FireServer({ 
-                    cmd = "ClientExecuteCommand", command = lastCommand 
+                gg.network_channel:FireServer({
+                    cmd = "ClientExecuteCommand", command = lastCommand
                 })
                 commandInput.Title = lastCommand
             end

@@ -409,7 +409,7 @@ end
 
 --- 获取用于消耗计算的统一数据结构
 function _MPlayer:GetConsumableData()
-    local variableData = self.variableSystem:GetVariablesDictionary()
+    local variableData = self.variableSystem:GetAllVariables()
     local playerAttribute = {
         level = self.level or 0,
         health = self.health or 0,

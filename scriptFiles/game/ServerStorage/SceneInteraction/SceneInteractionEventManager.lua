@@ -25,12 +25,6 @@ function SceneInteractionEventManager.OnRequestLeaveIdle(evt)
     local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
     AutoPlayManager.StopAutoPlayForPlayer(player, "手动离开挂机点")
 
-    -- 检查玩家是否真的在挂机
-    if not player:IsIdling() then
-        --gg.log("玩家 " .. player.name .. " 请求离开挂机，但当前并未处于挂机状态。")
-        return
-    end
-
     local idleSpotName = player:GetCurrentIdleSpotName()
     if not idleSpotName then
         --gg.log("玩家 " .. player.name .. " 处于挂机状态，但无法找到挂机点名称。")
@@ -56,7 +50,7 @@ function SceneInteractionEventManager.OnRequestLeaveIdle(evt)
     local handler = ServerDataManager.getSceneNodeHandler(handlerId)
     
     if handler and handler.OnEntityLeave then
-        --gg.log(string.format("玩家 '%s' 通过UI请求离开挂机点 '%s'", player.name, idleSpotName))
+        gg.log(string.format("玩家 '%s' 通过UI请求离开挂机点 '%s'", player.name, idleSpotName))
         handler:OnEntityLeave(player)
     else
         --gg.log(string.format("警告：玩家 '%s' 请求离开挂机点 '%s'，但找不到对应的处理器 (ID: %s)。", player.name, idleSpotName, handlerId))

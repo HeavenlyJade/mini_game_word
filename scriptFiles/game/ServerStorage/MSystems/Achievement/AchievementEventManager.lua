@@ -792,24 +792,12 @@ function AchievementEventManager.HandlePerformMaxRebirth(event)
         -- 没有特权，通过商城购买
         local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
         local success, message, data = ShopMgr.ProcessMiniCoinPurchase(player, "最大重生", "重生特权")
-        
-        if success then
-            -- 购买成功，直接执行最大重生
-            AchievementEventManager.ExecuteMaxRebirthAfterPurchase(player, talentId)
-        else
-            -- 购买失败，发送错误响应
-            local responseData = {
-                success = false,
-                errorCode = "NO_PRIVILEGE",
-                message = "需要购买最大重生特权"
-            }
-            AchievementEventManager.SendSuccessResponse(uin, AchievementEventConfig.RESPONSE.PERFORM_TALENT_ACTION_RESPONSE, responseData)
-        end
         return
+    else
+        -- 2. 有特权，执行最大重生逻辑
+        AchievementEventManager.ExecuteMaxRebirthWithPrivilege(player, talentId)
     end
 
-    -- 2. 有特权，执行最大重生逻辑
-    AchievementEventManager.ExecuteMaxRebirthWithPrivilege(player, talentId)
 end
 
 

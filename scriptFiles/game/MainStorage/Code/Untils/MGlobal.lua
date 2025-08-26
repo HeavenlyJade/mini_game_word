@@ -524,8 +524,9 @@ end
 -- 数字格式化函数
 -- 扩展版本的大数字格式化函数
 function gg.FormatLargeNumber(num)
+    -- 小于万的情况：保持整数显示，不显示小数
     if num < 10000 then
-        return tostring(num)
+        return tostring(math.floor(num))
     end
     
     -- 完整的中文数字单位体系
@@ -537,28 +538,33 @@ function gg.FormatLargeNumber(num)
     local unitIndex = 1
     local result = num
     
+    -- 计算对应的单位
     while result >= 10000 and unitIndex < #units do
         result = result / 10000
         unitIndex = unitIndex + 1
     end
     
-    -- 保留一位小数
-    result = math.floor(result * 10) / 10
-    
-    -- 格式化输出
-    if result == math.floor(result) then
-        return tostring(math.floor(result)) .. units[unitIndex]
-    else
-        local wholePart = math.floor(result)
-        if wholePart >= 1000 then
-            -- 四位数时去掉小数部分
-            return tostring(wholePart) .. units[unitIndex]
+    -- 万及以上单位：保留两位小数，然后格式化显示
+    if unitIndex > 1 then
+        -- 保留两位小数进行计算
+        result = math.floor(result * 100) / 100
+        
+        -- 检查是否为整数
+        if result == math.floor(result) then
+            -- 是整数，直接显示整数部分
+            return tostring(math.floor(result)) .. units[unitIndex]
         else
-            return tostring(result) .. units[unitIndex]
+            -- 有小数部分，格式化为最多两位小数
+            local formatted = string.format("%.2f", result)
+            -- 去除尾部的0
+            formatted = formatted:gsub("%.?0+$", "")
+            return formatted .. units[unitIndex]
         end
     end
+    
+    -- 理论上不会到达这里，因为小于万的情况已经在开头处理了
+    return tostring(math.floor(num))
 end
-
 -- 屏幕视角大小
 ---@return number, number 视角宽度和高度
 function gg.get_camera_window_size()

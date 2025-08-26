@@ -159,12 +159,10 @@ end
 
 --- 停止飞行动画
 ---@param actor Actor 玩家Actor
-function PlayerAnimationAction:StopFlyAnimation(actor)
-    if not self.isActive then
-        --gg.log("PlayerAnimationAction: 未处于激活状态，无需停止")
-        return
-    end
-    
+function PlayerAnimationAction:StopFlyAnimation(actor)    
+    gg.log("PlayerAnimationAction: 已停止飞行动画")
+
+
     -- 设置状态为未激活
     self.isActive = false
     self.gameMode = nil
@@ -192,12 +190,16 @@ function PlayerAnimationAction:StopFlyAnimation(actor)
     
     -- 恢复物理状态
     actor.Gravity = targetGravity
-    actor.Movespeed = targetMoveSpeed
+    actor.Movespeed = targetMoveSpeed or 800
     actor.JumpBaseSpeed = targetJumpSpeed or 400
     
     -- 停止当前动作
     actor:StopMove()
     actor:Jump(false)
+    if not self.isActive then
+        --gg.log("PlayerAnimationAction: 未处于激活状态，无需停止")
+        return
+    end
     
     -- 恢复移动控制
     if self.originalEnableMove ~= nil then
@@ -211,7 +213,7 @@ function PlayerAnimationAction:StopFlyAnimation(actor)
     -- 记录恢复后的状态
 
     
-    --gg.log("PlayerAnimationAction: 已停止飞行动画并恢复原始状态")
+    gg.log("PlayerAnimationAction: 已停止飞行动画并恢复原始状态")
     
     -- 结束模块
     self:OnEnd()
@@ -274,13 +276,9 @@ end
 --- 强制停止所有动画控制
 ---@param actor Actor 玩家Actor
 function PlayerAnimationAction:ForceStop(actor)
-    if not self.isActive then
-        --gg.log("PlayerAnimationAction: 未处于激活状态，无需强制停止")
-        self:OnEnd()
-        return
-    end
+
     
-    --gg.log("PlayerAnimationAction: 强制停止动画控制")
+    gg.log("PlayerAnimationAction: 强制停止动画控制")
     
     -- 立即恢复所有状态
     actor.Animator:Play("Base Layer.Idle", 0, 0)
@@ -291,6 +289,11 @@ function PlayerAnimationAction:ForceStop(actor)
     -- 停止所有动作
     actor:StopMove()
     actor:Jump(false)
+    if not self.isActive then
+        --gg.log("PlayerAnimationAction: 未处于激活状态，无需强制停止")
+        self:OnEnd()
+        return
+    end
     
     -- 恢复移动控制
     if self.originalEnableMove ~= nil then
@@ -315,7 +318,7 @@ function PlayerAnimationAction:OnEnd()
         return -- 已经结束过了
     end
     
-    --gg.log("PlayerAnimationAction: 模块结束，正在清理")
+    gg.log("PlayerAnimationAction: 模块结束，正在清理")
     
     -- 如果是挂机场景，隐藏“离开挂机”按钮
 

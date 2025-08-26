@@ -204,7 +204,7 @@ function OnlineRewardsGui:SetupRewardSlot(slotNode, reward, index)
     -- 设置奖励数量
     local amountNode = backgroundNode:FindFirstChild("奖励数量")
     if amountNode and reward.rewardItems then
-        amountNode.Title = "x" .. (reward.rewardItems.amount or 1)
+        amountNode.Title = "x" .. (gg.FormatLargeNumber(reward.rewardItems.amount) or 1)
     end
     
 

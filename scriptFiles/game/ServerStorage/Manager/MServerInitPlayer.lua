@@ -140,9 +140,7 @@ function MServerInitPlayer.player_enter_game(player)
     
     -- 【新增】初始化玩家场景为init_map
     gg.player_scene_map[uin_] = 'init_map'
-        if cloud_player_data_ == nil or next(cloud_player_data_) == nil then
-        PlayerInitMgr.InitializeNewPlayer(player_)
-    end
+
     AchievementMgr.OnPlayerJoin(uin_)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)

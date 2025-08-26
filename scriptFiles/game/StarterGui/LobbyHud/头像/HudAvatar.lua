@@ -198,8 +198,19 @@ function HudAvatar:OnPlayerVariableSync(data)
             end
         end
     end
-    local power = self.playerVariableData["数据_固定值_历史最大战力值"].base
-    self.PowerVariableTitle.node.Title = gg.FormatLargeNumber(power)
+    
+    -- 【优化】安全地获取战力值，避免索引错误
+    local powerData = self.playerVariableData["数据_固定值_历史最大战力值"]
+    if powerData and type(powerData) == "table" and powerData.base then
+        local power = powerData.base
+        self.PowerVariableTitle.node.Title = gg.FormatLargeNumber(power)
+    elseif powerData and type(powerData) == "number" then
+        -- 如果直接是数字，直接使用
+        self.PowerVariableTitle.node.Title = gg.FormatLargeNumber(powerData)
+    else
+        -- 默认值
+        self.PowerVariableTitle.node.Title = "0"
+    end
 end
 
 return HudAvatar.New(script.Parent, uiConfig)
