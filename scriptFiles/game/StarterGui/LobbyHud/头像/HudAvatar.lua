@@ -36,7 +36,7 @@ function HudAvatar:OnInit(node, config)
     local localPlayer = game:GetService("Players").LocalPlayer
     self:Get("名字背景/玩家名").node.Title = localPlayer.Nickname
     self:Get("名字背景/UID").node.Title = tostring(localPlayer.UserId)
-    self.PowerVariableTitle = self:Get("最高战力/历史最高战力", ViewComponent) ---@type ViewComponent
+    self.PowerVariableTitle = self:Get("名字背景/最高战力/历史最高战力", ViewComponent) ---@type ViewComponent
     local headNode = CoreUI:GetHeadNode(tostring(localPlayer.UserId))
     local PlayerHead = self:Get("头像背景/玩家头像").node
     headNode.Parent = PlayerHead.Parent
@@ -172,7 +172,7 @@ end
 
 -- 【修改】处理玩家变量数据同步
 function HudAvatar:OnPlayerVariableSync(data)
-    gg.log("HudAvatar收到玩家变量数据同步:", data)
+    -- gg.log("HudAvatar收到玩家变量数据同步:", data)
     if not data or not data.variableData then
         return
     end
@@ -199,7 +199,6 @@ function HudAvatar:OnPlayerVariableSync(data)
         end
     end
     local power = self.playerVariableData["数据_固定值_历史最大战力值"].base
-    gg.log("power",self.playerVariableData["数据_固定值_历史最大战力值"])
     self.PowerVariableTitle.node.Title = gg.FormatLargeNumber(power)
 end
 

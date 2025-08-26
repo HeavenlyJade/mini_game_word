@@ -32,7 +32,7 @@ local function CalculateMaxTalentActionExecutions(player, AchievementTypeIns, cu
     end
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
     local playerBag = BagMgr.GetPlayerBag(player.uin)
-    local playerConsumableData = player:GetConsumableData()
+    local playerConsumableData = player.variableSystem:GetVariablesDictionary()
     -- 1. 一次性计算出动作等级1的所有消耗
     local costsForLevel1 = AchievementTypeIns:GetActionCosts(1, playerConsumableData, playerBag)
     --gg.log("costsForLevel1",costsForLevel1,playerConsumableData)
@@ -132,7 +132,7 @@ local function CalculateTotalTalentActionCosts(AchievementTypeIns, player, execu
     local playerBag = BagMgr.GetPlayerBag(player.uin)
 
     -- 计算单次消耗
-    local singleCosts = AchievementTypeIns:GetActionCosts(1, player:GetConsumableData(), playerBag)
+    local singleCosts = AchievementTypeIns:GetActionCosts(1, player.variableSystem:GetVariablesDictionary(), playerBag)
     if not singleCosts or #singleCosts == 0 then
         return nil
     end
@@ -369,7 +369,7 @@ function AchievementEventManager.HandleGetTalentLevel(event)
     local playerBag = BagMgr.GetPlayerBag(player.uin)
 
     -- 计算每个可执行等级的消耗
-    local playerData = player:GetConsumableData()
+    local playerData = player.variableSystem:GetVariablesDictionary()
 
     for i = 1, currentTalentLevel do
         -- 1. 先获取配置的基础消耗值
@@ -407,10 +407,10 @@ function AchievementEventManager.HandleGetTalentLevel(event)
     -- 计算最大执行次数的总消耗
     local maxExecutionTotalCost = 0 -- 改为数值
     if maxExecutions > 0 then
-        local singleActionCosts = AchievementTypeIns:GetActionCosts(1, player:GetConsumableData(), playerBag)
-        if singleActionCosts and #singleActionCosts > 0 then
+        local singleActionCosts = AchievementTypeIns:GetActionCosts(1, player.variableSystem:GetVariablesDictionary(), playerBag)
+        if singleActionCosts and #singleActionCosts > 0 then    
             local costInfo = singleActionCosts[1]
-            if costInfo then
+            if costInfo then    
                 maxExecutionTotalCost = (costInfo.amount or 0) * maxExecutions
             end
         end
@@ -656,14 +656,15 @@ function AchievementEventManager.HandlePerformRebirth(event)
     end
 
     -- 2. 【重构】使用已配置好的AchievementType:GetActionCosts方法获取重生消耗配置
-    local playerData = player:GetConsumableData()
+    local playerData = player.variableSystem:GetVariablesDictionary()
     local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
     local playerBag = BagMgr.GetPlayerBag(player.uin)
-    
+    gg.log("playerData",playerData)
     -- 使用现有的GetActionCosts方法获取消耗配置
     local rebirthCosts = AchievementTypeIns:GetActionCosts(targetLevel, playerData, playerBag)
+    gg.log("rebirthCosts",rebirthCosts)
     if not rebirthCosts or #rebirthCosts == 0 then
-        --gg.log("无法获取重生消耗配置")
+        gg.log("无法获取重生消耗配置")
         return
     end
 
@@ -692,7 +693,7 @@ function AchievementEventManager.HandlePerformRebirth(event)
             
             if playerAmount < costAmount then
                 canAfford = false
-                --gg.log("消耗不足:", costName, "需要:", costAmount, "拥有:", playerAmount)
+                gg.log("消耗不足:", costName, "需要:", costAmount, "拥有:", playerAmount)
                 break
             end
             
@@ -706,7 +707,8 @@ function AchievementEventManager.HandlePerformRebirth(event)
     end
     
     if not canAfford then
-        --gg.log("重生消耗不足，无法执行")
+        gg.log("重生消耗不足，无法执行")
+        player:SendHoverText("重生战力不足，无法执行")
         return
     end
 
@@ -755,7 +757,7 @@ function AchievementEventManager.HandlePerformRebirth(event)
     SyncBagToClient(player)
     SyncPlayerVariablesToClient(player)
     
-    --gg.log("重生执行成功，已扣除消耗、应用效果并同步最新数据")
+    gg.log("重生执行成功，已扣除消耗、应用效果并同步最新数据")
 end
 
 

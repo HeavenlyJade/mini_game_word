@@ -207,7 +207,7 @@ function WingGui:OnWingListResponse(data)
         self.equipSlotIds = data.equipSlotIds or {}
         self.wingBagCapacity = data.bagCapacity or 30
         self.unlockedEquipSlots = data.unlockedEquipSlots or 1
-        gg.log("翅膀数据:", self.activeSlots, self.equipSlotIds, self.wingBagCapacity, self.unlockedEquipSlots)
+        -- gg.log("翅膀数据:", self.activeSlots, self.equipSlotIds, self.wingBagCapacity, self.unlockedEquipSlots)
 
         --gg.log("翅膀数据同步完成, 激活槽位:", self.activeSlots)
 

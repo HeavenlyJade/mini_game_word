@@ -44,7 +44,7 @@ function NoticeGui:OnInit(node, config)
     -- 4. 按钮点击事件注册
     self:RegisterButtonEvents()
     
-    ----gg.log("NoticeGui 物品通知界面初始化完成")
+    gg.log("NoticeGui 物品通知界面初始化完成")
 end
 
 -- 节点初始化
@@ -73,7 +73,7 @@ end
 
 -- 注册客户端事件
 function NoticeGui:RegisterEvents()
-    ----gg.log("注册物品通知事件监听")
+    gg.log("注册物品通知事件监听")
     ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.ITEM_ACQUIRED_NOTIFY, function(data)
         self:OnItemAcquiredNotify(data)
     end)
@@ -94,7 +94,7 @@ end
 ---@param eventData table 通知数据
 function NoticeGui:OnItemAcquiredNotify(eventData)
     local data = eventData.data
-    --gg.log("抽奖的结果通知",eventData)
+    gg.log("获得的结果通知",eventData)
     if not eventData or not data.rewards then
         --gg.log("错误：物品通知数据无效")
         return
@@ -116,7 +116,7 @@ end
 --- 显示单个通知
 ---@param notice table 通知数据
 function NoticeGui:DisplayNotice(notice)
-    
+    gg.log("DisplayNotice",notice)
     -- 清空现有通知内容
     self:ClearNotices()
     --gg.log("notice",notice)
@@ -138,7 +138,9 @@ function NoticeGui:DisplayNotice(notice)
             
             -- 设置物品图标
             if itemNode["图标"] then
-                if itemConfig.icon or itemConfig.avatarResource then
+                if itemConfig.imageResource then
+                    itemNode["图标"].Icon = itemConfig.imageResource
+                elseif  itemConfig.icon or itemConfig.avatarResource then
                     local iconResource = itemConfig.icon or itemConfig.avatarResource
                     if CardIcon.itemIconResources[iconResource] then
                         itemNode["图标"].Icon = CardIcon.itemIconResources[iconResource]
@@ -192,7 +194,7 @@ function NoticeGui:GetItemConfigByType(itemType, itemName)
     elseif itemType == "物品" then
         return ConfigLoader.GetItem(itemName)
     else
-        ----gg.log("警告：未知的物品类型", itemType, itemName)
+        gg.log("警告：未知的物品类型", itemType, itemName)
         return nil
     end
 end
@@ -207,13 +209,13 @@ end
 
 --- UI打开时调用
 function NoticeGui:OnOpen()
-    ----gg.log("NoticeGui 打开")
+    gg.log("NoticeGui 打开")
     -- 可以在这里刷新通知数据
 end
 
 --- UI关闭时调用
 function NoticeGui:OnClose()
-    ----gg.log("NoticeGui 关闭")
+    gg.log("NoticeGui 关闭")
     -- 取消自动隐藏任务
     if self.autoHideTask then
         self.autoHideTask:Cancel()

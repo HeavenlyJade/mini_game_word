@@ -8,6 +8,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ShopEventConfig = require(MainStorage.Code.Event.EventShop) ---@type ShopEventConfig
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 -- 引入相关系统
 local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
@@ -105,7 +106,8 @@ function ShopEventManager.HandlePurchaseItem(evt)
     
     if success then
         gg.log("商品购买成功", player.name, shopItemId, currencyType)
-        
+        ShopEventManager.SendShopItemAcquiredNotification(player.uin, purchaseResult.rewards, "商城购买")
+
         -- 发送成功响应
         gg.network_channel:fireClient(player.uin, {
             cmd = ShopEventConfig.RESPONSE.PURCHASE_RESPONSE,
@@ -321,4 +323,52 @@ function ShopEventManager.HandleRefreshShopData(evt)
     end
 end
 
+-- 发送商城物品获得通知给NoticeGui
+---@param uin number 玩家UIN
+---@param rewards table[] 奖励列表
+---@param source string 来源说明
+function ShopEventManager.SendShopItemAcquiredNotification(uin, rewards, source)
+    if not rewards or #rewards == 0 then
+        return
+    end
+    
+    -- 转换奖励数据格式为NoticeGui需要的格式
+    local noticeRewards = {}
+    for _, reward in ipairs(rewards) do
+        -- 商城奖励配置结构：{itemType="物品", itemName="具体名称", amount=1}
+        local itemType = reward.itemType or "物品"
+        local itemName = reward.itemName or "未知物品"
+        
+        -- 确保itemType是中文格式
+        if itemType == "pet" then
+            itemType = "宠物"
+        elseif itemType == "partner" then
+            itemType = "伙伴"  
+        elseif itemType == "wing" then
+            itemType = "翅膀"
+        elseif itemType == "trail" then
+            itemType = "尾迹"
+        elseif itemType == "item" then
+            itemType = "物品"
+        end
+        
+        table.insert(noticeRewards, {
+            itemType = itemType,
+            itemName = itemName,
+            amount = reward.amount or 1
+        })
+    end
+    
+    -- 发送物品获得通知
+    gg.network_channel:fireClient(uin, {
+        cmd = EventPlayerConfig.NOTIFY.ITEM_ACQUIRED_NOTIFY,
+        data = {
+            rewards = noticeRewards,
+            source = source,
+            message = string.format("恭喜通过%s获得了以下物品！", source or "商城购买")
+        }
+    })
+    
+    gg.log("已发送商城物品获得通知给玩家", uin, "奖励数量:", #noticeRewards)
+end
 return ShopEventManager

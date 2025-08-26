@@ -55,7 +55,7 @@ function RebirthGui:OnInit(node, config)
     self:RegisterEvents()
     self:RegisterButtonEvents()
 
-    --gg.log("RebirthGui 初始化完成")
+    ----gg.log("RebirthGui 初始化完成")
 end
 
 -- =================================
@@ -63,7 +63,7 @@ end
 -- =================================
 
 function RebirthGui:RegisterEvents()
-    --gg.log("注册重生UI事件监听")
+    ----gg.log("注册重生UI事件监听")
 
     -- 监听重生天赋等级数据
     ClientEventManager.Subscribe(AchievementEventConfig.RESPONSE.GET_REBIRTH_LEVEL_RESPONSE, function(data)
@@ -93,13 +93,13 @@ end
 
 ---@override
 function RebirthGui:OnOpen()
-    --gg.log("RebirthGui打开")
+    ----gg.log("RebirthGui打开")
     -- 数据请求现在由仓库按钮发起，界面只负责监听和刷新
 end
 
 ---@override
 function RebirthGui:OnClose()
-    --gg.log("RebirthGui关闭")
+    ----gg.log("RebirthGui关闭")
     self.currentTalentLevel = 0
     self.rebirthList:ClearChildren({ "最大重生" })
 end
@@ -110,7 +110,6 @@ end
 
 
 function RebirthGui:OnTalentLevelResponse(data)
-    gg.log("收到天赋等级响应:", data)
     self.currentTalentLevel = data.data.currentLevel
     self.costsByLevel = data.data.costsByLevel or {}
     self.maxExecutions = data.data.maxExecutions or 0
@@ -151,7 +150,7 @@ end
 
 ---@param level number
 function RebirthGui:OnClickRebirthLevel(level)
-    --gg.log(string.format("点击重生等级 %d 按钮", level))
+    ----gg.log(string.format("点击重生等级 %d 按钮", level))
 
     -- 发送执行单次重生的请求
     gg.network_channel:fireServer({
@@ -164,7 +163,7 @@ function RebirthGui:OnClickRebirthLevel(level)
 end
 
 function RebirthGui:OnClickMaxRebirth()
-    --gg.log("点击最大重生按钮")
+    ----gg.log("点击最大重生按钮")
 
     gg.network_channel:fireServer({
         cmd = AchievementEventConfig.REQUEST.PERFORM_MAX_REBIRTH,
@@ -179,7 +178,7 @@ end
 -- =================================
 
 function RebirthGui:RefreshDisplay()
-    --gg.log("根据天赋等级刷新重生列表:", self.currentTalentLevel)
+    ----gg.log("根据天赋等级刷新重生列表:", self.currentTalentLevel)
 
     self.rebirthList:ClearChildren({ "最大重生" })
 
@@ -187,18 +186,18 @@ function RebirthGui:RefreshDisplay()
     self:RefreshMaxRebirthNode()
 
     if not self.rebirthTemplate or not self.rebirthTemplate.node then
-        --gg.log("错误：找不到重生项模板")
+        ----gg.log("错误：找不到重生项模板")
         return
     end
 
     -- if self.currentTalentLevel == 0 then
-    --     --gg.log("天赋等级为0，不显示任何重生选项")
+    --     ----gg.log("天赋等级为0，不显示任何重生选项")
     --     -- 可选：显示一条提示信息
     --     return
     -- end
-    gg.log("self.costsByLevel",self.costsByLevel)
+    --gg.log("self.costsByLevel",self.costsByLevel)
     for level, costsAndEffects in pairs(self.costsByLevel) do
-        gg.log("level",level,"costsAndEffects",costsAndEffects)
+        --gg.log("level",level,"costsAndEffects",costsAndEffects)
         -- 1. 在客户端判断玩家资源是否足够
         local canAfford = true
         if costsAndEffects and #costsAndEffects > 0 then
@@ -237,7 +236,7 @@ function RebirthGui:RefreshDisplay()
             local titleText = itemNode["可重生次数"]
             if titleText then
                 local formattedNumber = gg.FormatLargeNumber(costAmount)
-                gg.log("调试 RebirthGui:RefreshDisplay - costAmount:", rebirthCount, "formattedNumber:", formattedNumber, "type:", type(formattedNumber))
+                --gg.log("调试 RebirthGui:RefreshDisplay - costAmount:", rebirthCount, "formattedNumber:", formattedNumber, "type:", type(formattedNumber))
                 titleText.Title = string.format("可重生 %s 次", gg.FormatLargeNumber(rebirthCount))
             end
 
@@ -268,7 +267,7 @@ function RebirthGui:RefreshDisplay()
             if canAfford then
                 self:OnClickRebirthLevel(level)
             else
-                --gg.log("资源不足，无法执行此等级的重生。") -- 可以加一个用户提示
+                ----gg.log("资源不足，无法执行此等级的重生。") -- 可以加一个用户提示
             end
         end
 
@@ -277,7 +276,7 @@ function RebirthGui:RefreshDisplay()
 end
 
 function RebirthGui:RefreshMaxRebirthNode()
-    --gg.log("self.maxRebirthCountText",self.maxRebirthCountText,"elf.maxRebirthCostText",self.maxRebirthCostText)
+    ----gg.log("self.maxRebirthCountText",self.maxRebirthCountText,"elf.maxRebirthCostText",self.maxRebirthCostText)
 
     self.maxRebirthCountText.node.Title = string.format("可重生 %d 次", self.maxExecutions)
     local costName = "战力" -- 根据您的修改，硬编码为“战力”

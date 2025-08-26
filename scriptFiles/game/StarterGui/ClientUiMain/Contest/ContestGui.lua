@@ -124,7 +124,7 @@ function ContestGui:OnPrepareCountdown(eventData)
 	local prepareTime = eventData.prepareTime or 10
 	local playerScene = eventData.playerScene or "init_map" -- 【新增】从服务端获取玩家场景
 	
-	gg.log("收到比赛准备倒计时，准备时间: " .. prepareTime .. "秒，玩家场景: " .. playerScene)
+	--gg.log("收到比赛准备倒计时，准备时间: " .. prepareTime .. "秒，玩家场景: " .. playerScene)
 	
 	-- 保存玩家场景信息
 	self.currentPlayerScene = playerScene
@@ -145,16 +145,16 @@ function ContestGui:SetupCountdownNode(prepareTime)
 	-- 【修改】使用服务端提供的玩家场景信息
 	local currentScene = self.currentPlayerScene or "init_map"
 	if not currentScene then
-		gg.log("警告: ContestGui - 无法获取玩家当前场景")
+		--gg.log("警告: ContestGui - 无法获取玩家当前场景")
 		return
 	end
 	
-	gg.log("使用服务端提供的场景信息:", currentScene)
+	--gg.log("使用服务端提供的场景信息:", currentScene)
 	
 	-- 从NodeConf获取倒计时节点路径
 	local countdownPath = NodeConf["倒计时"][currentScene]
 	if not countdownPath then
-		gg.log("警告: ContestGui - 无法从NodeConf获取场景 " .. currentScene .. " 的倒计时节点路径")
+		--gg.log("警告: ContestGui - 无法从NodeConf获取场景 " .. currentScene .. " 的倒计时节点路径")
 		return
 	end
 	
@@ -162,7 +162,7 @@ function ContestGui:SetupCountdownNode(prepareTime)
 	local workSpace = game.WorkSpace
 	local countdownNode = gg.GetChild(workSpace, countdownPath)
 	if not countdownNode then
-		gg.log("警告: ContestGui - 无法获取倒计时节点: " .. countdownPath)
+		--gg.log("警告: ContestGui - 无法获取倒计时节点: " .. countdownPath)
 		return
 	end
 	
@@ -175,9 +175,9 @@ function ContestGui:SetupCountdownNode(prepareTime)
 	-- 设置节点标题
 	if countdownNode.Title then
 		countdownNode.Title = timeText
-		gg.log("成功设置倒计时节点文本: " .. timeText)
+		--gg.log("成功设置倒计时节点文本: " .. timeText)
 	else
-		gg.log("警告: ContestGui - 倒计时节点没有Title属性")
+		--gg.log("警告: ContestGui - 倒计时节点没有Title属性")
 	end
 	
 	-- 保存节点引用以便后续更新
@@ -195,9 +195,9 @@ function ContestGui:SetupRaceTimeDisplay(raceTime)
 	
 	if self.countDown.Title then
 		self.countDown.Title = timeText
-		gg.log("成功设置比赛剩余时间文本: " .. timeText)
+		--gg.log("成功设置比赛剩余时间文本: " .. timeText)
 	else
-		gg.log("警告: ContestGui - 倒计时节点没有Title属性")
+		--gg.log("警告: ContestGui - 倒计时节点没有Title属性")
 	end
 	
 end
@@ -205,7 +205,7 @@ end
 function ContestGui:GetCurrentPlayerScene()
 	-- 【修改】优先使用服务端提供的场景信息
 	if self.currentPlayerScene then
-		gg.log("使用服务端提供的场景信息:", self.currentPlayerScene)
+		--gg.log("使用服务端提供的场景信息:", self.currentPlayerScene)
 		return self.currentPlayerScene
 	end
 	
@@ -216,7 +216,7 @@ function ContestGui:GetCurrentPlayerScene()
 	end
 	
 	local uin = localPlayer.UserId
-	gg.log("当前玩家ID: " .. uin)
+	--gg.log("当前玩家ID: " .. uin)
 	if not uin then
 		return nil
 	end
@@ -224,12 +224,12 @@ function ContestGui:GetCurrentPlayerScene()
 	-- 从全局映射中获取场景信息（备用方案）
 	local scene = gg.player_scene_map and gg.player_scene_map[uin]
 	if scene then
-		gg.log("从全局场景映射获取场景:", scene)
+		--gg.log("从全局场景映射获取场景:", scene)
 		return scene
 	end
 	
 	-- 默认返回init_map
-	gg.log("使用默认场景: init_map")
+	--gg.log("使用默认场景: init_map")
 	return "init_map"
 end
 
@@ -268,14 +268,14 @@ function ContestGui:StartPrepareCountdown(prepareTime)
             -- 清理场景节点引用
             self.sceneCountdownNode = nil
             
-            gg.log("比赛准备倒计时结束")
+            --gg.log("比赛准备倒计时结束")
         end
     end
     
     -- 启动定时器
     self.prepareTimer:Start()
     
-    gg.log(string.format("开始比赛准备倒计时，总时间: %d秒", prepareTime))
+    --gg.log(string.format("开始比赛准备倒计时，总时间: %d秒", prepareTime))
 end
 
 -- 更新准备倒计时显示
@@ -301,14 +301,14 @@ end
 -- 【新增】处理停止比赛准备倒计时事件
 function ContestGui:OnStopPrepareCountdown(eventData)
 	local reason = eventData.reason or "未知原因"
-	gg.log("收到停止比赛准备倒计时事件，原因: " .. reason)
+	--gg.log("收到停止比赛准备倒计时事件，原因: " .. reason)
 	
 	-- 停止并清理准备倒计时定时器
 	if self.prepareTimer then
 		self.prepareTimer:Stop()
 		self.prepareTimer:Destroy()
 		self.prepareTimer = nil
-		gg.log("准备倒计时定时器已停止并清理")
+		--gg.log("准备倒计时定时器已停止并清理")
 	end
 	
 	-- 隐藏倒计时界面
@@ -319,7 +319,7 @@ function ContestGui:OnStopPrepareCountdown(eventData)
 	-- 清理场景倒计时节点的文本
 	if self.sceneCountdownNode and self.sceneCountdownNode.Title then
 		self.sceneCountdownNode.Title = ""
-		gg.log("已清理场景倒计时节点文本")
+		--gg.log("已清理场景倒计时节点文本")
 	end
 	
 	-- 清理场景节点引用
@@ -328,12 +328,12 @@ function ContestGui:OnStopPrepareCountdown(eventData)
 	-- 隐藏整个比赛界面
 	self:SetVisible(false)
 	
-	gg.log(string.format("比赛准备倒计时已停止，原因: %s", reason))
+	--gg.log(string.format("比赛准备倒计时已停止，原因: %s", reason))
 end
 
 -- 显示比赛界面
 function ContestGui:OnContestShow(eventData)
-	gg.log("显示比赛界面，比赛时长: " .. (eventData.raceTime or 60) .. "秒")
+	--gg.log("显示比赛界面，比赛时长: " .. (eventData.raceTime or 60) .. "秒")
 	self:SetVisible(true)
 	self.countDown:SetVisible(true)
 	self.rankContainer:SetVisible(true) -- 比赛开始时显示排行榜
@@ -347,7 +347,7 @@ end
 
 -- 隐藏比赛界面
 function ContestGui:OnContestHide(eventData)
-    gg.log("隐藏比赛界面")
+    --gg.log("隐藏比赛界面")
     self:SetVisible(false)
     self.rankContainer:SetVisible(false) -- 比赛结束时隐藏排行榜
 
@@ -458,14 +458,14 @@ end
 function ContestGui:UpdatePlayerAvatar(rankComponent, userId)
 	if not rankComponent or not userId then return end
 	if not rankComponent.container or not rankComponent.container.node then 
-		gg.log("警告: ContestGui - 排行榜组件节点为空，无法更新头像")
+		--gg.log("警告: ContestGui - 排行榜组件节点为空，无法更新头像")
 		return 
 	end
 	
 	-- 获取玩家头像节点
 	local headNode = CoreUI:GetHeadNode(tostring(userId))
 	if not headNode then 
-		gg.log("警告: ContestGui - 无法获取玩家头像节点，userId: " .. tostring(userId))
+		--gg.log("警告: ContestGui - 无法获取玩家头像节点，userId: " .. tostring(userId))
 		return 
 	end
 	
@@ -480,7 +480,7 @@ function ContestGui:UpdatePlayerAvatar(rankComponent, userId)
         headNode.Parent = avatarContainer.Parent
 		rankComponent.avatarComponent = headNode
 	else
-		gg.log("警告: ContestGui - 无法找到头像容器节点")
+		--gg.log("警告: ContestGui - 无法找到头像容器节点")
 	end
 end
 

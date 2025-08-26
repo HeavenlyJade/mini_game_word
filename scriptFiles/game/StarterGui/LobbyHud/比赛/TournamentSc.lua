@@ -75,7 +75,7 @@ function TournamentSc:InitNodes()
 	
 	-- 比赛进度条3: 距离1到3
 	self.distanceNodes[3] = {}
-	for i = 1, 3 do
+	for i = 1, 2 do
 		self.distanceNodes[3][i] = self:Get("底图/功能/比赛进度条3/距离" .. i, ViewComponent)
 		-- 【新增】设置距离节点显示文本
 		local distanceValue = NodeConf["节点显示距离"]["init_map"]["进度条3"][i]

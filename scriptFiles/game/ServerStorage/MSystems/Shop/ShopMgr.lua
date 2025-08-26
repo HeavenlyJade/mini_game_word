@@ -300,6 +300,8 @@ function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
     
     -- 持久化
     ShopMgr.SavePlayerShopData(player.uin)
+    local ShopEventManager = require(ServerStorage.MSystems.Shop.ShopEventManager) ---@type ShopEventManager
+    ShopEventManager.SendShopItemAcquiredNotification(player.uin, targetItem.rewards, "商城购买")
 
     -- 通知客户端购买成功
     local purchaseResult = {
