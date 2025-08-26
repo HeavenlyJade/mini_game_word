@@ -265,8 +265,8 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
     
     -- 记录加成计算日志
     if finalItemCount ~= itemCount then
-        --gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d", 
-            -- player.name or player.uin, itemType, itemCount, finalItemCount))
+        -- gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d", 
+        --     player.name or player.uin, itemType, itemCount, finalItemCount))
     end
     
     -- 使用现有的奖励发放系统，发放加成后的奖励
@@ -916,8 +916,8 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
     local itemBonus = bonuses[itemName]
     if itemBonus and (itemBonus.fixed > 0 or itemBonus.percentage > 0) then
-        --gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)", 
-            --player.name or player.uin, itemName, amount, itemBonus.fixed or 0, itemBonus.percentage or 0))
+        gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)", 
+            player.name or player.uin, itemName, amount, itemBonus.fixed or 0, itemBonus.percentage or 0))
     end
 
     -- 使用统一奖励分发器发放物品（内部会自动应用加成）

@@ -82,7 +82,7 @@ local function dispatchSingleReward(player, reward)
             return false, string.format("添加物品失败：%s x%d", itemName, amount)
         end
         
-        gg.log("物品发放成功", player.name, itemName, "x" .. amount)
+        --gg.log("物品发放成功", player.name, itemName, "x" .. amount)
         return true
         
     elseif itemType == RewardType.PET then
@@ -97,7 +97,7 @@ local function dispatchSingleReward(player, reward)
             return false, string.format("添加宠物失败：%s", itemName)
         end
         
-        gg.log("宠物发放成功", player.name, itemName, "槽位", actualSlot)
+        --gg.log("宠物发放成功", player.name, itemName, "槽位", actualSlot)
         return true
         
     elseif itemType == RewardType.PARTNER then
@@ -112,7 +112,7 @@ local function dispatchSingleReward(player, reward)
             return false, string.format("添加伙伴失败：%s", itemName)
         end
         
-        gg.log("伙伴发放成功", player.name, itemName, "槽位", actualSlot)
+        --gg.log("伙伴发放成功", player.name, itemName, "槽位", actualSlot)
         return true
         
     elseif itemType == RewardType.WING then
@@ -127,7 +127,7 @@ local function dispatchSingleReward(player, reward)
             return false, string.format("添加翅膀失败：%s", itemName)
         end
         
-        gg.log("翅膀发放成功", player.name, itemName, "槽位", actualSlot)
+        --gg.log("翅膀发放成功", player.name, itemName, "槽位", actualSlot)
         return true
         
     elseif itemType == RewardType.TRAIL then
@@ -142,7 +142,7 @@ local function dispatchSingleReward(player, reward)
             return false, string.format("添加尾迹失败：%s", itemName)
         end
         
-        gg.log("尾迹发放成功", player.name, itemName, "槽位", actualSlot)
+        --gg.log("尾迹发放成功", player.name, itemName, "槽位", actualSlot)
         return true
         
     elseif itemType == RewardType.COMMAND then
@@ -155,7 +155,7 @@ local function dispatchSingleReward(player, reward)
         local CommandManager = getCommandManager()
         CommandManager.ExecuteCommand(commandStr, player, true)
         
-        gg.log("指令执行成功", player.name, commandStr)
+        --gg.log("指令执行成功", player.name, commandStr)
         return true
         
     elseif itemType == RewardType.VARIABLE then
@@ -174,12 +174,12 @@ local function dispatchSingleReward(player, reward)
         -- 根据数值正负判断操作类型
         if value > 0 then
             player.variableSystem:AddVariable(variableName, value)
-            gg.log("玩家变量增加成功", player.name, variableName, "+" .. value)
+            --gg.log("玩家变量增加成功", player.name, variableName, "+" .. value)
         elseif value < 0 then
             player.variableSystem:SubtractVariable(variableName, math.abs(value))
-            gg.log("玩家变量减少成功", player.name, variableName, value)
+            --gg.log("玩家变量减少成功", player.name, variableName, value)
         else
-            gg.log("玩家变量数值为0，跳过操作", player.name, variableName)
+            --gg.log("玩家变量数值为0，跳过操作", player.name, variableName)
         end
         
         return true
@@ -197,11 +197,11 @@ local function syncDataToClient(player, stats)
 
     local BagMgr = getBagMgr()
     if BagMgr then
-        gg.log("开始同步背包数据到客户端", player.uin)
+        --gg.log("开始同步背包数据到客户端", player.uin)
         BagMgr.ForceSyncToClient(player.uin)
-        gg.log("背包数据同步完成", player.uin)
+        --gg.log("背包数据同步完成", player.uin)
     else
-        gg.log("警告：无法获取背包管理器", player.uin)
+        --gg.log("警告：无法获取背包管理器", player.uin)
     end
     
     if stats.pet > 0 then
@@ -291,7 +291,7 @@ function PlayerRewardDispatcher.DispatchRewards(player, rewards)
         return true, "无奖励需要发放", nil
     end
     
-    gg.log("开始发放奖励", player.name, "奖励数量", #rewards)
+    --gg.log("开始发放奖励", player.name, "奖励数量", #rewards)
     
     local failedRewards = {}
     local successCount = 0
@@ -330,7 +330,7 @@ function PlayerRewardDispatcher.DispatchRewards(player, rewards)
         resultMsg = string.format("奖励发放完成，成功 %d 个，失败 %d 个", successCount, #failedRewards)
     end
     
-    -- gg.log("奖励发放结果", player.name, resultMsg, 
+    -- --gg.log("奖励发放结果", player.name, resultMsg, 
     --        "物品:", stats.bag, "宠物:", stats.pet, "伙伴:", stats.partner, 
     --        "翅膀:", stats.wing, "尾迹:", stats.trail, "指令:", stats.command, "变量:", stats.variable)
     

@@ -477,6 +477,7 @@ function TrailMgr.FindTrailSlotsByName(uin, trailName)
 end
 
 --- 获取当前激活尾迹的物品/玩家变量加成
+--- 获取当前激活尾迹的物品/玩家变量加成
 ---@param uin number 玩家ID
 ---@return table<string, any> 加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function TrailMgr.GetActiveItemBonuses(uin)
@@ -488,37 +489,52 @@ function TrailMgr.GetActiveItemBonuses(uin)
     local bonuses = {}
     local activeSlots = trailManager.activeTrailSlots or {}
 
-    for _, trailSlotId in pairs(activeSlots) do
-        local trailData = trailManager:GetTrailBySlot(trailSlotId)
-        if trailData and trailData.trailName then
-            local cfg = ConfigLoader.GetTrail(trailData.trailName)
-            if cfg and cfg['携带效果'] then
-                for _, effect in ipairs(cfg['携带效果']) do
-                    local key = trailData.trailName
-                    if not bonuses[key] then
-                        bonuses[key] = { fixed = 0, percentage = 0 }
-                    end
+    for equipSlotId, trailSlotId in pairs(activeSlots) do
+        if trailSlotId and trailSlotId > 0 then
+            local trailData = trailManager:GetTrailBySlot(trailSlotId)
+            if trailData and trailData.trailName then
+                local cfg = ConfigLoader.GetTrail(trailData.trailName)
+                if cfg and cfg.carryingEffects then
+                    for _, effect in ipairs(cfg.carryingEffects) do
+                        local addType = effect['加成类型']
+                        local varName = effect['变量名称']
+                        local value = effect['效果数值'] or 0
 
-                    local varName = effect['变量名称']
-                    local value = effect['效果数值'] or 0
-                    local addType = effect['加成类型'] -- '物品' 或 '玩家属性'
-
-                    -- 目标匹配信息
-                    if addType == '物品' then
-                        bonuses[key].itemTarget = effect['物品目标']
-                    elseif addType == '玩家属性' then
-                        local targetVar = effect['目标变量']
-                        if targetVar and targetVar ~= '' then
-                            bonuses[key].targetVariable = targetVar
+                        -- 【关键修复】根据加成类型创建独立的key，避免目标覆盖
+                        local key = nil
+                        if addType == '物品' then
+                            local itemTarget = effect['物品目标']
+                            if itemTarget and itemTarget ~= '' then
+                                key = itemTarget  -- 使用物品名作为key，如 "金币"
+                            end
+                        elseif addType == '玩家属性' then
+                            local targetVar = effect['目标变量']
+                            if targetVar and targetVar ~= '' then
+                                key = targetVar  -- 使用目标变量作为key，如 "数据_固定值_移动速度"
+                            end
                         end
-                    end
 
-                    -- 数值类型判断：名称中包含“百分比”按百分比处理，否则按固定值
-                    local isPercent = type(varName) == 'string' and string.find(varName, '百分比', 1, true) ~= nil
-                    if isPercent then
-                        bonuses[key].percentage = (bonuses[key].percentage or 0) + value
-                    else
-                        bonuses[key].fixed = (bonuses[key].fixed or 0) + value
+                        -- 只处理有效的效果
+                        if key then
+                            if not bonuses[key] then
+                                bonuses[key] = { fixed = 0, percentage = 0 }
+                            end
+
+                            -- 设置正确的目标匹配信息
+                            if addType == '物品' then
+                                bonuses[key].itemTarget = effect['物品目标']
+                            elseif addType == '玩家属性' then
+                                bonuses[key].targetVariable = effect['目标变量']
+                            end
+
+                            -- 数值类型判断：名称中包含"百分比"按百分比处理，否则按固定值
+                            local isPercent = type(varName) == 'string' and string.find(varName, '百分比', 1, true) ~= nil
+                            if isPercent then
+                                bonuses[key].percentage = (bonuses[key].percentage or 0) + (value * 100)
+                            else
+                                bonuses[key].fixed = (bonuses[key].fixed or 0) + value
+                            end
+                        end
                     end
                 end
             end
@@ -527,7 +543,6 @@ function TrailMgr.GetActiveItemBonuses(uin)
 
     return bonuses
 end
-
 --- 检查玩家是否有可用的尾迹槽位
 ---@param uin number 玩家ID
 ---@return boolean 是否有可用槽位
