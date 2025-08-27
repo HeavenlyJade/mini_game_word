@@ -56,9 +56,14 @@ function AchievementRewardCal:CalculateEffectValue(formula, currentLevel, achiev
     local result = self:EvaluateFormula(formula, achievementData, achievementType or {})
 
     if result and type(result) == "number" then
-        return math.floor(result) -- 天赋效果通常使用整数
+        -- 修复：保留小数精度，支持百分比效果
+        -- 如果结果小于1但大于0，保留小数；否则向下取整
+        if result > 0 and result < 1 then
+            return math.floor(result * 1000) / 1000  -- 保留3位小数精度
+        else
+            return math.floor(result) -- 大于等于1的数值继续向下取整
+        end
     end
-
     return nil
 end
 

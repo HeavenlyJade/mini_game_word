@@ -59,6 +59,7 @@ function AchievementType:OnInit(data)
    else
        self.actionCostType = nil
    end
+   self._rewardCalculator = AchievementRewardCal.New() ---@type AchievementRewardCal
 end
 
 --- 是否为天赋成就
@@ -102,7 +103,7 @@ end
 ---@return table[] 计算后的效果值列表，每个元素是 {["效果类型"]=string, ["效果字段名称"]=string, ["数值"]=any}
 function AchievementType:GetLevelEffectValue(level)
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
-
+    
     local results = {}
     if not self.levelEffects or #self.levelEffects == 0 then
         return results
@@ -119,7 +120,7 @@ function AchievementType:GetLevelEffectValue(level)
             
         else
             -- 使用原有的公式计算逻辑
-            calculatedValue = AchievementRewardCal:CalculateEffectValue(formula, level, self)
+            calculatedValue = self._rewardCalculator:CalculateEffectValue(formula, level, self)
         end
         
         if calculatedValue then
@@ -130,7 +131,7 @@ function AchievementType:GetLevelEffectValue(level)
             })
         end
     end
-    gg.log("results",results)
+    gg.log("results",results,"玩家等级",level)
     return results
 end
 
@@ -208,7 +209,7 @@ end
 ---@param level number 当前等级
 ---@return number|nil 消耗数量
 function AchievementType:GetUpgradeCostValue(formula, level)
-    return AchievementRewardCal:CalculateUpgradeCost(formula, level, self)
+    return self._rewardCalculator:CalculateUpgradeCost(formula, level, self)
 end
 
 

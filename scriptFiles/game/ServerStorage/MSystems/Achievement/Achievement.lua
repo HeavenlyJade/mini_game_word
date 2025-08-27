@@ -36,8 +36,6 @@ function Achievement:OnInit(playerId, achievementData)
     self.talentData = {} -- 天赋数据映射
     self.normalAchievements = {} -- 普通成就数据
     self.lastUpdateTime = os.time()
-
-    -- 2. 先创建奖励计算器（必须最先初始化，因为后续转换需要用到）
     self._rewardCalculator = AchievementRewardCal.New()
 
     -- 3. 如果有成就数据，恢复到内部数据结构
@@ -47,9 +45,6 @@ function Achievement:OnInit(playerId, achievementData)
 
     -- 4. 将天赋数据转换为VariableSystem格式（现在计算器已可用）
     self.talentVariableData = self:_ConvertTalentDataToVariableFormat()
-    gg.log("天赋变量数据",self.talentVariableData)
-    gg.log("变量数量",self:_CountVariables(self.talentVariableData))
-    gg.log("天赋数据",achievementData)
     -- 5. 创建天赋变量系统（现在数据已准备好）
     self.talentVariableSystem = VariableSystem.New("天赋", self.talentVariableData) ---@type VariableSystem
     gg.log("天赋变量系统",self.talentVariableSystem:GetVariablesDictionary())
@@ -92,56 +87,42 @@ function Achievement:_ConvertTalentDataToVariableFormat()
     for talentId, talentInfo in pairs(self.talentData) do
         local AchievementTypeIns = ConfigLoader.GetAchievement(talentId)
         if AchievementTypeIns and AchievementTypeIns:IsTalentAchievement() then
-            -- 获取当前等级的效果配置
-            local effectConfig = AchievementTypeIns:GetLevelEffect(talentInfo.currentLevel)
-            if effectConfig then
-                local effectType = effectConfig["效果类型"]        -- "玩家变量" 或 "系统变量"
-                local fieldName = effectConfig["效果字段名称"]      -- 如 "天赋_百分比_训练加成"
+            
+            -- 直接使用AchievementType的计算方法，避免重复造轮子
+            local effectResults = AchievementTypeIns:GetLevelEffectValue(talentInfo.currentLevel)
+            
+            -- 处理计算结果
+            for _, effectResult in ipairs(effectResults) do
+                local fieldName = effectResult["效果字段名称"]
+                local effectValue = effectResult["数值"]
+                
+                if fieldName and effectValue then
+                    -- 生成来源标识
+                    local source = string.format("天赋_%s_L%d", talentId, talentInfo.currentLevel)
 
-                if fieldName then
-                    -- 计算效果值（现在计算器已可用）
-                    local effectValue = self._rewardCalculator:CalculateEffectValue(
-                        effectConfig["效果数值"],
-                        talentInfo.currentLevel,
-                        AchievementTypeIns
-                    )
-
-                    if effectValue then
-                        -- 生成来源标识
-                        local source = string.format("天赋_%s_L%d", talentId, talentInfo.currentLevel)
-
-                        -- 判断数值类型
-                        local valueType = "固定值"
-                        if string.find(fieldName, "^加成_") then
-                            valueType = "百分比"
-                        end
-
-                        -- 关键修改：统一存储到天赋变量系统
-                        -- 无论效果类型如何，都存储在天赋系统中，由加成计算器按需获取
-                        if not talentVariableData[fieldName] then
-                            talentVariableData[fieldName] = {
-                                base = 0,
-                                sources = {}
-                            }
-                        end
-
-                        -- 添加来源值
-                        talentVariableData[fieldName].sources[source] = {
-                            value = effectValue,
-                            type = valueType
-                        }
-
-                        --gg.log(string.format("天赋[%s-L%d]转换效果: %s = %s (%s)", 
-                        --    talentId, talentInfo.currentLevel, fieldName, tostring(effectValue), valueType))
-                    else
-                        --gg.log(string.format("警告：天赋[%s-L%d]效果值计算失败: %s", 
-                        --    talentId, talentInfo.currentLevel, effectConfig["效果数值"]))
+                    -- 判断数值类型
+                    local valueType = "固定值"
+                    if string.find(fieldName, "^天赋_百分比_") or string.find(fieldName, "^加成_") then
+                        valueType = "百分比"
                     end
-                else
-                    --gg.log(string.format("警告：天赋[%s-L%d]效果字段名称未配置", talentId, talentInfo.currentLevel))
+
+                    -- 统一存储到天赋变量系统
+                    if not talentVariableData[fieldName] then
+                        talentVariableData[fieldName] = {
+                            base = 0,
+                            sources = {}
+                        }
+                    end
+
+                    -- 添加来源值
+                    talentVariableData[fieldName].sources[source] = {
+                        value = effectValue,
+                        type = valueType
+                    }
+
+                    --gg.log(string.format("天赋[%s-L%d]转换效果: %s = %s (%s)", 
+                    --    talentId, talentInfo.currentLevel, fieldName, tostring(effectValue), valueType))
                 end
-            else
-                --gg.log(string.format("警告：天赋[%s-L%d]效果配置不存在", talentId, talentInfo.currentLevel))
             end
         else
             --gg.log(string.format("警告：天赋配置不存在或非天赋类型: %s", talentId))
@@ -151,7 +132,6 @@ function Achievement:_ConvertTalentDataToVariableFormat()
     --gg.log(string.format("玩家[%s]天赋数据转换完成，生成了%d个变量", self.playerId, self:_CountVariables(talentVariableData)))
     return talentVariableData
 end
-
 
 
 --- 统计变量数量
