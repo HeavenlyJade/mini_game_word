@@ -11,6 +11,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal)
 ---@field instanceId string
 ---@field modeName string
 ---@field activeTimers table<Timer, boolean>
+---@field timerCounter number 定时器计数器，确保同一实例内的定时器名称唯一
 local GameModeBase = ClassMgr.Class("GameModeBase")
 
 --- 初始化游戏模式实例
@@ -24,14 +25,51 @@ function GameModeBase.OnInit(self, instanceId, modeName, levelType)
     self.levelType = levelType -- 改为存储LevelType实例，子类可以重写此属性
     self.participants = {} -- key: uin, value: MPlayer
     self.activeTimers = {} -- 存放所有由本实例创建的、活跃的定时器句柄
+    self.timerCounter = 0 -- 初始化定时器计数器
+end
+
+--- 生成定时器名称
+--- 使用模式名称、实例ID和计数器确保名称唯一性
+---@param taskType string 任务类型："Delay"|"Interval"
+---@param duration number 时间参数（延迟时间或间隔时间）
+---@return string 生成的定时器名称
+function GameModeBase:_generateTimerName(taskType, duration)
+    self.timerCounter = self.timerCounter + 1
+    
+    -- 获取关卡名称，优先使用 levelType 中的名称
+    local levelName = ""
+    if self.levelType and type(self.levelType) == "table" then
+        if self.levelType.name then
+            levelName = self.levelType.name
+        elseif self.levelType.levelName then
+            levelName = self.levelType.levelName
+        elseif self.levelType.modeName then
+            levelName = self.levelType.modeName
+        end
+    end
+    
+    -- 如果没有找到关卡名称，使用模式名称
+    if levelName == "" then
+        levelName = self.modeName or "Unknown"
+    end
+    
+    -- 生成格式：关卡名称_任务类型_时长_实例ID_计数器
+    return string.format("%s_%s_%s_%s_%d", 
+        levelName, 
+        taskType, 
+        tostring(duration), 
+        self.instanceId, 
+        self.timerCounter
+    )
 end
 
 --- 添加一个延迟执行的任务
 --- (使用全局调度器，并自动追踪句柄以便在实例销毁时清理)
 ---@param delay number 延迟的秒数
 ---@param callback function 回调函数
+---@param customName string|nil 自定义名称（可选）
 ---@return Timer
-function GameModeBase:AddDelay(delay, callback)
+function GameModeBase:AddDelay(delay, callback, customName)
     local timer
     local wrappedCallback = function()
         -- 在回调执行后，从 activeTimers 表中移除自己，防止内存泄漏
@@ -41,7 +79,9 @@ function GameModeBase:AddDelay(delay, callback)
         callback()
     end
 
-    timer = ScheduledTask.AddDelay(delay, "GameModeBase_Delay_" .. delay, wrappedCallback)
+    local timerName = customName or self:_generateTimerName("Delay", delay)
+    timer = ScheduledTask.AddDelay(delay, timerName, wrappedCallback)
+    
     if timer then
         self.activeTimers[timer] = true
     end
@@ -52,9 +92,12 @@ end
 --- (使用全局调度器，并自动追踪句柄以便在实例销毁时清理)
 ---@param interval number 循环间隔的秒数
 ---@param callback function 回调函数
+---@param customName string|nil 自定义名称（可选）
 ---@return Timer
-function GameModeBase:AddInterval(interval, callback)
-    local timer = ScheduledTask.AddInterval(interval, "GameModeBase_Interval_" .. interval, callback)
+function GameModeBase:AddInterval(interval, callback, customName)
+    local timerName = customName or self:_generateTimerName("Interval", interval)
+    local timer = ScheduledTask.AddInterval(interval, timerName, callback)
+    
     if timer then
         self.activeTimers[timer] = true
     end
@@ -227,6 +270,10 @@ function GameModeBase:PlayGameModeMusic(musicAssetId, volume, musicKey)
     --gg.log(string.format("游戏模式音乐播放: %s (音量: %s)", musicAssetId, volume))
 end
 
-
+--- 获取参赛者列表
+---@return table<string, MPlayer> 参赛者列表
+function GameModeBase:GetParticipantsList()
+    return self.participants
+end
 
 return GameModeBase
