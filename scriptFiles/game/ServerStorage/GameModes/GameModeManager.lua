@@ -31,6 +31,7 @@ function GameModeManager:AddPlayerToMode(mPlayer, modeName, instanceId, levelTyp
         gg.log("错误: GameModeManager:AddPlayerToMode - 传入了无效的mPlayer实例。")
         return
     end
+    self:ForceCleanupPlayer(mPlayer)
 
     -- 检查玩家是否已经在另一场比赛中
     local existingInstanceId = self.playerModes[mPlayer.uin]
@@ -112,5 +113,15 @@ game:GetService("Players").PlayerRemoving:Connect(function(player)
     end
 end)
 
+function GameModeManager:ForceCleanupPlayer(mPlayer)
+    local instanceId = self.playerModes[mPlayer.uin]
+    if instanceId then
+        local mode = self.activeModes[instanceId]
+        if mode then
+            mode:OnPlayerLeave(mPlayer) -- 传递最小必要信息
+        end
+        self.playerModes[mPlayer.uin] = nil
+    end
+end
 
 return GameModeManager

@@ -6,6 +6,7 @@ local SceneNodeHandlerBase = require(ServerStorage.SceneInteraction.SceneNodeHan
 local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
 local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 
 ---@class RaceTriggerHandler : SceneNodeHandlerBase
 ---@field super SceneNodeHandlerBase
@@ -28,7 +29,6 @@ function RaceTriggerHandler:OnEntityEnter(player)
 
     -- 2. 使用关卡ID，从LevelConfig中获取详细的关卡规则
     -- 在函数内部require, 避免循环依赖
-    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
     local levelConfig = ConfigLoader.Levels
     local levelData = levelConfig and levelConfig[levelId] ---@type LevelType
     if not levelData then

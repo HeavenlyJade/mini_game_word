@@ -498,24 +498,16 @@ function RaceGameMode:End()
     if self.state ~= RaceState.RACING then return end
     self.state = RaceState.FINISHED
 
-    -- 懒加载 GameModeManager 和 ServerDataManager 以避免循环依赖
-    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
-    local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
-
-    --gg.log("比赛结束！")
-
-    -- 停止实时飞行距离追踪
+    -- 先停止追踪和界面更新
     self:_stopFlightDistanceTracking()
-    
-    -- 停止比赛界面更新
     self:_stopContestUIUpdates()
-
-    -- 【新增】执行游戏结算指令
+    
+    -- 执行游戏结算指令
     self:_executeGameEndCommands()
-
+    
     -- 最终排名确认（基于实际飞行距离）
     self:_updateRankings()
-
+    
     -- 结算基础奖励和排名奖励
     self:_calculateAndDistributeRewards()
 
@@ -536,21 +528,33 @@ function RaceGameMode:End()
         end
     end
 
-    -- 【立即清理】比赛结束后立即清理实例，无需等待倒计时
-    -- 将所有玩家从比赛模式中移除
+    -- 【修复】直接清理 GameModeManager 中的玩家记录，避免循环调用
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local GameModeManager = serverDataMgr.GameModeManager
+    
     if GameModeManager then
-        -- 必须从后往前遍历，因为 RemovePlayerFromCurrentMode 可能会修改 self.participants
-        for i = #self.participants, 1, -1 do
-            local p = self.participants[i]
-            if p then
-                GameModeManager:RemovePlayerFromCurrentMode(p)
+        -- 直接清理玩家模式记录，避免调用 OnPlayerLeave 造成的循环
+        for _, player in ipairs(self.participants) do
+            if player then
+                GameModeManager.playerModes[player.uin] = nil
             end
         end
+        
+        -- 清理实例记录
+        GameModeManager.activeModes[self.instanceId] = nil
     end
 
-    -- 确保停止所有定时任务
-    self:_stopFlightDistanceTracking()
-    self:_stopContestUIUpdates()
+    -- 清理自身数据
+    self.participants = {}
+    self.finishedPlayers = {}
+    self.flightData = {}
+    self.rankings = {}
+    self.startPositions = {}
+    self.realtimeRewardsGiven = {}
+    self.levelRewardsGiven = {}
+    
+    -- 销毁自身
+    self:Destroy()
 end
 
 --- 【简化】传送所有参赛者到复活点（使用基类方法）
@@ -1280,6 +1284,16 @@ function RaceGameMode:_executeCommandForPlayer(command, commandType, player)
 end
 
 
+function GameModeManager:ForceCleanupPlayer(uin)
+    local instanceId = self.playerModes[uin]
+    if instanceId then
+        local mode = self.activeModes[instanceId]
+        if mode then
+            mode:OnPlayerLeave({uin = uin}) -- 传递最小必要信息
+        end
+        self.playerModes[uin] = nil
+    end
+end
 
 
 return RaceGameMode
