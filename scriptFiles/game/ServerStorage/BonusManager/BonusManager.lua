@@ -18,6 +18,8 @@ local BonusManager = {}
 -- ============================= 玩家变量加成计算 =============================
 
 --- 计算玩家变量加成
+--- 计算玩家变量加成（增强版：支持天赋加成）
+--- 计算玩家变量加成（增强版：支持天赋系统独立获取）
 ---@param player MPlayer 玩家对象
 ---@param baseValue number 基础操作数值
 ---@param variableBonuses table 玩家变量加成列表
@@ -33,16 +35,20 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
     local totalPercentBonus = 0
     local finalMultipliers = {}
     local bonusDescriptions = {}
-    -- 基础值改造量：先对 baseValue 做“基础相加/基础相乘”，再计算其余加成
+    -- 基础值改造量：先对 baseValue 做"基础相加/基础相乘"，再计算其余加成
     local baseFlatAdd = 0
     local baseMultiplier = 1
+
+    -- 获取玩家成就系统（用于天赋变量获取）
+    local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr)
+    local playerAchievement = AchievementMgr.server_player_achievement_data[player.uin] ---@type Achievement
 
     for i, bonusItem in ipairs(variableBonuses) do
         local bonusVarName = bonusItem["名称"]
         local actionType = bonusItem["作用类型"]
         local targetVar = bonusItem["目标变量"]
         local scalingRate = bonusItem["缩放倍率"] or 1
-        local effectFieldName = bonusItem["玩家效果字段"] -- 新增：获取玩家效果字段
+        local effectFieldName = bonusItem["玩家效果字段"] -- 效果等级配置字段
 
         -- 如果指定了目标变量，只对匹配的变量生效
         if targetVariable and targetVar and targetVar ~= targetVariable then
@@ -51,30 +57,41 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
             if bonusVarName and actionType then
                 local parsed = variableSystem:ParseVariableName(bonusVarName)
                 if parsed then
-                    local bonusValue= 0
+                    local bonusValue = 0
+                    
                     if effectFieldName and effectFieldName ~= "" then
+                        -- 从效果等级配置获取值
                         local effectLevelConfig = ConfigLoader.GetEffectLevel(effectFieldName)
-                            -- 获取玩家背包数据
-                        local bagData = MServerDataManager.BagMgr.GetPlayerBag(player.uin)
-                  
-                        
-                        -- 构建外部上下文
-                        local externalContext = {}
-                        
-                        -- 获取满足条件的最大效果数值
-                        local playerData =  player.variableSystem:GetVariablesDictionary()
-
-                        local maxEffectIndex = effectLevelConfig:GetMaxEffectIndex(playerData, bagData, externalContext)
-                      
-                        local maxEffectValue = effectLevelConfig.levelEffects[maxEffectIndex].effectValue
-                        bonusValue =  maxEffectValue
-                        
-                        table.insert(bonusDescriptions, string.format("效果等级配置加成(%s, +%s)", 
-                            effectFieldName, tostring(maxEffectValue)))
-                        
+                        if effectLevelConfig then
+                            local bagData = MServerDataManager.BagMgr.GetPlayerBag(player.uin)
+                            local externalContext = {}
+                            local playerData = player.variableSystem:GetVariablesDictionary()
+                            local maxEffectIndex = effectLevelConfig:GetMaxEffectIndex(playerData, bagData, externalContext)
+                            if maxEffectIndex then
+                                local maxEffectValue = effectLevelConfig.levelEffects[maxEffectIndex].effectValue
+                                bonusValue = maxEffectValue
+                                table.insert(bonusDescriptions, string.format("效果等级配置加成(%s, +%s)", 
+                                    effectFieldName, tostring(maxEffectValue)))
+                            end
+                        end
                     else
-                        bonusValue = variableSystem:GetRawBonusValue(bonusVarName)
+                        -- 关键修改：根据变量名前缀选择数据源
+                        if string.find(bonusVarName, "^天赋_") then
+                            -- 从天赋变量系统获取
+                            if playerAchievement and playerAchievement.talentVariableSystem then
+                                bonusValue = playerAchievement.talentVariableSystem:GetRawBonusValue(bonusVarName)
+                                gg.log(string.format("从天赋系统获取变量[%s]: %s", bonusVarName, tostring(bonusValue)))
+                            else
+                                gg.log(string.format("警告：玩家[%s]天赋系统不存在，无法获取[%s]", player.uin, bonusVarName))
+                            end
+                        else
+                            -- 其他所有变量从玩家变量系统获取
+                            bonusValue = variableSystem:GetRawBonusValue(bonusVarName)
+                            gg.log(string.format("从玩家系统获取变量[%s]: %s", bonusVarName, tostring(bonusValue)))
+                        end
                     end
+                    
+                    -- 应用加成计算逻辑
                     if actionType == "单独相加" then
                         if parsed.method == "百分比" then
                             totalPercentBonus = totalPercentBonus + bonusValue
@@ -102,9 +119,9 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
         end
     end
 
-    -- 先对基础值应用“基础相加/基础相乘”
+    -- 先对基础值应用"基础相加/基础相乘"
     local baseAfterFoundation = baseValue * baseMultiplier + baseFlatAdd
-    -- 在改造后的基础值上应用“单独相加”（百分比、固定）
+    -- 在改造后的基础值上应用"单独相加"（百分比、固定）
     local finalBonusValue = baseAfterFoundation + (baseAfterFoundation * totalPercentBonus) + totalFlatBonus
     
     -- 应用最终乘法
@@ -125,10 +142,10 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
             #finalMultipliers
         )
     end
-    -- gg.log("加成计算信息",bonusInfo)
+    
+    gg.log("变量加成计算完成", bonusInfo)
     return finalBonusValue, bonusInfo
 end
-
 -- ============================= 宠物/伙伴加成计算 =============================
 
 --- 获取宠物物品加成
