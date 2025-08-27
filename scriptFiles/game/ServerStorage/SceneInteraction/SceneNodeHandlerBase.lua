@@ -29,6 +29,7 @@ local Npc = require(ServerStorage.EntityTypes.MNpc) ---@type Npc
 ---@field respawnNode SandboxNode|nil # 复活节点 (来自配置)
 ---@field teleportNode SandboxNode|nil # 传送节点 (来自配置)
 ---@field raceSceneNode SandboxNode|nil # 比赛场景的根节点 (来自配置)
+---@field playerTimers table<string, table<Timer>> # 【新增】每个玩家的定时器列表
 local SceneNodeHandlerBase = ClassMgr.Class("SceneNodeHandlerBase")
 
 --------------------------------------------------------------------------------
@@ -36,15 +37,74 @@ local SceneNodeHandlerBase = ClassMgr.Class("SceneNodeHandlerBase")
 --------------------------------------------------------------------------------
 
 ---当实体确认进入时调用
+---当实体确认进入时调用
 ---@param entity Entity
 function SceneNodeHandlerBase:OnEntityEnter(entity)
-
+    if entity and entity.isPlayer then
+        ---@cast entity MPlayer
+        local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+        
+        -- 清理玩家之前的场景节点数据
+        ServerDataManager.CleanupPlayerSceneData(entity.uin)
+        
+        -- 设置新的场景节点映射
+        ServerDataManager.SetPlayerSceneNode(entity.uin, self.handlerId)
+        
+        -- 添加到当前场景节点的玩家列表
+        self.players[entity.uin] = entity
+        
+        gg.log(string.format("玩家 '%s' 进入场景节点 '%s'", entity.name, self.name))
+    end
 end
 
 ---当实体确认离开时调用
 ---@param entity Entity
 function SceneNodeHandlerBase:OnEntityLeave(entity)
+    if entity and entity.isPlayer then
+        ---@cast entity MPlayer
+        local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+        
+        -- 从当前场景节点移除玩家
+        self.players[entity.uin] = nil
+        
+        -- 清理玩家的场景节点映射
+        ServerDataManager.ClearPlayerSceneNode(entity.uin)
+        
+        -- 调用子类特定清理逻辑
+        self:OnPlayerDataCleanup(entity)
+        
+        gg.log(string.format("玩家 '%s' 离开场景节点 '%s'", entity.name, self.name))
+    end
+end
 
+--- 清理指定玩家的场景节点数据
+---@param player MPlayer|table 玩家对象或包含uin的表
+function SceneNodeHandlerBase:CleanupPlayerData(player)
+    local uin = type(player) == "table" and (player.uin or player.UserId) or player
+    if not uin then
+        gg.log("错误：CleanupPlayerData 收到无效的玩家标识")
+        return
+    end
+    
+    -- 清理玩家缓存
+    self.players[uin] = nil
+    self.entitiesInZone[uin] = nil
+    
+    -- 清理定时器
+    if self.playerTimers and self.playerTimers[uin] then
+        local timers = self.playerTimers[uin]
+        for _, timer in ipairs(timers) do
+            if timer and not timer.isDestroyed then
+                timer:Stop()
+                timer:Destroy()
+            end
+        end
+        self.playerTimers[uin] = nil
+        gg.log(string.format("场景节点 '%s' 清理玩家 %s 的定时器 %d 个", self.name, uin, #timers))
+    end
+    
+    -- 调用子类特定清理
+    self:OnPlayerDataCleanup(player)
 end
 
 ---用于周期性更新，需要子类设置 self.updateInterval > 0 才会启用
@@ -92,13 +152,25 @@ function SceneNodeHandlerBase:initNpcs()
 end
 
 ---销毁时调用
+---销毁时调用
 function SceneNodeHandlerBase:OnDestroy()
     if self.updateTask then
         ServerScheduler.cancel(self.updateTask)
         self.updateTask = nil
     end
 
-    -- 移除对 self.createdNode 的检查，因为我们不再创建节点
+    -- 【新增】清理所有玩家定时器
+    if self.playerTimers then
+        for playerId, timers in pairs(self.playerTimers) do
+            for _, timer in ipairs(timers) do
+                if timer then
+                    timer:Stop()
+                    timer:Destroy()
+                end
+            end
+        end
+        self.playerTimers = {}
+    end
 end
 
 --- 强制让一个实体离开本区域，用于外部逻辑同步状态
@@ -158,8 +230,7 @@ end
 ---初始化
 ---@param config SceneNodeType # 来自ConfigLoader的已实例化配置对象
 ---@param node SandboxNode # 场景中对应的节点
----@param debugId number|nil # 用于调试的唯一ID
-function SceneNodeHandlerBase:OnInit(node, config, debugId)
+function SceneNodeHandlerBase:OnInit(node, config)
     --gg.log("创建节点",node, config, debugId)
     self.config = config
     self.name = config.name
@@ -185,8 +256,8 @@ function SceneNodeHandlerBase:OnInit(node, config, debugId)
     if self.isSpawnScene then
         gg.spawnSceneHandler = self
     end
-
-    self.players = {}
+    self.playerTimers = {} -- 【新增】初始化玩家定时器表
+    self.players = {} 
     self.monsters = {}
     self.npcs = {}
     self.uuid2Entity = {}
@@ -214,6 +285,59 @@ function SceneNodeHandlerBase:OnInit(node, config, debugId)
     self:initNpcs()
 end
 
+--- 启动玩家的定时指令
+---@param player MPlayer 玩家对象
+function SceneNodeHandlerBase:StartPlayerTimers(player)
+    if not self.config.timedCommands or #self.config.timedCommands == 0 then
+        return
+    end
+    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr)
+
+    local uin = player.uin
+    if self.playerTimers[uin] then
+        self:StopPlayerTimers(player)
+    end
+    
+    self.playerTimers[uin] = {}
+    
+    for index, timedCommand in ipairs(self.config.timedCommands) do
+        local command = timedCommand["指令"]
+        local interval = timedCommand["间隔"]
+        
+        if command and interval and interval > 0 and command ~= "UPDATE" then
+            local timer = SandboxNode.New("Timer", game.WorkSpace)
+            timer.Name = string.format("SceneTimer_%s_%s_%d_%d", self.name, uin, interval, index)
+            
+            timer.Callback = function()
+                if not self.entitiesInZone[uin] then
+                    timer:Stop()
+                    -- 从定时器列表移除
+                    if self.playerTimers[uin] then
+                        for i, t in ipairs(self.playerTimers[uin]) do
+                            if t == timer then
+                                table.remove(self.playerTimers[uin], i)
+                                break
+                            end
+                        end
+                    end
+                    return
+                end
+                
+                -- 【关键】直接执行指令，不依赖子类方法
+                if command and command ~= "" then
+                    CommandManager.ExecuteCommand(command, player, true)
+                end
+            end
+            
+            timer.Delay = interval
+            timer.Loop = true
+            timer.Interval = interval
+            timer:Start()
+            
+            table.insert(self.playerTimers[uin], timer)
+        end
+    end
+end
 ---绑定 TriggerBox 节点的物理触碰事件
 function SceneNodeHandlerBase:_connectTriggerEvents()
     if not self.node or self.node.ClassType ~= 'TriggerBox' then
@@ -333,4 +457,26 @@ function SceneNodeHandlerBase:OverlapBoxEntity(center, extent, angle, filterGrou
     return retEntities
 end
 
+--- 【新增】停止玩家的所有定时器
+---@param player MPlayer 玩家对象
+function SceneNodeHandlerBase:StopPlayerTimers(player)
+    local uin = player.uin
+    local timers = self.playerTimers[uin]
+    
+    if timers then
+        for _, timer in ipairs(timers) do
+            if timer then
+                timer:Stop()
+                timer:Destroy()
+            end
+        end
+        self.playerTimers[uin] = nil
+    end
+end
+
+--- 【新增】钩子方法，子类可重写此方法实现特定的玩家数据清理
+---@param player MPlayer|table 玩家对象
+function SceneNodeHandlerBase:OnPlayerDataCleanup(player)
+    -- 子类可重写此方法
+end
 return SceneNodeHandlerBase

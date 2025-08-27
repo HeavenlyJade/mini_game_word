@@ -13,6 +13,7 @@ local MServerDataManager = {
     server_players_list = {}, ---@type table<number, MPlayer>
     server_players_name_list = {},
     scene_node_handlers = {}, ---@type table<string, SceneNodeHandlerBase>
+    player_scene_node_map = {}, ---@type table<number, SceneNodeHandlerBase> -- 玩家到场景节点处理器ID的映射
 
     PetMgr = nil, ---@type PetMgr | nil
     MailMgr = nil, ---@type MailMgr | nil
@@ -211,5 +212,40 @@ end
 function MServerDataManager.getAllScenes()
     return gg.server_scenes_list
 end
+
+-- 设置玩家当前场景节点
+---@param uin number 玩家ID
+---@param handlerId string 场景节点处理器ID
+function MServerDataManager.SetPlayerSceneNode(uin, handlerId)
+    MServerDataManager.player_scene_node_map[uin] = handlerId
+end
+
+-- 获取玩家当前场景节点
+---@param uin number 玩家ID
+---@return SceneNodeHandlerBase|nil 场景节点处理器
+function MServerDataManager.GetPlayerSceneNode(uin)
+    return MServerDataManager.player_scene_node_map[uin]
+end
+
+-- 清理玩家场景节点映射
+---@param uin number 玩家ID
+function MServerDataManager.ClearPlayerSceneNode(uin)
+    MServerDataManager.player_scene_node_map[uin] = nil
+end
+
+-- 玩家离开游戏时的统一场景数据清理
+---@param uin number 玩家ID
+function MServerDataManager.CleanupPlayerSceneData(uin)
+    local handlerId = MServerDataManager.player_scene_node_map[uin]
+    if handlerId then
+        local handler = MServerDataManager.getSceneNodeHandler(handlerId)
+        if handler and handler.CleanupPlayerData then
+            handler:CleanupPlayerData({uin = uin})
+            gg.log(string.format("清理玩家 %s 在场景节点 %s 的数据", uin, handler.name or handlerId))
+        end
+        MServerDataManager.player_scene_node_map[uin] = nil
+    end
+end
+
 
 return MServerDataManager

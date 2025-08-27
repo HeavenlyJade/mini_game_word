@@ -65,7 +65,7 @@ function MainServer.handleMidnightRefresh()
 end
 
 function MainServer.start_server()
-    gg.log("开始服务器")
+    gg.log("开始服务器启动")
     ConfigLoader.Init()
     math.randomseed(os.time() + gg.GetTimeStamp())
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
@@ -81,7 +81,7 @@ function MainServer.start_server()
     MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     MServerInitPlayer.setInitFinished(true)  -- 设置初始化完成
     MainServer.SetCollisionGroup()
-    gg.log("结束服务器")
+    gg.log("服务器启动完成")
 
 end
 
