@@ -39,6 +39,7 @@ function HudAvatar:OnInit(node, config)
     self.PowerVariableTitle = self:Get("名字背景/最高战力/历史最高战力", ViewComponent) ---@type ViewComponent
     local headNode = CoreUI:GetHeadNode(tostring(localPlayer.UserId))
     local PlayerHead = self:Get("头像背景/玩家头像").node
+    PlayerHead.Visible = false
     headNode.Parent = PlayerHead.Parent
     headNode.Position = PlayerHead.Position
     headNode.Size = PlayerHead.Size
