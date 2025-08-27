@@ -26,6 +26,7 @@ function _MPlayer:OnInit(info_)
     Entity.OnInit(self, info_)    --父类初始化
 
     -- 玩家特有属性
+    self.uuid = info_.uin
     self.uin = info_.uin
     self.name = info_.nickname or info_.name or ""
     self.isPlayer = true

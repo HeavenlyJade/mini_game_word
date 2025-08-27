@@ -262,9 +262,11 @@ function MServerInitPlayer.player_leave_game(player)
     if mplayer then
         -- 【新增】清理玩家场景映射
         gg.player_scene_map[uin_] = nil
+        local IdleSpotHandler = require(ServerStorage.SceneInteraction.handlers.IdleSpotHandler)
+        IdleSpotHandler.CleanupPlayerTimersGlobally(uin_)
+        BagMgr.OnPlayerLeave(uin_)
 
         MailMgr.OnPlayerLeave(uin_)
-        BagMgr.OnPlayerLeave(uin_)
         PetMgr.OnPlayerLeave(uin_)
         PartnerMgr.OnPlayerLeave(uin_)
         WingMgr.OnPlayerLeave(uin_)

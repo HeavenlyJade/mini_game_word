@@ -106,7 +106,7 @@ end
 function SceneNodeHandlerBase:ForceEntityLeave(entity)
     if not entity then return end
 
-    local entityId = entity.uuid
+    local entityId = entity.uin
     if self.entitiesInZone[entityId] then
         --gg.log(string.format("DEBUG: %s:ForceEntityLeave - 外部逻辑强制实体 '%s' 离开。", self.name, (entity.GetName and entity:GetName()) or entityId))
         self.entitiesInZone[entityId] = nil
@@ -246,7 +246,7 @@ function SceneNodeHandlerBase:_connectTriggerEvents()
         end
 
         -- 后续是通用逻辑，无论找到的是玩家还是怪物
-        local entityId = entity.uuid
+        local entityId = entity.uin
         if not self.entitiesInZone[entityId] then
             --gg.log(string.format("DEBUG: %s.Touched - 确认实体 '%s' 进入，调用 OnEntityEnter。", self.name, entity.name or entityId))
             self.entitiesInZone[entityId] = entity
@@ -270,7 +270,7 @@ function SceneNodeHandlerBase:_connectTriggerEvents()
             return
         end
 
-        local entityId = entity.uuid
+        local entityId = entity.uin
         if self.entitiesInZone[entityId] then
             --gg.log(string.format("DEBUG: %s.TouchEnded - 确认实体 '%s' 离开，调用 OnEntityLeave。", self.name, entity.name or entityId))
             self.entitiesInZone[entityId] = nil

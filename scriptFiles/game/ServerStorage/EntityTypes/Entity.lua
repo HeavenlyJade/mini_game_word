@@ -64,7 +64,7 @@ local TRIGGER_STAT_TYPES = {
 
 -- 初始化实体
 function _M:OnInit(info_)
-    self.uuid = self:GenerateUUID()
+    self.uuid = info_.uin or self:GenerateUUID()
     self.uin = info_.uin
     self.scene = nil 
     self.level = info_.level or 1

@@ -168,10 +168,65 @@ function GameModeBase:Destroy()
     self.participants = {}
 end
 
---- 每帧更新 (已废弃，因为我们使用引擎定时器)
----@param dt number
-function GameModeBase:Update(dt)
-    -- self.scheduler:Update(dt)
+--- 【新增】停止游戏模式音乐
+---@param musicKey string|nil 音乐键值，默认为模式实例ID
+function GameModeBase:StopGameModeMusic(musicKey)
+    local key = musicKey or ("GameModeMusic_" .. self.instanceId)
+    
+    local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
+    
+    -- 通过发送空音效来停止音乐
+    local stopMusicData = {
+        cmd = "PlaySound",
+        soundAssetId = "",
+        key = key,
+        volume = 0
+    }
+
+    -- 通知所有玩家停止音乐
+    RaceGameEventManager.BroadcastRaceEvent(
+        self:GetParticipantsList(), 
+        "PlaySound", 
+        stopMusicData
+    )
+    
+    --gg.log("游戏模式音乐已停止: " .. key)
 end
+
+
+--- 【新增】播放游戏模式音乐
+---@param musicAssetId string 音乐资源ID
+---@param volume number|nil 音量 (0.0-1.0)
+---@param musicKey string|nil 音乐键值，默认为模式实例ID
+function GameModeBase:PlayGameModeMusic(musicAssetId, volume, musicKey)
+    if not musicAssetId or musicAssetId == "" then
+        return
+    end
+    
+    local key = musicKey or ("GameModeMusic_" .. self.instanceId)
+    volume = volume or 0.6
+    
+    local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
+    
+    local musicData = {
+        cmd = "PlaySound",
+        soundAssetId = musicAssetId,
+        key = key,
+        volume = volume,
+        pitch = 1.0,
+        range = 15000  -- 大范围确保全场都能听到
+    }
+
+    -- 向所有参赛者播放音乐
+    RaceGameEventManager.BroadcastRaceEvent(
+        self:GetParticipantsList(), 
+        "PlaySound", 
+        musicData
+    )
+    
+    --gg.log(string.format("游戏模式音乐播放: %s (音量: %s)", musicAssetId, volume))
+end
+
+
 
 return GameModeBase
