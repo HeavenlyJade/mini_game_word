@@ -64,6 +64,21 @@ function IdleSpotHandler:OnEntityEnter(entity)
         end
         return
     end
+    local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager)
+    local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) 
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local GameModeManager = serverDataMgr.GameModeManager
+    -- 检查玩家是否在自动比赛中
+    if AutoRaceManager.IsPlayerAutoRacing(entity) then
+        --gg.log("玩家处于自动比赛状态，拒绝进入挂机点")
+        return
+    end
+    
+    -- 检查玩家是否在比赛中
+    if GameModeManager and GameModeManager:IsPlayerInMode(entity.uin) then
+        --gg.log("玩家处于比赛状态，拒绝进入挂机点")
+        return
+    end
 
     -- 条件满足后，再调用父类方法处理通用逻辑
     SceneNodeHandlerBase.OnEntityEnter(self, entity)
