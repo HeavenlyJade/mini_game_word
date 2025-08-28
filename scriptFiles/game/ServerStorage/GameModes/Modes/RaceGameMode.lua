@@ -60,91 +60,86 @@ function RaceGameMode:OnInit(instanceId, modeName, levelType)
     --gg.log(string.format("RaceGameMode 初始化完成 - 实例ID: %s, 关卡: %s", tostring(instanceId), levelType and (levelType.levelName or "未知") or "未知"))
 end
 
---- 当有玩家进入此游戏模式时调用
----@param player MPlayer
+--- 【修复】优化玩家进入逻辑，防止状态不一致
 function RaceGameMode:OnPlayerEnter(player)
-    -- 【核心修正】检查玩家是否已在比赛中，防止因触发器抖动等问题导致重复加入
+    -- 防重复加入
     for _, p in ipairs(self.participants) do
         if p.uin == player.uin then
-            return -- 如果已存在，则直接返回，不执行任何操作
+            gg.log(string.format("玩家 %s 已在比赛中，跳过", player.name or player.uin))
+            return
         end
     end
 
-    -- 而比赛模式需要一个有序的列表来决定排名
     table.insert(self.participants, player)
+    gg.log(string.format("玩家 %s 加入比赛，状态: %s，人数: %d", 
+        player.name or player.uin, self.state, #self.participants))
 
-    -- 如果是第一个加入的玩家，可以启动一个定时器开始比赛
-    if #self.participants == 1 then
-        self:Start()
+    if self.state == RaceState.WAITING then
+        -- 等待状态，第一个玩家启动比赛
+        if #self.participants == 1 then
+            self:Start()
+        end
     elseif self.state == RaceState.RACING then
-        -- 【新增】比赛进行中：立即传送新玩家到开始位置并发射
-        --gg.log(string.format("比赛进行中，新玩家 %s 加入，立即传送并发射", player.name or player.uin))
+        -- 比赛进行中，处理迟到玩家
+        gg.log(string.format("处理迟到玩家 %s", player.name or player.uin))
         self:_handleLateJoinPlayer(player)
+    else
+        -- 比赛已结束
+        player:SendHoverText("比赛已结束，请等待下一场")
     end
-
-    -- 【新增】初始化玩家的关卡奖励发放记录
-    if not self.levelRewardsGiven[player.uin] then
-        self.levelRewardsGiven[player.uin] = {}
-    end
-    --gg.log(string.format("玩家 %s 加入比赛，关卡奖励记录已初始化", player.name or player.uin))
 end
-
 --- 当有玩家离开此游戏模式时调用
 --- (重写父类方法，因为这里 participants 是数组)
 ---@param player MPlayer
 function RaceGameMode:OnPlayerLeave(player)
     if not player then return end
 
-    -- 从参赛者列表中移除玩家
+    local uin = player.uin
+    
+    -- 从参赛者列表中移除
     for i, p in ipairs(self.participants) do
-        if p.uin == player.uin then
+        if p.uin == uin then
             table.remove(self.participants, i)
-            break -- 找到并移除后即可退出循环
+            break
         end
     end
     
-    -- 【新增】清理玩家相关的比赛数据
-    if self.finishedPlayers then
-        self.finishedPlayers[player.uin] = nil
+    -- 【修复】从排名列表中移除
+    for i, rankUin in ipairs(self.rankings) do
+        if rankUin == uin then
+            table.remove(self.rankings, i)
+            break
+        end
     end
     
-    if self.flightData then
-        self.flightData[player.uin] = nil
+    -- 清理所有相关数据
+    self.finishedPlayers[uin] = nil
+    self.flightData[uin] = nil
+    self.startPositions[uin] = nil
+    self.realtimeRewardsGiven[uin] = nil
+    self.levelRewardsGiven[uin] = nil
+    
+    gg.log(string.format("玩家 %s 离开比赛，数据已清理，剩余玩家: %d", 
+        player.name or uin, #self.participants))
+    
+    -- 比赛进行中需要重新计算排名
+    if self.state == RaceState.RACING then
+        self:_updateRankings()
     end
     
-    if self.startPositions then
-        self.startPositions[player.uin] = nil
-    end
-    
-    -- 【新增】清理玩家的实时奖励发放记录
-    if self.realtimeRewardsGiven then
-        self.realtimeRewardsGiven[player.uin] = nil
-    end
-
-    -- 【新增】清理玩家的关卡奖励发放记录
-    if self.levelRewardsGiven and self.levelRewardsGiven[player.uin] then
-        self.levelRewardsGiven[player.uin] = nil
-    end
-    --gg.log(string.format("玩家 %s 离开比赛，关卡奖励记录已清理", player.name or player.uin))
-    
-    -- 【核心优化】处理玩家离开后的比赛状态
-    if self.state == "WAITING" then
-        -- 准备阶段：如果所有玩家都离开了，直接清理比赛实例
+    -- 检查是否需要结束比赛
+    if self.state == RaceState.WAITING then
         if #self.participants == 0 then
-            ----gg.log(string.format("比赛实例 %s：所有玩家在准备阶段离开，取消比赛并清理实例。", self.instanceId))
+            gg.log(string.format("比赛 %s 准备阶段无玩家，取消比赛", self.instanceId))
             self:_cancelRaceAndCleanup()
-            return
         end
-    elseif self.state == "RACING" then
-        -- 比赛进行中：如果剩余玩家不足，结束比赛
-        if #self.participants <= 1 then
-            ----gg.log(string.format("比赛实例 %s：参赛玩家不足，提前结束比赛。", self.instanceId))
+    elseif self.state == RaceState.RACING then
+        if #self.participants < 1 then
+            gg.log(string.format("比赛 %s 玩家不足，提前结束", self.instanceId))
             self:End()
-            return
         end
     end
 end
-
 --- 【新增】处理关卡奖励节点触发
 ---@param player MPlayer 触发的玩家
 ---@param eventData table 事件数据
@@ -495,30 +490,29 @@ end
 
 --- 结束比赛
 function RaceGameMode:End()
-    if self.state ~= RaceState.RACING then return end
+    if self.state ~= RaceState.RACING then 
+        return 
+    end
+    
+    gg.log(string.format("结束比赛 %s", self.instanceId))
     self.state = RaceState.FINISHED
 
-    -- 先停止追踪和界面更新
+    -- 停止所有定时器和追踪
     self:_stopFlightDistanceTracking()
     self:_stopContestUIUpdates()
     
-    -- 执行游戏结算指令
+    -- 执行结算逻辑
     self:_executeGameEndCommands()
-    
-    -- 最终排名确认（基于实际飞行距离）
     self:_updateRankings()
-    
-    -- 结算基础奖励和排名奖励
     self:_calculateAndDistributeRewards()
-
-    -- 打印基础的结算信息，并通知玩家（按真实排名顺序）
+    
+    -- 通知玩家结果
     for _, uin in ipairs(self.rankings) do
         local flightData = self.flightData[uin]
         if flightData then
             local rankText = string.format("第 %d 名: %s (%.1f米)",
-                                          flightData.rank, flightData.name, flightData.flightDistance)
+                flightData.rank, flightData.name, flightData.flightDistance)
 
-            -- 找到对应的玩家实例发送消息
             for _, player in ipairs(self.participants) do
                 if player.uin == uin then
                     player:SendHoverText(rankText)
@@ -528,18 +522,17 @@ function RaceGameMode:End()
         end
     end
 
-    -- 【修复】直接清理 GameModeManager 中的玩家记录，避免循环调用
+    -- 清理GameModeManager中的记录
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager
     
     if GameModeManager then
-        -- 直接清理玩家模式记录，避免调用 OnPlayerLeave 造成的循环
+        -- 清理玩家记录
         for _, player in ipairs(self.participants) do
             if player then
                 GameModeManager.playerModes[player.uin] = nil
             end
         end
-        
         -- 清理实例记录
         GameModeManager.activeModes[self.instanceId] = nil
     end
@@ -555,6 +548,8 @@ function RaceGameMode:End()
     
     -- 销毁自身
     self:Destroy()
+    
+    gg.log(string.format("比赛 %s 已结束并清理完成", self.instanceId))
 end
 
 --- 【简化】传送所有参赛者到复活点（使用基类方法）
@@ -988,39 +983,6 @@ function RaceGameMode:_broadcastContestUIHide()
     )
 end
 
---- 【新增】更新比赛界面数据
-function RaceGameMode:_updateContestUIData()
-    if self.state ~= RaceState.RACING then
-        return
-    end
-
-    -- 计算当前时间和剩余时间
-    local currentTime = os.time()
-    local elapsedTime = currentTime - self.raceStartTime
-    local raceTime = self.levelType.raceTime or 60
-    local remainingTime = math.max(0, raceTime - elapsedTime)
-
-    -- 获取前三名玩家数据
-    local topThreeRankings = self:_getTopThreePlayersData()
-    -- 【新增】获取所有玩家数据
-    local allPlayersData = self:_getAllPlayersFlightData()
-
-    local eventData = {
-        raceTime = raceTime,
-        elapsedTime = elapsedTime,
-        remainingTime = remainingTime,
-        topThree = topThreeRankings,
-        allPlayersData = allPlayersData, -- 【新增】
-        totalPlayers = #self.participants
-    }
-
-    -- 使用RaceGameEventManager向所有参赛者发送更新数据
-    RaceGameEventManager.BroadcastRaceEvent(
-        self.participants, 
-        EventPlayerConfig.NOTIFY.RACE_CONTEST_UPDATE, 
-        eventData
-    )
-end
 
 --- 【新增】获取前三名玩家数据（包含头像信息）
 ---@return table 前三名玩家的详细数据
@@ -1084,73 +1046,103 @@ function RaceGameMode:_getAllPlayersFlightData()
     return allPlayers
 end
 
---- 【新增】处理迟到加入的玩家（比赛进行中）
+--- 【修复】处理迟到加入的玩家（比赛进行中）
 ---@param player MPlayer 迟到加入的玩家
 function RaceGameMode:_handleLateJoinPlayer(player)
     if not player or not player.actor then
-        --gg.log("错误: [RaceGameMode] 迟到玩家数据无效，无法处理")
+        gg.log("错误: 迟到玩家数据无效")
         return
     end
 
-    -- 1. 立即传送玩家到比赛开始位置
+    -- 传送到开始位置
     local teleportSuccess = self:_teleportPlayerToStartPosition(player)
     if not teleportSuccess then
-        --gg.log(string.format("警告: [RaceGameMode] 玩家 %s 传送失败，无法参与比赛", player.name or player.uin))
+        gg.log(string.format("玩家 %s 传送失败", player.name or player.uin))
         return
     end
 
-    -- 2. 给传送一点时间完成，然后发射玩家
+    -- 延迟处理确保传送完成
     self:AddDelay(0.5, function()
         if self.state == RaceState.RACING and player.actor then
-            --gg.log(string.format("迟到玩家 %s 传送完成，开始发射", player.name or player.uin))
-            self:LaunchPlayer(player)
+            -- 初始化玩家状态数据
+            self:_initializeLateJoinPlayerState(player)
             
-            -- 3. 通知其他玩家有新玩家加入
-            self:_notifyOtherPlayersNewPlayerJoined(player)
+            -- 发射玩家并执行开始指令
+            self:LaunchPlayer(player)
+            self:_executeGameStartCommandsForPlayer(player)
+            
+            -- 发送界面数据
+            self:_sendRaceUIToLateJoinPlayer(player)
+            
+            gg.log(string.format("迟到玩家 %s 加入成功", player.name or player.uin))
         end
     end)
 end
 
---- 【新增】传送单个玩家到比赛开始位置
----@param player MPlayer
----@return boolean 是否成功传送
-function RaceGameMode:_teleportPlayerToStartPosition(player)
-    if not player or not player.actor then
-        return false
-    end
+--- 【新增】初始化迟到加入玩家的比赛状态数据
+---@param player MPlayer 迟到加入的玩家
+function RaceGameMode:_initializeLateJoinPlayerState(player)
+    if not player or not player.actor then return end
+    
+    local uin = player.uin
+    local currentPosition = player.actor.Position
+    
+    -- 初始化所有必要的数据
+    self.flightData[uin] = {
+        uin = uin,
+        name = player.name or tostring(uin),
+        startPosition = currentPosition,
+        currentPosition = currentPosition,
+        flightDistance = 0,
+        rank = #self.participants,
+        isFinished = false
+    }
+    
+    self.startPositions[uin] = currentPosition
+    self.realtimeRewardsGiven[uin] = {}
+    self.levelRewardsGiven[uin] = {}
+    
+    -- 添加到排名列表
+    table.insert(self.rankings, uin)
+    
+    gg.log(string.format("已初始化迟到玩家 %s 的状态数据", player.name or uin))
+end
+--- 【新增】向迟到加入的玩家发送比赛界面数据
+---@param player MPlayer 迟到加入的玩家  
+function RaceGameMode:_sendRaceUIToLateJoinPlayer(player)
+    if not player then return end
+    
+    -- 发送比赛开始通知
+    local raceTime = self.levelType and self.levelType.raceTime or 60
+    RaceGameEventManager.SendRaceStartNotification(player, raceTime)
+    
+    -- 发送当前比赛状态
+    self:AddDelay(0.2, function()
+        if self.state == RaceState.RACING then
+            self:_updateContestUI()
+        end
+    end)
+end
 
-    -- 通过handlerId获取场景处理器
+--- 【新增】为单个玩家传送到开始位置的辅助方法
+---@param player MPlayer 目标玩家
+---@return boolean 是否传送成功
+function RaceGameMode:_teleportPlayerToStartPosition(player)
+    if not player or not player.actor then return false end
+    
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
     
     if not handler or not handler.teleportNode or not handler.teleportNode.Position then
-        --gg.log("错误: [RaceGameMode] 无法找到有效的传送节点位置")
+        gg.log(string.format("错误: 无法获取传送位置，玩家 %s", player.name or player.uin))
         return false
     end
-
-    local targetPosition = handler.teleportNode.Position
-    local TeleportService = game:GetService('TeleportService')
     
-    -- 执行传送
-    TeleportService:Teleport(player.actor, targetPosition)
-    --gg.log(string.format("玩家 %s 已传送到比赛开始位置", player.name or player.uin))
+    local TeleportService = require(ServerStorage.Service.TeleportService)
+    TeleportService:Teleport(player.actor, handler.teleportNode.Position)
     
     return true
 end
-
---- 【新增】通知其他玩家有新玩家加入
----@param newPlayer MPlayer 新加入的玩家
-function RaceGameMode:_notifyOtherPlayersNewPlayerJoined(newPlayer)
-    if not newPlayer then return end
-    
-    -- 向其他参赛者发送新玩家加入通知
-    for _, player in ipairs(self.participants) do
-        if player.uin ~= newPlayer.uin then
-            --player:SendHoverText(string.format("新玩家 %s 加入了比赛！", newPlayer.name or newPlayer.uin))
-        end
-    end
-end
-
 --- 【新增】取消比赛并完全清理实例（用于准备阶段所有玩家离开）
 function RaceGameMode:_cancelRaceAndCleanup()
     -- 【新增】向剩余玩家发送停止倒计时事件（如果还有的话）
@@ -1283,7 +1275,42 @@ function RaceGameMode:_executeCommandForPlayer(command, commandType, player)
     local success = CommandManager.ExecuteCommand(command, player, true) -- silent = true 避免重复日志
 end
 
+function RaceGameMode:_updateContestUIData()
+    if self.state ~= RaceState.RACING then
+        return
+    end
 
+    -- 计算当前时间和剩余时间
+    local currentTime = os.time()
+    local elapsedTime = currentTime - self.raceStartTime
+    local raceTime = self.levelType.raceTime or 60
+    local remainingTime = math.max(0, raceTime - elapsedTime)
 
+    -- 【核心修复】时间到了就结束比赛
+    if remainingTime <= 0 then
+        gg.log(string.format("比赛 %s 时间到期，自动结束", self.instanceId))
+        self:End()
+        return
+    end
+
+    -- 正常的界面数据更新
+    local topThreeRankings = self:_getTopThreePlayersData()
+    local allPlayersData = self:_getAllPlayersFlightData()
+
+    local eventData = {
+        raceTime = raceTime,
+        elapsedTime = elapsedTime,
+        remainingTime = remainingTime,
+        topThree = topThreeRankings,
+        allPlayersData = allPlayersData,
+        totalPlayers = #self.participants
+    }
+
+    RaceGameEventManager.BroadcastRaceEvent(
+        self.participants, 
+        EventPlayerConfig.NOTIFY.RACE_CONTEST_UPDATE, 
+        eventData
+    )
+end
 
 return RaceGameMode

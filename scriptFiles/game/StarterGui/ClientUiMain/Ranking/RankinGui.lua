@@ -113,8 +113,34 @@ function RankingGui:LoadRankingConfig()
     -- 清空现有的排行榜按钮（保留模板）
     self.rankingButtonPos:ClearChildren()
     
-    -- 循环排行榜配置生成按钮
+    -- 将配置转换为数组并按权重排序（权重高优先）
+    local sortedList = {}
     for rankType, config in pairs(RankingConfig.CONFIGS) do
+        table.insert(sortedList, { rankType = rankType, config = config })
+    end
+    table.sort(sortedList, function(a, b)
+        local wa = (a.config and a.config.weight) or 0
+        local wb = (b.config and b.config.weight) or 0
+        if wa ~= wb then
+            return wa > wb
+        end
+        -- 次级排序：按名称，确保稳定输出
+        local na = (a.config and a.config.name) or a.rankType
+        local nb = (b.config and b.config.name) or b.rankType
+        return tostring(na) < tostring(nb)
+    end)
+
+    -- 记录排序后的类型列表（可用于其他地方需要顺序展示时）
+    self.rankingTypesSorted = {}
+    for i = 1, #sortedList do
+        self.rankingTypesSorted[i] = sortedList[i].rankType
+    end
+    
+    -- 按排序结果生成按钮
+    for i = 1, #sortedList do
+        local rankType = sortedList[i].rankType
+        local config = sortedList[i].config
+        
         -- 克隆模板按钮
         local buttonNode = self.TemrankingButton.node:Clone()
         local rankingPositionNode = self.rankingPosition.node:Clone()
@@ -137,17 +163,15 @@ function RankingGui:LoadRankingConfig()
             self:OnRankingTypeButtonClicked(rankType, config)
         end
         
-        -- 存储按钮引用（可选）
+        -- 存储按钮引用
         if not self.rankingButtons then
             self.rankingButtons = {}
         end
         self.rankingButtons[rankType] = viewButton
         self.rankingButtonsPos[rankType] = rankingPositionNode
-        
-        --gg.log("生成排行榜按钮成功", rankType, config.name)
     end
     
-    --gg.log("排行榜按钮生成完成，总数:", #RankingConfig.CONFIGS)
+    --gg.log("排行榜按钮生成完成，总数:", #self.rankingTypesSorted)
 end
 
 -- 事件注册

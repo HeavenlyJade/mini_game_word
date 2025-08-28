@@ -18,18 +18,21 @@ RankingConfig.CONFIGS = {
         displayName = "战力榜",
         maxDisplayCount = 100,
         resetType = "none", -- never, daily, weekly, monthly
+        weight = 1,
     },
     [RankingConfig.TYPES.RECHARGE] = {
         name = "充值排行榜",
         displayName = "充值榜",
         maxDisplayCount = 100,
         resetType = "monthly",
+        weight = 3,
     },
     [RankingConfig.TYPES.REBIRTH] = {
         name = "重生排行榜",
         displayName = "重生榜",
         maxDisplayCount = 100,
         resetType = "weekly",
+        weight = 2,
     },
 }
 
