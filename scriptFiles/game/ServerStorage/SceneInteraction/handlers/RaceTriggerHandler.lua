@@ -32,29 +32,8 @@ function RaceTriggerHandler:OnEntityEnter(player)
     local levelConfig = ConfigLoader.Levels
     local levelData = levelConfig and levelConfig[levelId] ---@type LevelType
     if not levelData then
-        --gg.log(string.format("错误: 飞车触发器(%s) - 在LevelConfig中找不到ID为'%s'的关卡配置。", self.name, levelId))
+        gg.log(string.format("错误: 飞车触发器(%s) - 在LevelConfig中找不到ID为'%s'的关卡配置。", self.name, levelId))
         return
-    end
-
-    -- 【调试】输出关卡数据信息
-
-    if levelData then
-        -- 如果defaultGameMode为空，尝试输出原始数据
-        if not levelData.defaultGameMode or levelData.defaultGameMode == "" then
-            --gg.log("调试: defaultGameMode为空，检查原始配置数据...")
-
-            -- 尝试访问原始的LevelConfig数据
-            local LevelConfig = require(MainStorage.Code.Common.Config.LevelConfig)
-            local rawData = LevelConfig.Data[levelId]
-            if rawData then
-                --gg.log(string.format("调试: 原始配置中的'默认玩法' = %s", tostring(rawData["默认玩法"])))
-                for key, value in pairs(rawData) do
-                    --gg.log(string.format("调试: 原始配置[%s] = %s", tostring(key), tostring(value)))
-                end
-            else
-                --gg.log("调试: 在原始LevelConfig中也找不到该关卡数据")
-            end
-        end
     end
 
     -- 3. 从关卡规则中，获取游戏模式的名称

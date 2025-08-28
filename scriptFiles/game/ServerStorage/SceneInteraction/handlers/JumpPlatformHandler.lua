@@ -21,11 +21,6 @@ end
 function JumpPlatformHandler:OnEntityLeave(entity)
     -- 首先调用基类的方法，处理通用的离开逻辑（如从玩家列表中移除）
     SceneNodeHandlerBase.OnEntityLeave(self, entity)
-
-    -- 只对玩家打印离开日志
-    if entity and entity.isPlayer then
-        --gg.log(string.format("玩家 '%s' 离开了跳台 '%s'。", (entity.GetName and entity:GetName()) or entity.uuid, self.name))
-    end
 end
 
 return JumpPlatformHandler

@@ -6,7 +6,6 @@ local MainStorage = game:GetService("MainStorage")
 
 local ServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local gg = require(MainStorage.Code.Untils.MGlobal)  ---@type gg
-gg.log(3333333333333332)
 ---@class SceneNodeManager
 local SceneNodeManager = {}
 
@@ -50,10 +49,8 @@ function SceneNodeManager.Init()
                 if not HandlerClass then
                     --gg.log(string.format("SceneNodeManager: [警告] 找不到类型为 '%s' 的处理器 (来自配置 '%s')", nodeType, configName))
                 else
-                    -- 3. 实例化处理器
-                    local debugId = math.random(1, 999999) -- 创建一个随机的调试ID
                     --gg.log(string.format("SceneNodeManager: [DebugID: %d] 正在为 '%s' 创建 '%s' 类型的处理器...", debugId, configName, nodeType))
-                    local handler = HandlerClass.New(node, configData, debugId)
+                    local handler = HandlerClass.New(node, configData)
                     if not handler then
                         --gg.log(string.format("SceneNodeManager: [错误] 实例化处理器 '%s' 失败。", configName))
                     else

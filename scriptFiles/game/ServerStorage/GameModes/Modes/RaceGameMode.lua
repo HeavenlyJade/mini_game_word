@@ -1284,16 +1284,6 @@ function RaceGameMode:_executeCommandForPlayer(command, commandType, player)
 end
 
 
-function GameModeManager:ForceCleanupPlayer(uin)
-    local instanceId = self.playerModes[uin]
-    if instanceId then
-        local mode = self.activeModes[instanceId]
-        if mode then
-            mode:OnPlayerLeave({uin = uin}) -- 传递最小必要信息
-        end
-        self.playerModes[uin] = nil
-    end
-end
 
 
 return RaceGameMode
