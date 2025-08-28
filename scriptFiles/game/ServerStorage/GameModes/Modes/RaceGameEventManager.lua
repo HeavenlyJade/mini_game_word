@@ -81,8 +81,8 @@ function RaceGameEventManager.HandleLevelRewardNodeTriggered(evt)
         return
     end
 
-    gg.log(string.format("收到玩家 %s 触发关卡奖励节点 - 配置:%s, ID:%s, 地图:%s",
-        player.name or player.uin, tostring(configName), tostring(uniqueId), mapName or "unknown"))
+    -- gg.log(string.format("收到玩家 %s 触发关卡奖励节点 - 配置:%s, ID:%s, 地图:%s",
+    --     player.name or player.uin, tostring(configName), tostring(uniqueId), mapName or "unknown"))
 
     -- 通过 MServerDataManager 获取 GameModeManager 实例
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)

@@ -37,7 +37,6 @@ end
 function AutoRaceManager.CheckAllPlayersAutoRace()
     local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
     
-    --gg.log("playerAutoRaceState", playerAutoRaceState)
     
     -- 检查是否有启用自动比赛的玩家
     local hasEnabledPlayers = false
