@@ -51,10 +51,11 @@ function SoundPool.Init(poolSize)
 end
 
 ---播放音效
+---播放音效（修复版本）
 ---@param data table 音效数据 {soundAssetId: string, key: string|nil, volume: number|nil, pitch: number|nil, range: number|nil, boundTo: string|nil, position: table|nil}
 function SoundPool.PlaySound(data)
     if not _isInitialized then
-        print("[SoundPool] Error: Not initialized. Call SoundPool.Init() first")
+        print("[SoundPool] 错误：未初始化，请先调用SoundPool.Init()")
         return
     end
     
@@ -80,14 +81,42 @@ function SoundPool.PlaySound(data)
     -- 设置音效参数
     SoundPool._ConfigureSoundNode(soundNode, sound, data)
     
-    -- 设置音效位置
-    if not data.key then
-        SoundPool._SetSoundPosition(soundNode, data)
-    end
+    -- 关键修复：无论是否有key都要设置位置，避免全局播放
+    SoundPool._SetSoundPosition(soundNode, data)
     
     -- 播放音效
     soundNode:PlaySound()
     
+    -- 获取当前玩家位置并记录日志
+    local currentPlayer = game.Players.LocalPlayer
+    local playerPos = currentPlayer and currentPlayer.Character and currentPlayer.Character.Position
+    if playerPos then
+        gg.log("[SoundPool] 音效已触发播放:", sound)
+        gg.log("[SoundPool] 当前玩家位置:", playerPos)
+        gg.log("[SoundPool] 音效播放位置:", soundNode.FixPos or "全局播放")
+        
+        -- 计算音效位置与玩家位置的距离
+        if soundNode.FixPos then
+            -- 检查FixPos是否为有效的Vector3对象
+            if soundNode.FixPos.X and soundNode.FixPos.Y and soundNode.FixPos.Z then
+                -- 使用VectorCalc.Distance3计算距离
+                local VectorCalc = require(MainStorage.Code.Untils.VectorUtils).Vec
+                local distance = VectorCalc.Distance3(soundNode.FixPos, playerPos)
+                
+                gg.log("[SoundPool] 音效与玩家距离:", distance, "最大衰减距离:", soundNode.RollOffMaxDistance)
+                
+                -- 检查距离是否超出音效范围
+                if distance > soundNode.RollOffMaxDistance then
+                    gg.log("[SoundPool] 警告：音效距离超出最大衰减范围，玩家可能听不到音效")
+                end
+            else
+                gg.log("[SoundPool] 警告：音效位置FixPos不是有效的Vector3对象:", soundNode.FixPos)
+            end
+        else
+            gg.log("[SoundPool] 音效为全局播放，无位置信息")
+        end
+    end
+
     -- 回收普通音效节点到池中
     if not data.key then
         SoundPool._RecycleSoundNode(soundNode)
@@ -96,7 +125,6 @@ function SoundPool.PlaySound(data)
     -- 更新最后播放时间
     _lastPlayTimes[sound] = gg.GetTimeStamp()
 end
-
 ---激活音效节点（简化接口）
 ---@param soundAssetID string 音效资源ID
 ---@param parent string|nil 父对象路径
@@ -253,25 +281,64 @@ end
 ---@param sound string 音效路径
 ---@param data table 音效数据
 function SoundPool._ConfigureSoundNode(soundNode, sound, data)
+    --gg.log("[SoundPool] 配置音效节点参数：", sound)
+    
     soundNode.SoundPath = sound
     soundNode.Volume = data.volume or DEFAULT_VOLUME
     soundNode.Pitch = data.pitch or DEFAULT_PITCH
     soundNode.RollOffMaxDistance = data.range or DEFAULT_RANGE
+    
+    -- 关键修复：确保3D音效设置正确
+    soundNode.RollOffMode = Enum.RollOffMode.Linear -- 使用线性衰减模式
+    soundNode.RollOffMinDistance = 300 -- 最小衰减距离设为100，确保近距离能听到
+    
+    --gg.log("[SoundPool] 音效节点配置完成：")
+    --gg.log("[SoundPool] - 资源路径：", soundNode.SoundPath)
+    --gg.log("[SoundPool] - 音量：", soundNode.Volume)
+    --gg.log("[SoundPool] - 音高：", soundNode.Pitch)
+    --gg.log("[SoundPool] - 最大衰减距离：", soundNode.RollOffMaxDistance)
+    --gg.log("[SoundPool] - 衰减模式：", soundNode.RollOffMode)
 end
 
 ---设置音效位置
 ---@param soundNode Sound 音效节点
 ---@param data table 音效数据
 function SoundPool._SetSoundPosition(soundNode, data)
+    --gg.log("[SoundPool] 开始设置音效位置，数据：", data)
+    
     if data.boundTo then
         local targetNode = gg.GetChild(WorkSpace, data.boundTo)
         if targetNode then ---@cast targetNode Transform
             soundNode.FixPos = targetNode.Position
+            --gg.log("[SoundPool] 音效绑定到节点：", data.boundTo, "位置：", targetNode.Position)
+        else
+            --gg.log("[SoundPool] 警告：找不到绑定节点：", data.boundTo)
         end
     elseif data.position then
-        soundNode.FixPos = Vector3.New(data.position[1], data.position[2], data.position[3])
+        local pos = Vector3.New(data.position[1], data.position[2], data.position[3])
+        soundNode.FixPos = pos
+        --gg.log("[SoundPool] 音效设置固定位置：", pos)
     else
-        soundNode.FixPos = game.Players.LocalPlayer.Character.Position
+        -- -- 关键问题：如果没有提供位置信息，音效会成为全局音效
+        -- -- 这里我们不设置任何位置，让它保持默认（可能是全局）
+        -- --gg.log("[SoundPool] 警告：没有提供boundTo或position，音效可能为全局播放。")
+        -- soundNode.FixPos = nil
+        -- soundNode.TransObject = nil
+    end
+    
+    -- 验证3D设置
+    SoundPool._Validate3DSound(soundNode, data)
+end
+
+---验证3D音效设置
+---@param soundNode Sound 音效节点
+---@param data table 音效数据
+function SoundPool._Validate3DSound(soundNode, data)
+    if soundNode.FixPos or soundNode.TransObject then
+        --gg.log("[SoundPool] 3D音效验证通过。位置:", soundNode.FixPos, "绑定对象:", soundNode.TransObject)
+    else
+        --gg.log("[SoundPool] 3D音效验证失败：FixPos和TransObject均未设置，将作为2D全局音效播放。")
+        --gg.log("[SoundPool] - 触发数据:", data)
     end
 end
 

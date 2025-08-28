@@ -192,23 +192,24 @@ function LevelRewardNodeInitializer.BindTriggerBoxEvent(clonedNode, uniqueId, re
     --gg.log("TriggerBox触发事件绑定完成 - 节点:", clonedNode.Name, "ID:", uniqueId)
 end
 
---- TriggerBox触发事件处理
+--- TriggerBox触发事件处理（修复版本）
 ---@param actor any 触发的Actor对象
 ---@param uniqueId string 唯一ID
 ---@param rewardNode LevelNodeRewardItem 奖励节点数据
 ---@param configName string 配置名称
 ---@param mapName string 地图名称
-function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName,triggerBox)
+---@param triggerBox TriggerBox 触发器节点
+function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName, triggerBox)
     -- 检查是否为玩家触发
     if not actor or not actor.UserId then
         return -- 只处理玩家触发
     end
 
     local playerId = actor.UserId
-    --gg.log("玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
+    print("[LevelRewardNodeInitializer] 玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
 
-    -- 播放触发音效
-        LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
+    -- 播放触发音效（不传递actor参数，使用位置播放）
+    LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
 
     -- 构建发送到服务端的消息数据
     local messageData = {
@@ -229,8 +230,8 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
     LevelRewardNodeInitializer.SendToServer(messageData)
 
     -- 记录详细日志用于调试
-    --gg.log(string.format("关卡奖励触发详情 - 奖励类型:%s, 物品类型:%s, 数量:%d, 条件:%s",
-        -- messageData.rewardType, messageData.itemType, messageData.itemCount, messageData.rewardCondition))
+    print("[LevelRewardNodeInitializer] 关卡奖励触发详情 - 奖励类型:", messageData.rewardType, 
+          "物品类型:", messageData.itemType, "数量:", messageData.itemCount, "条件:", messageData.rewardCondition)
 end
 
 --- 发送消息到服务端
@@ -304,9 +305,11 @@ function LevelRewardNodeInitializer.GetClonedNodesByConfig(configName)
 end
 
 --- 播放触发音效
----@param triggerBox TriggerBox 触发器节点
+--- 
+---@param triggerBox TriggerBox 触发器节点  
 function LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
     if not triggerBox then
+        print("[LevelRewardNodeInitializer] 错误：触发器节点为空")
         return
     end
 
@@ -319,15 +322,25 @@ function LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
     -- 导入SoundPool模块
     local SoundPool = require(game:GetService("MainStorage").Code.Client.Graphic.SoundPool) ---@type SoundPool
 
-    -- 播放音效
-    SoundPool.PlaySound({
+    -- 构建音效数据
+    local soundData = {
         soundAssetId = triggerSound,
-        volume = 1.0,
+        volume = 0.8,  -- 适中音量
         pitch = 1.0,
-        range = 1000
-    })
+        range = 800,   -- 适当的音效范围
+        position = {   -- 设置固定位置为触发器位置，避免全局播放
+            triggerBox.Parent.Position.X,
+            triggerBox.Parent.Position.Y, 
+            triggerBox.Parent.Position.Z
+        }
+    }
 
-    --gg.log("播放触发音效:", triggerSound)
+    --gg.log("[LevelRewardNodeInitializer] 准备播放触发音效，数据:", soundData)
+
+    -- 播放音效
+    SoundPool.PlaySound(soundData)
+
+    --gg.log("[LevelRewardNodeInitializer] 播放触发音效:", triggerSound, "位置:", triggerBox.Parent.Position)
 end
 
 return LevelRewardNodeInitializer

@@ -284,7 +284,6 @@ function StatCommand.handlers.restore(params, player)
         end
     end
     
-    syncAndSave(player)
     return true
 end
 
