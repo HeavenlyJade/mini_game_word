@@ -140,7 +140,7 @@ function HudMoney:OnSyncInventoryItems(data)
     if not items then
         return
     end
-    --gg.log("物品相关数据",data)
+    -- gg.log("物品相关数据",data)
     local currencyType = MConfig.ItemTypeEnum["货币"]
 
     -- 1. 检查更新中是否包含货币数据
@@ -157,68 +157,50 @@ function HudMoney:OnSyncInventoryItems(data)
         return
     end
 
-    -- 2. 【修改】使用合并更新而不是完全覆盖
-    if not self.currentCurrencyData then
-        self.currentCurrencyData = {}
+    -- 2. 将传入的货币列表转换为以名称为键的映射，方便查找
+    local newCurrencyMap = {}
+    for _, item in pairs(incomingCurrencyList) do
+        if item and item.name then
+            newCurrencyMap[item.name] = item
+        end
     end
-    
-    -- 【修复】确保lastMoneyValues存在
+
+    -- 3. 遍历UI中的所有货币按钮，进行更新
     if not self.lastMoneyValues then
         self.lastMoneyValues = {}
     end
-    
-    -- 3. 【修复】只对同步包中存在的货币进行动画检查和更新
+
     for i = 1, self.moneyButtonList:GetChildCount() do
         local button = self.moneyButtonList:GetChild(i)
         if button and button.node then
             local currencyName = button.node.Name
-            -- 【修改】只处理货币相关的按钮
             if self:IsCurrencyButton(currencyName) then
-                -- 获取新数据中的值
-                local currencyItem = nil
-                for _, item in pairs(incomingCurrencyList) do
-                    if item and item.name == currencyName then
-                        currencyItem = item
-                        break
-                    end
-                end
-                
+                local currencyItem = newCurrencyMap[currencyName]
                 local textNode = button:Get("Text").node ---@cast textNode UITextLabel
                 
-                -- 【修复】只对同步包中存在的货币进行动画检查和更新
+                local newAmount = 0
                 if currencyItem then
-                    local newAmount = math.floor(currencyItem.amount or 0)
-                    local oldAmount = math.floor(self.lastMoneyValues[currencyName] or 0)
-                    
-                    -- 【关键修复】在更新缓存前先检查动画
-                    if newAmount > oldAmount then
-                        self:ShowMoneyAddAnimation(currencyItem, newAmount, textNode)
-                    end
-                    
-                    -- 更新显示文本
-                    textNode.Title = self:GenerateDisplayText(currencyItem)
-                    
-                    -- 更新用于动画的缓存值
-                    self.lastMoneyValues[currencyName] = newAmount
-                else
-                    -- 如果新数据中没有这个货币，使用缓存的数据显示，不播放动画
-                    local cachedItem = self.currentCurrencyData[currencyName]
-                    if cachedItem then
-                        textNode.Title = self:GenerateDisplayText(cachedItem)
-                    else
-                        textNode.Title = gg.FormatLargeNumber(0)
-                    end
+                    newAmount = math.floor(currencyItem.amount or 0)
                 end
+                
+                local oldAmount = math.floor(self.lastMoneyValues[currencyName] or 0)
+
+                -- 检查是否需要播放增加动画
+                if newAmount > oldAmount and currencyItem then
+                    self:ShowMoneyAddAnimation(currencyItem, newAmount, textNode)
+                end
+
+                -- 更新显示文本
+                textNode.Title = gg.FormatLargeNumber(newAmount)
+                
+                -- 更新用于动画的缓存值
+                self.lastMoneyValues[currencyName] = newAmount
             end
         end
     end
     
-    -- 4. 更新数据缓存 - 只更新当前同步包中的货币
-    for _, item in pairs(incomingCurrencyList) do
-        if item and item.name then
-            self.currentCurrencyData[item.name] = item
-        end
-    end
+    -- 4. 更新数据缓存：用新的货币数据完全替换旧的
+    self.currentCurrencyData = newCurrencyMap
 end
 
 

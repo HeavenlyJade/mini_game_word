@@ -68,7 +68,10 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
     -- 3. 从 GameModeManager 中彻底移除该玩家的模式记录
     GameModeManager.playerModes[player.uin] = nil
 
-
+    gg.log("中途离开比赛",player.uin)
+    -- 【新增】如果玩家处于自动比赛状态，则停止
+    local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
+    AutoRaceManager.StopAutoRaceForPlayer(player, "玩家手动离开比赛")
     RaceGameEventManager.SendRaceEndNotification(player)
 end
 
@@ -137,11 +140,6 @@ end
 ---@param player MPlayer 目标玩家
 function RaceGameEventManager.SendRaceEndNotification(player)
     if not player or not player.uin then return end
-    
-    if not gg.network_channel then
-        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送比赛结束通知")
-        return
-    end
     
     local eventData = {
         cmd = EventPlayerConfig.NOTIFY.RACE_CONTEST_HIDE,

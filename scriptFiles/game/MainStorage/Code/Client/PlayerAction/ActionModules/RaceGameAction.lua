@@ -1,6 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local WorldService = game:GetService("WorldService")
 ---@class RaceGameAction : Class
@@ -57,51 +58,41 @@ function RaceGameAction:OnStart(data)
 
     actor.Movespeed = moveSpeed
     actor.Animator:Play("Base Layer.fei", 0, 0)
-    actor:Move(Vector3.new(0, 0, 1), true)
-
     actor.LocalEuler = Vector3.new(0, 180, 0)
 
     -- 4. 启动"持续前推"定时器，实现向前滑行效果
-    self.pushTimer = SandboxNode.New("Timer", actor)
-    self.pushTimer.Name = "RaceGameAction_PushForward"
-    self.pushTimer.Delay = 0.1
-    self.pushTimer.Interval = 1
-    self.pushTimer.Loop = true
-    gg.log("RaceGameAction: 启动持续前推定时器", self.pushTimer)
-    self.pushTimer.Callback = function()
+    self.pushTimer = ScheduledTask.AddInterval(0.3, "RaceGameAction_PushForward", function()
         -- if actor:GetCurMoveState() == Enum.BehaviorState.Fly then
             -- 使用 Move 指令让角色相对于相机稳定前移
-        actor.LocalEuler = Vector3.new(0, 180, 0)
         actor.Animator:Play("Base Layer.fei", 0, 0)
         -- 修改：使用 relativeToCamera = false，让移动方向不受摄像机旋转影响
         actor:Move(Vector3.new(0, 0, 1), false)
+        actor.LocalEuler = Vector3.new(0, 180, 0)
 
-    end
-    self.pushTimer:Start()
 
+
+    end)
+
+    -- -- 5. 1秒后停止跳跃并设置JumpBaseSpeed为0，进入滑翔状态
+    -- self.stopJumpTimer = ScheduledTask.AddDelay(0.2, "RaceGameAction_StopJump", function()
+    --     if actor then
+    --         -- actor:Jump(false)  -- 停止跳跃
+    --         actor.JumpBaseSpeed = 10 -- 设置跳跃力为0，防止后续跳跃
+    --     end
+    -- end)
 
     -- 6. 启动"恢复状态"的延迟调用（主要的比赛时长控制）
-    self.recoveryTimer = SandboxNode.New("Timer", actor)
-    self.recoveryTimer.Name = "RaceGameAction_Recovery"
-    self.recoveryTimer.Delay = recoveryDelay
-    self.recoveryTimer.Loop = false
-    self.recoveryTimer.Callback = function()
+    self.recoveryTimer = ScheduledTask.AddDelay(recoveryDelay, "RaceGameAction_Recovery", function()
         self:OnEnd()
-    end
-    self.recoveryTimer:Start()
+    end)
 
 
     local forceGravityDelay = math.min(recoveryDelay ,70) 
-    self.forceGravityTimer = SandboxNode.New("Timer", actor)
-    self.forceGravityTimer.Name = "RaceGameAction_ForceGravity"
-    self.forceGravityTimer.Delay = forceGravityDelay
-    self.forceGravityTimer.Loop = false
-    self.forceGravityTimer.Callback = function()
+    self.forceGravityTimer = ScheduledTask.AddDelay(forceGravityDelay, "RaceGameAction_ForceGravity", function()
         if actor and not self.isEnding then
-            actor.Gravity = 800 -- 恢复正常重力，确保玩家能落地
+            actor.Gravity = 500 -- 恢复正常重力，确保玩家能落地
         end
-    end
-    self.forceGravityTimer:Start()
+    end)
 
 end
 
@@ -155,21 +146,10 @@ function RaceGameAction:OnEnd()
 
 
     -- 清理所有定时器
-    if self.pushTimer and not self.pushTimer.isDestroyed then
-        self.pushTimer:Stop()
-        self.pushTimer:Destroy()
-        self.pushTimer = nil
-    end
-    if self.recoveryTimer and not self.recoveryTimer.isDestroyed then
-        self.recoveryTimer:Stop()
-        self.recoveryTimer:Destroy()
-        self.recoveryTimer = nil
-    end
-    if self.forceGravityTimer and not self.forceGravityTimer.isDestroyed then
-        self.forceGravityTimer:Stop()
-        self.forceGravityTimer:Destroy()
-        self.forceGravityTimer = nil
-    end
+    if self.pushTimer then ScheduledTask.Remove(self.pushTimer) self.pushTimer = nil end
+    if self.recoveryTimer then ScheduledTask.Remove(self.recoveryTimer) self.recoveryTimer = nil end
+    if self.stopJumpTimer then ScheduledTask.Remove(self.stopJumpTimer) self.stopJumpTimer = nil end
+    if self.forceGravityTimer then ScheduledTask.Remove(self.forceGravityTimer) self.forceGravityTimer = nil end
 
     gg.log("RaceGameAction: OnEnd - 所有定时器已清理。")
 

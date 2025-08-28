@@ -17,16 +17,6 @@ AutoRaceEventManager.REQUEST = {
     AUTO_RACE_TOGGLE = EventPlayerConfig.REQUEST.AUTO_RACE_TOGGLE
 }
 
-AutoRaceEventManager.RESPONSE = {
-    AUTO_RACE_STATUS = "AutoRaceStatus"
-}
-
-AutoRaceEventManager.NOTIFY = {
-    AUTO_RACE_STARTED = "AutoRaceStarted",
-    AUTO_RACE_STOPPED = "AutoRaceStopped",
-    NAVIGATE_TO_POSITION = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION
-}
-
 -- 初始化自动比赛事件管理器
 function AutoRaceEventManager.Init()
     AutoRaceEventManager.RegisterEventHandlers()
@@ -74,7 +64,7 @@ function AutoRaceEventManager.SendStopNavigation(uin, message)
     end
     
     gg.network_channel:fireClient(uin, {
-        cmd = "STOP_NAVIGATION",
+        cmd = EventPlayerConfig.NOTIFY.STOP_NAVIGATION,
         message = message or "停止导航"
     })
     
@@ -126,7 +116,7 @@ function AutoRaceEventManager.HandleAutoRaceToggle(evt)
     
     if enabled then
         -- 发送启动通知
-        AutoRaceEventManager.SendSuccessResponse(uin, AutoRaceEventManager.NOTIFY.AUTO_RACE_STARTED, {
+        AutoRaceEventManager.SendSuccessResponse(uin, EventPlayerConfig.NOTIFY.AUTO_RACE_STARTED, {
             enabled = true,
             message = "自动比赛已启动"
         })
@@ -134,12 +124,28 @@ function AutoRaceEventManager.HandleAutoRaceToggle(evt)
         --gg.log("玩家", uin, "启动自动比赛")
     else
         -- 发送停止通知
-        AutoRaceEventManager.SendSuccessResponse(uin, AutoRaceEventManager.NOTIFY.AUTO_RACE_STOPPED, {
+        AutoRaceEventManager.SendSuccessResponse(uin, EventPlayerConfig.NOTIFY.AUTO_RACE_STOPPED, {
             enabled = false,
             message = "自动比赛已停止"
         })
         
         --gg.log("玩家", uin, "停止自动比赛")
+    end
+end
+
+--- 【新增】通知客户端自动比赛已停止
+---@param player MPlayer 玩家对象
+---@param reason string 停止原因
+function AutoRaceEventManager.NotifyAutoRaceStopped(player, reason)
+    if not player or not player.uin then return end
+    
+    local eventData = {
+        cmd = EventPlayerConfig.NOTIFY.AUTO_RACE_STOPPED,
+        reason = reason
+    }
+    
+    if gg.network_channel then
+        gg.network_channel:fireClient(player.uin, eventData)
     end
 end
 

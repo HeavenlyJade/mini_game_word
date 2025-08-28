@@ -35,7 +35,8 @@ function FuncScript:OnInit(node, config)
     
     -- 注册按钮事件
     self:RegisterButtonEvents()
-
+    -- 注册网络事件
+    self:RegisterNetworkEvents()
 end
 
 
@@ -69,6 +70,15 @@ function FuncScript:RegisterButtonEvents()
     -- 初始化按钮显示状态
     self:UpdateAutoRaceButtonDisplay()
     self:UpdateAutoPlayButtonDisplay()
+end
+
+--- 【新增】注册网络事件
+function FuncScript:RegisterNetworkEvents()
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.AUTO_RACE_STOPPED, function(data)
+        gg.log("接收到停止自动比赛通知: " .. (data and data.reason or "无原因"))
+        self.autoRaceState = false
+        self:UpdateAutoRaceButtonDisplay()
+    end)
 end
 
 -- 自动挂机功能处理

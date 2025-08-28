@@ -42,13 +42,13 @@ function PlayerActionHandler:ListenToPlayerEvents()
     -- end)
 
     -- 新增：监听飞行状态变化，并转发给当前模块
-    actor.Flying:Connect(function(isFlying)
-        -- EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION
-        if isFlying and self.gameMode == EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION then
-            actor.Animator:Play("Base Layer.fei", 0, 0)
-        end
+    -- actor.Flying:Connect(function(isFlying)
+    --     -- EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION
+    --     if isFlying and self.gameMode == EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION then
+    --         actor.Animator:Play("Base Layer.fei", 0, 0)
+    --     end
         
-    end)
+    -- end)
 end
 
 --- 当具体的行为模块完成其生命周期后，会调用此函数

@@ -115,7 +115,7 @@ function PlayerInitMgr._SyncInitializedData(player)
 
     -- 1. 同步通过此管理器初始化的变量
     if player.variableSystem then
-        local variableData = player.variableSystem:GetAllVariables()
+        local variableData = player.variableSystem.variables
         gg.network_channel:fireClient(player.uin, {
             cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
             variableData = variableData,

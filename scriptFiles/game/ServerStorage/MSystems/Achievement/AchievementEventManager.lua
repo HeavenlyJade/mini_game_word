@@ -892,24 +892,14 @@ function AchievementEventManager.SyncAllPlayerPowerValues(player)
     end
 
     -- 获取所有战力相关的变量
-    local powerVariables = {}
     local allVars = player.variableSystem.variables
-    
-    for varName, varData in pairs(allVars) do
-        if string.find(varName, "战力") then
-            powerVariables[varName] = varData
-        end
-    end
-
-    -- 向客户端同步战力数据
-    if next(powerVariables) then
-        gg.network_channel:fireClient(player.uin, {
-            cmd = require(MainStorage.Code.Event.EventPlayer).NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
-            variableData = powerVariables,
-            isPowerSync = true -- 标记这是战力同步
-        })
+    gg.network_channel:fireClient(player.uin, {
+        cmd = require(MainStorage.Code.Event.EventPlayer).NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
+        variableData = allVars,
+        isPowerSync = true -- 标记这是战力同步
+    })
         --gg.log("已同步玩家战力值到客户端:", player.uin)
-    end
+
 end
 
 --- 发送成就解锁通知

@@ -85,7 +85,7 @@ function WaypointGui:OnPlayerVariableSync(data)
         self.playerVariableData[variableName] = variableData
         
         -- 【调试】输出科学计数法变量的详细信息
-        if variableName == "数据_固定值_历史最大战力值" and variableData and variableData.base then
+        if variableName == "数据_固定值_历史最大战力值" and variableData and type(variableData) == "table" and variableData.base then
             --gg.log("科学计数法变量详情:", variableName)
             --gg.log("  原始值:", variableData.base, "类型:", type(variableData.base))
             if type(variableData.base) == "number" then
@@ -126,13 +126,28 @@ function WaypointGui:GetVariableValue(variableName)
     end
     
     local varData = self.playerVariableData[variableName]
-    return (varData and varData.base) or 0
+    -- 【优化】安全地获取变量值，处理table和number两种情况
+    if varData then
+        if type(varData) == "table" and varData.base then
+            return varData.base
+        elseif type(varData) == "number" then
+            return varData
+        end
+    end
+    return 0
 end
 
 function WaypointGui:GetPlayerData()
     local re_data = {}
     for k,v in pairs(self.playerVariableData) do
-        re_data[k] = v.base
+        -- 【优化】安全地获取变量值
+        if type(v) == "table" and v.base then
+            re_data[k] = v.base
+        elseif type(v) == "number" then
+            re_data[k] = v
+        else
+            re_data[k] = 0
+        end
     end
     return re_data
 end

@@ -51,7 +51,11 @@ EventPlayerConfig.NOTIFY = {
     RACE_CONTEST_HIDE = "RaceContestHide", -- 隐藏比赛界面
     RACE_PREPARE_COUNTDOWN = "RacePrepareCountdown", -- 比赛准备倒计时
     RACE_PREPARE_COUNTDOWN_STOP = "RacePrepareCountdownStop", -- 停止比赛准备倒计时
+    AUTO_RACE_STOPPED = "AutoRaceStopped", -- 新增：自动比赛被停止
     ITEM_ACQUIRED_NOTIFY = "ItemAcquiredNotify", -- 获得物品通知
+    AUTO_RACE_RESPONSE = "AutoRaceResponse", -- 新增：自动比赛请求的响应
+    STOP_NAVIGATION = "StopNavigation", -- 新增：停止导航
+    AUTO_RACE_STARTED = "AutoRaceStarted" -- 新增：自动比赛已开始
 }
 
 --[[

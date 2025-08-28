@@ -182,4 +182,22 @@ function AutoRaceManager.IsPlayerAutoRacing(player)
     return playerAutoRaceState[player.uin] == true
 end
 
+--- 【新增】为特定玩家停止自动比赛
+---@param player MPlayer 玩家对象
+---@param reason string 停止原因
+function AutoRaceManager.StopAutoRaceForPlayer(player, reason)
+    if not player then return end
+
+ 
+    -- 1. 更新状态
+    AutoRaceManager.SetPlayerAutoRaceState(player, false)
+    
+    -- 2. 发送通知到客户端
+    local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
+    AutoRaceEventManager.NotifyAutoRaceStopped(player, reason or "自动比赛已停止")
+    
+    gg.log("玩家", player.uin, "已停止自动比赛，原因:", reason)
+
+end
+
 return AutoRaceManager

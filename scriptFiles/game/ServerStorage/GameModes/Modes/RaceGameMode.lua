@@ -438,14 +438,12 @@ function RaceGameMode:OnPlayerLanded(player)
 
     -- 获取玩家当前排名信息
     local flightData = self:GetPlayerFlightData(player.uin)
-    local rankInfo = flightData and string.format("第%d名，飞行距离%.1f米", flightData.rank, flightData.flightDistance) or "排名计算中"
-
-    --player:SendHoverText(string.format("已落地！%s 等待其他玩家...", rankInfo))
 
     -- 使用正确的计数值检查是否所有人都已完成
     if finishedCount >= self:_getParticipantCount() then
         self:End()
     end
+
 end
 
 
