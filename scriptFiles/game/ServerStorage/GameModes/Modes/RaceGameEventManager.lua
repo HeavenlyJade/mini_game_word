@@ -31,41 +31,46 @@ function RaceGameEventManager.RegisterEventHandlers()
 
 end
 
---- 处理玩家落地事件
+--- 【重构】处理玩家落地/离开事件，统一强制结束该玩家的比赛状态
 ---@param evt table { player: MPlayer, cmd: string }
 function RaceGameEventManager.HandlePlayerLanded(evt)
     local player = evt.player
     if not player then return end
 
-    -- 【关键】通过 MServerDataManager 获取 GameModeManager 的正确实例
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager ---@type GameModeManager
-    if not GameModeManager then
-        --gg.log("ERROR: RaceGameEventManager - GameModeManager 未在 serverDataMgr 中初始化。")
-        return
-    end
+    if not GameModeManager then return end
 
-    -- 1. 从 GameModeManager 获取该玩家当前所在的游戏模式实例
     local instanceId = GameModeManager.playerModes[player.uin]
     if not instanceId then
-        -- 如果玩家不在任何模式中，直接忽略
+        -- 玩家不在任何游戏模式中，可能是延迟的事件，直接忽略
         return
     end
-    local currentMode = GameModeManager.activeModes[instanceId]
-
-    -- 如果玩家在模式中，并且模式有OnPlayerLanded方法，则直接调用
-    if currentMode and type(currentMode.OnPlayerLanded) == "function" then
-        currentMode:OnPlayerLanded(player)
-    else
-        -- 仅在调试时打印，正常游戏时此日志可能过于频繁
-        -- --gg.log(string.format("RaceEventManager: 收到玩家 %s 的落地报告，但玩家不在比赛中或模式不匹配，忽略。", player.name))
+    
+    local currentMode = GameModeManager.activeModes[instanceId] ---@type RaceGameMode
+    if not currentMode then
+        -- 实例可能已经结束，但以防万一，还是清理一下玩家记录
+        GameModeManager.playerModes[player.uin] = nil
+        return
     end
 
-    -- 如果是手动离开，强制通知客户端结束比赛界面与模块
-    local finalState = evt.finalState
-    if finalState == "ManualExit" then
-        RaceGameEventManager.SendRaceEndNotification(player)
+    gg.log(string.format("玩家 %s 触发落地/离开，强制结束其在比赛 %s 中的状态。", player.name or player.uin, instanceId))
+    
+    -- 1. 为该玩家执行游戏结束指令，以恢复其状态（如速度）
+    if currentMode._executeGameEndCommandsForPlayer then
+        currentMode:_executeGameEndCommandsForPlayer(player)
     end
+
+    -- 2. 调用 OnPlayerLeave，清理其在比赛实例中的所有数据
+    if currentMode.OnPlayerLeave then
+        currentMode:OnPlayerLeave(player)
+    end
+    
+    -- 3. 从 GameModeManager 中彻底移除该玩家的模式记录
+    GameModeManager.playerModes[player.uin] = nil
+    
+    -- 4. 通知该玩家的客户端，比赛已结束，隐藏UI
+    RaceGameEventManager.SendRaceEndNotification(player)
 end
 
 --- 【新增】处理关卡奖励节点触发事件

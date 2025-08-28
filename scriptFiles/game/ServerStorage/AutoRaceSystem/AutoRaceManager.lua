@@ -83,6 +83,11 @@ function AutoRaceManager.StartAutoRace(mPlayer)
         return
     end
     
+    -- 额外检查：如果玩家正在比赛场景中，也应跳过
+    if mPlayer.currentGameMode and mPlayer.currentGameMode:IsA("RaceGameMode") then
+        --gg.log("玩家正在比赛模式中，跳过自动导航:", uin)
+        return
+    end
     -- 查找当前玩家所在场景的飞行比赛节点
     local currentScene = mPlayer.currentScene 
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
