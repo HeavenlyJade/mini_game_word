@@ -20,6 +20,8 @@ local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem) 
 ---@field player_net_stat number 玩家网络状态
 ---@field loginTime number 登录时间
 ---@field variableSystem VariableSystem 变量系统实例
+---@field currentGameModeInstanceId string|nil 当前所在游戏模式实例ID
+---@field currentGameModeName string|nil 当前所在游戏模式名称
 local _MPlayer = ClassMgr.Class('MPlayer', Entity)
 
 function _MPlayer:OnInit(info_)
@@ -33,6 +35,8 @@ function _MPlayer:OnInit(info_)
     ---@type VariableSystem
     self.variableSystem = VariableSystem.New("玩家", info_.variables or {})
     self.currentScene = info_.currentScene or "init_map" --- 当前玩家所在的地图节点
+    self.currentGameModeInstanceId = nil --- 当前所在的游戏模式实例ID
+    self.currentGameModeName = nil --- 当前所在的游戏模式名称
 
     -- 技能相关
     self.dict_btn_skill = nil -- 技能按钮映射
@@ -40,8 +44,8 @@ function _MPlayer:OnInit(info_)
     self.auto_attack_tick = 10 -- 攻击间隔
     self.auto_wait_tick = 0 -- 等待tick
 
-    -- 网络状态
-    self.player_net_stat  = common_const.PLAYER_NET_STAT.INITING -- 网络状态
+    -- 网络状态（使用枚举数值，若未定义则回退0）
+    self.player_net_stat  = tonumber(common_const.PLAYER_NET_STAT and common_const.PLAYER_NET_STAT.INITING) or 0
     self.loginTime = os.time() -- 登录时间
     
     -- 挂机状态

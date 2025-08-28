@@ -200,10 +200,6 @@ function PlayerActionHandler:OnStopNavigation(data)
     
     -- 停止当前导航
     actor:StopNavigate()
-    
-    if data.message then
-        --gg.log("PlayerActionHandler: " .. data.message)
-    end
 end
 
 --- 客户端导航方法 - 供其他模块调用

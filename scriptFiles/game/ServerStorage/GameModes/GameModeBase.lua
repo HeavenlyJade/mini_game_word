@@ -12,6 +12,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal)
 ---@field modeName string
 ---@field activeTimers table<Timer, boolean>
 ---@field timerCounter number 定时器计数器，确保同一实例内的定时器名称唯一
+---@field levelType table|any 关卡配置LevelType实例或规则表
 local GameModeBase = ClassMgr.Class("GameModeBase")
 
 --- 初始化游戏模式实例
@@ -68,7 +69,7 @@ end
 ---@param delay number 延迟的秒数
 ---@param callback function 回调函数
 ---@param customName string|nil 自定义名称（可选）
----@return Timer
+---@return Timer|nil
 function GameModeBase:AddDelay(delay, callback, customName)
     local timer
     local wrappedCallback = function()
@@ -93,7 +94,7 @@ end
 ---@param interval number 循环间隔的秒数
 ---@param callback function 回调函数
 ---@param customName string|nil 自定义名称（可选）
----@return Timer
+---@return Timer|nil
 function GameModeBase:AddInterval(interval, callback, customName)
     local timerName = customName or self:_generateTimerName("Interval", interval)
     local timer = ScheduledTask.AddInterval(interval, timerName, callback)
@@ -191,12 +192,24 @@ end
 ---@param player MPlayer
 function GameModeBase:OnPlayerEnter(player)
     self.participants[player.uin] = player
+    
+    -- 标注玩家当前所在的游戏模式实例
+    if player then
+        player.currentGameModeInstanceId = self.instanceId
+        player.currentGameModeName = self.modeName
+    end
 end
 
 --- 当有玩家离开此游戏模式时调用
 ---@param player MPlayer
 function GameModeBase:OnPlayerLeave(player)
     self.participants[player.uin] = nil
+    
+    -- 清理玩家的游戏模式标记
+    if player then
+        player.currentGameModeInstanceId = nil
+        player.currentGameModeName = nil
+    end
 end
 
 --- 销毁此游戏模式实例，清理所有相关资源

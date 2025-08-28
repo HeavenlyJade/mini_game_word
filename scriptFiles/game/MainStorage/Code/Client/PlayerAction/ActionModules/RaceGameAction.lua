@@ -65,23 +65,18 @@ function RaceGameAction:OnStart(data)
     self.pushTimer.Delay = 0.3
     self.pushTimer.Interval = 0.3
     self.pushTimer.Loop = true
+    gg.log("RaceGameAction: 启动持续前推定时器", self.pushTimer)
     self.pushTimer.Callback = function()
         -- if actor:GetCurMoveState() == Enum.BehaviorState.Fly then
             -- 使用 Move 指令让角色相对于相机稳定前移
+        actor.LocalEuler = Vector3.new(0, 180, 0)
         actor.Animator:Play("Base Layer.fei", 0, 0)
         -- 修改：使用 relativeToCamera = false，让移动方向不受摄像机旋转影响
         actor:Move(Vector3.new(0, 0, 1), false)
-        actor.LocalEuler = Vector3.new(0, 180, 0)
+
     end
     self.pushTimer:Start()
 
-    -- -- 5. 1秒后停止跳跃并设置JumpBaseSpeed为0，进入滑翔状态
-    -- self.stopJumpTimer = ScheduledTask.AddDelay(0.2, "RaceGameAction_StopJump", function()
-    --     if actor then
-    --         -- actor:Jump(false)  -- 停止跳跃
-    --         actor.JumpBaseSpeed = 10 -- 设置跳跃力为0，防止后续跳跃
-    --     end
-    -- end)
 
     -- 6. 启动"恢复状态"的延迟调用（主要的比赛时长控制）
     self.recoveryTimer = SandboxNode.New("Timer", actor)

@@ -26,7 +26,7 @@ function AutoRaceManager.StartAutoRaceCheck()
         ScheduledTask.Remove(autoRaceCheckTimer)
     end
     
-    autoRaceCheckTimer = ScheduledTask.AddInterval(3, "AutoRaceCheck", function()
+    autoRaceCheckTimer = ScheduledTask.AddInterval(5, "AutoRaceCheck", function()
         AutoRaceManager.CheckAllPlayersAutoRace()
     end)
     
@@ -57,11 +57,16 @@ function AutoRaceManager.CheckAllPlayersAutoRace()
         if enabled then  -- 只处理启用了自动比赛的玩家
             local player = MServerDataManager.getPlayerByUin(uin)
             if player then
-                -- 检查玩家是否在比赛中（直接检查playerModes）
-                local isInRace = GameModeManager.playerModes[uin] ~= nil
-                if not isInRace then
-                    -- 玩家不在比赛中，重新启动自动比赛
-                    AutoRaceManager.StartAutoRace(player)
+                -- 新增：若玩家标注在某模式实例中，直接跳过
+                if player.currentGameModeInstanceId then
+                    gg.log(string.format("玩家 %d 当前在模式实例 %s 中，跳过自动导航", uin, tostring(player.currentGameModeInstanceId)))
+                else
+                    -- 检查玩家是否在比赛中（直接检查playerModes）
+                    local isInRace = GameModeManager.playerModes[uin] ~= nil
+                    if not isInRace then
+                        -- 玩家不在比赛中，重新启动自动比赛
+                        AutoRaceManager.StartAutoRace(player)
+                    end
                 end
             else
                 -- 玩家不存在，清除状态

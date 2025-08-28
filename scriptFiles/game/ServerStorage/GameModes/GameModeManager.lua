@@ -96,23 +96,6 @@ function GameModeManager:IsPlayerInMode(uin)
     return self.playerModes[uin] ~= nil
 end
 
--- 监听玩家离开事件，自动将其从模式中移除
-game:GetService("Players").PlayerRemoving:Connect(function(player)
-    -- 玩家离开时，我们仍然得到的是引擎原生的player对象
-    -- 我们需要根据它找到我们的MPlayer实例，然后再调用移除方法
-    local mPlayer = MServerDataManager.getPlayerByUin(player.uin)
-    if mPlayer then
-        GameModeManager:RemovePlayerFromCurrentMode(mPlayer)
-    else
-        -- 如果此时已经找不到MPlayer实例（可能已被清理），
-        -- 我们需要一种备用方式来从比赛中移除该玩家的记录
-        local instanceId = GameModeManager.playerModes[player.uin]
-        if instanceId then
-             GameModeManager.playerModes[player.uin] = nil
-             gg.log(string.format("游戏模式管理器: 玩家(UIN: %d)的实例已不存在，但已成功从比赛记录中移除。", player.uin))
-        end
-    end
-end)
 
 function GameModeManager:ForceCleanupPlayer(mPlayer)
     local instanceId = self.playerModes[mPlayer.uin]

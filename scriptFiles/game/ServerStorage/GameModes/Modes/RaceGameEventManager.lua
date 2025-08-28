@@ -50,7 +50,6 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
     local currentMode = GameModeManager.activeModes[instanceId] ---@type RaceGameMode
     if not currentMode then
         -- 实例可能已经结束，但以防万一，还是清理一下玩家记录
-        GameModeManager.playerModes[player.uin] = nil
         return
     end
 
@@ -68,8 +67,8 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
     
     -- 3. 从 GameModeManager 中彻底移除该玩家的模式记录
     GameModeManager.playerModes[player.uin] = nil
-    
-    -- 4. 通知该玩家的客户端，比赛已结束，隐藏UI
+
+
     RaceGameEventManager.SendRaceEndNotification(player)
 end
 
