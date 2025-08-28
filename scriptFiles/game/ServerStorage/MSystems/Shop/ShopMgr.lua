@@ -193,7 +193,7 @@ function ShopMgr.ProcessNormalPurchase(player, shopItemId, currencyType, categor
     
     if success then
         -- 保存数据
-        ShopMgr.SavePlayerShopData(player.uin)
+        -- ShopMgr.SavePlayerShopData(player.uin)
         
         -- 构建购买结果
         local purchaseResult = {

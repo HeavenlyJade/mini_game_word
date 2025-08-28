@@ -301,7 +301,7 @@ function ShopEventManager.HandleRefreshShopData(evt)
     end
     
     -- 保存当前数据
-    ShopMgr.SavePlayerShopData(player.uin)
+    -- ShopMgr.SavePlayerShopData(player.uin)
     
     -- 推送最新数据到客户端
     local success = ShopMgr.PushShopDataToClient(player.uin)

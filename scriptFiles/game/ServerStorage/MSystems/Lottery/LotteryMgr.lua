@@ -386,15 +386,6 @@ function LotteryMgr.GetAvailablePools()
     return pools
 end
 
--- 移除定时存盘功能，现在使用统一的定时存盘机制
--- --- 定时保存所有在线玩家的抽奖数据
--- function LotteryMgr.SaveAllPlayerData()
---     for uin, lotterySystem in pairs(LotteryMgr.server_player_lottery) do
---         local playerData = lotterySystem:GetData()
---         LotteryCloudDataMgr.SavePlayerLotteryData(uin, playerData)
---     end
---     gg.log("抽奖系统：定时保存完成，保存了", table.getn(LotteryMgr.server_player_lottery), "个玩家的数据")
--- end
 
 ---保存指定玩家的抽奖数据（供统一存盘机制调用）
 ---@param uin number 玩家ID

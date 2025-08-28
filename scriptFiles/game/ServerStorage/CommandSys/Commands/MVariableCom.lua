@@ -40,7 +40,7 @@ local function syncAndSave(player)
     --gg.log("syncAndSave", player.variables)
     if player and player.variableSystem then
         player.variables = player.variableSystem.variables
-        cloudDataMgr.SavePlayerData(player.uin, true)
+        -- cloudDataMgr.SavePlayerData(player.uin, true)
 
         -- 向客户端同步变量数据
         local allVars = player.variableSystem.variables

@@ -43,7 +43,6 @@ function TrailCommand.handlers.add(params, player)
         player:SendHoverText(msg)
         --gg.log(msg)
         TrailCommand._syncToClient(player) -- 同步数据到客户端
-        TrailMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("给玩家 %s 添加尾迹失败: 无法添加尾迹", player.name)
@@ -79,7 +78,6 @@ function TrailCommand.handlers.remove(params, player)
         player:SendHoverText(msg)
         --gg.log(msg)
         TrailCommand._syncToClient(player) -- 同步数据到客户端
-        TrailMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("移除玩家 %s 的尾迹失败: %s", player.name, errorMsg)
@@ -155,7 +153,6 @@ function TrailCommand.handlers.set(params, player)
 
     if anythingChanged then
         TrailCommand._syncToClient(player) -- 同步数据到客户端
-        TrailMgr.ForceSavePlayerData(player.uin) -- 保存数据
     end
 
     return true
@@ -188,7 +185,6 @@ function TrailCommand.handlers.equip(params, player)
         player:SendHoverText(msg)
         --gg.log(msg)
         TrailCommand._syncToClient(player) -- 同步数据到客户端
-        TrailMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("装备尾迹失败: %s", errorMsg)
@@ -210,7 +206,6 @@ function TrailCommand.handlers.unequip(params, player)
         player:SendHoverText(msg)
         --gg.log(msg)
         TrailCommand._syncToClient(player) -- 同步数据到客户端
-        TrailMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("卸下尾迹失败: %s", errorMsg)
@@ -249,7 +244,6 @@ function TrailCommand.handlers.setslots(params, player)
 
     if anythingChanged then
         TrailCommand._syncToClient(player)
-        TrailMgr.ForceSavePlayerData(uin)
     end
 
     return true

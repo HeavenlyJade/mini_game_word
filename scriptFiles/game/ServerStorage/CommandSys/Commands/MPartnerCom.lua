@@ -43,7 +43,6 @@ function PartnerCommand.handlers.add(params, player)
         player:SendHoverText(msg)
         --gg.log(msg)
         PartnerCommand._syncToClient(player) -- 【修复】同步数据到客户端
-        PartnerMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("给玩家 %s 添加伙伴失败: %s", player.name, errorMsg)
@@ -79,7 +78,6 @@ function PartnerCommand.handlers.remove(params, player)
         player:SendHoverText(msg)
         --gg.log(msg)
         PartnerCommand._syncToClient(player) -- 【修复】同步数据到客户端
-        PartnerMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("移除玩家 %s 的伙伴失败: %s", player.name, errorMsg)
@@ -158,7 +156,6 @@ function PartnerCommand.handlers.set(params, player)
         end
     end
     PartnerCommand._syncToClient(player) -- 【修复】在所有操作后统一同步数据
-    PartnerMgr.ForceSavePlayerData(player.uin) -- 保存数据
     return true
 end
 

@@ -43,7 +43,6 @@ function PetCommand.handlers.add(params, player)
         player:SendHoverText(msg)
         gg.log(msg)
         _syncToClient(player) -- 同步数据
-        PetMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("给玩家 %s 添加宠物失败: %s", player.name, petName)
@@ -79,7 +78,6 @@ function PetCommand.handlers.remove(params, player)
         player:SendHoverText(msg)
         gg.log(msg)
         _syncToClient(player) -- 同步数据
-        PetMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("移除玩家 %s 的宠物失败: %s", player.name, errorMsg)
@@ -158,7 +156,6 @@ function PetCommand.handlers.set(params, player)
         end
     end
     _syncToClient(player) -- 同步数据
-    PetMgr.ForceSavePlayerData(player.uin) -- 保存数据
     return true
 end
 
@@ -197,7 +194,6 @@ function PetCommand.handlers.setslots(params, player)
 
     if anythingChanged then
         _syncToClient(player)
-        PetMgr.ForceSavePlayerData(uin)
     end
 
     return true
@@ -238,7 +234,6 @@ function PetCommand.handlers.addslots(params, player)
 
     if anythingChanged then
         _syncToClient(player)
-        PetMgr.ForceSavePlayerData(uin)
     end
 
     return true
@@ -279,7 +274,6 @@ function PetCommand.handlers.reduceslots(params, player)
 
     if anythingChanged then
         _syncToClient(player)
-        PetMgr.ForceSavePlayerData(uin)
     end
 
     return true

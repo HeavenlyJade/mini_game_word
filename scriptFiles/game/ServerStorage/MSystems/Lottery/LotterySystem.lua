@@ -244,7 +244,7 @@ function LotterySystem:PerformDraw(poolName, drawType)
     local totalCost = cost and cost.costAmount or 0
     
     -- 更新统计数据
-    LotteryCloudDataMgr.UpdatePoolStats(self.playerUin, poolName, totalCost, rewards)
+    -- LotteryCloudDataMgr.UpdatePoolStats(self.playerUin, poolName, totalCost, rewards)
     
     --gg.log("抽奖完成，获得", #rewards, "个奖励，总消耗:", totalCost)
     --gg.log("=== LotterySystem:PerformDraw 完成 ===")

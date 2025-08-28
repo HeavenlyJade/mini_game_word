@@ -242,7 +242,7 @@ function MainServer.bind_save_data_tick()
     timer.Name = 'timer_save_player_data'
     timer.Delay = 30      -- 延迟多少秒开始
     timer.Loop = true      -- 是否循环
-    timer.Interval = 120   -- 循环间隔多少秒
+    timer.Interval = 300   -- 循环间隔多少秒
     timer.Callback = function()
         for uin, player in pairs(serverDataMgr.getAllPlayers()) do
             MServerInitPlayer.OnPlayerSave(uin)

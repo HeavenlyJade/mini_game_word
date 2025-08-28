@@ -43,7 +43,6 @@ function WingCommand.handlers.add(params, player)
         --player:SendHoverText(msg)
         --gg.log(msg)
         WingCommand._syncToClient(player) -- 同步数据到客户端
-        WingMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("给玩家 %s 添加翅膀失败: %s", player.name, errorMsg)
@@ -79,7 +78,6 @@ function WingCommand.handlers.remove(params, player)
         --player:SendHoverText(msg)
         --gg.log(msg)
         WingCommand._syncToClient(player) -- 同步数据到客户端
-        WingMgr.ForceSavePlayerData(player.uin) -- 保存数据
         return true
     else
         local msg = string.format("移除玩家 %s 的翅膀失败: %s", player.name, errorMsg)
@@ -158,7 +156,6 @@ function WingCommand.handlers.set(params, player)
         end
     end
     WingCommand._syncToClient(player) -- 在所有操作后统一同步数据
-    WingMgr.ForceSavePlayerData(player.uin) -- 保存数据
     return true
 end
 
@@ -197,7 +194,6 @@ function WingCommand.handlers.setslots(params, player)
 
     if anythingChanged then
         WingCommand._syncToClient(player)
-        WingMgr.ForceSavePlayerData(uin)
     end
 
     return true

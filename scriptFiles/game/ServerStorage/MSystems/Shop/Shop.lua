@@ -469,28 +469,6 @@ function Shop:ExecuteRewardCommand(commandContent, player)
     end
 end
 
--- 同步变量数据到客户端
----@param player MPlayer 玩家对象
-function Shop:SyncVariableDataToClient(player)
-    if not player or not player.uin or not player.variableSystem then
-        return
-    end
-    
-    -- 同步变量数据到 player.variables
-    player.variables = player.variableSystem.variables
-    
-    -- 保存玩家数据
-    local cloudDataMgr = require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type MCloudDataMgr
-    cloudDataMgr.SavePlayerData(player.uin, true)
-    
-    -- 向客户端发送变量数据同步事件
-    local allVars = player.variableSystem.variables
-    gg.network_channel:fireClient(player.uin, {
-        cmd = require(MainStorage.Code.Event.EventPlayer).NOTIFY.PLAYER_DATA_SYNC_VARIABLE,
-        variableData = allVars,
-    })
-    
-    --gg.log(string.format("已同步玩家 %s 的变量数据到客户端", player.name))
-end
+
 
 return Shop

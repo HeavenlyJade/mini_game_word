@@ -18,14 +18,6 @@ StatCommand.handlers = {}
 
 
 
---- 同步并保存玩家数据
----@param player MPlayer
-local function syncAndSave(player)
-    if player then
-        cloudDataMgr.SavePlayerData(player.uin, true)
-        gg.log("玩家 " .. player.name .. " 的属性数据已保存。")
-    end
-end
 
 --- 新增属性值
 ---@param params table
@@ -55,7 +47,6 @@ function StatCommand.handlers.add(params, player)
         player.name, statName, tostring(valueToAdd), source, tostring(newValue), bonusInfo)
     --player:SendHoverText(msg)
     gg.log(msg)
-    syncAndSave(player)
     return true
 end
 
@@ -85,7 +76,6 @@ function StatCommand.handlers.set(params, player)
         player.name, statName, tostring(newValue), source, bonusInfo)
     --player:SendHoverText(msg)
     gg.log(msg)
-    syncAndSave(player)
     return true
 end
 
@@ -117,7 +107,6 @@ function StatCommand.handlers.reduce(params, player)
         player.name, statName, tostring(valueToReduce), source, tostring(newValue), bonusInfo)
     --player:SendHoverText(msg)
     gg.log(msg)
-    syncAndSave(player)
     return true
 end
 
@@ -177,7 +166,6 @@ function StatCommand.handlers.bonusonly(params, player)
         gg.log(msg)
     end
     
-    syncAndSave(player)
     return true
 end
 
