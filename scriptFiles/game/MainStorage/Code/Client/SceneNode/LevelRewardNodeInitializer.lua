@@ -206,7 +206,7 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
     end
 
     local playerId = actor.UserId
-    print("[LevelRewardNodeInitializer] 玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
+    -- print("[LevelRewardNodeInitializer] 玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
 
     -- 播放触发音效（不传递actor参数，使用位置播放）
     LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)

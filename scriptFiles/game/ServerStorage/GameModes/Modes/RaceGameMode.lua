@@ -143,48 +143,48 @@ end
 --- 【新增】处理关卡奖励节点触发
 ---@param player MPlayer 触发的玩家
 ---@param eventData table 事件数据
-function RaceGameMode:HandleLevelRewardTrigger(player, eventData)
-    if not player or not eventData then return end
-
-    local uniqueId = eventData.uniqueId
-    local configName = eventData.configName
-    local mapName = eventData.mapName
-    local rewardType = eventData.rewardType or ""
-    local itemType = eventData.itemType or ""
-    local itemCount = eventData.itemCount or 0
-    local rewardCondition = eventData.rewardCondition or ""
-
-
-    if not uniqueId or not configName then
-        return
-    end
-
-    -- 防重复：检查是否已发放
-    if self.levelRewardsGiven[player.uin] and self.levelRewardsGiven[player.uin][uniqueId] then
-        --gg.log(string.format("玩家 %s 已获得过关卡奖励 %s，跳过发放", player.name or player.uin, tostring(uniqueId)))
-        return
-    end
-
-    -- 获取关卡奖励配置
-    local rewardConfig = self:GetLevelRewardConfig(configName, uniqueId)
-    if not rewardConfig then
-        --gg.log(string.format("找不到关卡奖励配置 - 配置名:%s, ID:%s", tostring(configName), tostring(uniqueId)))
-        return
-    end
-
-    -- 发放奖励
-    local success = self:DistributeLevelReward(player, rewardConfig, uniqueId)
-    if success then
-        if not self.levelRewardsGiven[player.uin] then
-            self.levelRewardsGiven[player.uin] = {}
+function RaceGameMode:HandleLevelRewardTrigger(triggerPlayer, evt)
+    -- 【修复】严格验证触发者身份
+    local uin = triggerPlayer.uin
+    
+    -- 【修复】用正确的遍历方式检查玩家是否在比赛中
+    local playerInRace = false
+    for _, p in ipairs(self.participants) do
+        if p.uin == uin then
+            playerInRace = true
+            break
         end
-        self.levelRewardsGiven[player.uin][uniqueId] = true
-        --gg.log(string.format("关卡奖励发放成功 - 玩家:%s, ID:%s", player.name or player.uin, tostring(uniqueId)))
-    else
-        --gg.log(string.format("关卡奖励发放失败 - 玩家:%s, ID:%s", player.name or player.uin, tostring(uniqueId)))
+    end
+
+    if not playerInRace then
+        gg.log(string.format("玩家 %s 不在当前比赛中，忽略奖励触发", triggerPlayer.name or uin))
+        return
+    end
+    
+    -- 【修复】确保奖励只给触发者
+    local uniqueId = evt.uniqueId
+    if self.levelRewardsGiven[uin] and self.levelRewardsGiven[uin][uniqueId] then
+        return -- 已经给过这个奖励
+    end
+    
+    -- 【修复】调用正确存在的函数 GetLevelRewardConfig，并传入正确顺序的参数
+    local rewardNode = self:GetLevelRewardConfig(evt.configName, uniqueId)
+    if not rewardNode then
+        return
+    end
+    
+    -- 【修复】只给触发者发放奖励
+    local success = self:DistributeLevelReward(triggerPlayer, rewardNode, uniqueId)
+    if success then
+        if not self.levelRewardsGiven[uin] then
+            self.levelRewardsGiven[uin] = {}
+        end
+        self.levelRewardsGiven[uin][uniqueId] = true
+        
+        -- 【修复】奖励通知也只发给触发者
+        self:SendLevelRewardNotification(triggerPlayer, rewardNode, uniqueId)
     end
 end
-
 --- 【新增】获取关卡奖励配置
 ---@param configName string 配置名称
 ---@param uniqueId string 唯一ID
@@ -1054,12 +1054,13 @@ function RaceGameMode:_handleLateJoinPlayer(player)
         return
     end
 
-    -- 传送到开始位置
+    -- 【修复】传送到开始位置
     local teleportSuccess = self:_teleportPlayerToStartPosition(player)
     if not teleportSuccess then
         gg.log(string.format("玩家 %s 传送失败", player.name or player.uin))
         return
     end
+
 
     -- 延迟处理确保传送完成
     self:AddDelay(0.5, function()
@@ -1078,6 +1079,7 @@ function RaceGameMode:_handleLateJoinPlayer(player)
         end
     end)
 end
+
 
 --- 【新增】初始化迟到加入玩家的比赛状态数据
 ---@param player MPlayer 迟到加入的玩家
@@ -1119,7 +1121,7 @@ function RaceGameMode:_sendRaceUIToLateJoinPlayer(player)
     -- 发送当前比赛状态
     self:AddDelay(0.2, function()
         if self.state == RaceState.RACING then
-            self:_updateContestUI()
+            self:_updateContestUIData()
         end
     end)
 end
@@ -1138,7 +1140,8 @@ function RaceGameMode:_teleportPlayerToStartPosition(player)
         return false
     end
     
-    local TeleportService = require(ServerStorage.Service.TeleportService)
+    -- 使用引擎内置 TeleportService
+    local TeleportService = game:GetService("TeleportService")
     TeleportService:Teleport(player.actor, handler.teleportNode.Position)
     
     return true

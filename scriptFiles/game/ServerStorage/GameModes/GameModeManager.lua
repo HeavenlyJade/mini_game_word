@@ -59,6 +59,7 @@ function GameModeManager:AddPlayerToMode(mPlayer, modeName, instanceId, levelTyp
     -- 将玩家加入到模式中
     mode:OnPlayerEnter(mPlayer)
     self.playerModes[mPlayer.uin] = instanceId
+    gg.log(string.format("玩家 %s 已加入游戏模式 %s (实例: %s)", mPlayer.name or mPlayer.uin, modeName, instanceId))
 end
 
 --- 从一个游戏模式中移除玩家
