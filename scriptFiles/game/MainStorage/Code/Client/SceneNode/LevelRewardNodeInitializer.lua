@@ -226,6 +226,7 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
         timestamp = os.time()                       -- 时间戳
     }
 
+
     -- 发送消息到服务端（这里使用网络通道发送）
     LevelRewardNodeInitializer.SendToServer(messageData)
 
@@ -304,14 +305,15 @@ function LevelRewardNodeInitializer.GetClonedNodesByConfig(configName)
     return result
 end
 
+
 --- 播放触发音效
---- 
 ---@param triggerBox TriggerBox 触发器节点  
 function LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
     if not triggerBox then
         print("[LevelRewardNodeInitializer] 错误：触发器节点为空")
         return
     end
+    local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 
     -- 获取触发音效自定义属性
     local triggerSound = triggerBox:GetAttribute("触发音效")
@@ -322,25 +324,24 @@ function LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
     -- 导入SoundPool模块
     local SoundPool = require(game:GetService("MainStorage").Code.Client.Graphic.SoundPool) ---@type SoundPool
 
-    -- 构建音效数据
+    -- 构建音效数据，使用3D定位播放
     local soundData = {
         soundAssetId = triggerSound,
-        volume = 0.8,  -- 适中音量
-        pitch = 1.0,
-        range = 800,   -- 适当的音效范围
-        position = {   -- 设置固定位置为触发器位置，避免全局播放
+        volume = 0.8,
+        pitch = 1.0,    
+        mindistance =300,
+        maxdistance =1000,
+        range = 800,
+        position = {
             triggerBox.Parent.Position.X,
             triggerBox.Parent.Position.Y, 
             triggerBox.Parent.Position.Z
-        }
+        },
+        transObject = triggerBox.Parent
     }
 
-    --gg.log("[LevelRewardNodeInitializer] 准备播放触发音效，数据:", soundData)
-
-    -- 播放音效
+    -- 播放3D定位音效
     SoundPool.PlaySound(soundData)
-
-    --gg.log("[LevelRewardNodeInitializer] 播放触发音效:", triggerSound, "位置:", triggerBox.Parent.Position)
+    print("[LevelRewardNodeInitializer] 播放触发音效:", triggerSound, "位置:", triggerBox.Parent.Position)
 end
-
 return LevelRewardNodeInitializer

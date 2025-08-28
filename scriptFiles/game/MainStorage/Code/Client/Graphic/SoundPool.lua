@@ -86,36 +86,7 @@ function SoundPool.PlaySound(data)
     
     -- 播放音效
     soundNode:PlaySound()
-    
-    -- 获取当前玩家位置并记录日志
-    local currentPlayer = game.Players.LocalPlayer
-    local playerPos = currentPlayer and currentPlayer.Character and currentPlayer.Character.Position
-    if playerPos then
-        gg.log("[SoundPool] 音效已触发播放:", sound)
-        gg.log("[SoundPool] 当前玩家位置:", playerPos)
-        gg.log("[SoundPool] 音效播放位置:", soundNode.FixPos or "全局播放")
-        
-        -- 计算音效位置与玩家位置的距离
-        if soundNode.FixPos then
-            -- 检查FixPos是否为有效的Vector3对象
-            if soundNode.FixPos.X and soundNode.FixPos.Y and soundNode.FixPos.Z then
-                -- 使用VectorCalc.Distance3计算距离
-                local VectorCalc = require(MainStorage.Code.Untils.VectorUtils).Vec
-                local distance = VectorCalc.Distance3(soundNode.FixPos, playerPos)
-                
-                gg.log("[SoundPool] 音效与玩家距离:", distance, "最大衰减距离:", soundNode.RollOffMaxDistance)
-                
-                -- 检查距离是否超出音效范围
-                if distance > soundNode.RollOffMaxDistance then
-                    gg.log("[SoundPool] 警告：音效距离超出最大衰减范围，玩家可能听不到音效")
-                end
-            else
-                gg.log("[SoundPool] 警告：音效位置FixPos不是有效的Vector3对象:", soundNode.FixPos)
-            end
-        else
-            gg.log("[SoundPool] 音效为全局播放，无位置信息")
-        end
-    end
+
 
     -- 回收普通音效节点到池中
     if not data.key then
@@ -286,12 +257,15 @@ function SoundPool._ConfigureSoundNode(soundNode, sound, data)
     soundNode.SoundPath = sound
     soundNode.Volume = data.volume or DEFAULT_VOLUME
     soundNode.Pitch = data.pitch or DEFAULT_PITCH
-    soundNode.RollOffMaxDistance = data.range or DEFAULT_RANGE
+    soundNode.RollOffMaxDistance = data.maxdistance or DEFAULT_RANGE
+    soundNode.RollOffMinDistance = data.mindistance or DEFAULT_RANGE
     
     -- 关键修复：确保3D音效设置正确
-    soundNode.RollOffMode = Enum.RollOffMode.Linear -- 使用线性衰减模式
+    soundNode.RollOffMode = Enum.RollOffMode.Linear  -- 使用线性衰减模式
     soundNode.RollOffMinDistance = 300 -- 最小衰减距离设为100，确保近距离能听到
-    
+    if data.transObject then
+        soundNode.TransObject = data.transObject
+    end
     --gg.log("[SoundPool] 音效节点配置完成：")
     --gg.log("[SoundPool] - 资源路径：", soundNode.SoundPath)
     --gg.log("[SoundPool] - 音量：", soundNode.Volume)
