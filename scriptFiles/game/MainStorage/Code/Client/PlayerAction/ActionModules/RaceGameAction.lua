@@ -57,13 +57,15 @@ function RaceGameAction:OnStart(data)
 
     actor.Movespeed = moveSpeed
     actor.Animator:Play("Base Layer.fei", 0, 0)
+    actor:Move(Vector3.new(0, 0, 1), true)
+
     actor.LocalEuler = Vector3.new(0, 180, 0)
 
     -- 4. 启动"持续前推"定时器，实现向前滑行效果
     self.pushTimer = SandboxNode.New("Timer", actor)
     self.pushTimer.Name = "RaceGameAction_PushForward"
-    self.pushTimer.Delay = 0.3
-    self.pushTimer.Interval = 0.3
+    self.pushTimer.Delay = 0.1
+    self.pushTimer.Interval = 1
     self.pushTimer.Loop = true
     gg.log("RaceGameAction: 启动持续前推定时器", self.pushTimer)
     self.pushTimer.Callback = function()
@@ -96,7 +98,7 @@ function RaceGameAction:OnStart(data)
     self.forceGravityTimer.Loop = false
     self.forceGravityTimer.Callback = function()
         if actor and not self.isEnding then
-            actor.Gravity = 500 -- 恢复正常重力，确保玩家能落地
+            actor.Gravity = 800 -- 恢复正常重力，确保玩家能落地
         end
     end
     self.forceGravityTimer:Start()

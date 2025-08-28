@@ -1076,29 +1076,31 @@ function RaceGameMode:_handleLateJoinPlayer(player)
         return
     end
 
-    -- 【修复】传送到开始位置，并获取目标坐标以避免竞态条件
-    local teleportSuccess, targetPos = self:_teleportPlayerToStartPosition(player)
-    if not teleportSuccess then
-        gg.log(string.format("玩家 %s 传送失败", player.name or player.uin))
-        return
-    end
-
-    if self.state == RaceState.RACING and player.actor then
-        -- 【修复】传入正确的起始坐标进行初始化
-        if targetPos then
-             self:_initializeLateJoinPlayerState(player, targetPos)
-        
-            -- 【修复】传入正确的起始坐标来发射玩家
-            self:LaunchPlayer(player, targetPos)
-            self:_executeGameStartCommandsForPlayer(player)
-            
-            -- 发送界面数据
-            self:_sendRaceUIToLateJoinPlayer(player)
-            player.actor:StopNavigate()
-
-            gg.log(string.format("迟到玩家 %s 加入成功", player.name or player.uin))
+    self:AddDelay(1, function()
+        -- 【修复】传送到开始位置，并获取目标坐标以避免竞态条件
+        local teleportSuccess, targetPos = self:_teleportPlayerToStartPosition(player)
+        if not teleportSuccess then
+            gg.log(string.format("玩家 %s 传送失败", player.name or player.uin))
+            return
         end
-    end
+
+        if self.state == RaceState.RACING and player.actor then
+            -- 【修复】传入正确的起始坐标进行初始化
+            if targetPos then
+                self:_initializeLateJoinPlayerState(player, targetPos)
+            
+                -- 【修复】传入正确的起始坐标来发射玩家
+                self:LaunchPlayer(player, targetPos)
+                self:_executeGameStartCommandsForPlayer(player)
+                
+                -- 发送界面数据
+                self:_sendRaceUIToLateJoinPlayer(player)
+                player.actor:StopNavigate()
+
+                gg.log(string.format("迟到玩家 %s 加入成功", player.name or player.uin))
+            end
+        end
+    end)
     
 end
 

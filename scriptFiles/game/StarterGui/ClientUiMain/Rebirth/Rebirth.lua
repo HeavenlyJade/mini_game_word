@@ -138,10 +138,9 @@ function RebirthGui:OnPlayerVariableSync(data)
         self.playerVariableData[variableName] = variableData
     end
 
-    -- 如果是战力同步，刷新界面显示
-    if data.isPowerSync then
-        self:RefreshDisplay()
-    end
+
+    self:RefreshDisplay()
+    
 end
 
 -- =================================
