@@ -142,8 +142,13 @@ function AutoPlayEventManager.SendNavigateToPosition(uin, targetPosition, messag
     
     -- 将 Vector3 转换为 table 以便网络传输
     local positionData = { x = targetPosition.x, y = targetPosition.y, z = targetPosition.z }
-    
-    gg.network_channel:fireClient(uin, {
+    local player = MServerDataManager.getPlayerByUin(uin)
+    if not player then
+        --gg.log("自动挂机事件找不到玩家: " .. uin)
+        return
+    end
+    -- player.actor:NavigateTo(targetPosition)
+    gg.network_channel:fireClient(player.uin, {
         cmd = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION,
         position = positionData,
         message = message or "导航到指定位置"

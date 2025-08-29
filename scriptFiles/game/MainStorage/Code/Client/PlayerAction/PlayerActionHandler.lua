@@ -171,23 +171,17 @@ function PlayerActionHandler:OnNavigateToPosition(data)
     end
     
     local actor = gg.getClientLocalPlayer()
-    if not actor then
-        --gg.log("PlayerActionHandler: 无法获取本地玩家Actor")
-        return
-    end
-    
+    self:OnStopNavigation(data)
     -- 从表中重建 Vector3
     local positionData = data.position
     local targetPosition = Vector3.New(positionData.x, positionData.y, positionData.z)
     
     -- 执行导航
-    actor:NavigateTo(targetPosition)
+    -- actor:NavigateTo(targetPosition)
+    actor:MoveTo(targetPosition)
     
-    if data.message then
-        --gg.log("PlayerActionHandler: " .. data.message)
-    else
-    --gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition))
-    end
+    gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition),actor.uin)
+
 end
 
 --- 处理停止导航请求
@@ -200,6 +194,7 @@ function PlayerActionHandler:OnStopNavigation(data)
     
     -- 停止当前导航
     actor:StopNavigate()
+    actor:StopMove()
 end
 
 --- 客户端导航方法 - 供其他模块调用

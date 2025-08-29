@@ -44,7 +44,11 @@ function AutoRaceEventManager.SendNavigateToPosition(uin, targetPosition, messag
     
     -- 将 Vector3 转换为 table 以便网络传输
     local positionData = { x = targetPosition.x, y = targetPosition.y, z = targetPosition.z }
-    
+    local player = MServerDataManager.getPlayerByUin(uin)
+    if not player then
+        gg.log("自动挂机事件找不到玩家: " .. uin)
+        return
+    end
     gg.network_channel:fireClient(uin, {
         cmd = EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION,
         position = positionData,
