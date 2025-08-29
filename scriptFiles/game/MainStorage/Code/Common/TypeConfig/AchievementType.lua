@@ -131,7 +131,6 @@ function AchievementType:GetLevelEffectValue(level)
             })
         end
     end
-    gg.log("results",results,"玩家等级",level)
     return results
 end
 

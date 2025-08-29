@@ -57,7 +57,7 @@ function RaceGameAction:OnStart(data)
     -- actor:Jump(true)
 
     -- 4. 启动"持续前推"定时器，实现向前滑行效果
-    self.pushTimer = ScheduledTask.AddInterval(0.5, "RaceGameAction_PushForward", function()
+    self.pushTimer = ScheduledTask.AddInterval(0.1, "RaceGameAction_PushForward", function()
         actor.Animator:Play("Base Layer.fei", 0, 0)
         -- actor:Jump(false)
         actor:Move(Vector3.new(0, 0, 1), false)

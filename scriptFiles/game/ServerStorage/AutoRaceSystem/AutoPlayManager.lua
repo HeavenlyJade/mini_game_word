@@ -111,7 +111,6 @@ function AutoPlayManager.FindBestAutoPlaySpot(player)
     for _, spot in ipairs(autoPlaySpots) do
         if AutoPlayManager.CanPlayerUseSpot(spot, player) then
             local efficiency = AutoPlayManager.CalculateEfficiency(spot, player)
-            gg.log("挂机点", spot.name, "效率", efficiency,bestEfficiency)
             if efficiency > bestEfficiency then
                 bestEfficiency = efficiency
                 bestSpot = spot

@@ -177,8 +177,9 @@ function PlayerActionHandler:OnNavigateToPosition(data)
     local targetPosition = Vector3.New(positionData.x, positionData.y, positionData.z)
     
     -- 执行导航
-    -- actor:NavigateTo(targetPosition)
     actor:MoveTo(targetPosition)
+
+    actor:NavigateTo(targetPosition)
     
     gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition),actor.uin)
 
