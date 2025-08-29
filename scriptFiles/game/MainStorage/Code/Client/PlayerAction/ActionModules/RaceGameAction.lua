@@ -3,6 +3,8 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+local NodeConf = require(MainStorage.Code.Common.Icon.NodeConf) ---@type NodeConf
+
 local WorldService = game:GetService("WorldService")
 ---@class RaceGameAction : Class
 -- 飞车挑战赛的行为模块，负责处理该模式下客户端的所有特殊逻辑
@@ -47,21 +49,19 @@ function RaceGameAction:OnStart(data)
     self.originalJumpSpeed = actor.JumpBaseSpeed
     self.originalMoveSpeed = actor.Movespeed
     self.originalGravity = actor.Gravity -- 新增：保存原始重力
-    
+
     -- 【新增】禁用玩家WASD移动控制
 
     actor.Gravity =0  -- 应用新的重力值
 
     actor.Movespeed = moveSpeed
     actor.LocalEuler = Vector3.new(0, 180, 0)
-    -- actor:Jump(true)
+    actor.MoveGroup.WalkBehavior.AnimatorStateName = NodeConf["动画名称"]["Fly"]
 
     -- 4. 启动"持续前推"定时器，实现向前滑行效果
     self.pushTimer = ScheduledTask.AddInterval(0.1, "RaceGameAction_PushForward", function()
-        actor.Animator:Play("Base Layer.fei", 0, 0)
         -- actor:Jump(false)
         actor:Move(Vector3.new(0, 0, 1), false)
-
 
     end)
 
@@ -71,7 +71,7 @@ function RaceGameAction:OnStart(data)
     self.recoveryTimer = ScheduledTask.AddDelay(recoveryDelay, "RaceGameAction_Recovery", function()
         self:OnEnd()
     end)
-    
+
 
 end
 
@@ -91,12 +91,12 @@ function RaceGameAction:OnEnd()
     if actor then
         actor:Jump(false)
         actor:StopMove()
-        actor.Animator:Play("Base Layer.Idle", 0, 0)
 
         -- 恢复属性
         actor.JumpBaseSpeed = self.originalJumpSpeed
         actor.Movespeed = 800
         actor.Gravity = 980
+        actor.MoveGroup.WalkBehavior.AnimatorStateName = NodeConf["动画名称"]["Walk"]
 
         -- 恢复玩家WASD移动控制
         local Controller = require(MainStorage.Code.Client.MController) ---@type Controller

@@ -40,15 +40,6 @@ function PlayerActionHandler:ListenToPlayerEvents()
     --         self.activeModule:OnMoveStateChange(before, after)
     --     end
     -- end)
-
-    -- 新增：监听飞行状态变化，并转发给当前模块
-    -- actor.Flying:Connect(function(isFlying)
-    --     -- EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION
-    --     if isFlying and self.gameMode == EventPlayerConfig.PLAYER_ACTION.PLAYER_ANIMATION then
-    --         actor.Animator:Play("Base Layer.fei", 0, 0)
-    --     end
-        
-    -- end)
 end
 
 --- 当具体的行为模块完成其生命周期后，会调用此函数
@@ -70,7 +61,7 @@ function PlayerActionHandler:SubscribeServerEvents()
         -- 将事件分发到独立的方法中处理
         self:OnReceiveLaunchCommand(data)
     end)
-    
+
     -- 订阅导航事件
     ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.NAVIGATE_TO_POSITION, function(data)
         self:OnNavigateToPosition(data)
@@ -81,7 +72,7 @@ function PlayerActionHandler:SubscribeServerEvents()
         self:OnStopNavigation(data)
     end)
 
-    
+
 
     -- 新增：比赛界面隐藏事件强制结束当前行为模块
     ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_CONTEST_HIDE, function(_)
@@ -122,7 +113,7 @@ function PlayerActionHandler:OnReceiveLaunchCommand(data)
     if self.activeModule.OnStart then
         self.activeModule:OnStart(data)
     end
-    
+
     -- 4. 检查是否需要根据飞行状态执行动画
     self:CheckAndExecuteFlyingAnimation(data)
 end
@@ -134,20 +125,20 @@ function PlayerActionHandler:CheckAndExecuteFlyingAnimation(data)
     if not actor then
         return
     end
-    
+
     -- 检查是否为动画控制模式
     if data.gameMode ~= "PLAYER_ANIMATION" then
         return
     end
-    
+
     -- 检查是否为挂机场景或飞行比赛场景
     local isIdleScene = data.isIdleScene == true
     local isRaceScene = data.sceneType == "飞行比赛场景"
     local operationType = data.operationType
-    
+
     -- 获取当前飞行状态
     local isFlying = actor.Flying.Value
-    
+
     -- --gg.log("PlayerActionHandler: 检查飞行动画执行条件", {
     --     isIdleScene = isIdleScene,
     --     isRaceScene = isRaceScene,
@@ -169,18 +160,18 @@ function PlayerActionHandler:OnNavigateToPosition(data)
         --gg.log("PlayerActionHandler: 导航请求缺少位置信息")
         return
     end
-    
+
     local actor = gg.getClientLocalPlayer()
     self:OnStopNavigation(data)
     -- 从表中重建 Vector3
     local positionData = data.position
     local targetPosition = Vector3.New(positionData.x, positionData.y, positionData.z)
-    
+
     -- 执行导航
     actor:MoveTo(targetPosition)
 
     actor:NavigateTo(targetPosition)
-    
+
     gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition),actor.uin)
 
 end
@@ -192,7 +183,7 @@ function PlayerActionHandler:OnStopNavigation(data)
     if not actor then
         return
     end
-    
+
     -- 停止当前导航
     actor:StopNavigate()
     actor:StopMove()
@@ -206,16 +197,16 @@ function PlayerActionHandler:NavigateToPosition(targetPosition, message)
         --gg.log("PlayerActionHandler: 导航目标位置为空")
         return
     end
-    
+
     local actor = gg.getClientLocalPlayer()
     if not actor then
         --gg.log("PlayerActionHandler: 无法获取本地玩家Actor")
         return
     end
-    
+
     -- 直接执行导航
     actor:NavigateTo(targetPosition)
-    
+
     if message then
         --gg.log("PlayerActionHandler: " .. message)
     else

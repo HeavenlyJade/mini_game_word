@@ -245,7 +245,7 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
         distanceConfig = rewardNode["生成的距离配置"] or 0, -- 距离配置
         timestamp = os.time()                       -- 时间戳
     }
-    
+
     --gg.log("messageData",messageData)
 
     -- 发送消息到服务端（这里使用网络通道发送）
@@ -320,7 +320,7 @@ end
 
 
 --- 播放触发音效
----@param triggerBox TriggerBox 触发器节点  
+---@param triggerBox TriggerBox 触发器节点
 function LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
     if not triggerBox then
         return
@@ -340,13 +340,13 @@ function LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
     local soundData = {
         soundAssetId = triggerSound,
         volume = 0.8,
-        pitch = 1.0,    
-        mindistance =300,
-        maxdistance =1000,
-        range = 800,
+        pitch = 1.0,
+        mindistance =400,
+        maxdistance =5000,
+        range = 1000,
         position = {
             triggerBox.Parent.Position.X,
-            triggerBox.Parent.Position.Y, 
+            triggerBox.Parent.Position.Y,
             triggerBox.Parent.Position.Z
         },
         transObject = triggerBox.Parent
