@@ -188,7 +188,6 @@ function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor,player)
         "Pet1", "Pet2", "Pet3", "Pet4", "Pet5", "Pet6",
         "Partner1", "Partner2",
         "Wings1",
-        "尾迹"
     }
 
     for _, objectName in ipairs(decorativeObjectNames) do
@@ -196,6 +195,7 @@ function MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor,player)
         if decorativeNode then
             -- 确保同步设置正确
             decorativeNode.IgnoreStreamSync = true
+            decorativeNode.CollideGroupID = 5
         end
     end
 

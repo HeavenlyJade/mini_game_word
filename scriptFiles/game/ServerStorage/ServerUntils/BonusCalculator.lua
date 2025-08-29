@@ -215,7 +215,7 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
         local actionType = bonusItem["作用类型"]
         local scalingRate = bonusItem["缩放倍率"] or 0
         local effectFieldName = bonusItem["玩家效果字段"] -- 新增：获取玩家效果字段
-        ----gg.log(string.format("[111111BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s, 作用类型: %s, 缩放倍率: %s", bonusStatName, actionType, scalingRate))
+        gg.log(string.format("[111111BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s, 作用类型: %s, 缩放倍率: %s", bonusStatName, actionType, scalingRate))
         if bonusStatName and actionType then
             local bonusValue = 0
             
@@ -257,8 +257,8 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
             local otherStatValue, otherDescriptions = BonusCalculator.GetOtherStatBonuses(player, bonusStatName, otherBonuses, playerStatValue)
             bonusValue = bonusValue + otherStatValue
             
-            ----gg.log(string.format("[BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s 从其他加成读取到值: %s, 描述: %s", 
-                --bonusStatName, tostring(otherStatValue), tostring(otherDescriptions)))
+            gg.log(string.format("[BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s 从其他加成读取到值: %s, 描述: %s", 
+                bonusStatName, tostring(otherStatValue), tostring(otherDescriptions)))
             
             -- 合并描述信息
             for _, desc in ipairs(otherDescriptions) do

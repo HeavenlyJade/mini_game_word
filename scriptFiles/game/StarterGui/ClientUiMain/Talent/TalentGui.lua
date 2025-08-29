@@ -123,19 +123,19 @@ end
 function TalentGui:OnClickUpgradeTalent(talentType, currentLevel)
     -- 获取服务端同步的真实等级
     local realCurrentLevel = self.serverTalentData[talentType.name] or 0
-    --gg.log("点击升级天赋：", talentType.name, "真实等级：", realCurrentLevel)
+gg.log("点击升级天赋：", talentType.name, "真实等级：", realCurrentLevel)
     if realCurrentLevel >= talentType:GetMaxLevel() then
-        --gg.log("天赋已达最大等级")
+        gg.log("天赋已达最大等级")
         return
     end
     local costs = talentType:GetUpgradeCosts(realCurrentLevel)
-    --gg.log("升级消耗", costs)
+    gg.log("升级消耗", costs)
     for _, cost in ipairs(costs) do
         local item = cost.item
         local amount = cost.amount or 0
         local have = self.currencyMap[item] or 0
         if have < amount then
-            --gg.log("材料不足：", item, "需要：", amount, "拥有：", have)
+            gg.log("材料不足：", item, "需要：", amount, "拥有：", have)
             return
         end
     end
@@ -150,7 +150,7 @@ function TalentGui:SendUpgradeTalentRequest(talentId)
         cmd = AchievementEventConfig.REQUEST.UPGRADE_TALENT,
         args = { talentId = talentId }
     }
-    --gg.log("发送天赋升级请求:", talentId)
+    gg.log("发送天赋升级请求:", talentId)
     gg.network_channel:FireServer(requestData)
 end
 

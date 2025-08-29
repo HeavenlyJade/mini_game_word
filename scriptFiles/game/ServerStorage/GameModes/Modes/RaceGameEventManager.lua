@@ -110,6 +110,7 @@ function RaceGameEventManager.HandleLevelRewardNodeTriggered(evt)
 
     local currentMode = GameModeManager.activeModes[instanceId] ---@type RaceGameMode
     -- 委托给比赛模式处理
+    
     currentMode:HandleLevelRewardTrigger(player, evt)
 end
 
