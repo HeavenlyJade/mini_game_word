@@ -168,7 +168,6 @@ function RaceGameMode:HandleLevelRewardTrigger(triggerPlayer, evt)
         return
     end
     
-    -- 【修复】只给触发者发放奖励
     local success = self:DistributeLevelReward(triggerPlayer, rewardNode, uniqueId)
     if success then
         if not self.levelRewardsGiven[uin] then
@@ -255,8 +254,8 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
     
     -- 记录加成计算日志
     if finalItemCount ~= itemCount then
-        -- gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d", 
-        --     player.name or player.uin, itemType, itemCount, finalItemCount))
+        gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d", 
+            player.name or player.uin, itemType, itemCount, finalItemCount))
     end
     
     -- 使用现有的奖励发放系统，发放加成后的奖励

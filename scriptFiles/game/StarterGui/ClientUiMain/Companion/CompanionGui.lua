@@ -192,7 +192,7 @@ function CompanionGui:RequestCompanionData()
         args = {}
     }
     ----gg.log("请求伙伴数据同步")
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 处理伙伴列表响应
@@ -399,7 +399,7 @@ function CompanionGui:OnClickSynthesis()
         cmd = PartnerEventConfig.REQUEST.UPGRADE_ALL_PARTNERS,
         args = {}
     }
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】装备最佳按钮点击
@@ -415,7 +415,7 @@ function CompanionGui:OnClickUltimateEquip()
     }
     
     ----gg.log("发送自动装备所有最优伙伴请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
     
     -- 按钮变灰并禁用触摸，等待服务端响应
     if self.UltimateEqu then
@@ -465,7 +465,7 @@ function CompanionGui:SendUpgradeStarRequest(slotIndex)
         args = { slotIndex = slotIndex }  -- 修改：统一使用 slotIndex
     }
     ----gg.log("发送伙伴升星请求:", slotIndex)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【重构】发送装备/卸下请求
@@ -478,7 +478,7 @@ function CompanionGui:SendEquipCompanionRequest(companionSlotId, equipSlotId)
         }
     }
     ----gg.log("发送装备伙伴请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 function CompanionGui:SendUnequipCompanionRequest(equipSlotId)
@@ -489,7 +489,7 @@ function CompanionGui:SendUnequipCompanionRequest(equipSlotId)
         }
     }
     ----gg.log("发送卸下伙伴请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】发送删除伙伴请求
@@ -499,7 +499,7 @@ function CompanionGui:SendDeleteCompanionRequest(slotIndex)
         args = { slotIndex = slotIndex }
     }
     ----gg.log("发送删除伙伴请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】发送切换锁定状态请求
@@ -509,7 +509,7 @@ function CompanionGui:SendToggleLockRequest(slotIndex)
         args = { slotIndex = slotIndex }
     }
     ----gg.log("发送切换锁定状态请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 

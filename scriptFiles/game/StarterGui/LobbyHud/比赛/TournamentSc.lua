@@ -197,7 +197,7 @@ function TournamentSc:OnClickLeaveRace()
 	----gg.log("点击离开比赛按钮")
 	-- 发送“玩家落地/结束比赛”事件到服务端，由 RaceGameEventManager 转发给 RaceGameMode
 	if gg and gg.network_channel then
-		gg.network_channel:fireServer({
+		gg.network_channel:FireServer({
 			cmd = EventPlayerConfig.REQUEST.PLAYER_LANDED,
 			isLanded = true,
 			finalState = "ManualExit"
@@ -223,7 +223,7 @@ function TournamentSc:OnClickLeaveAfk()
 	----gg.log("点击离开挂机按钮")
 	-- 发送网络请求，通知服务端玩家想离开挂机状态
 	if gg and gg.network_channel then
-		gg.network_channel:fireServer({
+		gg.network_channel:FireServer({
 			cmd = EventPlayerConfig.REQUEST.REQUEST_LEAVE_IDLE
 		})
 	end

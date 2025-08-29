@@ -51,6 +51,22 @@ function ClientMain.start_client()
     require(MainStorage.Code.Client.Graphic.DamagePool)
     require(MainStorage.Code.Client.Graphic.WorldTextAnim)
     require(MainStorage.Code.Client.Graphic.SoundPool) -- 加载音效池管理
+    -- 导入并初始化赛道系统
+    local RaceTrack = require(MainStorage.Code.Client.SceneNode.RaceTrack) ---@type RaceTrack
+    RaceTrack.InitializeRaceTrack()
+
+    -- 导入并初始化挂机区域节点配置
+    local InitAutoSpotNodes = require(MainStorage.Code.Client.SceneNode.InitAutoSpotNodes) ---@type InitAutoSpotNodes
+    InitAutoSpotNodes.InitializeAllAutoSpotNodes()
+
+    -- 导入并初始化地图背景音乐
+    local MapBackgroundMusic = require(MainStorage.Code.Client.SceneNode.MapBackgroundMusic) ---@type MapBackgroundMusic
+    MapBackgroundMusic.InitializeBackgroundMusic()
+
+    -- 导入并初始化关卡奖励节点器
+    local LevelRewardNodeInitializer = require(MainStorage.Code.Client.SceneNode.LevelRewardNodeInitializer) ---@type LevelRewardNodeInitializer
+    LevelRewardNodeInitializer.InitializeAllLevelRewardNodes()
+
     ClientEventManager.Subscribe("FetchAnimDuration", function (evt)
         local animator = gg.GetChild(game:GetService("WorkSpace"), evt.path) ---@cast animator Animator
         if animator then

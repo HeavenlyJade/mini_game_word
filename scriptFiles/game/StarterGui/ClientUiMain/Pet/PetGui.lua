@@ -190,7 +190,7 @@ function PetGui:RequestPetData()
         args = {}
     }
     ----gg.log("请求宠物数据同步")
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 处理宠物列表响应
@@ -382,7 +382,7 @@ function PetGui:OnClickAutoEquipBestPet()
         }
     }
     
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 卸下按钮点击
@@ -438,7 +438,7 @@ function PetGui:OnClickSynthesis()
         cmd = PetEventConfig.REQUEST.UPGRADE_ALL_PETS,
         args = {}
     }
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 装备最佳按钮点击
@@ -454,7 +454,7 @@ function PetGui:OnClickUltimateEquip()
     }
     
     ----gg.log("发送自动装备所有最优宠物请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
     
     -- 按钮变灰并禁用触摸，等待服务端响应
 
@@ -471,7 +471,7 @@ function PetGui:SendUpgradeStarRequest(slotIndex)
         args = { slotIndex = slotIndex }
     }
     ----gg.log("发送宠物升星请求:", slotIndex)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 发送装备/卸下请求
@@ -484,7 +484,7 @@ function PetGui:SendEquipPetRequest(petSlotId, equipSlotId)
         }
     }
     ----gg.log("发送装备宠物请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 function PetGui:SendUnequipPetRequest(equipSlotId)
@@ -495,7 +495,7 @@ function PetGui:SendUnequipPetRequest(equipSlotId)
         }
     }
     ----gg.log("发送卸下宠物请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】发送删除宠物请求
@@ -505,7 +505,7 @@ function PetGui:SendDeletePetRequest(slotIndex)
         args = { slotIndex = slotIndex }
     }
     ----gg.log("发送删除宠物请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】发送切换锁定状态请求
@@ -515,7 +515,7 @@ function PetGui:SendToggleLockRequest(slotIndex)
         args = { slotIndex = slotIndex }
     }
     ----gg.log("发送切换锁定状态请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 -- =================================

@@ -199,7 +199,7 @@ end
 --- 发送迷你币购买请求
 function PrivilegedVIPGui:SendMiniCoinPurchaseRequest(shopItemId, categoryName)
     gg.log("发送迷你币购买请求, 商品ID: " .. shopItemId .. ", 分类: " .. categoryName)
-    gg.network_channel:fireServer({
+    gg.network_channel:FireServer({
         cmd = ShopEventConfig.REQUEST.PURCHASE_MINI_ITEM,
         args = { shopItemId = shopItemId, categoryName = categoryName }
     })

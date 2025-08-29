@@ -151,7 +151,7 @@ function TalentGui:SendUpgradeTalentRequest(talentId)
         args = { talentId = talentId }
     }
     --gg.log("发送天赋升级请求:", talentId)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 function TalentGui:OnTalentUpgradeResponse(data)
@@ -351,7 +351,7 @@ function TalentGui:RequestTalentData()
         args = {}
     }
     --gg.log("请求天赋数据同步")
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 function TalentGui:OnTalentDataResponse(data)

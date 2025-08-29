@@ -250,7 +250,7 @@ function WaypointGui:OnClickTeleport(tp)
             cost = tp:GetCost(),
         }
     }
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
     -- 可选：立即关闭界面
     self:Close()
 end

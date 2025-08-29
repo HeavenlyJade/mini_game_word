@@ -72,7 +72,7 @@ function Warehouse:RegisterButtonEvents()
 
     -- 重生按钮
     self.rebirthSection.clickCb = function()
-        gg.network_channel:fireServer({
+        gg.network_channel:FireServer({
             cmd = AchievementEventConfig.REQUEST.GET_TALENT_LEVEL,
             args = { talentId = "重生" }
         })

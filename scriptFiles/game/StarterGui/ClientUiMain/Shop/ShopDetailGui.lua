@@ -380,7 +380,7 @@ end
 function ShopDetailGui:SendMiniCoinPurchaseRequest(shopItemId, categoryName)
     local args = { shopItemId = shopItemId, categoryName = categoryName }
     --gg.log("发送迷你币购买请求, 商品ID: " .. shopItemId .. ", 事件: " .. ShopEventConfig.REQUEST.PURCHASE_MINI_ITEM)
-    gg.network_channel:fireServer({
+    gg.network_channel:FireServer({
         cmd = ShopEventConfig.REQUEST.PURCHASE_MINI_ITEM,
         args = args
     })
@@ -389,7 +389,7 @@ end
 -- 【新增】普通货币购买请求
 function ShopDetailGui:SendNormalPurchaseRequest(shopItemId, categoryName, currencyType)
     --gg.log("发送普通货币购买请求, 商品ID: " .. shopItemId .. ", 货币类型: " .. currencyType)
-    gg.network_channel:fireServer({
+    gg.network_channel:FireServer({
         cmd = ShopEventConfig.REQUEST.PURCHASE_ITEM,
         args = { shopItemId = shopItemId, categoryName = categoryName, currencyType = currencyType }
     })

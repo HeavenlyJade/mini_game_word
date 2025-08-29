@@ -152,7 +152,7 @@ function RebirthGui:OnClickRebirthLevel(level)
     ----gg.log(string.format("点击重生等级 %d 按钮", level))
 
     -- 发送执行单次重生的请求
-    gg.network_channel:fireServer({
+    gg.network_channel:FireServer({
         cmd = AchievementEventConfig.REQUEST.PERFORM_REBIRTH,
         args = {
             talentId = TALENT_ID,
@@ -164,7 +164,7 @@ end
 function RebirthGui:OnClickMaxRebirth()
     ----gg.log("点击最大重生按钮")
 
-    gg.network_channel:fireServer({
+    gg.network_channel:FireServer({
         cmd = AchievementEventConfig.REQUEST.PERFORM_MAX_REBIRTH,
         args = {
             talentId = TALENT_ID,

@@ -30,7 +30,7 @@ function AutoRaceManager.StartAutoRaceCheck()
         AutoRaceManager.CheckAllPlayersAutoRace()
     end)
     
-    gg.log("自动比赛检查定时器已启动，每5秒检查一次")
+    gg.log("自动比赛检查定时器已启动，每5秒检查一次11")
 end
 
 -- 检查所有玩家的自动比赛状态

@@ -212,7 +212,6 @@ function MainServer.OnServerNotify(uin_, args)
             })
         end
     end
-
     -- 自动判断：如果玩家有该事件的本地订阅，则作为本地事件发布，否则作为全局事件广播
     if ServerEventManager.HasLocalSubscription(player_, args.cmd) then
         ServerEventManager.PublishToPlayer(player_, args.cmd, args)

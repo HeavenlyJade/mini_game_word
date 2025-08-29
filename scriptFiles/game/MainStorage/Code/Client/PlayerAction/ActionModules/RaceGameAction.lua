@@ -57,8 +57,8 @@ function RaceGameAction:OnStart(data)
     actor.Gravity =0  -- 应用新的重力值
 
     actor.Movespeed = moveSpeed
-    actor.Animator:Play("Base Layer.fei", 0, 0)
     actor.LocalEuler = Vector3.new(0, 180, 0)
+    actor:Jump(true)
 
     -- 4. 启动"持续前推"定时器，实现向前滑行效果
     self.pushTimer = ScheduledTask.AddInterval(0.3, "RaceGameAction_PushForward", function()
@@ -68,8 +68,6 @@ function RaceGameAction:OnStart(data)
         -- 修改：使用 relativeToCamera = false，让移动方向不受摄像机旋转影响
         actor:Move(Vector3.new(0, 0, 1), false)
         actor.LocalEuler = Vector3.new(0, 180, 0)
-
-
 
     end)
 
@@ -137,7 +135,7 @@ function RaceGameAction:OnEnd()
     if gg.network_channel then
         local eventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
         local currentState = actor and actor:GetCurMoveState() or "Unknown"
-        gg.network_channel:fireServer({
+        gg.network_channel:FireServer({
             cmd = eventName,
             isLanded = (currentState ~= Enum.BehaviorState.Fly), -- 是否真的落地
             finalState = tostring(currentState) -- 最终状态

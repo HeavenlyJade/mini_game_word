@@ -194,7 +194,7 @@ function WingGui:RequestWingData()
         args = {}
     }
     --gg.log("请求翅膀数据同步")
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 处理翅膀列表响应
@@ -412,7 +412,7 @@ function WingGui:OnClickSynthesis()
         cmd = WingEventConfig.REQUEST.UPGRADE_ALL_WINGS,
         args = {}
     }
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】装备最佳按钮点击
@@ -428,7 +428,7 @@ function WingGui:OnClickUltimateEquip()
     }
     
     --gg.log("发送自动装备所有最优翅膀请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】删除翅膀按钮点击
@@ -471,7 +471,7 @@ function WingGui:SendUpgradeStarRequest(slotIndex)
         args = { slotIndex = slotIndex }
     }
     --gg.log("发送翅膀升星请求:", slotIndex)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 发送装备/卸下请求
@@ -484,7 +484,7 @@ function WingGui:SendEquipWingRequest(wingSlotId, equipSlotId)
         }
     }
     --gg.log("发送装备翅膀请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 function WingGui:SendUnequipWingRequest(equipSlotId)
@@ -495,7 +495,7 @@ function WingGui:SendUnequipWingRequest(equipSlotId)
         }
     }
     --gg.log("发送卸下翅膀请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】发送删除翅膀请求
@@ -505,7 +505,7 @@ function WingGui:SendDeleteWingRequest(slotIndex)
         args = { slotIndex = slotIndex }
     }
     --gg.log("发送删除翅膀请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 【新增】发送切换锁定状态请求
@@ -515,7 +515,7 @@ function WingGui:SendToggleLockRequest(slotIndex)
         args = { slotIndex = slotIndex }
     }
     --gg.log("发送切换锁定状态请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 -- =================================

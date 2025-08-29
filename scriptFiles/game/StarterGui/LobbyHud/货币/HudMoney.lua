@@ -140,7 +140,6 @@ function HudMoney:OnSyncInventoryItems(data)
     if not items then
         return
     end
-    -- gg.log("物品相关数据",data)
     local currencyType = MConfig.ItemTypeEnum["货币"]
 
     -- 1. 检查更新中是否包含货币数据
@@ -157,7 +156,16 @@ function HudMoney:OnSyncInventoryItems(data)
         return
     end
 
-    -- 2. 将传入的货币列表转换为以名称为键的映射，方便查找
+    -- 2. 初始化缓存
+    if not self.currentCurrencyData then
+        self.currentCurrencyData = {}
+    end
+    
+    if not self.lastMoneyValues then
+        self.lastMoneyValues = {}
+    end
+    
+    -- 3. 将传入的货币列表转换为以名称为键的映射
     local newCurrencyMap = {}
     for _, item in pairs(incomingCurrencyList) do
         if item and item.name then
@@ -165,11 +173,7 @@ function HudMoney:OnSyncInventoryItems(data)
         end
     end
 
-    -- 3. 遍历UI中的所有货币按钮，进行更新
-    if not self.lastMoneyValues then
-        self.lastMoneyValues = {}
-    end
-
+    -- 4. 遍历UI中的所有货币按钮，进行更新
     for i = 1, self.moneyButtonList:GetChildCount() do
         local button = self.moneyButtonList:GetChild(i)
         if button and button.node then
@@ -178,29 +182,30 @@ function HudMoney:OnSyncInventoryItems(data)
                 local currencyItem = newCurrencyMap[currencyName]
                 local textNode = button:Get("Text").node ---@cast textNode UITextLabel
                 
-                local newAmount = 0
+                -- 【关键修复】只对同步包中存在的货币进行处理
                 if currencyItem then
-                    newAmount = math.floor(currencyItem.amount or 0)
+                    local newAmount = math.floor(currencyItem.amount or 0)
+                    local oldAmount = math.floor(self.lastMoneyValues[currencyName] or 0)
+                    local diff = newAmount - oldAmount
+                    
+                    -- 【修复核心】只有当差值大于0时才播放动画
+                    if diff > 0 then
+                        self:ShowMoneyAddAnimation(currencyItem, newAmount, textNode)
+                    end
+                    
+                    -- 更新显示文本
+                    textNode.Title = gg.FormatLargeNumber(newAmount)
+                    
+                    -- 更新用于动画的缓存值
+                    self.lastMoneyValues[currencyName] = newAmount
+                    
+                    -- 更新货币数据缓存
+                    self.currentCurrencyData[currencyName] = currencyItem
                 end
-                
-                local oldAmount = math.floor(self.lastMoneyValues[currencyName] or 0)
-
-                -- 检查是否需要播放增加动画
-                if newAmount > oldAmount and currencyItem then
-                    self:ShowMoneyAddAnimation(currencyItem, newAmount, textNode)
-                end
-
-                -- 更新显示文本
-                textNode.Title = gg.FormatLargeNumber(newAmount)
-                
-                -- 更新用于动画的缓存值
-                self.lastMoneyValues[currencyName] = newAmount
+                -- 【删除】不再处理未在同步包中的货币，避免误触发动画
             end
         end
     end
-    
-    -- 4. 更新数据缓存：用新的货币数据完全替换旧的
-    self.currentCurrencyData = newCurrencyMap
 end
 
 
@@ -307,21 +312,23 @@ function HudMoney:UpdateLastMoneyValues(currencyItems)
     end
 end
 
---- 【新增】接收并处理玩家变量数据同步
+--- 【新增】玩家变量数据同步处理（应用相同的修复逻辑）
 ---@param data table 包含variableData的数据表
 function HudMoney:OnSyncPlayerVariables(data)
-    --gg.log("HudMoney收到玩家变量数据同步:", data)
-
     if not data or not data.variableData then
-        --gg.log("警告：玩家变量数据为空")
         return
+    end
+
+    -- 初始化缓存
+    if not self.playerVariableData then
+        self.playerVariableData = {}
     end
 
     -- 【修复】先检查变化并播放动画，再更新缓存
     for buttonName, variableName in pairs(ButtonTypeConfig.VARIABLE) do
         local variableData = data.variableData[variableName]
         if variableData then
-            -- 【优化】安全地获取变量值，支持多种数据格式
+            -- 获取新值
             local newValue = 0
             if type(variableData) == "table" and variableData.base then
                 newValue = variableData.base
@@ -331,8 +338,9 @@ function HudMoney:OnSyncPlayerVariables(data)
                 newValue = tonumber(variableData) or 0
             end
             
+            -- 获取旧值
             local oldValue = 0
-            local oldVarData = self.playerVariableData and self.playerVariableData[variableName]
+            local oldVarData = self.playerVariableData[variableName]
             if oldVarData then
                 if type(oldVarData) == "table" and oldVarData.base then
                     oldValue = oldVarData.base
@@ -343,8 +351,10 @@ function HudMoney:OnSyncPlayerVariables(data)
                 end
             end
             
-            -- 【关键修复】在更新缓存前先检查动画
-            if newValue > oldValue then
+            local diff = math.floor(newValue) - math.floor(oldValue)
+            
+            -- 【修复核心】只有当差值大于0时才播放动画
+            if diff > 0 then
                 local button = self.moneyButtonList:GetChildByName(buttonName)
                 if button then
                     local textNode = button:Get("Text").node ---@cast textNode UITextLabel
@@ -354,11 +364,6 @@ function HudMoney:OnSyncPlayerVariables(data)
         end
     end
 
-    -- 【修改】使用合并更新而不是完全覆盖
-    if not self.playerVariableData then
-        self.playerVariableData = {}
-    end
-    
     -- 合并新数据到现有缓存中
     for variableName, variableData in pairs(data.variableData) do
         self.playerVariableData[variableName] = variableData

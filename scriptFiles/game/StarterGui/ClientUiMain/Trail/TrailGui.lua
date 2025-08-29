@@ -140,7 +140,7 @@ function TrailGui:RequestTrailData()
         args = {}
     }
     ----gg.log("请求尾迹数据同步")
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 处理尾迹列表响应
@@ -270,7 +270,7 @@ function TrailGui:SendEquipTrailRequest(trailSlotId, equipSlotId)
         }
     }
     ----gg.log("发送装备尾迹请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 function TrailGui:SendUnequipTrailRequest(equipSlotId)
@@ -281,7 +281,7 @@ function TrailGui:SendUnequipTrailRequest(equipSlotId)
         }
     }
     ----gg.log("发送卸下尾迹请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 -- =================================

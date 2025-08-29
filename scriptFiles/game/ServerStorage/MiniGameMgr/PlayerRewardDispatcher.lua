@@ -330,9 +330,9 @@ function PlayerRewardDispatcher.DispatchRewards(player, rewards)
         resultMsg = string.format("奖励发放完成，成功 %d 个，失败 %d 个", successCount, #failedRewards)
     end
     
-    -- --gg.log("奖励发放结果", player.name, resultMsg, 
-    --        "物品:", stats.bag, "宠物:", stats.pet, "伙伴:", stats.partner, 
-    --        "翅膀:", stats.wing, "尾迹:", stats.trail, "指令:", stats.command, "变量:", stats.variable)
+    gg.log("奖励发放结果", player.name, resultMsg, 
+           "物品:", stats.bag, "宠物:", stats.pet, "伙伴:", stats.partner, 
+           "翅膀:", stats.wing, "尾迹:", stats.trail, "指令:", stats.command, "变量:", stats.variable)
     
     return #failedRewards == 0, resultMsg, #failedRewards > 0 and failedRewards or nil
 end

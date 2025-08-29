@@ -78,18 +78,21 @@ end
 --- 【新增】处理关卡奖励节点触发事件
 ---@param evt table 事件数据 { player: MPlayer, uniqueId: string, configName: string, mapName?: string }
 function RaceGameEventManager.HandleLevelRewardNodeTriggered(evt)
-    local player = evt and evt.player
+      local player = evt and evt.player
     local uniqueId = evt and evt.uniqueId
     local configName = evt and evt.configName
     local mapName = evt and evt.mapName
-
+    if evt.playerId ~= player.uin then
+        return
+    end
     if not player or not uniqueId or not configName then
         gg.log("关卡奖励节点触发事件参数不完整")
         return
     end
 
-    -- gg.log(string.format("收到玩家 %s 触发关卡奖励节点 - 配置:%s, ID:%s, 地图:%s",
+    -- gg.log(string.format("收到玩家 %s 触发关卡奖励节点 - 配置:%s, ID:%s, 地图:%s,",
     --     player.name or player.uin, tostring(configName), tostring(uniqueId), mapName or "unknown"))
+    -- gg.log("player",player)
 
     -- 通过 MServerDataManager 获取 GameModeManager 实例
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
@@ -106,11 +109,6 @@ function RaceGameEventManager.HandleLevelRewardNodeTriggered(evt)
     end
 
     local currentMode = GameModeManager.activeModes[instanceId] ---@type RaceGameMode
-    if not currentMode or type(currentMode.HandleLevelRewardTrigger) ~= "function" then
-        gg.log(string.format("玩家 %s 的比赛模式无效或不支持关卡奖励处理", player.name or player.uin))
-        return
-    end
-
     -- 委托给比赛模式处理
     currentMode:HandleLevelRewardTrigger(player, evt)
 end

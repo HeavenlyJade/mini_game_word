@@ -311,7 +311,7 @@ function LotteryGui:RequestLotteryData()
         args = {}
     }
     ----gg.log("请求抽奖数据同步")
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 请求可用抽奖池
@@ -321,7 +321,7 @@ function LotteryGui:RequestAvailablePools()
         args = {}
     }
     ----gg.log("请求可用抽奖池")
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 请求抽奖池统计
@@ -331,7 +331,7 @@ function LotteryGui:RequestPoolStats(poolName)
         args = { poolName = poolName }
     }
     ----gg.log("请求抽奖池统计:", poolName)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 --- 处理抽奖数据响应
@@ -464,7 +464,7 @@ function LotteryGui:SendLotteryRequest(cmd)
         }
     }
     ----gg.log("发送抽奖请求:", requestData.args)
-    gg.network_channel:fireServer(requestData)
+    gg.network_channel:FireServer(requestData)
 end
 
 -- =================================
