@@ -72,7 +72,8 @@ function PartnerMgr.OnPlayerLeave(uin)
 
         -- 清理内存缓存
         PartnerMgr.server_player_partners[uin] = nil
-        --gg.log("玩家伙伴数据已保存并清理", uin)
+        gg.log("玩家伙伴数据已保存并清理", uin)
+        gg.log("玩家伙伴数据", playerPartnerData)
     end
 end
 

@@ -115,17 +115,16 @@ function RewardMgr.OnPlayerLeave(uin)
     if not rewardInstance then
         return
     end
-    
-    ------gg.log(string.format("玩家 %d 离线，保存奖励数据...", uin))
-    
+        
     -- 保存数据到云端
     local saveData = rewardInstance:GetSaveData()
-    RewardCloudDataMgr.SavePlayerRewardData(uin, saveData)
+    RewardCloudDataMgr.SavePlayerRewardData(uin, saveData, true)
     
     -- 清除缓存
     RewardMgr.playerRewards[uin] = nil
     
-    ------gg.log(string.format("玩家 %d 奖励数据已保存", uin))
+    gg.log(string.format("玩家 %d 奖励数据已保存", uin))
+    gg.log("玩家奖励数据", saveData)
 end
 
 -- ==================== 在线时长更新 ====================

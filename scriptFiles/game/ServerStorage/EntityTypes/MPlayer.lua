@@ -229,7 +229,6 @@ function _MPlayer:leaveGame()
     -- 保存各种数据
     if self.variableSystem then
         self.variables = self.variableSystem.variables
-        -- --gg.log("同步VariableSystem数据到variables", self.uin)
     end
     cloudDataMgr.SavePlayerData(self.uin, true)
 

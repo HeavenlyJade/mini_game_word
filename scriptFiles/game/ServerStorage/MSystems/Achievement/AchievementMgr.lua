@@ -40,12 +40,16 @@ end
 function AchievementMgr.OnPlayerLeave(playerId)
 
     -- 保存数据
-    AchievementMgr.SavePlayerAchievements(playerId)
+    local saveData =   AchievementMgr.SavePlayerAchievements(playerId)
 
     -- 清理内存
     AchievementMgr.server_player_achievement_data[playerId] = nil
 
-    --gg.log("玩家离线，清理成就数据:", playerId)
+    gg.log("玩家离线，清理成就数据:", playerId)
+    if saveData then
+        gg.log("玩家成就数据", saveData)
+    end
+
 end
 
 -- 数据保存 --------------------------------------------------------
@@ -55,11 +59,12 @@ end
 function AchievementMgr.SavePlayerAchievements(playerId)
     local playerAchievement = AchievementMgr.server_player_achievement_data[playerId]
     if not playerAchievement then
-        return
+        return nil
     end
 
     local saveData = playerAchievement:GetSaveData()
     AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData)
+    return saveData
 end
 
 -- 天赋操作 --------------------------------------------------------

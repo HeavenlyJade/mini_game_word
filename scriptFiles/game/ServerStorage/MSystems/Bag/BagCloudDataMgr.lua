@@ -47,7 +47,6 @@ function BagCloudDataMgr.ReadPlayerBag(player)
         local bag = Bag.New(player)
 
         if ret2_ and ret2_.items then
-            -- 开发阶段，不进行兼容转换，直接加载
             bag:Load(ret2_)
             --gg.log("从云端加载背包数据成功", ret2_)
         else
@@ -68,7 +67,7 @@ function BagCloudDataMgr.SavePlayerBag(uin, bag, force_)
     if force_ == false then
         local now_ = os.time()
         if now_ - BagCloudDataMgr.last_time_bag < CONST_CLOUD_SAVE_TIME then
-            return
+            return nil
         else
             BagCloudDataMgr.last_time_bag = now_
         end
@@ -85,6 +84,7 @@ function BagCloudDataMgr.SavePlayerBag(uin, bag, force_)
                     --gg.log("背包数据保存失败", uin)
                 end
             end)
+            return bagData
         end
     end
 end

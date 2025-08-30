@@ -200,4 +200,16 @@ function AutoRaceManager.StopAutoRaceForPlayer(player, reason)
 
 end
 
+
+---@param uin number 玩家UIN
+function AutoRaceManager.CleanupPlayerAutoRaceState(uin)
+    if not uin then return end
+    
+    if playerAutoRaceState[uin] then
+        playerAutoRaceState[uin] = nil
+        gg.log("清理玩家自动比赛状态:", uin)
+    end
+end
+
+
 return AutoRaceManager

@@ -294,4 +294,15 @@ function AutoPlayManager.StopAutoPlayForPlayer(player, reason)
     end
 end
 
+---@param uin number 玩家UIN
+function AutoPlayManager.CleanupPlayerAutoPlayState(uin)
+    if not uin then return end
+    
+    if playerAutoPlayState[uin] then
+        playerAutoPlayState[uin] = nil
+        gg.log("清理玩家自动挂机状态:", uin)
+    end
+end
+
+
 return AutoPlayManager

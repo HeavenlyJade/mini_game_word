@@ -77,7 +77,7 @@ function MServerInitPlayer.register_player_in_out()
                 break
             end
         end
-        -- MServerInitPlayer.player_leave_game(player)
+        MServerInitPlayer.player_leave_game(player)
     end)
 end
 
@@ -256,15 +256,18 @@ end
 function MServerInitPlayer.player_leave_game(player)
     gg.log("player_leave_game====", player.UserId, player.Name, player.Nickname)
     local RewardMgr = require(ServerStorage.MSystems.Reward.RewardMgr) ---@type RewardMgr
-
+    local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
+    local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
+    
     local uin_ = player.UserId
     local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer
     if mplayer then
         -- 【新增】清理玩家场景映射
+        AutoPlayManager.CleanupPlayerAutoPlayState(uin_)
+        AutoRaceManager.CleanupPlayerAutoRaceState(uin_)
         gg.player_scene_map[uin_] = nil
 
         BagMgr.OnPlayerLeave(uin_)
-
         MailMgr.OnPlayerLeave(uin_)
         PetMgr.OnPlayerLeave(uin_)
         PartnerMgr.OnPlayerLeave(uin_)
@@ -274,7 +277,6 @@ function MServerInitPlayer.player_leave_game(player)
         RewardMgr.OnPlayerLeave(uin_)
         LotteryMgr.OnPlayerLeave(uin_)
         mplayer:leaveGame()
-
         serverDataMgr.removePlayer(uin_, player.Name)
     end
 end

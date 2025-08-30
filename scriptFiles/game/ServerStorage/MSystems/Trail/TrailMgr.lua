@@ -105,7 +105,8 @@ function TrailMgr.OnPlayerLeave(uin)
 
         -- 清理内存缓存
         TrailMgr.server_player_trails[uin] = nil
-        --gg.log("玩家尾迹数据已保存并清理", uin)
+        gg.log("玩家尾迹数据已保存并清理", uin)
+        gg.log("玩家尾迹数据", playerTrailData) 
     end
 end
 

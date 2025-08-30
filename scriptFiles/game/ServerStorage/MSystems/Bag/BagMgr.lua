@@ -86,11 +86,56 @@ function BagMgr.OnPlayerLeave(uin)
     local bag = BagMgr.server_player_bag_data[uin]
     if bag then
         -- 玩家离线时强制保存数据
-        BagCloudDataMgr.SavePlayerBag(uin, bag, true)
+
+       local bagData = BagCloudDataMgr.SavePlayerBag(uin, bag, true)
+       if bagData then
+            BagMgr.printBagData(uin, bagData)
+       end
         -- 清理内存
         BagMgr.server_player_bag_data[uin] = nil
         BagMgr.need_sync_bag[bag] = nil
     end
+end
+
+---打印玩家背包数据详情
+---@param uin number 玩家ID
+---@param bagData table 背包数据
+function BagMgr.printBagData(uin, bagData)
+    if not bagData or not bagData.items then
+        gg.log("玩家", uin, "背包数据为空或格式异常")
+        return
+    end
+    
+    gg.log("========== 玩家离线背包数据 ==========")
+    gg.log("玩家UIN:", uin)
+    
+    -- 统计各类别物品数量
+    local totalItems = 0
+    for category, itemList in pairs(bagData.items) do
+        if itemList and #itemList > 0 then
+            gg.log("类别", category, "物品数量:", #itemList)
+            
+            -- 打印每个物品的详细信息
+            for i, itemData in ipairs(itemList) do
+                if itemData then
+                    local itemInfo = string.format(
+                        "  [%d] %s x%d (强化:%d) 位置:c%d-s%d", 
+                        i,
+                        itemData.name or "未知物品",
+                        itemData.amount or 0,
+                        itemData.enhanceLevel or 0,
+                        itemData.bagPos and itemData.bagPos.c or 0,
+                        itemData.bagPos and itemData.bagPos.s or 0
+                    )
+                    gg.log(itemInfo)
+                    totalItems = totalItems + (itemData.amount or 0)
+                end
+            end
+        end
+    end
+    
+    gg.log("背包物品总数:", totalItems)
+    gg.log("=====================================")
 end
 
 ---玩家上线处理

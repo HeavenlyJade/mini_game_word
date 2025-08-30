@@ -58,7 +58,8 @@ function PetMgr.OnPlayerLeave(uin)
 
         -- 清理内存缓存
         PetMgr.server_player_pets[uin] = nil
-        --gg.log("玩家宠物数据已保存并清理", uin)
+        gg.log("玩家宠物数据已保存并清理", uin)
+        gg.log("玩家宠物数据", playerPetData)
     end
 end
 

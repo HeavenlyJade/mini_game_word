@@ -96,7 +96,8 @@ function WingMgr.OnPlayerLeave(uin)
 
         -- 清理内存缓存
         WingMgr.server_player_wings[uin] = nil
-        --gg.log("玩家翅膀数据已保存并清理", uin)
+        gg.log("玩家翅膀数据已保存并清理", uin)
+        gg.log("玩家翅膀数据", playerWingData)
     end
 end
 
