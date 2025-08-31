@@ -6,12 +6,16 @@ local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventMana
 ---@class SoundPool 音效池管理类
 local SoundPool = {}
 
--- 私有属性
+-- 私有属性 - 原有功能
 local _soundNodePoolReady = {} -- 可用音效节点池
 local _lastPlayTimes = {} -- 记录每个声音的最后播放时间，防止0.1秒内重复播放
 local _keyedSounds = {} -- 有键值的音效节点（如背景音乐）
 local _soundPoolContainer = nil -- 音效池容器节点
 local _isInitialized = false -- 是否已初始化
+
+-- 私有属性 - 背景音乐播放器
+local _backgroundMusicStack = {} -- 背景音乐优先级栈
+local _currentBackgroundMusic = nil -- 当前播放的背景音乐节点
 
 -- 常量配置
 local POOL_SIZE = 50 -- 音效池大小
@@ -20,11 +24,11 @@ local DEFAULT_VOLUME = 1.0
 local DEFAULT_PITCH = 1.0
 local DEFAULT_RANGE = 6000
 
----初始化音效池
+---初始化音效池（修改背景音乐事件订阅）
 ---@param poolSize number|nil 音效池大小，默认50个
 function SoundPool.Init(poolSize)
     if _isInitialized then
-        print("[SoundPool] Warning: Already initialized")
+        gg.log("[SoundPool] Warning: Already initialized")
         return
     end
     
@@ -43,20 +47,28 @@ function SoundPool.Init(poolSize)
     
     -- 订阅音效播放事件
     ClientEventManager.Subscribe("PlaySound", function(data)
-
         SoundPool.PlaySound(data)
     end)
     
+    -- 【修改】订阅背景音乐播放事件
+    ClientEventManager.Subscribe("PlayBackgroundMusic", function(data)
+        SoundPool.PlayBackgroundMusic(data.soundAssetId, data.musicKey, data.volume)
+    end)
+    
+    -- 【修改】订阅背景音乐停止事件
+    ClientEventManager.Subscribe("StopBackgroundMusic", function(data)
+        SoundPool.StopBackgroundMusic(data.musicKey)
+    end)
+    
     _isInitialized = true
-    print("[SoundPool] Initialized with " .. poolSize .. " sound nodes")
+    gg.log("[SoundPool] 音效池初始化完成，包含 " .. poolSize .. " 个音效节点")
 end
 
----播放音效
----播放音效（修复版本）
+---播放音效（原有功能）
 ---@param data table 音效数据 {soundAssetId: string, key: string|nil, volume: number|nil, pitch: number|nil, range: number|nil, boundTo: string|nil, position: table|nil}
 function SoundPool.PlaySound(data)
     if not _isInitialized then
-        print("[SoundPool] 错误：未初始化，请先调用SoundPool.Init()")
+        gg.log("[SoundPool] 错误：未初始化，请先调用SoundPool.Init()")
         return
     end
     
@@ -88,7 +100,6 @@ function SoundPool.PlaySound(data)
     -- 播放音效
     soundNode:PlaySound()
 
-
     -- 回收普通音效节点到池中
     if not data.key then
         SoundPool._RecycleSoundNode(soundNode)
@@ -97,6 +108,227 @@ function SoundPool.PlaySound(data)
     -- 更新最后播放时间
     _lastPlayTimes[sound] = gg.GetTimeStamp()
 end
+
+-- ========== 背景音乐播放器功能（栈模式） ==========
+
+---播放背景音乐（入栈）
+---@param soundAssetId string 音效资源ID
+---@param musicKey string 音乐标识键
+---@param volume number|nil 音量，默认0.5
+function SoundPool.PlayBackgroundMusic(soundAssetId, musicKey, volume)
+    if not _isInitialized then
+        gg.log("[SoundPool] 错误：未初始化")
+        return
+    end
+    
+    if not soundAssetId or soundAssetId == "" then
+        gg.log("[SoundPool] 错误：背景音乐资源ID为空")
+        return
+    end
+    
+    if not musicKey or musicKey == "" then
+        gg.log("[SoundPool] 错误：音乐键值为空")
+        return
+    end
+    
+    volume = volume or 0.5
+    
+    -- 将新音乐推入栈顶
+    SoundPool._PushBackgroundMusic(soundAssetId, musicKey, volume)
+    
+    -- 播放栈顶音乐
+    SoundPool._PlayTopMusic()
+    
+    gg.log("[SoundPool] 背景音乐入栈：" .. soundAssetId .. " 键值：" .. musicKey)
+end
+
+---停止背景音乐（出栈）
+---@param musicKey string 音乐标识键
+function SoundPool.StopBackgroundMusic(musicKey)
+    if not _isInitialized then
+        return
+    end
+    
+    if not musicKey or musicKey == "" then
+        gg.log("[SoundPool] 错误：音乐键值为空")
+        return
+    end
+    
+    -- 从栈中移除指定键值的音乐
+    local removed = SoundPool._RemoveFromMusicStack(musicKey)
+    
+    if removed then
+        -- 播放新的栈顶音乐
+        SoundPool._PlayTopMusic()
+        gg.log("[SoundPool] 背景音乐出栈：" .. musicKey)
+    else
+        gg.log("[SoundPool] 未找到要停止的音乐：" .. musicKey)
+    end
+end
+
+---停止所有背景音乐（修正版）
+function SoundPool.StopAllBackgroundMusic()
+    if not _isInitialized then
+        return
+    end
+    
+    -- 停止并销毁栈中所有音乐节点
+    for _, musicInfo in ipairs(_backgroundMusicStack) do
+        if musicInfo.musicNode then
+            musicInfo.musicNode:StopSound()
+            musicInfo.musicNode:Destroy()
+        end
+    end
+    
+    -- 清空当前播放引用和音乐栈
+    _currentBackgroundMusic = nil
+    _backgroundMusicStack = {}
+    
+    gg.log("[SoundPool] 所有背景音乐已停止，栈已清空")
+end
+
+---获取背景音乐栈状态
+---@return table 状态信息
+function SoundPool.GetBackgroundMusicStatus()
+    local currentMusic = nil
+    local topMusic = _backgroundMusicStack[#_backgroundMusicStack]
+    
+    if _currentBackgroundMusic and topMusic then
+        currentMusic = {
+            soundAssetId = topMusic.soundAssetId,
+            musicKey = topMusic.musicKey,
+            volume = topMusic.volume,
+            isPlaying = true
+        }
+    end
+    
+    return {
+        isPlaying = _currentBackgroundMusic ~= nil,
+        currentMusic = currentMusic,
+        stackSize = #_backgroundMusicStack,
+        stack = _backgroundMusicStack
+    }
+end
+
+-- ========== 背景音乐播放器私有方法（栈模式） ==========
+
+---将背景音乐推入栈顶
+---@param soundAssetId string 音效资源ID
+---@param musicKey string 音乐标识键
+---@param volume number 音量
+function SoundPool._PushBackgroundMusic(soundAssetId, musicKey, volume)
+    gg.log("[SoundPool] 准备将音乐推入栈：" .. soundAssetId .. " 键值：" .. musicKey)
+    
+    -- 先移除栈中已存在的相同键值音乐（避免重复）
+    SoundPool._RemoveFromMusicStack(musicKey)
+    
+    -- 【关键修正】如果当前有播放的音乐，暂停它而不是销毁
+    gg.log("当前播放的音乐", _currentBackgroundMusic)
+    gg.log("_backgroundMusicStack",_backgroundMusicStack)
+    if _currentBackgroundMusic then
+        gg.log("[SoundPool] 暂停当前播放音乐：" .. (_currentBackgroundMusic.SoundPath or "未知"))
+        _currentBackgroundMusic:StopSound() -- 暂停而不是停止
+    end
+    
+    -- 创建新的音乐节点
+    local newMusicNode = SandboxNode.new("Sound", game.Players.LocalPlayer.Character) ---@type Sound
+    newMusicNode.Name = "BackgroundMusic_" .. musicKey
+    newMusicNode.SoundPath = soundAssetId
+    newMusicNode.Volume = volume
+    newMusicNode.IsLoop = true
+    
+    -- 将新音乐信息推入栈顶
+    table.insert(_backgroundMusicStack, {
+        soundAssetId = soundAssetId,
+        musicKey = musicKey,
+        volume = volume,
+        musicNode = newMusicNode, -- 【关键】保存音乐节点引用
+        addTime = gg.GetTimeStamp()
+    })
+    
+    gg.log("[SoundPool] 音乐入栈，当前栈大小：" .. #_backgroundMusicStack)
+    SoundPool._logMusicStack()
+end
+
+---从音乐栈中移除指定键值的音乐
+---@param musicKey string 音乐标识键
+---@return boolean 是否成功移除
+function SoundPool._RemoveFromMusicStack(musicKey)
+    for i = #_backgroundMusicStack, 1, -1 do
+        if _backgroundMusicStack[i].musicKey == musicKey then
+            local removedMusic = table.remove(_backgroundMusicStack, i)
+            
+            -- 【关键修正】销毁被移除的音乐节点
+            if removedMusic.musicNode then
+                removedMusic.musicNode:StopSound()
+                removedMusic.musicNode:Destroy()
+            end
+            
+            gg.log("[SoundPool] 从栈中移除音乐：" .. removedMusic.soundAssetId .. " 键值：" .. musicKey)
+            SoundPool._logMusicStack()
+            return true
+        end
+    end
+    return false
+end
+
+---播放栈顶音乐
+function SoundPool._PlayTopMusic()
+    -- 先停止当前播放的音乐
+    if _currentBackgroundMusic then
+        gg.log("[SoundPool] 停止当前播放音乐：" .. (_currentBackgroundMusic.SoundPath or "未知"))
+        _currentBackgroundMusic:StopSound()
+        _currentBackgroundMusic:Destroy()
+        _currentBackgroundMusic = nil
+    end
+    
+    -- 获取栈顶音乐
+    local topMusic = _backgroundMusicStack[#_backgroundMusicStack]
+    
+    if not topMusic then
+        gg.log("[SoundPool] 音乐栈为空，无音乐播放")
+        return
+    end
+    
+    -- 创建新的背景音乐节点
+    _currentBackgroundMusic = SandboxNode.new("Sound", game.Players.LocalPlayer.Character) ---@type Sound
+    _currentBackgroundMusic.Name = "BackgroundMusic_" .. topMusic.musicKey
+    _currentBackgroundMusic.SoundPath = topMusic.soundAssetId
+    _currentBackgroundMusic.Volume = topMusic.volume
+    _currentBackgroundMusic.IsLoop = true
+    
+    -- 播放栈顶音乐
+    _currentBackgroundMusic:PlaySound()
+    
+    gg.log("[SoundPool] 播放栈顶音乐：" .. topMusic.soundAssetId .. " 键值：" .. topMusic.musicKey)
+end
+
+---打印当前音乐栈状态（调试用）
+function SoundPool._logMusicStack()
+    if #_backgroundMusicStack == 0 then
+        gg.log("[SoundPool] 音乐栈：空")
+        return
+    end
+    
+    gg.log("[SoundPool] 音乐栈状态（从栈底到栈顶）：")
+    for i, music in ipairs(_backgroundMusicStack) do
+        local status = ""
+        if i == #_backgroundMusicStack then
+            status = " <- 栈顶(播放中)"
+        else
+            status = " (暂停)"
+        end
+        
+        local nodeStatus = music.musicNode and "存在" or "已销毁"
+        gg.log("  " .. i .. ". [" .. music.musicKey .. "] " .. music.soundAssetId .. status .. " 节点:" .. nodeStatus)
+    end
+    
+    -- 显示当前播放状态
+    local currentStatus = _currentBackgroundMusic and "播放中" or "无"
+    gg.log("[SoundPool] 当前播放状态：" .. currentStatus)
+end
+-- ========== 原有功能方法 ==========
+
 ---激活音效节点（简化接口）
 ---@param soundAssetID string 音效资源ID
 ---@param parent string|nil 父对象路径
@@ -146,6 +378,9 @@ function SoundPool.Cleanup()
         return
     end
     
+    -- 停止所有背景音乐（使用修正版方法）
+    SoundPool.StopAllBackgroundMusic()
+    
     -- 停止所有有键值的音效
     SoundPool.StopAllKeyedSounds()
     
@@ -160,21 +395,73 @@ function SoundPool.Cleanup()
     _lastPlayTimes = {}
     _isInitialized = false
     
-    print("[SoundPool] Cleanup completed")
+    gg.log("[SoundPool] 清理完成")
 end
 
 ---获取音效池状态信息
 ---@return table 状态信息
 function SoundPool.GetStatus()
+    local bgmStatus = SoundPool.GetBackgroundMusicStatus()
     return {
         isInitialized = _isInitialized,
         poolSize = #_soundNodePoolReady,
         keyedSoundsCount = SoundPool._GetTableLength(_keyedSounds),
-        lastPlayTimesCount = SoundPool._GetTableLength(_lastPlayTimes)
+        lastPlayTimesCount = SoundPool._GetTableLength(_lastPlayTimes),
+        backgroundMusic = bgmStatus
     }
 end
 
--- 私有方法
+-- ========== 便捷接口方法 ==========
+
+---播放地图背景音乐
+---@param soundAssetId string 音效资源ID
+---@param volume number|nil 音量，默认0.5
+function SoundPool.PlayMapMusic(soundAssetId, volume)
+    SoundPool.PlayBackgroundMusic(soundAssetId, "MapMusic", volume)
+end
+
+---播放场景背景音乐
+---@param soundAssetId string 音效资源ID
+---@param volume number|nil 音量，默认0.5
+function SoundPool.PlaySceneMusic(soundAssetId, volume)
+    SoundPool.PlayBackgroundMusic(soundAssetId, "SceneMusic", volume)
+end
+
+---播放UI背景音乐
+---@param soundAssetId string 音效资源ID
+---@param volume number|nil 音量，默认0.5
+function SoundPool.PlayUIMusic(soundAssetId, volume)
+    SoundPool.PlayBackgroundMusic(soundAssetId, "UIMusic", volume)
+end
+
+---播放事件背景音乐
+---@param soundAssetId string 音效资源ID
+---@param volume number|nil 音量，默认0.5
+function SoundPool.PlayEventMusic(soundAssetId, volume)
+    SoundPool.PlayBackgroundMusic(soundAssetId, "EventMusic", volume)
+end
+
+---停止地图音乐
+function SoundPool.StopMapMusic()
+    SoundPool.StopBackgroundMusic("MapMusic")
+end
+
+---停止场景音乐
+function SoundPool.StopSceneMusic()
+    SoundPool.StopBackgroundMusic("SceneMusic")
+end
+
+---停止UI音乐
+function SoundPool.StopUIMusic()
+    SoundPool.StopBackgroundMusic("UIMusic")
+end
+
+---停止事件音乐
+function SoundPool.StopEventMusic()
+    SoundPool.StopBackgroundMusic("EventMusic")
+end
+
+-- ========== 原有私有方法 ==========
 
 ---处理随机音效
 ---@param sound string 原始音效路径
@@ -242,7 +529,7 @@ end
 function SoundPool._GetPooledSoundNode()
     local soundNode = _soundNodePoolReady[1]
     if soundNode == nil then
-        print("[SoundPool] Warning: No available sound nodes")
+        gg.log("[SoundPool] 警告：没有可用的音效节点")
         return nil
     end
     return soundNode
@@ -253,8 +540,6 @@ end
 ---@param sound string 音效路径
 ---@param data table 音效数据
 function SoundPool._ConfigureSoundNode(soundNode, sound, data)
-    --gg.log("[SoundPool] 配置音效节点参数：", sound)
-    
     soundNode.SoundPath = sound
     soundNode.Volume = data.volume or DEFAULT_VOLUME
     soundNode.Pitch = data.pitch or DEFAULT_PITCH
@@ -263,44 +548,29 @@ function SoundPool._ConfigureSoundNode(soundNode, sound, data)
     
     -- 关键修复：确保3D音效设置正确
     soundNode.RollOffMode = Enum.RollOffMode.Linear  -- 使用线性衰减模式
-    soundNode.RollOffMinDistance = 300 -- 最小衰减距离设为100，确保近距离能听到
+    soundNode.RollOffMinDistance = 300 -- 最小衰减距离设为300，确保近距离能听到
     if data.transObject then
         soundNode.TransObject = data.transObject
     end
-    --gg.log("[SoundPool] 音效节点配置完成：")
-    --gg.log("[SoundPool] - 资源路径：", soundNode.SoundPath)
-    --gg.log("[SoundPool] - 音量：", soundNode.Volume)
-    --gg.log("[SoundPool] - 音高：", soundNode.Pitch)
-    --gg.log("[SoundPool] - 最大衰减距离：", soundNode.RollOffMaxDistance)
-    --gg.log("[SoundPool] - 衰减模式：", soundNode.RollOffMode)
 end
 
 ---设置音效位置
 ---@param soundNode Sound 音效节点
 ---@param data table 音效数据
 function SoundPool._SetSoundPosition(soundNode, data)
-    --gg.log("[SoundPool] 开始设置音效位置，数据：", data)
-    
     if data.boundTo then
         local targetNode = gg.GetChild(WorkSpace, data.boundTo)
         if targetNode then ---@cast targetNode Transform
             soundNode.FixPos = targetNode.Position
-            --gg.log("[SoundPool] 音效绑定到节点：", data.boundTo, "位置：", targetNode.Position)
-        else
-            --gg.log("[SoundPool] 警告：找不到绑定节点：", data.boundTo)
         end
     elseif data.position then
         local pos = Vector3.New(data.position[1], data.position[2], data.position[3])
         soundNode.FixPos = pos
-        --gg.log("[SoundPool] 音效设置固定位置：", pos)
     else
         -- 如果没有提供位置信息，默认绑定到本地玩家对象
         local localPlayer = game:GetService("Players").LocalPlayer
         if localPlayer and localPlayer.Character then
             soundNode.TransObject = localPlayer.Character
-            --gg.log("[SoundPool] 音效默认绑定到本地玩家角色")
-        else
-            --gg.log("[SoundPool] 警告：无法获取本地玩家角色，音效将作为全局音效播放")
         end
     end
     
@@ -313,10 +583,9 @@ end
 ---@param data table 音效数据
 function SoundPool._Validate3DSound(soundNode, data)
     if soundNode.FixPos or soundNode.TransObject then
-        --gg.log("[SoundPool] 3D音效验证通过。位置:", soundNode.FixPos, "绑定对象:", soundNode.TransObject)
+        -- 3D音效验证通过
     else
-        --gg.log("[SoundPool] 3D音效验证失败：FixPos和TransObject均未设置，将作为2D全局音效播放。")
-        --gg.log("[SoundPool] - 触发数据:", data)
+        -- 作为2D全局音效播放
     end
 end
 
@@ -337,7 +606,5 @@ function SoundPool._GetTableLength(t)
     end
     return count
 end
-
-
 
 return SoundPool

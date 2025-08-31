@@ -653,7 +653,7 @@ function _M:SendEvent(eventName, data, callback)
         data = {}
     end
     data.cmd = eventName
-    ServerEventManager.SendToClient(self.uin, eventName, data, callback)
+    ServerEventManager.SendToClient(self.uin, data, callback)
 end
 
 return _M

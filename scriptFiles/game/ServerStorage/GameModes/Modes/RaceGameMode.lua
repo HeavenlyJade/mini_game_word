@@ -402,7 +402,7 @@ function RaceGameMode:LaunchPlayer(player, startPosOverride)
     }
     
     gg.log("游戏玩家数据",launchData)
-    self:PlaySceneSound(player,0.8)
+    self:PlaySceneMusic(player)
     gg.network_channel:fireClient(player.uin, launchData)
 end
 --- 【核心改造】处理玩家落地，由 RaceGameEventManager 调用
@@ -527,6 +527,7 @@ function RaceGameMode:End()
         for _, player in pairs(self.participants) do
             if player then
                 GameModeManager.playerModes[player.uin] = nil
+                self:StopSceneMusic(player)
             end
         end
         -- 清理实例记录

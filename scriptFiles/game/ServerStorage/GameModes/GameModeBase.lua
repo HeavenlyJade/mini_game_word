@@ -232,13 +232,11 @@ function GameModeBase:GetParticipantsList()
     return self.participants
 end
 
---- 【新增】播放场景触发器配置的音效
 ---@param player MPlayer 玩家
 ---@param volume number|nil 音量 (0.0-1.0)，默认0.8
----@param musicKey string|nil 音乐键值，默认为 "SceneSound_" + instanceId
-function GameModeBase:PlaySceneSound(player, volume, musicKey)
+function GameModeBase:PlaySceneMusic(player, volume)
     if not self.handlerId then
-        gg.log("警告: GameModeBase:PlaySceneSound - handlerId 为空，无法获取场景音效配置")
+        gg.log("警告: GameModeBase:PlaySceneMusic - handlerId 为空，无法获取场景音效配置")
         return
     end
     
@@ -247,43 +245,44 @@ function GameModeBase:PlaySceneSound(player, volume, musicKey)
     local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
     
     if not handler or not handler.config then
-        gg.log("警告: GameModeBase:PlaySceneSound - 无法获取场景处理器或其配置")
+        gg.log("警告: GameModeBase:PlaySceneMusic - 无法获取场景处理器或其配置")
         return
     end
     
     -- 获取场景配置中的音效资源
     local soundAssetId = handler.config.soundAsset
     if not soundAssetId or soundAssetId == "" then
-        gg.log("信息: GameModeBase:PlaySceneSound - 场景未配置音效资源")
+        gg.log("信息: GameModeBase:PlaySceneMusic - 场景未配置音效资源")
         return
     end
     
-    -- 使用基类的游戏模式音效播放方法
-    local key = musicKey or ("SceneSound_" .. self.instanceId)
     volume = volume or 0.8
-    gg.log(string.format("GameModeBase: 场景音效开始播放: %s (音量: %s)", soundAssetId, volume))
+    gg.log(string.format("GameModeBase: 场景音乐开始播放: %s (音量: %s)", soundAssetId, volume))
 
-    -- 向客户端发送播放音效事件
-
+    -- 使用新的背景音乐播放器
     local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-    -- 构建音效数据
-    local soundData = {
-        cmd='PlaySound',
+    local musicData = {
+        cmd = 'PlayBackgroundMusic',
         soundAssetId = soundAssetId,
-        key = key,
-        volume = volume,
-        pitch = 1.0,
-        range = 2000,   -- 场景音效绑定到玩家，使用较小范围
-        boundTo = nil,   -- 场景音效不绑定特定对象
-        position = nil   -- 场景音效不设置固定位置，作为背景音乐播放
+        musicKey = "SceneMusic_" .. self.instanceId, -- 修改：使用musicKey替代priority
+        volume = volume
     }
-    
-    -- 发送到客户端
-    -- gg.network_channel:fireClient(player.uin, eventData)
-    ServerEventManager.SendToClient(player.uin, soundData)
-    gg.log(string.format("GameModeBase: 已向玩家 %s 发送场景音效播放事件", player.name or player.uin))
- 
+    ServerEventManager.SendToClient(player.uin, musicData)
+    gg.log(string.format("GameModeBase: 已向玩家 %s 发送场景音乐播放事件", player.name or player.uin))
 end
 
+--- 【新增】停止场景背景音乐
+---@param player MPlayer 玩家
+function GameModeBase:StopSceneMusic(player)
+    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+    local musicData = {
+        cmd = 'StopBackgroundMusic',
+        musicKey = "SceneMusic_" .. self.instanceId -- 使用相同的musicKey
+    }
+    
+    
+    ServerEventManager.SendToClient(player.uin, musicData)
+    gg.log(string.format("GameModeBase: 已向玩家 %s 发送停止场景音乐事件", player.name or player.uin))
+end
 
 return GameModeBase
