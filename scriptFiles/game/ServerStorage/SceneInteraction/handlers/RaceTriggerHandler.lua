@@ -100,4 +100,75 @@ function RaceTriggerHandler:OnEntityLeave(player)
     end
 end
 
+--- 【新增】静态方法：清理指定玩家的比赛数据（用于玩家离开游戏时调用）
+---@param player MPlayer 玩家实例
+function RaceTriggerHandler.CleanupPlayerData(player)
+    if not player then return end
+    
+    local uin = player.uin
+    gg.log(string.format("开始清理玩家 %s (%d) 的比赛数据", player.name or "未知", uin))
+    
+    -- 1. 从GameModeManager中移除玩家
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local GameModeManager = serverDataMgr.GameModeManager
+    
+    if GameModeManager and GameModeManager:IsPlayerInMode(uin) then
+        local instanceId = GameModeManager.playerModes[uin]
+        local currentMode = GameModeManager.activeModes[instanceId]
+        
+        if currentMode then
+            gg.log(string.format("玩家 %s 在比赛实例 %s 中，开始清理", player.name or uin, instanceId))
+            
+            -- 为该玩家执行游戏结束指令，以恢复其状态（如速度）
+            if currentMode._executeGameEndCommandsForPlayer then
+                currentMode:_executeGameEndCommandsForPlayer(player)
+            end
+            
+            -- 调用 OnPlayerLeave，清理其在比赛实例中的所有数据
+            if currentMode.OnPlayerLeave then
+                currentMode:OnPlayerLeave(player)
+            end
+            
+            -- 发送比赛结束通知
+            local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager)
+            if RaceGameEventManager and RaceGameEventManager.SendRaceEndNotification then
+                RaceGameEventManager.SendRaceEndNotification(player)
+            end
+            
+            -- 停止自动比赛（如果有）
+            local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager)
+            if AutoRaceManager and AutoRaceManager.StopAutoRaceForPlayer then
+                AutoRaceManager.StopAutoRaceForPlayer(player, "玩家离开游戏")
+            end
+        end
+        
+        -- 从 GameModeManager 中移除玩家记录
+        GameModeManager.playerModes[uin] = nil
+    end
+    
+    -- 2. 遍历所有比赛触发器处理器，清理该玩家的数据
+    local allHandlers = serverDataMgr.scene_node_handlers
+    for handlerId, handler in pairs(allHandlers) do
+        if handler and handler.className == "RaceTriggerHandler" then
+            handler:CleanupPlayerDataInstance(player)
+        end
+    end
+    
+    gg.log(string.format("玩家 %s (%d) 的比赛数据清理完成", player.name or "未知", uin))
+end
+
+--- 【新增】实例方法：清理指定玩家在当前触发器的数据
+---@param player MPlayer 玩家实例
+function RaceTriggerHandler:CleanupPlayerDataInstance(player)
+    if not player then return end
+    
+    local uin = player.uin
+    
+    -- 从区域内玩家列表中移除（如果有的话）
+    if self.entitiesInZone and self.entitiesInZone[uin] then
+        self.entitiesInZone[uin] = nil
+        gg.log(string.format("从比赛触发器 '%s' 的区域列表中移除玩家 %s", self.name, player.name or uin))
+    end
+end
+
 return RaceTriggerHandler

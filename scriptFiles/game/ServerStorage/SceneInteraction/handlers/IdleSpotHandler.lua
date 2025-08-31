@@ -165,4 +165,77 @@ function IdleSpotHandler:OnDestroy()
     gg.log(string.format("挂机点处理器 '%s' 已销毁", self.name))
 end
 
+
+--- 【新增】静态方法：清理指定玩家的挂机数据（用于玩家离开游戏时调用）
+---@param player MPlayer 玩家实例
+function IdleSpotHandler.CleanupPlayerData(player)
+    if not player then return end
+    
+    local uin = player.uin
+    gg.log(string.format("开始清理玩家 %s (%d) 的挂机数据", player.name or "未知", uin))
+    
+    -- 1. 重置玩家挂机状态
+    if player.SetIdlingState then
+        player:SetIdlingState(false, nil)
+    end
+    player.isIdling = false
+    player.currentIdleSpot = nil
+    
+    -- 2. 遍历所有挂机点处理器，清理该玩家的数据
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local allHandlers = serverDataMgr.scene_node_handlers
+    
+    for handlerId, handler in pairs(allHandlers) do
+        if handler and handler.className == "IdleSpotHandler" then
+            -- 调用处理器实例的清理方法
+            handler:CleanupPlayerDataInstance(player)
+        end
+    end
+    
+    gg.log(string.format("玩家 %s (%d) 的挂机数据清理完成", player.name or "未知", uin))
+end
+
+--- 【新增】实例方法：清理指定玩家在当前挂机点的数据
+---@param player MPlayer 玩家实例
+function IdleSpotHandler:CleanupPlayerDataInstance(player)
+    if not player then return end
+    
+    local uin = player.uin
+    
+    -- 从区域内玩家列表中移除
+    if self.entitiesInZone and self.entitiesInZone[uin] then
+        self.entitiesInZone[uin] = nil
+        gg.log(string.format("从挂机点 '%s' 的区域列表中移除玩家 %s", self.name, player.name or uin))
+    end
+    
+    -- 清理玩家相关的定时器（如果有的话）
+    self:CleanupPlayerTimers(player)
+    
+    -- 如果玩家当前在此挂机点，执行离开指令
+    if player.currentIdleSpot == self.name then
+        if self.config.leaveCommand and self.config.leaveCommand ~= "" then
+            local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+            CommandManager.ExecuteCommand(self.config.leaveCommand, player, true)
+        end
+        player.currentIdleSpot = nil
+    end
+end
+
+--- 【新增】清理玩家相关定时器的方法
+---@param player MPlayer 玩家实例
+function IdleSpotHandler:CleanupPlayerTimers(player)
+    -- 清理与该玩家相关的所有定时器
+    -- 这里需要根据你的定时器实现来清理
+    -- 如果定时器是基于玩家UIN存储的，则从相应的存储中移除
+    
+    -- 示例：如果有玩家专属的定时器存储
+    if self.playerTimers and self.playerTimers[player.uin] then
+        for timerName, timer in pairs(self.playerTimers[player.uin]) do
+            if timer and timer.Stop then
+                timer:Stop()
+            end
+        end
+        self.playerTimers[player.uin] = nil
+    end
+end
 return IdleSpotHandler

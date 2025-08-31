@@ -262,6 +262,20 @@ function MServerInitPlayer.player_leave_game(player)
     local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer
     if mplayer then
         -- 【新增】清理玩家场景映射
+         -- 【新增】清理挂机点数据
+         local IdleSpotHandler = require(ServerStorage.SceneInteraction.handlers.IdleSpotHandler) ---@type IdleSpotHandler
+         IdleSpotHandler.CleanupPlayerData(mplayer)
+         
+         -- 【新增】清理比赛数据
+         local RaceTriggerHandler = require(ServerStorage.SceneInteraction.handlers.RaceTriggerHandler)
+         RaceTriggerHandler.CleanupPlayerData(mplayer)
+         
+         -- 【新增】清理游戏模式数据
+         local serverDataMgr = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+         local GameModeManager = serverDataMgr.GameModeManager ---@type GameModeManager
+         if GameModeManager then
+             GameModeManager:ForceCleanupPlayer(mplayer)
+         end
 
         gg.player_scene_map[uin_] = nil
 

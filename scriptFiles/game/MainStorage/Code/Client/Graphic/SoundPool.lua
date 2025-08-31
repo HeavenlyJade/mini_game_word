@@ -28,7 +28,7 @@ local DEFAULT_RANGE = 6000
 ---@param poolSize number|nil 音效池大小，默认50个
 function SoundPool.Init(poolSize)
     if _isInitialized then
-        gg.log("[SoundPool] Warning: Already initialized")
+        --gg.log("[SoundPool] Warning: Already initialized")
         return
     end
     
@@ -61,14 +61,14 @@ function SoundPool.Init(poolSize)
     end)
     
     _isInitialized = true
-    gg.log("[SoundPool] 音效池初始化完成，包含 " .. poolSize .. " 个音效节点")
+    --gg.log("[SoundPool] 音效池初始化完成，包含 " .. poolSize .. " 个音效节点")
 end
 
 ---播放音效（原有功能）
 ---@param data table 音效数据 {soundAssetId: string, key: string|nil, volume: number|nil, pitch: number|nil, range: number|nil, boundTo: string|nil, position: table|nil}
 function SoundPool.PlaySound(data)
     if not _isInitialized then
-        gg.log("[SoundPool] 错误：未初始化，请先调用SoundPool.Init()")
+        --gg.log("[SoundPool] 错误：未初始化，请先调用SoundPool.Init()")
         return
     end
     
@@ -117,17 +117,17 @@ end
 ---@param volume number|nil 音量，默认0.5
 function SoundPool.PlayBackgroundMusic(soundAssetId, musicKey, volume)
     if not _isInitialized then
-        gg.log("[SoundPool] 错误：未初始化")
+        --gg.log("[SoundPool] 错误：未初始化")
         return
     end
     
     if not soundAssetId or soundAssetId == "" then
-        gg.log("[SoundPool] 错误：背景音乐资源ID为空")
+        --gg.log("[SoundPool] 错误：背景音乐资源ID为空")
         return
     end
     
     if not musicKey or musicKey == "" then
-        gg.log("[SoundPool] 错误：音乐键值为空")
+        --gg.log("[SoundPool] 错误：音乐键值为空")
         return
     end
     
@@ -139,7 +139,7 @@ function SoundPool.PlayBackgroundMusic(soundAssetId, musicKey, volume)
     -- 播放栈顶音乐
     SoundPool._PlayTopMusic()
     
-    gg.log("[SoundPool] 背景音乐入栈：" .. soundAssetId .. " 键值：" .. musicKey)
+    --gg.log("[SoundPool] 背景音乐入栈：" .. soundAssetId .. " 键值：" .. musicKey)
 end
 
 ---停止背景音乐（出栈）
@@ -150,7 +150,7 @@ function SoundPool.StopBackgroundMusic(musicKey)
     end
     
     if not musicKey or musicKey == "" then
-        gg.log("[SoundPool] 错误：音乐键值为空")
+        --gg.log("[SoundPool] 错误：音乐键值为空")
         return
     end
     
@@ -160,9 +160,9 @@ function SoundPool.StopBackgroundMusic(musicKey)
     if removed then
         -- 播放新的栈顶音乐
         SoundPool._PlayTopMusic()
-        gg.log("[SoundPool] 背景音乐出栈：" .. musicKey)
+        --gg.log("[SoundPool] 背景音乐出栈：" .. musicKey)
     else
-        gg.log("[SoundPool] 未找到要停止的音乐：" .. musicKey)
+        --gg.log("[SoundPool] 未找到要停止的音乐：" .. musicKey)
     end
 end
 
@@ -184,7 +184,7 @@ function SoundPool.StopAllBackgroundMusic()
     _currentBackgroundMusic = nil
     _backgroundMusicStack = {}
     
-    gg.log("[SoundPool] 所有背景音乐已停止，栈已清空")
+    --gg.log("[SoundPool] 所有背景音乐已停止，栈已清空")
 end
 
 ---获取背景音乐栈状态
@@ -217,16 +217,16 @@ end
 ---@param musicKey string 音乐标识键
 ---@param volume number 音量
 function SoundPool._PushBackgroundMusic(soundAssetId, musicKey, volume)
-    gg.log("[SoundPool] 准备将音乐推入栈：" .. soundAssetId .. " 键值：" .. musicKey)
+    --gg.log("[SoundPool] 准备将音乐推入栈：" .. soundAssetId .. " 键值：" .. musicKey)
     
     -- 先移除栈中已存在的相同键值音乐（避免重复）
     SoundPool._RemoveFromMusicStack(musicKey)
     
     -- 【关键修正】如果当前有播放的音乐，暂停它而不是销毁
-    gg.log("当前播放的音乐", _currentBackgroundMusic)
-    gg.log("_backgroundMusicStack",_backgroundMusicStack)
+    --gg.log("当前播放的音乐", _currentBackgroundMusic)
+    --gg.log("_backgroundMusicStack",_backgroundMusicStack)
     if _currentBackgroundMusic then
-        gg.log("[SoundPool] 暂停当前播放音乐：" .. (_currentBackgroundMusic.SoundPath or "未知"))
+        --gg.log("[SoundPool] 暂停当前播放音乐：" .. (_currentBackgroundMusic.SoundPath or "未知"))
         _currentBackgroundMusic:StopSound() -- 暂停而不是停止
     end
     
@@ -246,7 +246,7 @@ function SoundPool._PushBackgroundMusic(soundAssetId, musicKey, volume)
         addTime = gg.GetTimeStamp()
     })
     
-    gg.log("[SoundPool] 音乐入栈，当前栈大小：" .. #_backgroundMusicStack)
+    --gg.log("[SoundPool] 音乐入栈，当前栈大小：" .. #_backgroundMusicStack)
     SoundPool._logMusicStack()
 end
 
@@ -264,7 +264,7 @@ function SoundPool._RemoveFromMusicStack(musicKey)
                 removedMusic.musicNode:Destroy()
             end
             
-            gg.log("[SoundPool] 从栈中移除音乐：" .. removedMusic.soundAssetId .. " 键值：" .. musicKey)
+            --gg.log("[SoundPool] 从栈中移除音乐：" .. removedMusic.soundAssetId .. " 键值：" .. musicKey)
             SoundPool._logMusicStack()
             return true
         end
@@ -276,7 +276,7 @@ end
 function SoundPool._PlayTopMusic()
     -- 先停止当前播放的音乐
     if _currentBackgroundMusic then
-        gg.log("[SoundPool] 停止当前播放音乐：" .. (_currentBackgroundMusic.SoundPath or "未知"))
+        --gg.log("[SoundPool] 停止当前播放音乐：" .. (_currentBackgroundMusic.SoundPath or "未知"))
         _currentBackgroundMusic:StopSound()
         _currentBackgroundMusic:Destroy()
         _currentBackgroundMusic = nil
@@ -286,7 +286,7 @@ function SoundPool._PlayTopMusic()
     local topMusic = _backgroundMusicStack[#_backgroundMusicStack]
     
     if not topMusic then
-        gg.log("[SoundPool] 音乐栈为空，无音乐播放")
+        --gg.log("[SoundPool] 音乐栈为空，无音乐播放")
         return
     end
     
@@ -300,17 +300,17 @@ function SoundPool._PlayTopMusic()
     -- 播放栈顶音乐
     _currentBackgroundMusic:PlaySound()
     
-    gg.log("[SoundPool] 播放栈顶音乐：" .. topMusic.soundAssetId .. " 键值：" .. topMusic.musicKey)
+    --gg.log("[SoundPool] 播放栈顶音乐：" .. topMusic.soundAssetId .. " 键值：" .. topMusic.musicKey)
 end
 
 ---打印当前音乐栈状态（调试用）
 function SoundPool._logMusicStack()
     if #_backgroundMusicStack == 0 then
-        gg.log("[SoundPool] 音乐栈：空")
+        --gg.log("[SoundPool] 音乐栈：空")
         return
     end
     
-    gg.log("[SoundPool] 音乐栈状态（从栈底到栈顶）：")
+    --gg.log("[SoundPool] 音乐栈状态（从栈底到栈顶）：")
     for i, music in ipairs(_backgroundMusicStack) do
         local status = ""
         if i == #_backgroundMusicStack then
@@ -320,12 +320,12 @@ function SoundPool._logMusicStack()
         end
         
         local nodeStatus = music.musicNode and "存在" or "已销毁"
-        gg.log("  " .. i .. ". [" .. music.musicKey .. "] " .. music.soundAssetId .. status .. " 节点:" .. nodeStatus)
+        --gg.log("  " .. i .. ". [" .. music.musicKey .. "] " .. music.soundAssetId .. status .. " 节点:" .. nodeStatus)
     end
     
     -- 显示当前播放状态
     local currentStatus = _currentBackgroundMusic and "播放中" or "无"
-    gg.log("[SoundPool] 当前播放状态：" .. currentStatus)
+    --gg.log("[SoundPool] 当前播放状态：" .. currentStatus)
 end
 -- ========== 原有功能方法 ==========
 
@@ -395,7 +395,7 @@ function SoundPool.Cleanup()
     _lastPlayTimes = {}
     _isInitialized = false
     
-    gg.log("[SoundPool] 清理完成")
+    --gg.log("[SoundPool] 清理完成")
 end
 
 ---获取音效池状态信息
@@ -529,7 +529,7 @@ end
 function SoundPool._GetPooledSoundNode()
     local soundNode = _soundNodePoolReady[1]
     if soundNode == nil then
-        gg.log("[SoundPool] 警告：没有可用的音效节点")
+        --gg.log("[SoundPool] 警告：没有可用的音效节点")
         return nil
     end
     return soundNode

@@ -69,6 +69,11 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
     GameModeManager.playerModes[player.uin] = nil
 
     gg.log("中途离开比赛",player.uin)
+    -- 【新增】停止该玩家的场景音乐
+    if currentMode.StopSceneMusic then
+        currentMode:StopSceneMusic(player)
+    end
+    
     -- 【新增】如果玩家处于自动比赛状态，则停止
     local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
     AutoRaceManager.StopAutoRaceForPlayer(player, "玩家手动离开比赛")
