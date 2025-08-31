@@ -120,7 +120,7 @@ end
 ---@return boolean 是否成功传送至少一个玩家
 function GameModeBase:TeleportAllPlayersToPosition(targetPosition, logPrefix)
     if not targetPosition then
-        --gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 目标位置为空")
+        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 目标位置为空")
         return false
     end
 
@@ -134,11 +134,11 @@ function GameModeBase:TeleportAllPlayersToPosition(targetPosition, logPrefix)
             totalCount = totalCount + 1
             TeleportService:Teleport(player.actor, targetPosition)
             successCount = successCount + 1
-            --gg.log(string.format("%s: 已传送玩家 %s 到位置 %s",logPrefix or "GameModeBase", player.name, tostring(targetPosition)))
+            gg.log(string.format("%s: 已传送玩家 %s 到位置 %s",logPrefix or "GameModeBase", player.name, tostring(targetPosition)))
         end
     end
 
-    --gg.log(string.format("%s: 传送完成 - 成功: %d/%d",logPrefix or "GameModeBase", successCount, totalCount))
+    gg.log(string.format("%s: 传送完成 - 成功: %d/%d",logPrefix or "GameModeBase", successCount, totalCount))
 
     return successCount > 0
 end
@@ -150,11 +150,11 @@ end
 function GameModeBase:TeleportAllPlayersToHandlerNode(nodeType, logPrefix)
 
     -- 延迟加载，避免循环依赖
-    local serverDataMgr = require(game:GetService("ServerStorage").Manager.MServerDataManager)
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
 
     if not handler then
-        --gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 无法找到处理器实例")
+        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 无法找到处理器实例")
         return false
     end
 
@@ -164,12 +164,12 @@ function GameModeBase:TeleportAllPlayersToHandlerNode(nodeType, logPrefix)
     elseif nodeType == "teleport" then
         targetNode = handler.teleportNode
     else
-        --gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 未知节点类型: " .. tostring(nodeType))
+        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - 未知节点类型: " .. tostring(nodeType))
         return false
     end
 
     if not targetNode or not targetNode.Position then
-        --gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - " .. nodeType .. "节点不存在或无位置信息")
+        gg.log((logPrefix or "GameModeBase") .. ": 传送失败 - " .. nodeType .. "节点不存在或无位置信息")
         return false
     end
 
@@ -224,69 +224,67 @@ function GameModeBase:Destroy()
     self.participants = {}
 end
 
---- 【新增】停止游戏模式音乐
----@param musicKey string|nil 音乐键值，默认为模式实例ID
-function GameModeBase:StopGameModeMusic(musicKey)
-    local key = musicKey or ("GameModeMusic_" .. self.instanceId)
-    
-    local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
-    
-    -- 通过发送空音效来停止音乐
-    local stopMusicData = {
-        cmd = "PlaySound",
-        soundAssetId = "",
-        key = key,
-        volume = 0
-    }
 
-    -- 通知所有玩家停止音乐
-    RaceGameEventManager.BroadcastRaceEvent(
-        self:GetParticipantsList(), 
-        "PlaySound", 
-        stopMusicData
-    )
-    
-    --gg.log("游戏模式音乐已停止: " .. key)
-end
-
-
---- 【新增】播放游戏模式音乐
----@param musicAssetId string 音乐资源ID
----@param volume number|nil 音量 (0.0-1.0)
----@param musicKey string|nil 音乐键值，默认为模式实例ID
-function GameModeBase:PlayGameModeMusic(musicAssetId, volume, musicKey)
-    if not musicAssetId or musicAssetId == "" then
-        return
-    end
-    
-    local key = musicKey or ("GameModeMusic_" .. self.instanceId)
-    volume = volume or 0.6
-    
-    local RaceGameEventManager = require(ServerStorage.GameModes.Modes.RaceGameEventManager) ---@type RaceGameEventManager
-    
-    local musicData = {
-        cmd = "PlaySound",
-        soundAssetId = musicAssetId,
-        key = key,
-        volume = volume,
-        pitch = 1.0,
-        range = 15000  -- 大范围确保全场都能听到
-    }
-
-    -- 向所有参赛者播放音乐
-    RaceGameEventManager.BroadcastRaceEvent(
-        self:GetParticipantsList(), 
-        "PlaySound", 
-        musicData
-    )
-    
-    --gg.log(string.format("游戏模式音乐播放: %s (音量: %s)", musicAssetId, volume))
-end
 
 --- 获取参赛者列表
 ---@return table<string, MPlayer> 参赛者列表
 function GameModeBase:GetParticipantsList()
     return self.participants
 end
+
+--- 【新增】播放场景触发器配置的音效
+---@param player MPlayer 玩家
+---@param volume number|nil 音量 (0.0-1.0)，默认0.8
+---@param musicKey string|nil 音乐键值，默认为 "SceneSound_" + instanceId
+function GameModeBase:PlaySceneSound(player, volume, musicKey)
+    if not self.handlerId then
+        gg.log("警告: GameModeBase:PlaySceneSound - handlerId 为空，无法获取场景音效配置")
+        return
+    end
+    
+    -- 延迟加载，避免循环依赖
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
+    
+    if not handler or not handler.config then
+        gg.log("警告: GameModeBase:PlaySceneSound - 无法获取场景处理器或其配置")
+        return
+    end
+    
+    -- 获取场景配置中的音效资源
+    local soundAssetId = handler.config.soundAsset
+    if not soundAssetId or soundAssetId == "" then
+        gg.log("信息: GameModeBase:PlaySceneSound - 场景未配置音效资源")
+        return
+    end
+    
+    -- 使用基类的游戏模式音效播放方法
+    local key = musicKey or ("SceneSound_" .. self.instanceId)
+    volume = volume or 0.8
+    gg.log(string.format("GameModeBase: 场景音效开始播放: %s (音量: %s)", soundAssetId, volume))
+
+    -- 向客户端发送播放音效事件
+    if player and player.uin then
+        local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+        
+        -- 构建音效数据
+        local soundData = {
+            soundAssetId = soundAssetId,
+            key = key,
+            volume = volume,
+            pitch = 1.0,
+            range = 2000,   -- 场景音效绑定到玩家，使用较小范围
+            boundTo = nil,   -- 场景音效不绑定特定对象
+            position = nil   -- 场景音效不设置固定位置，作为背景音乐播放
+        }
+        
+        -- 发送到客户端
+        ServerEventManager.SendToClient(player.uin, "PlaySound", soundData)
+        gg.log(string.format("GameModeBase: 已向玩家 %s 发送场景音效播放事件", player.name or player.uin))
+    else
+        gg.log("警告: GameModeBase:PlaySceneSound - 玩家对象无效，无法发送音效事件")
+    end
+end
+
 
 return GameModeBase

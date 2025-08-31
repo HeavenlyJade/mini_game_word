@@ -232,11 +232,6 @@ function MeleeBehavior:OnInit()
                 entity.actor:StopNavigate()
             end
             
-            -- 播放攻击音效
-            if entity.mobType.attackSound then
-                entity.scene:PlaySound(entity.mobType.attackSound, entity.actor, 1.0, 1.0)
-            end
-            
             -- 延迟执行攻击
             local attackDuration = entity.modelPlayer:OnAttack()
             local attackDelay = (entity.mobType.data["攻击时点"] or 0) * attackDuration

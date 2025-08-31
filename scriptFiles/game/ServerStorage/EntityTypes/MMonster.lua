@@ -239,16 +239,6 @@ function _M:Hurt(amount, damager, isCrit)
     end
 
     Entity.Hurt(self, amount, damager, isCrit)
-    if self.health <= 0 then
-        print("PlaySound", self.mobType.deadSound)
-        if self.mobType.deadSound and damager.isPlayer then ---@cast damager Player
-            damager:PlaySound(self.mobType.deadSound, self.actor, 1.0, 1.0)
-        end
-    else
-        if amount > self.health * 0.05 and self.mobType.hitSound and damager.isPlayer then ---@cast damager Player
-            damager:PlaySound(self.mobType.hitSound, self.actor, 1.0, 1.0)
-        end
-    end
     if not self.target then
         self:SetTarget(damager)
     end

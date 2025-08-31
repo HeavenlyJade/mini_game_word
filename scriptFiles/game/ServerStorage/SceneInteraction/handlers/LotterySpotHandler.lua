@@ -50,10 +50,7 @@ function LotterySpotHandler:OnEntityEnter(entity)
         executeCommand(entity, self.config.enterCommand)
     end
     
-    -- 播放音效（如果有配置）
-    if self.config.soundAsset and self.config.soundAsset ~= "" then
-        self:PlaySound(self.config.soundAsset, entity.actor, 1.0, 1.0, 10)
-    end
+
 end
 
 --- 当玩家离开抽奖点时

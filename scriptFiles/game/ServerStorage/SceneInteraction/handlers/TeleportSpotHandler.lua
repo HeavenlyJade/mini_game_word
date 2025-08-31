@@ -39,14 +39,8 @@ function TeleportSpotHandler:OnEntityEnter(entity)
     -- 优先使用配置的进入指令；若未配置则默认打开 WaypointGui
     if self.config.enterCommand and self.config.enterCommand ~= "" then
         executeCommand(entity, self.config.enterCommand)
-    else
-        executeCommand(entity, 'openui { "操作类型": "打开界面", "界面名": "WaypointGui" }')
     end
 
-    -- 可选播放音效
-    if self.config.soundAsset and self.config.soundAsset ~= "" then
-        self:PlaySound(self.config.soundAsset, entity.actor, 1.0, 1.0, 10)
-    end
 end
 
 --- 当实体离开传送点包围盒

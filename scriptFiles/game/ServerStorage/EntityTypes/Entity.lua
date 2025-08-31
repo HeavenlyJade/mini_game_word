@@ -647,4 +647,13 @@ function _M:GetAllInitialStats()
     return result
 end
 
+
+function _M:SendEvent(eventName, data, callback)
+    if not data then
+        data = {}
+    end
+    data.cmd = eventName
+    ServerEventManager.SendToClient(self.uin, eventName, data, callback)
+end
+
 return _M

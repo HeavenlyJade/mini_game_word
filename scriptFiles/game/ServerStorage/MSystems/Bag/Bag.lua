@@ -895,10 +895,6 @@ function Bag:GiveItem(itemData)
                     item = itemData
                 })
             end
-            local itemType = ItemUtils.GetItemType(itemData)
-            if itemType and itemType.gainSound then
-                player:PlaySound(itemType.gainSound)
-            end
         end
     end
     return success

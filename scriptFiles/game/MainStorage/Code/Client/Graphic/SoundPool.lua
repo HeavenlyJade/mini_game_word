@@ -293,11 +293,14 @@ function SoundPool._SetSoundPosition(soundNode, data)
         soundNode.FixPos = pos
         --gg.log("[SoundPool] 音效设置固定位置：", pos)
     else
-        -- -- 关键问题：如果没有提供位置信息，音效会成为全局音效
-        -- -- 这里我们不设置任何位置，让它保持默认（可能是全局）
-        -- --gg.log("[SoundPool] 警告：没有提供boundTo或position，音效可能为全局播放。")
-        -- soundNode.FixPos = nil
-        -- soundNode.TransObject = nil
+        -- 如果没有提供位置信息，默认绑定到本地玩家对象
+        local localPlayer = game:GetService("Players").LocalPlayer
+        if localPlayer and localPlayer.Character then
+            soundNode.TransObject = localPlayer.Character
+            --gg.log("[SoundPool] 音效默认绑定到本地玩家角色")
+        else
+            --gg.log("[SoundPool] 警告：无法获取本地玩家角色，音效将作为全局音效播放")
+        end
     end
     
     -- 验证3D设置

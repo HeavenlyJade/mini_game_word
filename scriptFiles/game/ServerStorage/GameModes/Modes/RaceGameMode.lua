@@ -402,6 +402,7 @@ function RaceGameMode:LaunchPlayer(player, startPosOverride)
     }
     
     gg.log("游戏玩家数据",launchData)
+    self:PlaySceneSound(player,0.8)
     gg.network_channel:fireClient(player.uin, launchData)
 end
 --- 【核心改造】处理玩家落地，由 RaceGameEventManager 调用
