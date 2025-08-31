@@ -403,14 +403,7 @@ function SceneNodeHandlerBase:_connectTriggerEvents()
     end)
 end
 
-function SceneNodeHandlerBase:PlaySound(soundAssetId, boundTo, volume, pitch, range)
-    if not soundAssetId or soundAssetId == "" then
-        return
-    end
-    for _, player in pairs(self.players) do
-        player:PlaySound(soundAssetId, boundTo, volume, pitch, range)
-    end
-end
+
 
 --- 在本区域内根据路径获取节点
 ---@param path string

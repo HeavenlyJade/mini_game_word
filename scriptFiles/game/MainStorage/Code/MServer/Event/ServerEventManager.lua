@@ -206,11 +206,9 @@ function ServerEventManager.Publish(eventType, eventData, callback)
     end
 end
 
----@param eventType string 事件类型
 ---@param eventData table 事件数据
 ---@param callback? fun(data: table) 回调函数
-function ServerEventManager.SendToClient(uin, eventType, eventData, callback)
-    eventData.__class = eventType
+function ServerEventManager.SendToClient(uin, eventData, callback)
     if callback then
         local callbackId = GenerateCallbackId()
         eventData.__cb = callbackId

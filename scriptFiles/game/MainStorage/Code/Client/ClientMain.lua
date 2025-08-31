@@ -50,7 +50,10 @@ function ClientMain.start_client()
 
     require(MainStorage.Code.Client.Graphic.DamagePool)
     require(MainStorage.Code.Client.Graphic.WorldTextAnim)
-    require(MainStorage.Code.Client.Graphic.SoundPool) -- 加载音效池管理
+    -- 加载并初始化音效池管理
+    local SoundPool = require(MainStorage.Code.Client.Graphic.SoundPool) ---@type SoundPool
+    SoundPool.Init()
+    
     -- 导入并初始化赛道系统
     local RaceTrack = require(MainStorage.Code.Client.SceneNode.RaceTrack) ---@type RaceTrack
     RaceTrack.InitializeRaceTrack()

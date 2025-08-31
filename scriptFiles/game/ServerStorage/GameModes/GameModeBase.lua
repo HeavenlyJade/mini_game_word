@@ -264,26 +264,25 @@ function GameModeBase:PlaySceneSound(player, volume, musicKey)
     gg.log(string.format("GameModeBase: 场景音效开始播放: %s (音量: %s)", soundAssetId, volume))
 
     -- 向客户端发送播放音效事件
-    if player and player.uin then
-        local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
-        
-        -- 构建音效数据
-        local soundData = {
-            soundAssetId = soundAssetId,
-            key = key,
-            volume = volume,
-            pitch = 1.0,
-            range = 2000,   -- 场景音效绑定到玩家，使用较小范围
-            boundTo = nil,   -- 场景音效不绑定特定对象
-            position = nil   -- 场景音效不设置固定位置，作为背景音乐播放
-        }
-        
-        -- 发送到客户端
-        ServerEventManager.SendToClient(player.uin, "PlaySound", soundData)
-        gg.log(string.format("GameModeBase: 已向玩家 %s 发送场景音效播放事件", player.name or player.uin))
-    else
-        gg.log("警告: GameModeBase:PlaySceneSound - 玩家对象无效，无法发送音效事件")
-    end
+
+    local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
+    -- 构建音效数据
+    local soundData = {
+        cmd='PlaySound',
+        soundAssetId = soundAssetId,
+        key = key,
+        volume = volume,
+        pitch = 1.0,
+        range = 2000,   -- 场景音效绑定到玩家，使用较小范围
+        boundTo = nil,   -- 场景音效不绑定特定对象
+        position = nil   -- 场景音效不设置固定位置，作为背景音乐播放
+    }
+    
+    -- 发送到客户端
+    -- gg.network_channel:fireClient(player.uin, eventData)
+    ServerEventManager.SendToClient(player.uin, "PlaySound", soundData)
+    gg.log(string.format("GameModeBase: 已向玩家 %s 发送场景音效播放事件", player.name or player.uin))
+ 
 end
 
 
