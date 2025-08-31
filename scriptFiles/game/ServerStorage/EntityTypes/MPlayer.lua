@@ -366,7 +366,7 @@ function _MPlayer:SendEvent(eventName, data, callback)
         print("发送事件时未传入事件: ".. debug.traceback())
     end
     data.cmd = eventName
-    ServerEventManager.SendToClient(self.uin, eventName, data, callback)
+    ServerEventManager.SendToClient(self.uin, data, callback)
 end
 
 function _MPlayer:SendHoverText( text, ... )

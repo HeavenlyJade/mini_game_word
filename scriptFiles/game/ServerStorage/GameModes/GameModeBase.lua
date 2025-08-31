@@ -280,7 +280,7 @@ function GameModeBase:PlaySceneSound(player, volume, musicKey)
     
     -- 发送到客户端
     -- gg.network_channel:fireClient(player.uin, eventData)
-    ServerEventManager.SendToClient(player.uin, "PlaySound", soundData)
+    ServerEventManager.SendToClient(player.uin, soundData)
     gg.log(string.format("GameModeBase: 已向玩家 %s 发送场景音效播放事件", player.name or player.uin))
  
 end

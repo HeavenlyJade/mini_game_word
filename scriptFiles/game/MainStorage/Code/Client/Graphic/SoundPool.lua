@@ -43,7 +43,6 @@ function SoundPool.Init(poolSize)
     
     -- 订阅音效播放事件
     ClientEventManager.Subscribe("PlaySound", function(data)
-        gg.log("客户的接受来自服务端的消息", data)
 
         SoundPool.PlaySound(data)
     end)
