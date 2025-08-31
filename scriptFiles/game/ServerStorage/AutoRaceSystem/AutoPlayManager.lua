@@ -4,10 +4,8 @@
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType) ---@type SceneNodeType
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
-local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal) ---@type ActionCosteRewardCal
 
 ---@class AutoPlayManager
 local AutoPlayManager = {}

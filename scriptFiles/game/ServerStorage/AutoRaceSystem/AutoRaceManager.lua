@@ -1,9 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType) ---@type SceneNodeType
 local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
-local TeleportService = game:GetService("TeleportService")
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 
 ---@class AutoRaceManager

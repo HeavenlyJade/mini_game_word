@@ -60,7 +60,7 @@ function LotteryMgr.OnPlayerLeave(uin)
         -- 清理内存缓存
         LotteryMgr.server_player_lottery[uin] = nil
         gg.log("抽奖系统：玩家抽奖数据已保存并清理", uin)
-        gg.log("玩家抽奖数据", playerLotteryData)
+        gg.log("玩家抽奖数据", gg.printTable(playerLotteryData))
     end
 end
 

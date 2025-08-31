@@ -124,7 +124,11 @@ function RewardMgr.OnPlayerLeave(uin)
     RewardMgr.playerRewards[uin] = nil
     
     gg.log(string.format("玩家 %d 奖励数据已保存", uin))
-    gg.log("玩家奖励数据", saveData)
+    if saveData then
+        gg.log("=== 玩家奖励完整数据开始 ===")
+        gg.log(gg.printTable(saveData))
+        gg.log("=== 玩家奖励完整数据结束 ===")
+    end
 end
 
 -- ==================== 在线时长更新 ====================
