@@ -55,7 +55,10 @@ EventPlayerConfig.NOTIFY = {
     ITEM_ACQUIRED_NOTIFY = "ItemAcquiredNotify", -- 获得物品通知
     AUTO_RACE_RESPONSE = "AutoRaceResponse", -- 新增：自动比赛请求的响应
     STOP_NAVIGATION = "StopNavigation", -- 新增：停止导航
-    AUTO_RACE_STARTED = "AutoRaceStarted" -- 新增：自动比赛已开始
+    AUTO_RACE_STARTED = "AutoRaceStarted", -- 新增：自动比赛已开始
+    PLAYER_LAUNCH_END = "sPlayerLaunchEnd", -- 玩家发射结束
+    -- 【新增】玩家切换地图通知
+    PLAYER_MAP_CHANGED = "sPlayerMapChanged", -- 玩家地图切换
 }
 
 --[[

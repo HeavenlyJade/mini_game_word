@@ -9,6 +9,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
 local CommonEventConfig = require(MainStorage.Code.Event.CommonEvent) ---@type CommonEventConfig
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 ---@class CommonEventManager
 local CommonEventManager = {}
@@ -112,6 +113,12 @@ function CommonEventManager.HandleTeleportTo(evt)
             if gg.player_scene_map then
                 gg.player_scene_map[uin] = sceneNode
             end
+
+            -- 通知客户端地图已切换
+			ServerEventManager.SendToClient(player.uin, {
+				cmd = EventPlayerConfig.NOTIFY.PLAYER_MAP_CHANGED,
+				mapName = sceneNode
+			})
         end
     end
 

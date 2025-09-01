@@ -28,14 +28,14 @@ local EffectLevelType = ClassMgr.Class("EffectLevelType")
 --- 初始化效果等级配置类型
 ---@param data table 配置数据
 function EffectLevelType:OnInit(data)
-    gg.log("=== EffectLevelType:OnInit 开始 ===")
-    gg.log("原始配置数据:", data)
+    -- gg.log("=== EffectLevelType:OnInit 开始 ===")
+    -- gg.log("原始配置数据:", data)
     
     -- 基础配置信息
     self.configName = data['配置名称'] or ''
     self.configDesc = data['配置描述'] or ''
-    gg.log("配置名称:", self.configName)
-    gg.log("配置描述:", self.configDesc)
+    -- gg.log("配置名称:", self.configName)
+    -- gg.log("配置描述:", self.configDesc)
     
     -- 等级效果列表
     self.levelEffects = {}
@@ -63,7 +63,7 @@ function EffectLevelType:OnInit(data)
                 effectFormula = effectFormula
             }
             
-            gg.log("处理后数据:", processedEffect)
+            -- gg.log("处理后数据:", processedEffect)
             table.insert(self.levelEffects, processedEffect)
         end
     else
@@ -368,13 +368,13 @@ end
 ---@param externalContext table|nil 外部上下文
 ---@return number|nil 最大效果数值对应的索引，如果没有满足条件的配置则返回nil
 function EffectLevelType:GetMaxEffectIndex(playerData, bagData, externalContext)
-    gg.log("=== EffectLevelType:GetMaxEffectIndex 开始 ===")
-    gg.log("配置名称:", self.configName)
+    -- gg.log("=== EffectLevelType:GetMaxEffectIndex 开始 ===")
+    -- gg.log("配置名称:", self.configName)
     
     local matchingEffects = self:CalculateMatchingEffects(playerData, bagData, externalContext)
     
     if #matchingEffects == 0 then
-        gg.log("没有满足条件的效果配置，返回nil")
+        -- gg.log("没有满足条件的效果配置，返回nil")
         return nil
     end
     
@@ -392,8 +392,8 @@ function EffectLevelType:GetMaxEffectIndex(playerData, bagData, externalContext)
         end
     end
     
-    gg.log("最终结果: 最大效果值=", maxEffectValue, "对应索引=", maxIndex)
-    gg.log("=== EffectLevelType:GetMaxEffectIndex 结束 ===")
+    -- gg.log("最终结果: 最大效果值=", maxEffectValue, "对应索引=", maxIndex)
+    -- gg.log("=== EffectLevelType:GetMaxEffectIndex 结束 ===")
     
     return maxIndex
 end

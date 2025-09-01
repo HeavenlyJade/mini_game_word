@@ -34,6 +34,9 @@ function TournamentSc:OnInit(node, config)
 	-- 4. 按钮点击事件注册
 	self:RegisterButtonEvents()
 
+	-- 5. 更新初始距离标签
+	self:UpdateDistanceNodeLabels()
+
 	----gg.log("比赛UI初始化完成")
 end
 
@@ -55,33 +58,18 @@ function TournamentSc:InitNodes()
 	self.distanceNodes[1] = {}
 	for i = 1, 10 do
 		self.distanceNodes[1][i] = self:Get("底图/功能/比赛进度条1/距离" .. i, ViewComponent)
-		-- 【新增】设置距离节点显示文本
-		local distanceValue = NodeConf["节点显示距离"]["init_map"]["进度条1"][i]
-		if self.distanceNodes[1][i] and self.distanceNodes[1][i].node and self.distanceNodes[1][i].node.Title ~= nil and distanceValue then
-			self.distanceNodes[1][i].node.Title = gg.FormatLargeNumber(distanceValue)
-		end
 	end
 	
 	-- 比赛进度条2: 距离1到4
 	self.distanceNodes[2] = {}
 	for i = 1, 4 do
 		self.distanceNodes[2][i] = self:Get("底图/功能/比赛进度条2/距离" .. i, ViewComponent)
-		-- 【新增】设置距离节点显示文本
-		local distanceValue = NodeConf["节点显示距离"]["init_map"]["进度条2"][i]
-		if self.distanceNodes[2][i] and self.distanceNodes[2][i].node and self.distanceNodes[2][i].node.Title ~= nil and distanceValue then
-			self.distanceNodes[2][i].node.Title = gg.FormatLargeNumber(distanceValue)
-		end
 	end
 	
 	-- 比赛进度条3: 距离1到3
 	self.distanceNodes[3] = {}
 	for i = 1, 2 do
 		self.distanceNodes[3][i] = self:Get("底图/功能/比赛进度条3/距离" .. i, ViewComponent)
-		-- 【新增】设置距离节点显示文本
-		local distanceValue = NodeConf["节点显示距离"]["init_map"]["进度条3"][i]
-		if self.distanceNodes[3][i] and self.distanceNodes[3][i].node and self.distanceNodes[3][i].node.Title ~= nil and distanceValue then
-			self.distanceNodes[3][i].node.Title = gg.FormatLargeNumber(distanceValue)
-		end
 	end
 	
 	-- 比赛进度条
@@ -161,6 +149,11 @@ function TournamentSc:RegisterEvents()
 	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.RACE_CONTEST_HIDE, function(data)
 		self:OnContestHide(data)
 	end)
+
+	-- 【新增】监听地图切换事件
+	ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_MAP_CHANGED, function(data)
+		self:OnMapChanged(data)
+	end)
 end
 
 -- 按钮事件注册
@@ -238,14 +231,6 @@ function TournamentSc:OnContestShow(data)
 	self.raceTime = data and data.raceTime or 0
 	if self.basePanel then
 		self.basePanel:SetVisible(true)
-	end
-	
-	-- 【新增】根据比赛数据设置地图配置
-	if data and data.mapName then
-		self:SetMapDistanceConfig(data.mapName)
-	else
-		-- 默认使用init_map配置
-		self:SetMapDistanceConfig("init_map")
 	end
 	
 	-- 【新增】显示距离节点并初始化距离显示
@@ -329,6 +314,74 @@ function TournamentSc:OnContestHide(data)
 	
 	-- 【新增】重置距离数据
 	self.currentPlayerDistance = 0
+end
+
+--- 【新增】处理地图切换事件
+---@param data table { mapName: string }
+function TournamentSc:OnMapChanged(data)
+    if not data or not data.mapName then return end
+    self:SetMapDistanceConfig(data.mapName)
+end
+
+--- 【新增】设置当前地图的距离循环器配置
+---@param mapName string 地图名称 ("init_map", "map2", "map3")
+function TournamentSc:SetMapDistanceConfig(mapName)
+    if not mapName or not NodeConf["距离循环器"][mapName] then
+        -- 如果地图名称无效，使用默认的init_map配置
+        mapName = "init_map"
+    end
+    
+    self.currentMapConfig = mapName
+    self.distanceConfig = NodeConf["距离循环器"][mapName]
+    
+    -- 【新增】更新距离节点显示
+    self:UpdateDistanceNodeLabels()
+    
+    --gg.log("TournamentSc: 切换到地图 " .. mapName .. " 的距离配置")
+end
+
+--- 【新增】根据当前地图配置更新距离节点的显示文本
+function TournamentSc:UpdateDistanceNodeLabels()
+	if not self.distanceNodes or not self.currentMapConfig then return end
+	local mapDistanceConf = NodeConf["节点显示距离"][self.currentMapConfig]
+	if not mapDistanceConf then
+		--gg.log("更新距离节点失败：找不到地图配置 " .. self.currentMapConfig)
+		return
+	end
+
+	-- 进度条1
+	if self.distanceNodes[1] and mapDistanceConf["进度条1"] then
+		for i = 1, 10 do
+			local distanceValue = mapDistanceConf["进度条1"][i]
+			local nodeComp = self.distanceNodes[1][i]
+			if nodeComp and nodeComp.node and nodeComp.node.Title ~= nil and distanceValue then
+				nodeComp.node.Title = gg.FormatLargeNumber(distanceValue)
+			end
+		end
+	end
+
+	-- 进度条2
+	if self.distanceNodes[2] and mapDistanceConf["进度条2"] then
+		for i = 1, 4 do
+			local distanceValue = mapDistanceConf["进度条2"][i]
+			local nodeComp = self.distanceNodes[2][i]
+			if nodeComp and nodeComp.node and nodeComp.node.Title ~= nil and distanceValue then
+				nodeComp.node.Title = gg.FormatLargeNumber(distanceValue)
+			end
+		end
+	end
+
+	-- 进度条3
+	if self.distanceNodes[3] and mapDistanceConf["进度条3"] then
+		for i = 1, 2 do
+			local distanceValue = mapDistanceConf["进度条3"][i]
+			local nodeComp = self.distanceNodes[3][i]
+			if nodeComp and nodeComp.node and nodeComp.node.Title ~= nil and distanceValue then
+				nodeComp.node.Title = gg.FormatLargeNumber(distanceValue)
+			end
+		end
+	end
+	--gg.log("距离节点标签已根据地图 " .. self.currentMapConfig .. " 更新")
 end
 
 --- 接收比赛开始(发射)事件，获取服务端携带的数据（含 variableData）
@@ -620,20 +673,6 @@ function TournamentSc:ResetPlayerFlightData(userId)
         self.clientStartPositions = {}
     end
     self.currentPlayerDistance = 0
-end
-
---- 【新增】设置当前地图的距离循环器配置
----@param mapName string 地图名称 ("init_map", "map2", "map3")
-function TournamentSc:SetMapDistanceConfig(mapName)
-    if not mapName or not NodeConf["距离循环器"][mapName] then
-        -- 如果地图名称无效，使用默认的init_map配置
-        mapName = "init_map"
-    end
-    
-    self.currentMapConfig = mapName
-    self.distanceConfig = NodeConf["距离循环器"][mapName]
-    
-    --gg.log("TournamentSc: 切换到地图 " .. mapName .. " 的距离配置")
 end
 
 -- 【已移除】UpdatePlayerProgress 方法不再使用
