@@ -237,7 +237,7 @@ function RaceGameEventManager.SendStopPrepareCountdown(player, reason)
     }
     
     gg.network_channel:fireClient(player.uin, eventData)
-    --gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送停止准备倒计时事件，原因: %s", player.name or player.uin, reason or "退出准备区域"))
+    gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送停止准备倒计时事件，原因: %s", player.name or player.uin, reason or "退出准备区域"))
 end
 
 --- 【修改】向所有在线玩家广播停止准备倒计时事件（不仅仅是参赛者）

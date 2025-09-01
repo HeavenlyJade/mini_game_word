@@ -80,8 +80,8 @@ function GameModeManager:RemovePlayerFromCurrentMode(mPlayer)
     mode:OnPlayerLeave(mPlayer)
     self.playerModes[mPlayer.uin] = nil
 
-    -- 检查比赛是否还有玩家, 如果没有了, 则销毁这个实例
-    if #mode.participants == 0 then
+    
+    if mode:_getParticipantCount() == 0 then
         mode:Destroy() -- 清理定时器等资源
         self.activeModes[instanceId] = nil
         gg.log(string.format("游戏模式管理器: 实例'%s'已空，已被移除。", instanceId))

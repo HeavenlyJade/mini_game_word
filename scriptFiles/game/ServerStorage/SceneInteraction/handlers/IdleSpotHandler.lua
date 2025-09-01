@@ -57,9 +57,8 @@ function IdleSpotHandler:OnEntityEnter(entity)
     end
     
     local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager)
-    local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) 
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
-    local GameModeManager = serverDataMgr.GameModeManager
+    local GameModeManager = serverDataMgr.GameModeManager ---@type GameModeManager
     
     -- 检查玩家是否在自动比赛中
     if AutoRaceManager.IsPlayerAutoRacing(entity) then

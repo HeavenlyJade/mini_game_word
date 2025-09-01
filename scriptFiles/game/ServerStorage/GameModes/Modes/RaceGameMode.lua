@@ -103,7 +103,6 @@ function RaceGameMode:OnPlayerEnter(player)
     end
 end
 --- 当有玩家离开此游戏模式时调用
---- (重写父类方法，因为这里 participants 是数组)
 ---@param player MPlayer
 function RaceGameMode:OnPlayerLeave(player)
     if not player then return end
@@ -117,8 +116,8 @@ function RaceGameMode:OnPlayerLeave(player)
     self:_cleanPlayerData(uin)
     
     local remainingCount = self:_getParticipantCount()
-    --gg.log(string.format("玩家 %s 离开比赛，剩余玩家: %d", 
-        -- player.name or uin, remainingCount))
+    gg.log(string.format("玩家 %s 离开比赛，剩余玩家: %d", 
+        player.name or uin, remainingCount))
     
     -- 【修复】根据当前状态和剩余人数决定后续操作
     if self.state == RaceState.WAITING or self.state == RaceState.PREPARING then
@@ -456,6 +455,10 @@ function RaceGameMode:Start()
     local prepareTime = self.levelType.prepareTime or 10
     --gg.log(string.format("开始比赛准备倒计时: %d秒", prepareTime))
 
+    -- 【新增】记录倒计时开始时间，用于计算剩余时间
+    self.prepareStartTime = os.time()
+    self.totalPrepareTime = prepareTime
+
     -- 立即向所有参赛者发送准备倒计时通知
     RaceGameEventManager.BroadcastPrepareCountdown(self:_getParticipantList(), prepareTime)
 
@@ -479,6 +482,8 @@ function RaceGameMode:_onPrepareCountdownFinished()
     -- 重置准备标志
     self.isPreparing = false
     self.prepareTimer = nil
+    self.prepareStartTime = nil  -- 【新增】清理时间记录
+    self.totalPrepareTime = nil  -- 【新增】清理时间记录
     self.state = RaceState.RACING
     
     -- 执行比赛开始逻辑
@@ -528,22 +533,42 @@ function RaceGameMode:_cancelPrepareCountdown(reason)
     RaceGameEventManager.BroadcastStopPrepareCountdown(self:_getParticipantList(), reason)
 end
 
--- 【新增】向准备中加入的玩家发送当前倒计时状态
+-- 【新增】计算倒计时剩余时间的方法
+---@return number 剩余倒计时时间（秒）
+function RaceGameMode:GetRemainingPrepareTime()
+   if not self.isPreparing or not self.prepareStartTime or not self.totalPrepareTime then
+       return 0
+   end
+   
+   local currentTime = os.time()
+   local elapsedTime = currentTime - self.prepareStartTime
+   local remainingTime = self.totalPrepareTime - elapsedTime
+   gg.log("currentTime", currentTime, "elapsedTime", elapsedTime, "remainingTime", remainingTime, "totalPrepareTime", self.totalPrepareTime)
+   return math.max(0, remainingTime)
+end
+
+-- 【修复】向准备中加入的玩家发送当前倒计时状态
 function RaceGameMode:_notifyJoinDuringCountdown(player)
-    if not player or not self.isPreparing then return end
-    
-    -- 这里可以发送剩余倒计时时间，简化实现先发送标准通知
-    local prepareTime = self.levelType.prepareTime or 10
-    local eventData = {
-        cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN,
-        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
-        prepareTime = prepareTime,
-        playerScene = player.currentScene or "init_map"
-    }
-    
-    if gg.network_channel then
-        gg.network_channel:fireClient(player.uin, eventData)
-    end
+   if not player or not self.isPreparing then return end
+   
+   -- 【关键修复】计算并发送剩余倒计时时间，而不是完整时间
+   local remainingTime = self:GetRemainingPrepareTime()
+   
+   -- 如果剩余时间不足1秒，不发送倒计时通知
+   if remainingTime < 1 then
+       return
+   end
+   
+   local eventData = {
+       cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN,
+       gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
+       prepareTime = remainingTime,  -- 【修复】发送剩余时间而不是总时间
+       playerScene = player.currentScene
+   }
+   
+   if gg.network_channel then
+       gg.network_channel:fireClient(player.uin, eventData)
+   end
 end
 
 --- 结束比赛
@@ -847,29 +872,7 @@ function RaceGameMode:GetCurrentRankings()
     return self.rankings
 end
 
---- 【新增】获取参赛者数量
----@return number
-function RaceGameMode:_getParticipantCount()
-    local count = 0
-    if self.participants then
-        for _ in pairs(self.participants) do
-            count = count + 1
-        end
-    end
-    return count
-end
-
---- 【新增】获取参赛者列表（数组形式）
----@return MPlayer[]
-function RaceGameMode:_getParticipantList()
-    local list = {}
-    if self.participants then
-        for _, player in pairs(self.participants) do
-            table.insert(list, player)
-        end
-    end
-    return list
-end
+-- 【移除】_getParticipantCount 和 _getParticipantList 已移至 GameModeBase 中，此处继承使用
 
 --- 【新增】标记玩家为已完成状态
 ---@param uin number 玩家UIN
@@ -1303,6 +1306,8 @@ function RaceGameMode:_cleanAllData()
     -- 清理定时器
     self.prepareTimer = nil
     self.isPreparing = false
+    self.prepareStartTime = nil      -- 【新增】清理倒计时开始时间
+    self.totalPrepareTime = nil      -- 【新增】清理总倒计时时间
 end
 
 --- 【新增】为单个玩家执行游戏开始指令

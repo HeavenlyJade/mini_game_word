@@ -212,6 +212,31 @@ function GameModeBase:OnPlayerLeave(player)
     end
 end
 
+--- 【新增】获取参赛者数量
+---@return number
+function GameModeBase:_getParticipantCount()
+    local count = 0
+    if self.participants then
+        for _ in pairs(self.participants) do
+            count = count + 1
+        end
+    end
+    return count
+end
+
+--- 【新增】获取参赛者列表（数组形式）
+---@return MPlayer[]
+function GameModeBase:_getParticipantList()
+    local list = {}
+    if self.participants then
+        for _, player in pairs(self.participants) do
+            table.insert(list, player)
+        end
+    end
+    return list
+end
+
+
 --- 销毁此游戏模式实例，清理所有相关资源
 function GameModeBase:Destroy()
     -- 遍历并销毁所有由该游戏模式实例创建的、仍在活动的定时器
