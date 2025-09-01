@@ -28,14 +28,14 @@ local EffectLevelType = ClassMgr.Class("EffectLevelType")
 --- 初始化效果等级配置类型
 ---@param data table 配置数据
 function EffectLevelType:OnInit(data)
-    --gg.log("=== EffectLevelType:OnInit 开始 ===")
-    --gg.log("原始配置数据:", data)
+    gg.log("=== EffectLevelType:OnInit 开始 ===")
+    gg.log("原始配置数据:", data)
     
     -- 基础配置信息
     self.configName = data['配置名称'] or ''
     self.configDesc = data['配置描述'] or ''
-    --gg.log("配置名称:", self.configName)
-    --gg.log("配置描述:", self.configDesc)
+    gg.log("配置名称:", self.configName)
+    gg.log("配置描述:", self.configDesc)
     
     -- 等级效果列表
     self.levelEffects = {}
@@ -63,7 +63,7 @@ function EffectLevelType:OnInit(data)
                 effectFormula = effectFormula
             }
             
-            --gg.log("处理后数据:", processedEffect)
+            gg.log("处理后数据:", processedEffect)
             table.insert(self.levelEffects, processedEffect)
         end
     else
@@ -92,7 +92,7 @@ function EffectLevelType:OnInit(data)
     self.maxLevel = self:CalculateMaxLevel()
     --gg.log("计算出的最大等级:", self.maxLevel)
     
-    --gg.log("=== EffectLevelType:OnInit 结束 ===")
+    gg.log("=== EffectLevelType:OnInit 结束 ===")
 end
 
 --- 计算最大等级
@@ -299,12 +299,12 @@ end
 function EffectLevelType:CalculateMatchingEffects(playerData, bagData, externalContext)
     local matchingEffects = {}
     
-    --gg.log("=== EffectLevelType:CalculateMatchingEffects 开始 ===")
-    --gg.log("配置名称:", self.configName)
-    --gg.log("等级效果数量:", self.levelEffects and #self.levelEffects or 0)
-    --gg.log("玩家数据:", playerData)
-    --gg.log("背包数据:", bagData)
-    --gg.log("外部上下文:", externalContext)
+    gg.log("=== EffectLevelType:CalculateMatchingEffects 开始 ===")
+    gg.log("配置名称:", self.configName)
+    gg.log("等级效果数量:", self.levelEffects and #self.levelEffects or 0)
+    gg.log("玩家数据:", playerData)
+    gg.log("背包数据:", bagData)
+    gg.log("外部上下文:", externalContext)
     
     if not self.levelEffects or #self.levelEffects == 0 then
         --gg.log("警告：没有等级效果配置，返回空列表")
@@ -312,12 +312,12 @@ function EffectLevelType:CalculateMatchingEffects(playerData, bagData, externalC
     end
     
     for index, levelEffect in ipairs(self.levelEffects) do
-        --gg.log(string.format("--- 处理第%d个等级效果 ---", index))
-        --gg.log("等级:", levelEffect.level)
-        --gg.log("效果数值:", levelEffect.effectValue)
-        --gg.log("条件类型:", levelEffect.conditionType)
-        --gg.log("条件公式:", levelEffect.conditionFormula)
-        --gg.log("效果公式:", levelEffect.effectFormula)
+        gg.log(string.format("--- 处理第%d个等级效果 ---", index))
+        gg.log("等级:", levelEffect.level)
+        gg.log("效果数值:", levelEffect.effectValue)
+        gg.log("条件类型:", levelEffect.conditionType)
+        gg.log("条件公式:", levelEffect.conditionFormula)
+        gg.log("效果公式:", levelEffect.effectFormula)
         
         local conditionMet = false
         
@@ -327,7 +327,7 @@ function EffectLevelType:CalculateMatchingEffects(playerData, bagData, externalC
             local calculator = self:_GetCalculator()
             local result = calculator:_CalculateValue(levelEffect.conditionFormula, playerData, bagData, externalContext)
             conditionMet = (result == true)
-            --gg.log("公式计算结果:", result, "条件满足:", conditionMet)
+            gg.log("公式计算结果:", result, "条件满足:", conditionMet)
             
         elseif levelEffect.conditionType == '数值' then
             --gg.log("使用数值条件，直接满足")
@@ -374,7 +374,7 @@ function EffectLevelType:GetMaxEffectIndex(playerData, bagData, externalContext)
     local matchingEffects = self:CalculateMatchingEffects(playerData, bagData, externalContext)
     
     if #matchingEffects == 0 then
-        --gg.log("没有满足条件的效果配置，返回nil")
+        gg.log("没有满足条件的效果配置，返回nil")
         return nil
     end
     

@@ -52,7 +52,7 @@ function RaceGameAction:OnStart(data)
 
     -- 【新增】禁用玩家WASD移动控制
 
-    actor.Gravity =0  -- 应用新的重力值
+    -- actor.Gravity =0  -- 应用新的重力值
 
     actor.Movespeed = moveSpeed
     actor.LocalEuler = Vector3.new(0, 180, 0)

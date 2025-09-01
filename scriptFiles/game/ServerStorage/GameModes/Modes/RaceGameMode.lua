@@ -148,7 +148,7 @@ function RaceGameMode:HandleLevelRewardTrigger(triggerPlayer, evt)
     local playerInRace = self.participants[uin] ~= nil
 
     if not playerInRace then
-        --gg.log(string.format("玩家 %s 不在当前比赛中，忽略奖励触发", triggerPlayer.name or uin))
+        gg.log(string.format("玩家 %s 不在当前比赛中，忽略奖励触发", triggerPlayer.name or uin))
         return
     end
     
@@ -308,7 +308,7 @@ function RaceGameMode:SendLevelRewardNotification(player, rewardConfig, uniqueId
             timestamp = os.time()
         }
         gg.network_channel:fireClient(player.uin, eventData)
-        --gg.log(string.format("已向玩家 %s 发送关卡奖励通知", player.name or player.uin))
+        -- gg.log(string.format("已向玩家 %s 发送关卡奖励通知", player.name or player.uin))
     end
 end
 

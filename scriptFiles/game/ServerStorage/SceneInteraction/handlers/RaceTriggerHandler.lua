@@ -23,7 +23,7 @@ function RaceTriggerHandler:OnEntityEnter(player)
     -- 【核心修正】从处理器配置中获取关联的关卡ID，使用面向对象的方式访问
     local levelId = self.config.linkedLevel
     if not levelId then
-        --gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'linkedLevel'字段。", self.name))
+        gg.log(string.format("错误: 飞车触发器(%s) - 场景节点配置中缺少'linkedLevel'字段。", self.name))
         return
     end
 

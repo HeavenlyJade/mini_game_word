@@ -66,7 +66,7 @@ function StatCommand.handlers.set(params, player)
     local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
 
     if not (statName and value) then
-        --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
+        gg.log("缺少 '属性名' 或 '数值' 字段。")
         return false
     end
 
@@ -120,29 +120,6 @@ function StatCommand.handlers.reduce(params, player)
     return true
 end
 
---- 测试加成计算
----@param params table
----@param player MPlayer
-function StatCommand.handlers.testbonus(params, player)
-    local baseValue = tonumber(params["基础值"]) or 100
-    local playerStatBonuses = params["玩家属性加成"]
-    local playerVariableBonuses = params["玩家变量加成"]
-    local otherBonuses = params["其他加成"]
-    local targetStat = params["目标属性"] or "测试属性"
-    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
-
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, targetStat)
-    
-    -- 应用最终倍率
-    local multipliedValue = finalValue * finalMultiplier
-    
-    local msg = string.format("加成测试结果:\n基础值: %s\n加成后值: %s\n最终倍率: %s\n最终值: %s%s", 
-        tostring(baseValue), tostring(finalValue), tostring(finalMultiplier), tostring(multipliedValue), bonusInfo)
-    
-    --player:SendHoverText(msg)
-    gg.log(msg)
-    return true
-end
 
 --- 仅应用加成（不包含基础数值）
 ---@param params table
@@ -336,7 +313,6 @@ local operationMap = {
     ["查看"] = "view",
     ["恢复"] = "restore",
     ["刷新"] = "refresh",
-    ["测试加成"] = "testbonus",
     ["仅加成新增"] = "bonusonly"
 }
 
@@ -348,12 +324,14 @@ function StatCommand.main(params, player)
     local operationType = params["操作类型"]
 
     if not operationType then
+        gg.log("缺少'操作类型'字段。有效类型: '新增', '设置', '减少', '查看', '恢复', '刷新', '测试加成', '仅加成新增'")
         --player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '设置', '减少', '查看', '恢复', '刷新', '测试加成', '仅加成新增'")
         return false
     end
 
     local handlerName = operationMap[operationType]
     if not handlerName then
+        gg.log("位置的操作",operationType)
         --player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '设置', '减少', '查看', '恢复', '刷新', '测试加成', '仅加成新增'")
         return false
     end

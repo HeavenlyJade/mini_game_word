@@ -14,7 +14,7 @@ function RaceGameEventManager.Init()
 
     
     RaceGameEventManager.RegisterEventHandlers()
-    gg.log("RaceGameEventManager 初始化完成")
+    --gg.log("RaceGameEventManager 初始化完成")
 end
 
 --- 注册事件处理器
@@ -53,7 +53,7 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
         return
     end
 
-    gg.log(string.format("玩家 %s 触发落地/离开，强制结束其在比赛 %s 中的状态。", player.name or player.uin, instanceId))
+    --gg.log(string.format("玩家 %s 触发落地/离开，强制结束其在比赛 %s 中的状态。", player.name or player.uin, instanceId))
     
     -- 1. 为该玩家执行游戏结束指令，以恢复其状态（如速度）
     if currentMode._executeGameEndCommandsForPlayer then
@@ -68,7 +68,7 @@ function RaceGameEventManager.HandlePlayerLanded(evt)
     -- 3. 从 GameModeManager 中彻底移除该玩家的模式记录
     GameModeManager.playerModes[player.uin] = nil
 
-    gg.log("中途离开比赛",player.uin)
+    --gg.log("中途离开比赛",player.uin)
     -- 【新增】停止该玩家的场景音乐
     if currentMode.StopSceneMusic then
         currentMode:StopSceneMusic(player)
@@ -83,7 +83,7 @@ end
 --- 【新增】处理关卡奖励节点触发事件
 ---@param evt table 事件数据 { player: MPlayer, uniqueId: string, configName: string, mapName?: string }
 function RaceGameEventManager.HandleLevelRewardNodeTriggered(evt)
-      local player = evt and evt.player
+    local player = evt and evt.player
     local uniqueId = evt and evt.uniqueId
     local configName = evt and evt.configName
     local mapName = evt and evt.mapName
@@ -91,25 +91,26 @@ function RaceGameEventManager.HandleLevelRewardNodeTriggered(evt)
         return
     end
     if not player or not uniqueId or not configName then
-        gg.log("关卡奖励节点触发事件参数不完整")
+        --gg.log("关卡奖励节点触发事件参数不完整")
         return
     end
 
-    -- gg.log(string.format("收到玩家 %s 触发关卡奖励节点 - 配置:%s, ID:%s, 地图:%s,",
-    --     player.name or player.uin, tostring(configName), tostring(uniqueId), mapName or "unknown"))
-    -- gg.log("player",player)
+    --gg.log(string.format("收到玩家 %s 触发关卡奖励节点 - 配置:%s, ID:%s, 地图:%s,",
+    --player.name or player.uin, tostring(configName), tostring(uniqueId), mapName or "unknown"))
+
 
     -- 通过 MServerDataManager 获取 GameModeManager 实例
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr and serverDataMgr.GameModeManager
     if not GameModeManager then
+        --gg.log("GameModeManager 未初始化")
         return
     end
 
     -- 获取玩家所在的游戏模式实例
     local instanceId = GameModeManager.playerModes[player.uin]
     if not instanceId then
-        gg.log(string.format("玩家 %s 不在任何比赛中，忽略关卡奖励触发", player.name or player.uin))
+        --gg.log(string.format("玩家 %s 不在任何比赛中，忽略关卡奖励触发", player.name or player.uin))
         return
     end
 
@@ -126,7 +127,7 @@ function RaceGameEventManager.SendRaceStartNotification(player, raceTime)
     if not player or not player.uin then return end
     
     if not gg.network_channel then
-        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送比赛开始通知")
+        --gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送比赛开始通知")
         return
     end
     
@@ -137,7 +138,7 @@ function RaceGameEventManager.SendRaceStartNotification(player, raceTime)
     }
     
     gg.network_channel:fireClient(player.uin, eventData)
-    gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送比赛开始通知", player.name or player.uin))
+    --gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送比赛开始通知", player.name or player.uin))
 end
 
 --- 【新增】向指定玩家发送比赛结束通知
@@ -151,7 +152,7 @@ function RaceGameEventManager.SendRaceEndNotification(player)
     }
     
     gg.network_channel:fireClient(player.uin, eventData)
-    gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送比赛结束通知", player.name or player.uin))
+    --gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送比赛结束通知", player.name or player.uin))
 end
 
 --- 【新增】向指定玩家发送比赛数据更新
@@ -162,7 +163,7 @@ function RaceGameEventManager.SendRaceDataUpdate(player, raceData)
     if not raceData then return end
     
     if not gg.network_channel then
-        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送比赛数据更新")
+        --gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送比赛数据更新")
         return
     end
     
@@ -186,7 +187,7 @@ function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTim
     if not prepareTime then return end
     
     if not gg.network_channel then
-        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播准备倒计时")
+        --gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播准备倒计时")
         return
     end
     
@@ -215,7 +216,7 @@ function RaceGameEventManager.BroadcastPrepareCountdown(participants, prepareTim
         totalPlayers = totalPlayers + 1
     end
     
-    --gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名在线玩家广播准备倒计时事件，准备时间: %d秒，参赛者数量: %d", 
+    ----gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名在线玩家广播准备倒计时事件，准备时间: %d秒，参赛者数量: %d", 
     --                    successCount, totalPlayers, prepareTime, participants and #participants or 0))
 end
 
@@ -226,7 +227,7 @@ function RaceGameEventManager.SendStopPrepareCountdown(player, reason)
     if not player or not player.uin then return end
     
     if not gg.network_channel then
-        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送停止准备倒计时")
+        --gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法发送停止准备倒计时")
         return
     end
     
@@ -237,7 +238,7 @@ function RaceGameEventManager.SendStopPrepareCountdown(player, reason)
     }
     
     gg.network_channel:fireClient(player.uin, eventData)
-    gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送停止准备倒计时事件，原因: %s", player.name or player.uin, reason or "退出准备区域"))
+    --gg.log(string.format("RaceGameEventManager: 已向玩家 %s 发送停止准备倒计时事件，原因: %s", player.name or player.uin, reason or "退出准备区域"))
 end
 
 --- 【修改】向所有在线玩家广播停止准备倒计时事件（不仅仅是参赛者）
@@ -245,7 +246,7 @@ end
 ---@param reason string 停止原因（可选）
 function RaceGameEventManager.BroadcastStopPrepareCountdown(participants, reason)
     if not gg.network_channel then
-        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播停止准备倒计时")
+        --gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播停止准备倒计时")
         return
     end
     
@@ -271,7 +272,7 @@ function RaceGameEventManager.BroadcastStopPrepareCountdown(participants, reason
         totalPlayers = totalPlayers + 1
     end
     
-    --gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名在线玩家广播停止准备倒计时事件，原因: %s，参赛者数量: %d", 
+    ----gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名在线玩家广播停止准备倒计时事件，原因: %s，参赛者数量: %d", 
     --                     successCount, totalPlayers, reason or "比赛已取消", participants and #participants or 0))
 end
 
@@ -284,7 +285,7 @@ function RaceGameEventManager.BroadcastRaceEvent(participants, eventType, eventD
     if not eventType then return end
     
     if not gg.network_channel then
-        gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播比赛事件")
+        --gg.log("警告: RaceGameEventManager - 网络通道未初始化，无法广播比赛事件")
         return
     end
     
@@ -310,7 +311,7 @@ function RaceGameEventManager.BroadcastRaceEvent(participants, eventType, eventD
         end
     end
     
-    -- gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名参赛者广播 %s 事件", 
+    -- --gg.log(string.format("RaceGameEventManager: 已向 %d/%d 名参赛者广播 %s 事件", 
     --                     successCount, #participants, eventType))
 end
 
