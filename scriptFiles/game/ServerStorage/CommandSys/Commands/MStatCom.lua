@@ -29,6 +29,7 @@ function StatCommand.handlers.add(params, player)
     local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
 
     if not (statName and value) then
         --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
@@ -37,14 +38,16 @@ function StatCommand.handlers.add(params, player)
 
     -- 使用BonusCalculator计算加成
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
-    local valueToAdd = finalValue
+    
+    -- 应用最终倍率
+    local valueToAdd = finalValue * finalMultiplier
 
     local oldValue = player:GetStat(statName)
     player:AddStat(statName, valueToAdd, source, true)
     local newValue = player:GetStat(statName)
 
-    local msg = string.format("成功为玩家 %s 的属性 '%s' 新增 %s (来源: %s)，新值为: %s.%s", 
-        player.name, statName, tostring(valueToAdd), source, tostring(newValue), bonusInfo)
+    local msg = string.format("成功为玩家 %s 的属性 '%s' 新增 %s (最终倍率: %s, 来源: %s)，新值为: %s.%s", 
+        player.name, statName, tostring(valueToAdd), tostring(finalMultiplier), source, tostring(newValue), bonusInfo)
     --player:SendHoverText(msg)
     gg.log(msg)
     return true
@@ -60,6 +63,7 @@ function StatCommand.handlers.set(params, player)
     local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
 
     if not (statName and value) then
         --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
@@ -69,11 +73,14 @@ function StatCommand.handlers.set(params, player)
     -- 使用BonusCalculator计算加成
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
 
-    player:SetStat(statName, finalValue, source, true)
+    -- 应用最终倍率
+    local valueToSet = finalValue * finalMultiplier
+
+    player:SetStat(statName, valueToSet, source, true)
     local newValue = player:GetStat(statName)
 
-    local msg = string.format("成功将玩家 %s 的属性 '%s' 设置为: %s (来源: %s).%s", 
-        player.name, statName, tostring(newValue), source, bonusInfo)
+    local msg = string.format("成功将玩家 %s 的属性 '%s' 设置为: %s (最终倍率: %s, 来源: %s).%s", 
+        player.name, statName, tostring(newValue), tostring(finalMultiplier), source, bonusInfo)
     --player:SendHoverText(msg)
     gg.log(msg)
     return true
@@ -89,6 +96,7 @@ function StatCommand.handlers.reduce(params, player)
     local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
 
     if not (statName and value) then
         --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
@@ -97,14 +105,16 @@ function StatCommand.handlers.reduce(params, player)
 
     -- 使用BonusCalculator计算加成
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
-    local valueToReduce = finalValue
+    
+    -- 应用最终倍率
+    local valueToReduce = finalValue * finalMultiplier
 
     local oldValue = player:GetStat(statName)
     player:AddStat(statName, -valueToReduce, source, true)
     local newValue = player:GetStat(statName)
 
-    local msg = string.format("成功为玩家 %s 的属性 '%s' 减少 %s (来源: %s)，新值为: %s.%s", 
-        player.name, statName, tostring(valueToReduce), source, tostring(newValue), bonusInfo)
+    local msg = string.format("成功为玩家 %s 的属性 '%s' 减少 %s (最终倍率: %s, 来源: %s)，新值为: %s.%s", 
+        player.name, statName, tostring(valueToReduce), tostring(finalMultiplier), source, tostring(newValue), bonusInfo)
     --player:SendHoverText(msg)
     gg.log(msg)
     return true
@@ -119,11 +129,15 @@ function StatCommand.handlers.testbonus(params, player)
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
     local targetStat = params["目标属性"] or "测试属性"
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
 
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, targetStat)
     
-    local msg = string.format("加成测试结果:\n基础值: %s\n最终值: %s%s", 
-        tostring(baseValue), tostring(finalValue), bonusInfo)
+    -- 应用最终倍率
+    local multipliedValue = finalValue * finalMultiplier
+    
+    local msg = string.format("加成测试结果:\n基础值: %s\n加成后值: %s\n最终倍率: %s\n最终值: %s%s", 
+        tostring(baseValue), tostring(finalValue), tostring(finalMultiplier), tostring(multipliedValue), bonusInfo)
     
     --player:SendHoverText(msg)
     gg.log(msg)
@@ -139,6 +153,7 @@ function StatCommand.handlers.bonusonly(params, player)
     local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
 
     if not statName then
         --player:SendHoverText("缺少 '属性名' 字段。")
@@ -151,12 +166,15 @@ function StatCommand.handlers.bonusonly(params, player)
     -- 只应用加成部分，不包含基础值
     local bonusValue = finalValue - 0  -- 减去基础值0，得到纯加成值
     
-    if bonusValue > 0 then
-        player:AddStat(statName, bonusValue, source, true)
+    -- 应用最终倍率
+    local finalBonusValue = bonusValue * finalMultiplier
+    
+    if finalBonusValue ~= 0 then
+        player:AddStat(statName, finalBonusValue, source, true)
         local newValue = player:GetStat(statName)
         
-        local msg = string.format("成功为玩家 %s 的属性 '%s' 应用加成 %s (来源: %s)，新值为: %s.%s", 
-            player.name, statName, tostring(bonusValue), source, tostring(newValue), bonusInfo)
+        local msg = string.format("成功为玩家 %s 的属性 '%s' 应用加成 %s (最终倍率: %s, 来源: %s)，新值为: %s.%s", 
+            player.name, statName, tostring(finalBonusValue), tostring(finalMultiplier), source, tostring(newValue), bonusInfo)
         -- --player:SendHoverText(msg)
         gg.log(msg)
     else

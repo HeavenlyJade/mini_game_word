@@ -120,4 +120,14 @@ CardIcon.itemIconResources = {
 
 }
 
+-- 音效资源配置
+CardIcon.soundResources = {
+    ["翅膀扇动音效1"] = "sandboxId://音效资源/翅膀扇动音效1.ogg",
+    ["翅膀扇动音效2"] = "sandboxId://音效资源/翅膀扇动音效2.ogg",
+    ["翅膀扇动音效3"] = "sandboxId://音效资源/翅膀扇动音效3.ogg",
+    ["能量获得音效1"] = "sandboxId://音效资源/能量获得音效1.ogg",
+    ["能量获得音效2"] = "sandboxId://音效资源/能量获得音效2.ogg",
+    ["能量获得音效3"] = "sandboxId://音效资源/能量获得音效3.ogg"
+}
+
 return CardIcon
