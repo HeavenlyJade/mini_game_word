@@ -82,7 +82,7 @@ function VariableCommand.handlers.add(params, player)
     local newValue = variableSystem:GetVariable(variableName)
 
     local msg = string.format("成功为玩家 %s 的变量 '%s' 新增 %s (来源: %s)，新值为: %s.%s", player.name, variableName, tostring(valueToAdd), source, tostring(newValue), bonusInfo)
-    ----gg.log(msg)
+    -- gg.log(msg)
     -- player:SendHoverText(msg)
     
     -- 检查依赖规则
@@ -185,7 +185,7 @@ function VariableCommand.handlers.view(params, player)
         if not details then
             local msg = string.format("玩家 %s 没有名为 '%s' 的变量。", player.name, variableName)
             player:SendHoverText(msg)
-            --gg.log(msg)
+            gg.log(msg)
             return false
         end
 
@@ -212,7 +212,7 @@ function VariableCommand.handlers.view(params, player)
         player:SendHoverText(fullMessage)
         local lines = gg.split(fullMessage, "\n")
         for _, line in ipairs(lines) do
-            --gg.log(line)
+            gg.log(line)
         end
     else
         -- 查看所有变量的详细信息
@@ -249,33 +249,16 @@ function VariableCommand.handlers.view(params, player)
         end
 
         local fullMessage = table.concat(response, "\n")
-        -- player:SendHoverText(fullMessage)
+        player:SendHoverText(fullMessage)
         local lines = gg.split(fullMessage, "\n")
         for _, line in ipairs(lines) do
-            --gg.log(line)
+            gg.log(line)
         end
     end
     return true
 end
 
---- 测试加成计算
----@param params table
----@param player MPlayer
-function VariableCommand.handlers.testbonus(params, player)
-    local baseValue = tonumber(params["基础值"]) or 100
-    local playerStatBonuses = params["玩家属性加成"]
-    local playerVariableBonuses = params["玩家变量加成"]
-    local otherBonuses = params["其他加成"]
-    local targetVariable = params["目标变量"] or "测试变量"
 
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, targetVariable)
-    
-    local msg = string.format("加成测试结果:\n基础值: %s\n最终值: %s%s", 
-        tostring(baseValue), tostring(finalValue), bonusInfo)
-    
-    ----gg.log(msg)
-    return true
-end
 
 --- 仅应用加成（不包含基础数值）
 ---@param params table
@@ -320,6 +303,58 @@ function VariableCommand.handlers.bonusonly(params, player)
 end
 
 
+--- 清空变量来源
+---@param params table
+---@param player MPlayer
+function VariableCommand.handlers.clearsources(params, player)
+    local variableName = params["变量名"]
+    local variableSystem = player.variableSystem
+
+    if not variableName then
+        player:SendHoverText("缺少 '变量名' 字段。")
+        return false
+    end
+
+    if not isValidVariableName(variableName) then
+        player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
+    end
+
+    -- 检查变量是否存在
+    if not variableSystem.variables[variableName] then
+        local msg = string.format("玩家 %s 没有名为 '%s' 的变量。", player.name, variableName)
+        player:SendHoverText(msg)
+        gg.log(msg)
+        return false
+    end
+
+    -- 获取清空前的信息
+    local oldValue = variableSystem:GetVariable(variableName)
+    local sourceCount = 0
+    if variableSystem.variables[variableName].sources then
+        for _ in pairs(variableSystem.variables[variableName].sources) do
+            sourceCount = sourceCount + 1
+        end
+    end
+
+    -- 清空所有来源
+    variableSystem.variables[variableName].sources = {}
+    
+    -- 获取清空后的值（只剩基础值）
+    local newValue = variableSystem:GetVariable(variableName)
+    
+    local msg = string.format("成功清空玩家 %s 的变量 '%s' 的所有来源（共%d个），值从 %s 变为 %s", 
+        player.name, variableName, sourceCount, tostring(oldValue), tostring(newValue))
+    
+    player:SendHoverText(msg)
+    gg.log(msg)
+    
+    -- 检查依赖规则
+    DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
+    
+    syncAndSave(player)
+    return true
+end
+
 
 -- 中文到英文的映射
 local operationMap = {
@@ -327,8 +362,9 @@ local operationMap = {
     ["设置"] = "set",
     ["减少"] = "reduce",
     ["查看"] = "view",
-    ["测试加成"] = "testbonus",
-    ["仅加成"] = "bonusonly"
+    ["仅加成"] = "bonusonly",
+    ["清空来源"] = "clearsources"  -- 新增
+
 }
 
 --- 变量操作指令入口

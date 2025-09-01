@@ -82,7 +82,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
                                 bonusValue = playerAchievement.talentVariableSystem:GetRawBonusValue(bonusVarName)
                                 --gg.log(string.format("从天赋系统获取变量[%s]: %s", bonusVarName, tostring(bonusValue)))
                             else
-                                --gg.log(string.format("警告：玩家[%s]天赋系统不存在，无法获取[%s]", player.uin, bonusVarName))
+                                ----gg.log(string.format("警告：玩家[%s]天赋系统不存在，无法获取[%s]", player.uin, bonusVarName))
                             end
                         else
                             -- 其他所有变量从玩家变量系统获取
@@ -153,12 +153,12 @@ end
 ---@return table<string, any> 宠物加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPetItemBonuses(player)
     if not player or not player.uin then
-        ----gg.log("[BonusManager调试] GetPetItemBonuses: 玩家对象无效")
+        ------gg.log("[BonusManager调试] GetPetItemBonuses: 玩家对象无效")
         return {}
     end
 
     local bonuses = PetMgr.GetActiveItemBonuses(player.uin)
-    ----gg.log("[BonusManager调试] GetPetItemBonuses: 玩家", player.uin, "宠物加成数据:", bonuses)
+    ------gg.log("[BonusManager调试] GetPetItemBonuses: 玩家", player.uin, "宠物加成数据:", bonuses)
     return bonuses
 end
 
@@ -167,12 +167,12 @@ end
 ---@return table<string, any> 伙伴加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPartnerItemBonuses(player)
     if not player or not player.uin then
-        ----gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家对象无效")
+        ------gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家对象无效")
         return {}
     end
 
     local bonuses = PartnerMgr.GetActiveItemBonuses(player.uin)
-    ----gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家", player.uin, "伙伴加成数据:", bonuses)
+    ------gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家", player.uin, "伙伴加成数据:", bonuses)
     return bonuses
 end
 
@@ -184,7 +184,7 @@ function BonusManager.GetWingItemBonuses(player)
         return {}
     end
     local bonuses = WingMgr.GetActiveItemBonuses(player.uin)
-    ----gg.log("[BonusManager调试] GetWingItemBonuses: 玩家", player.uin, "翅膀加成数据:", bonuses)
+    ------gg.log("[BonusManager调试] GetWingItemBonuses: 玩家", player.uin, "翅膀加成数据:", bonuses)
     return bonuses or {}
 end
 

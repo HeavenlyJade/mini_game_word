@@ -454,7 +454,7 @@ function HudMoney:UpdateVariableDisplay()
                         textNode.Title = gg.FormatLargeNumber(math.floor(value))
                         --gg.log("更新战力值显示:", value)
                     elseif variableName == "数据_固定值_重生次数" then
-                        textNode.Title = tostring(math.floor(value))
+                        textNode.Title = gg.FormatLargeNumber(math.floor(value))
                         --gg.log("更新重生次数显示:", value)
                     else
                         -- 默认显示格式

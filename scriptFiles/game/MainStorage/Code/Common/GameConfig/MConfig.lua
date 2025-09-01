@@ -34,6 +34,12 @@ local ItemTypeNames = {
     [6] = "货币"
 }
 
+-- 指令执行配置
+local CommandExecutionConfig = {
+    'variable { "操作类型": "清空来源", "变量名": "加成_百分比_训练加成", "其他加成": [  ] }',
+    'variable { "操作类型": "设置", "变量名": "加成_百分比_训练加成", "数值": 0, "其他加成": [  ] }', 
+}
+
 
 --所有配置( 其他所有的配置文件将汇总到这里， 游戏逻辑代码只需要require这个文件即可 )
 ---@class common_config
@@ -44,6 +50,7 @@ local common_config = {
     EquipmentSlot = EquipmentSlot,
     ItemTypeEnum = ItemTypeEnum,
     ItemTypeNames = ItemTypeNames,
+    CommandExecutionConfig = CommandExecutionConfig,
 }
 
 

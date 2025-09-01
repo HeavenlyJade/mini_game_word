@@ -22,26 +22,26 @@ end
 ---@return table<string, number> 一个映射表，键是消耗名称，值是计算出的数量
 function ActionCosteRewardCal:CalculateCosts(costList, playerData, bagData, externalContext)
     local calculatedCosts = {}
-    ----gg.log("[诊断][CalculateCosts] === 开始计算成本 ===")
-    ----gg.log("[诊断][CalculateCosts] 外部上下文 (T_LVL):", externalContext)
-    ----gg.log("[诊断][CalculateCosts] 消耗列表 CostList:", costList)
+    ------gg.log("[诊断][CalculateCosts] === 开始计算成本 ===")
+    ------gg.log("[诊断][CalculateCosts] 外部上下文 (T_LVL):", externalContext)
+    ------gg.log("[诊断][CalculateCosts] 消耗列表 CostList:", costList)
 
     if not costList then
-        ----gg.log("错误: [ActionCosteRewardCal] 无效的消耗列表。")
+        ------gg.log("错误: [ActionCosteRewardCal] 无效的消耗列表。")
         return calculatedCosts
     end
 
     for i, costItem in ipairs(costList) do
-        ----gg.log("[诊断][CalculateCosts] 正在处理第 " .. i .. " 个消耗项:", costItem.Name)
+        ------gg.log("[诊断][CalculateCosts] 正在处理第 " .. i .. " 个消耗项:", costItem.Name)
         local costAmount = self:_CalculateCostForItem(costItem, playerData, bagData, externalContext)
-        ----gg.log("[诊断][CalculateCosts] 第 " .. i .. " 个消耗项 '".. costItem.Name .."' 计算结果: " .. tostring(costAmount))
+        ------gg.log("[诊断][CalculateCosts] 第 " .. i .. " 个消耗项 '".. costItem.Name .."' 计算结果: " .. tostring(costAmount))
         if costAmount and costAmount >= 0 then
             -- 使用消耗名称作为key，以避免重复
             calculatedCosts[costItem.Name] = (calculatedCosts[costItem.Name] or 0) + costAmount
         end
     end
 
-    ----gg.log("[诊断][CalculateCosts] === 成本计算结束, 最终结果: ===", calculatedCosts)
+    ------gg.log("[诊断][CalculateCosts] === 成本计算结束, 最终结果: ===", calculatedCosts)
     return calculatedCosts
 end
 
@@ -53,23 +53,23 @@ end
 ---@param externalContext table 外部上下文
 ---@return number | nil 计算出的成本数量
 function ActionCosteRewardCal:_CalculateCostForItem(costItem, playerData, bagData, externalContext)
-    ----gg.log("[诊断][_CalculateCostForItem] 开始处理消耗项:", costItem.Name)
+    ------gg.log("[诊断][_CalculateCostForItem] 开始处理消耗项:", costItem.Name)
     for i, segment in ipairs(costItem.Segments) do
-        ----gg.log("[诊断][_CalculateCostForItem] 正在检查第 " .. i .. " 个分段, 条件:", segment.Condition)
+        ------gg.log("[诊断][_CalculateCostForItem] 正在检查第 " .. i .. " 个分段, 条件:", segment.Condition)
         if self:_CheckCondition(segment.Condition, playerData, bagData, externalContext) then
-            ----gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件满足。开始计算公式:", segment.Formula)
+            ------gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件满足。开始计算公式:", segment.Formula)
             local value = self:_CalculateValue(segment.Formula, playerData, bagData, externalContext)
-            ----gg.log("[诊断][_CalculateCostForItem] 公式计算结果:", value)
+            ------gg.log("[诊断][_CalculateCostForItem] 公式计算结果:", value)
             if value and type(value) == "number" and value >= 0 then
                 return math.floor(value) -- 成本必须是非负整数
             end
             -- 如果公式计算失败，则停止此项的计算
             return nil
         else
-        ----gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件不满足。")
+        ------gg.log("[诊断][_CalculateCostForItem] 第 " .. i .. " 个分段条件不满足。")
         end
     end
-    ----gg.log("[诊断][_CalculateCostForItem] 所有分段条件均不满足，返回 nil。")
+    ------gg.log("[诊断][_CalculateCostForItem] 所有分段条件均不满足，返回 nil。")
     return nil -- 没有匹配的条件
 end
 
@@ -83,7 +83,7 @@ function ActionCosteRewardCal:_CheckCondition(condition, playerData, bagData, ex
     if not condition or condition == "" then
         return true -- 条件为空，默认通过
     end
-    ----gg.log("condition, playerData, bagData, externalContext",condition, playerData, bagData, externalContext)
+    --gg.log("condition, playerData, bagData, externalContext",condition, playerData, bagData, externalContext)
     local result = self:_CalculateValue(condition, playerData, bagData, externalContext)
     return result == true
 end
@@ -133,18 +133,19 @@ function ActionCosteRewardCal:_ProcessExpression(expression, playerData, bagData
     -- 1. 替换玩家变量: $变量名$ (修正了正则表达式以支持中文)
     processed = string.gsub(processed, "%$([^$]+)%$", function(varName)
         local varValue = self:_GetPlayerVariable(playerData, varName)
-        -- 使用MGlobal封装的函数确保大数字正确转换为字符串
-        return gg.numberToString(varValue)
+        return gg.numberToString(varValue)  -- 使用gg.numberToString确保科学计数法正确转换
     end)
 
     -- 2. 替换玩家属性: {属性名} (修正了正则表达式以支持中文)
     processed = string.gsub(processed, "{([^}]+)}", function(varName)
-        return tostring(self:_GetPlayerAttribute(playerData, varName))
+        local attrValue = self:_GetPlayerAttribute(playerData, varName)
+        return gg.numberToString(attrValue)  -- 使用gg.numberToString
     end)
 
     -- 3. 替换物品数量: [物品名] (修正了正则表达式以支持中文)
     processed = string.gsub(processed, "%[([^%]]+)%]", function(itemName)
-        return tostring(self:_GetItemCount(bagData, itemName))
+        local itemCount = self:_GetItemCount(bagData, itemName)
+        return gg.numberToString(itemCount)  -- 使用gg.numberToString
     end)
 
     -- 4. 替换外部上下文变量 (简单的变量名，通常是英文大写)
@@ -152,7 +153,7 @@ function ActionCosteRewardCal:_ProcessExpression(expression, playerData, bagData
         for varName, varValue in pairs(externalContext) do
             -- 使用单词边界确保完整匹配变量名
             local pattern = "%f[%w_]" .. varName .. "%f[^%w_]"
-            processed = string.gsub(processed, pattern, tostring(varValue))
+            processed = string.gsub(processed, pattern, gg.numberToString(varValue))  -- 使用gg.numberToString
         end
     end
 
@@ -164,7 +165,7 @@ end
 ---@param varName string 变量名
 ---@return number
 function ActionCosteRewardCal:_GetPlayerVariable(playerData, varName)
-    -- gg.log("[诊断][_GetPlayerVariable] 尝试获取变量:", varName,playerData)
+    -- --gg.log("[诊断][_GetPlayerVariable] 尝试获取变量:", varName,playerData)
     
     local varData = playerData[varName]
 
@@ -172,18 +173,18 @@ function ActionCosteRewardCal:_GetPlayerVariable(playerData, varName)
             local numericValue = tonumber(varData)
             if numericValue then
                 local convertedValue = gg.convertScientificNotation(numericValue)
-                -- gg.log("[诊断][_GetPlayerVariable] baseValue字符串转换:", varData, "->", convertedValue)
+                -- --gg.log("[诊断][_GetPlayerVariable] baseValue字符串转换:", varData, "->", convertedValue)
                 return convertedValue
             else
-                -- gg.log("[诊断][_GetPlayerVariable] 无法转换baseValue字符串:", varData)
+                -- --gg.log("[诊断][_GetPlayerVariable] 无法转换baseValue字符串:", varData)
                 return 0
             end
     elseif type(varData) == "number" then
         local convertedValue = gg.convertScientificNotation(varData)
-        -- gg.log("[诊断][_GetPlayerVariable] baseValue数字转换:", varData, "->", convertedValue)
+        -- --gg.log("[诊断][_GetPlayerVariable] baseValue数字转换:", varData, "->", convertedValue)
         return convertedValue
     else
-        -- gg.log("[诊断][_GetPlayerVariable] baseValue类型未知:", varData, "类型:", type(varData))
+        -- --gg.log("[诊断][_GetPlayerVariable] baseValue类型未知:", varData, "类型:", type(varData))
         return 0
     end
 
@@ -229,7 +230,7 @@ function ActionCosteRewardCal:_GetItemCount(bagData, itemName)
         end
     end
 
-    -- ----gg.log("警告: [ActionCosteRewardCal] 无法获取物品 '" .. itemName .. "' 的数量。")
+    -- ------gg.log("警告: [ActionCosteRewardCal] 无法获取物品 '" .. itemName .. "' 的数量。")
     return 0
 end
 

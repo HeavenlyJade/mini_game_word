@@ -171,7 +171,19 @@ function MServerInitPlayer.player_enter_game(player)
     gg.log("玩家碰撞组设置验证:", player.name, "CollideGroupID:", player_actor_.CollideGroupID)
     gg.log("玩家进入了游戏", gg.player_scene_map,player)
 
+    -- 执行指令执行配置中的指令列表
+    MServerInitPlayer.ExecuteCommandConfig(player_)
+end
 
+-- 执行指令执行配置中的指令列表
+function MServerInitPlayer.ExecuteCommandConfig(player)
+    local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
+    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+
+    for _, command in ipairs(common_config.CommandExecutionConfig) do
+        gg.log("执行指令:", command)
+        CommandManager.ExecuteCommand(command, player, true)
+    end
 end
 
 -- 【新增】确保装饰性对象的同步设置正确

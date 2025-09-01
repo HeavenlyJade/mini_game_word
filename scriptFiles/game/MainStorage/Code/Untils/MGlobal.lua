@@ -115,7 +115,8 @@ function gg.evaluateCondition(expression)
     end
 
     -- 处理链式比较：A op1 B op2 C (如 0 < 1 < 100)
-    local chainPattern = "^([%d%.%-]+)%s*([<>=]+)%s*([%d%.%-]+)%s*([<>=]+)%s*([%d%.%-]+)$"
+    -- 修正了正则表达式以支持科学计数法 (e, E, +)
+    local chainPattern = "^([%d%.%-%+eE]+)%s*([<>=]+)%s*([%d%.%-%+eE]+)%s*([<>=]+)%s*([%d%.%-%+eE]+)$"
     local a, op1, b, op2, c = expression:match(chainPattern)
 
     if a and op1 and b and op2 and c then
@@ -133,7 +134,8 @@ function gg.evaluateCondition(expression)
     end
 
     -- 处理单个比较：A op B
-    local singlePattern = "^([%d%.%-]+)%s*([<>=~]+)%s*([%d%.%-]+)$"
+    -- 修正了正则表达式以支持科学计数法 (e, E, +)
+    local singlePattern = "^([%d%.%-%+eE]+)%s*([<>=~]+)%s*([%d%.%-%+eE]+)$"
     local left, op, right = expression:match(singlePattern)
 
     if left and op and right then
