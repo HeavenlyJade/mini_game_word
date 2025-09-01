@@ -121,6 +121,7 @@ function ActionCosteRewardCal:_CalculateValue(expression, playerData, bagData, e
     return result
 end
 
+
 --- 预处理表达式，将所有变量替换为实际数值
 ---@param expression string 原始表达式
 ---@param playerData table 玩家数据
@@ -130,36 +131,77 @@ end
 function ActionCosteRewardCal:_ProcessExpression(expression, playerData, bagData, externalContext)
     local processed = expression
 
+    -- 0. 预处理科学计数法字面量，确保超大数字的精度
+    processed = string.gsub(processed, "([%d%.]+)[eE]([%+%-]?%d+)", function(base, exp)
+        local baseNum = tonumber(base)
+        local expNum = tonumber(exp)
+        if baseNum and expNum then
+            -- 对于超大指数，使用字符串拼接避免精度损失
+            if expNum >= 15 then
+                -- 处理整数基数
+                if baseNum == math.floor(baseNum) then
+                    local baseStr = tostring(math.floor(baseNum))
+                    return baseStr .. string.rep("0", expNum)
+                else
+                    -- 处理小数基数（如 2.5e+18）
+                    local baseStr = tostring(baseNum)
+                    local dotPos = baseStr:find("%.")
+                    if dotPos then
+                        -- 移除小数点，调整指数
+                        local intPart = baseStr:sub(1, dotPos - 1)
+                        local fracPart = baseStr:sub(dotPos + 1)
+                        local adjustedExp = expNum - #fracPart
+                        if adjustedExp >= 0 then
+                            return intPart .. fracPart .. string.rep("0", adjustedExp)
+                        else
+                            -- 指数不足以消除小数，回退到原有转换
+                            gg.log("警告: [ActionCosteRewardCal] 小数基数科学计数法精度可能不准确:", base .. "e" .. exp)
+                            local numValue = tonumber(base .. "e" .. exp)
+                            return gg.numberToString(numValue)
+                        end
+                    else
+                        -- 理论上不会到这里，因为已经检查过是整数
+                        return baseStr .. string.rep("0", expNum)
+                    end
+                end
+            else
+                -- 小指数直接转换
+                local numValue = tonumber(base .. "e" .. exp)
+                return gg.numberToString(numValue)
+            end
+        else
+            return base .. "e" .. exp -- 转换失败，保持原样
+        end
+    end)
+
     -- 1. 替换玩家变量: $变量名$ (修正了正则表达式以支持中文)
     processed = string.gsub(processed, "%$([^$]+)%$", function(varName)
         local varValue = self:_GetPlayerVariable(playerData, varName)
-        return gg.numberToString(varValue)  -- 使用gg.numberToString确保科学计数法正确转换
+        return gg.numberToString(varValue)
     end)
 
     -- 2. 替换玩家属性: {属性名} (修正了正则表达式以支持中文)
     processed = string.gsub(processed, "{([^}]+)}", function(varName)
         local attrValue = self:_GetPlayerAttribute(playerData, varName)
-        return gg.numberToString(attrValue)  -- 使用gg.numberToString
+        return gg.numberToString(attrValue)
     end)
 
     -- 3. 替换物品数量: [物品名] (修正了正则表达式以支持中文)
     processed = string.gsub(processed, "%[([^%]]+)%]", function(itemName)
         local itemCount = self:_GetItemCount(bagData, itemName)
-        return gg.numberToString(itemCount)  -- 使用gg.numberToString
+        return gg.numberToString(itemCount)
     end)
 
     -- 4. 替换外部上下文变量 (简单的变量名，通常是英文大写)
     if externalContext then
         for varName, varValue in pairs(externalContext) do
-            -- 使用单词边界确保完整匹配变量名
             local pattern = "%f[%w_]" .. varName .. "%f[^%w_]"
-            processed = string.gsub(processed, pattern, gg.numberToString(varValue))  -- 使用gg.numberToString
+            processed = string.gsub(processed, pattern, gg.numberToString(varValue))
         end
     end
 
     return processed
 end
-
 --- 获取玩家变量值
 ---@param playerData table 玩家数据
 ---@param varName string 变量名

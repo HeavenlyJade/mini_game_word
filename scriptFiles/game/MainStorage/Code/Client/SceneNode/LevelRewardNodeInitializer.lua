@@ -346,12 +346,6 @@ function LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
         mindistance =400,
         maxdistance =5000,
         range = 1000,
-        position = {
-            triggerBox.Parent.Position.X,
-            triggerBox.Parent.Position.Y,
-            triggerBox.Parent.Position.Z
-        },
-        transObject = triggerBox.Parent
     }
 
     -- 播放3D定位音效

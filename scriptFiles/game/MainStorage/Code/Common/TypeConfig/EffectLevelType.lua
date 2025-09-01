@@ -299,12 +299,12 @@ end
 function EffectLevelType:CalculateMatchingEffects(playerData, bagData, externalContext)
     local matchingEffects = {}
     
-    gg.log("=== EffectLevelType:CalculateMatchingEffects 开始 ===")
-    gg.log("配置名称:", self.configName)
-    gg.log("等级效果数量:", self.levelEffects and #self.levelEffects or 0)
-    gg.log("玩家数据:", playerData)
-    gg.log("背包数据:", bagData)
-    gg.log("外部上下文:", externalContext)
+    -- gg.log("=== EffectLevelType:CalculateMatchingEffects 开始 ===")
+    -- gg.log("配置名称:", self.configName)
+    -- gg.log("等级效果数量:", self.levelEffects and #self.levelEffects or 0)
+    -- gg.log("玩家数据:", playerData)
+    -- gg.log("背包数据:", bagData)
+    -- gg.log("外部上下文:", externalContext)
     
     if not self.levelEffects or #self.levelEffects == 0 then
         --gg.log("警告：没有等级效果配置，返回空列表")
@@ -312,12 +312,12 @@ function EffectLevelType:CalculateMatchingEffects(playerData, bagData, externalC
     end
     
     for index, levelEffect in ipairs(self.levelEffects) do
-        gg.log(string.format("--- 处理第%d个等级效果 ---", index))
-        gg.log("等级:", levelEffect.level)
-        gg.log("效果数值:", levelEffect.effectValue)
-        gg.log("条件类型:", levelEffect.conditionType)
-        gg.log("条件公式:", levelEffect.conditionFormula)
-        gg.log("效果公式:", levelEffect.effectFormula)
+        -- gg.log(string.format("--- 处理第%d个等级效果 ---", index))
+        -- gg.log("等级:", levelEffect.level)
+        -- gg.log("效果数值:", levelEffect.effectValue)
+        -- gg.log("条件类型:", levelEffect.conditionType)
+        -- gg.log("条件公式:", levelEffect.conditionFormula)
+        -- gg.log("效果公式:", levelEffect.effectFormula)
         
         local conditionMet = false
         
@@ -327,7 +327,7 @@ function EffectLevelType:CalculateMatchingEffects(playerData, bagData, externalC
             local calculator = self:_GetCalculator()
             local result = calculator:_CalculateValue(levelEffect.conditionFormula, playerData, bagData, externalContext)
             conditionMet = (result == true)
-            gg.log("公式计算结果:", result, "条件满足:", conditionMet)
+            -- gg.log("公式计算结果:", result, "条件满足:", conditionMet)
             
         elseif levelEffect.conditionType == '数值' then
             --gg.log("使用数值条件，直接满足")
