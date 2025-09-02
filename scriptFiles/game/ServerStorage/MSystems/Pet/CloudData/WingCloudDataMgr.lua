@@ -27,13 +27,16 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 ---@field unlockedEquipSlots number 玩家当前可携带(已解锁)的翅膀栏位数量
 
 ---@class CloudWingDataAccessor
-local CloudWingDataAccessor = {}
+local CloudWingDataAccessor = {
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "wing_player_clound", -- 翅膀数据key前缀
+}
 
 --- 加载玩家翅膀数据
 ---@param uin number 玩家ID
 ---@return PlayerWingData 玩家翅膀数据
 function CloudWingDataAccessor:LoadPlayerWingData(uin)
-    local ret, data = cloudService:GetTableOrEmpty('wing_player_' .. uin)
+    local ret, data = cloudService:GetTableOrEmpty(CloudWingDataAccessor.CLOUD_KEY_PREFIX .. uin)
 
     if ret and data and data.wingList then
         return data
@@ -58,7 +61,7 @@ function CloudWingDataAccessor:SavePlayerWingData(uin, wingData)
     end
 
     -- 保存到云存储
-    cloudService:SetTableAsync('wing_player_' .. uin, wingData, function(success)
+    cloudService:SetTableAsync(CloudWingDataAccessor.CLOUD_KEY_PREFIX .. uin, wingData, function(success)
         if not success then
             --gg.log("保存玩家翅膀数据失败", uin)
         else
@@ -80,9 +83,9 @@ function CloudWingDataAccessor:ClearPlayerWingData(uin)
         wingSlots = 30,
         unlockedEquipSlots = 1, -- 默认解锁1个栏位
     }
-    
+
     -- 清空云存储数据
-    cloudService:SetTableAsync('wing_player_' .. uin, emptyWingData, function(success)
+    cloudService:SetTableAsync(CloudWingDataAccessor.CLOUD_KEY_PREFIX .. uin, emptyWingData, function(success)
         if not success then
             gg.log("清空玩家翅膀云数据失败", uin)
         else
@@ -93,4 +96,4 @@ function CloudWingDataAccessor:ClearPlayerWingData(uin)
     return true
 end
 
-return CloudWingDataAccessor 
+return CloudWingDataAccessor

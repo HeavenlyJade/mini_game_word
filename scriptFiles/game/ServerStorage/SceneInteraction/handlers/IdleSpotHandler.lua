@@ -36,7 +36,6 @@ local function executeCommand(player, commandStr, handlerInstance)
 end
 
 --- 当玩家进入挂机点时
---- 当玩家进入挂机点时
 ---@param entity Entity
 function IdleSpotHandler:OnEntityEnter(entity)
     if not entity or not entity.isPlayer then
@@ -236,5 +235,37 @@ function IdleSpotHandler:CleanupPlayerTimers(player)
         end
         self.playerTimers[player.uin] = nil
     end
+end
+
+--- 【新增】实现父类钩子方法：清理玩家数据
+---@param player MPlayer|table 玩家对象或包含uin的表
+function IdleSpotHandler:OnPlayerDataCleanup(player)
+    local uin = type(player) == "table" and (player.uin or player.UserId) or (player and player.uin)
+    if not uin then
+        gg.log("错误：OnPlayerDataCleanup 收到无效的玩家标识")
+        return
+    end
+    
+    gg.log(string.format("挂机点 '%s' 开始清理玩家 %s 的数据", self.name, uin))
+    
+    -- 1. 如果player是完整的MPlayer对象，重置挂机状态
+    if type(player) == "table" and player.SetIdlingState then
+        -- 检查玩家当前是否在此挂机点
+        local currentSpotName =player:GetCurrentIdleSpotName()
+        if currentSpotName == self.name then
+            player:SetIdlingState(false, nil)
+            gg.log(string.format("已重置玩家 %s 在挂机点 '%s' 的挂机状态", uin, self.name))
+            
+            -- 执行离开指令
+            if self.config.leaveCommand and self.config.leaveCommand ~= "" then
+                local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+                CommandManager.ExecuteCommand(self.config.leaveCommand, player, true)
+                gg.log(string.format("为玩家 %s 执行离开挂机点 '%s' 的指令", uin, self.name))
+            end
+        end
+    end
+    
+    
+    gg.log(string.format("挂机点 '%s' 完成玩家 %s 的数据清理", self.name, uin))
 end
 return IdleSpotHandler

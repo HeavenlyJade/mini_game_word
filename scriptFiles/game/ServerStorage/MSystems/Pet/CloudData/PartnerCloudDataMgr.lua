@@ -27,13 +27,16 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 ---@field unlockedEquipSlots number 玩家当前可携带(已解锁)的伙伴栏位数量
 
 ---@class CloudPartnerDataAccessor
-local CloudPartnerDataAccessor = {}
+local CloudPartnerDataAccessor = {
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "partner_player_cloud", -- 伙伴数据key前缀
+}
 
 --- 加载玩家伙伴数据
 ---@param uin number 玩家ID
 ---@return PlayerPartnerData 玩家伙伴数据
 function CloudPartnerDataAccessor:LoadPlayerPartnerData(uin)
-    local ret, data = cloudService:GetTableOrEmpty('partner_player_' .. uin)
+    local ret, data = cloudService:GetTableOrEmpty(CloudPartnerDataAccessor.CLOUD_KEY_PREFIX .. uin)
 
     if ret and data and data.partnerList then
         return data
@@ -58,7 +61,7 @@ function CloudPartnerDataAccessor:SavePlayerPartnerData(uin, partnerData)
     end
 
     -- 保存到云存储
-    cloudService:SetTableAsync('partner_player_' .. uin, partnerData, function(success)
+    cloudService:SetTableAsync(CloudPartnerDataAccessor.CLOUD_KEY_PREFIX .. uin, partnerData, function(success)
         if not success then
             --gg.log("保存玩家伙伴数据失败", uin)
         else
@@ -80,9 +83,9 @@ function CloudPartnerDataAccessor:ClearPlayerPartnerData(uin)
         partnerSlots = 30,
         unlockedEquipSlots = 1, -- 默认解锁1个栏位
     }
-    
+
     -- 清空云存储数据
-    cloudService:SetTableAsync('partner_player_' .. uin, emptyPartnerData, function(success)
+    cloudService:SetTableAsync(CloudPartnerDataAccessor.CLOUD_KEY_PREFIX .. uin, emptyPartnerData, function(success)
         if not success then
             gg.log("清空玩家伙伴云数据失败", uin)
         else

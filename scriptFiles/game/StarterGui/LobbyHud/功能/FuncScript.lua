@@ -79,6 +79,14 @@ function FuncScript:RegisterNetworkEvents()
         self.autoRaceState = false
         self:UpdateAutoRaceButtonDisplay()
     end)
+    
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.LEAVE_IDLE_SUCCESS, function(data)
+        gg.log("接收到离开挂机成功通知")
+        self.autoPlayState = false
+        self:UpdateAutoPlayButtonDisplay()
+            
+        
+    end)
 end
 
 -- 自动挂机功能处理

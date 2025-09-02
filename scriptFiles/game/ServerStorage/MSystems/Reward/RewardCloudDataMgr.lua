@@ -28,14 +28,16 @@ local CONST_CLOUD_SAVE_TIME = 30 -- 每30秒存盘一次
 ---@class RewardCloudDataMgr
 local RewardCloudDataMgr = {
     last_time_reward = 0, -- 最后一次奖励数据存盘时间
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "reward_clound", -- 奖励数据key前缀
 }
 
 -- 读取玩家的奖励数据
 ---@param uin number 玩家ID
 ---@return number, RewardCloudData 返回值: 0表示成功, 1表示失败, 奖励数据
 function RewardCloudDataMgr.ReadPlayerRewardData(uin)
-    local ret_, ret2_ = cloudService:GetTableOrEmpty('reward_' .. uin)
-    print("读取玩家奖励数据", 'reward_' .. uin, ret_, ret2_)
+    local ret_, ret2_ = cloudService:GetTableOrEmpty(RewardCloudDataMgr.CLOUD_KEY_PREFIX .. uin)
+    print("读取玩家奖励数据", RewardCloudDataMgr.CLOUD_KEY_PREFIX .. uin, ret_, ret2_)
 
     if ret_ then
         if ret2_ and ret2_.version then
@@ -65,8 +67,8 @@ function RewardCloudDataMgr.SavePlayerRewardData(uin, rewardData, force_)
         -- 添加元数据
         rewardData.version = 1
         rewardData.lastSaveTime = gg.GetTimeStamp()
-        
-        cloudService:SetTableAsync('reward_' .. uin, rewardData, function(ret_)
+
+        cloudService:SetTableAsync(RewardCloudDataMgr.CLOUD_KEY_PREFIX .. uin, rewardData, function(ret_)
             if ret_ then
                 -- --gg.log("奖励数据保存成功", uin)
             else
@@ -80,13 +82,13 @@ end
 ---@param uin number 玩家UIN
 ---@return string 云存储键名
 function RewardCloudDataMgr.GetRewardCloudKey(uin)
-    return 'reward_' .. uin
+    return RewardCloudDataMgr.CLOUD_KEY_PREFIX .. uin
 end
 
 -- 清空玩家奖励数据（慎用）
 ---@param uin number 玩家UIN
 function RewardCloudDataMgr.ClearPlayerRewardData(uin)
-    cloudService:SetTableAsync('reward_' .. uin, { items = {} }, function(ret_)
+    cloudService:SetTableAsync(RewardCloudDataMgr.CLOUD_KEY_PREFIX .. uin, { items = {} }, function(ret_)
         if ret_ then
             --gg.log("奖励数据清空成功", uin)
         else
@@ -99,11 +101,11 @@ end
 ---@return RewardCloudData 默认奖励数据
 function RewardCloudDataMgr.CreateDefaultData()
     local currentDate = os.date("%Y-%m-%d")
-    
+
     return {
         version = 1,
         lastSaveTime = gg.GetTimeStamp(),
-        
+
         -- 在线奖励默认数据
         online = {
             configName = "在线奖励初级",
@@ -113,7 +115,7 @@ function RewardCloudDataMgr.CreateDefaultData()
             claimedIndices = {},
             lastLoginDate = currentDate
         },
-        
+
         -- 七日登录默认数据
         daily = {
             startDate = currentDate,
@@ -121,10 +123,10 @@ function RewardCloudDataMgr.CreateDefaultData()
             claimedDays = {},
             lastClaimDate = ""
         },
-        
+
         -- 活动奖励默认数据
         activity = {},
-        
+
         -- 兑换默认数据
         exchange = {}
     }
@@ -136,20 +138,20 @@ end
 function RewardCloudDataMgr.MigrateData(oldData)
     -- 这里处理数据版本迁移逻辑
     -- 例如：从旧格式转换到新格式
-    
+
     local newData = RewardCloudDataMgr.CreateDefaultData()
-    
+
     -- 复制可用的旧数据
     if oldData.online then
         newData.online = oldData.online
     end
-    
+
     if oldData.daily then
         newData.daily = oldData.daily
     end
-    
+
     -- 其他迁移逻辑...
-    
+
     return newData
 end
 
@@ -161,10 +163,10 @@ end
 function RewardCloudDataMgr.SaveModuleData(uin, moduleType, moduleData)
     -- 先加载完整数据
     local _, fullData = RewardCloudDataMgr.ReadPlayerRewardData(uin)
-    
+
     -- 更新指定模块
     fullData[moduleType] = moduleData
-    
+
     -- 保存完整数据
     RewardCloudDataMgr.SavePlayerRewardData(uin, fullData, true)
     return true
@@ -176,11 +178,11 @@ end
 ---@return table|nil 模块数据
 function RewardCloudDataMgr.LoadModuleData(uin, moduleType)
     local _, fullData = RewardCloudDataMgr.ReadPlayerRewardData(uin)
-    
+
     if fullData and fullData[moduleType] then
         return fullData[moduleType]
     end
-    
+
     -- 返回该模块的默认数据
     local defaultData = RewardCloudDataMgr.CreateDefaultData()
     return defaultData[moduleType]
@@ -191,12 +193,12 @@ end
 ---@return number 成功保存的数量
 function RewardCloudDataMgr.BatchSave(playerDataMap)
     local successCount = 0
-    
+
     for uin, data in pairs(playerDataMap) do
         RewardCloudDataMgr.SavePlayerRewardData(uin, data, true)
         successCount = successCount + 1
     end
-    
+
     --gg.log(string.format("批量保存完成：成功 %d 个", successCount))
     return successCount
 end

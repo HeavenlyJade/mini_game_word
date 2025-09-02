@@ -98,14 +98,18 @@ function LevelRewardNodeInitializer.InitializeSingleLevelReward(config, mapName)
 
     ------------gg.log("开始克隆节点，_idMap项目数:", LevelRewardNodeInitializer.GetTableCount(idMap))
 
+    -- 将_idMap转换为数组并按生成的距离配置排序
+    local sortedNodes = LevelRewardNodeInitializer.SortNodesByDistance(idMap)
+    ------------gg.log("节点已按距离排序，排序后节点数:", #sortedNodes)
+
     local cloneIndex = 0
-    for uniqueId, rewardNode in pairs(idMap) do
+    for _, nodeData in ipairs(sortedNodes) do
         cloneIndex = cloneIndex + 1
         LevelRewardNodeInitializer.CloneSingleRewardNode(
             originalNode,
             parentNode,
-            uniqueId,
-            rewardNode,
+            nodeData.uniqueId,
+            nodeData.rewardNode,
             cloneIndex,
             config:GetName(),
             mapName
@@ -134,11 +138,12 @@ function LevelRewardNodeInitializer.CloneSingleRewardNode(originalNode, parentNo
     -- 修改x轴距离（将距离配置应用到x轴位置）
     local originalPos = originalNode.Position
     local newPosition = Vector3.New(
-        originalPos.X ,
-        originalPos.Y,
-        originalPos.Z   + distanceConfig
+        math.floor(originalPos.X),
+        math.floor(originalPos.Y),
+        math.floor(originalPos.Z + distanceConfig)
     )
     clonedNode.Position = newPosition
+    -- gg.log("克隆节点位置",clonedNode.Name,string.format("{%d, %d, %d}", math.floor(newPosition.X), math.floor(newPosition.Y), math.floor(newPosition.Z)))
 
     -- 设置克隆节点的IgnoreStreamSync属性为true（优化网络同步）
     clonedNode.IgnoreStreamSync = true
@@ -147,7 +152,7 @@ function LevelRewardNodeInitializer.CloneSingleRewardNode(originalNode, parentNo
     -- 将克隆节点添加到父容器
     clonedNode.Parent = parentNode
     clonedNode["数量"].Title = gg.numberToString(rewardNode["物品数量"])
-    
+
 
     -- 绑定TriggerBox触发事件
     LevelRewardNodeInitializer.BindTriggerBoxEvent(clonedNode, uniqueId, rewardNode, configName, mapName)
@@ -228,7 +233,9 @@ function LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardN
         return
     end
 
-    --gg.log("[LevelRewardNodeInitializer] 验证通过：本地玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
+    -- gg.log("[LevelRewardNodeInitializer] 验证通过：本地玩家触发关卡奖励节点 - 玩家ID:", playerId, "奖励ID:", uniqueId, "配置:", configName)
+    -- local triggerBox_post = triggerBox.Position
+    -- gg.log("节点触发的位置",triggerBox.Name,string.format("{%d, %d, %d}", math.floor(triggerBox_post.X), math.floor(triggerBox_post.Y), math.floor(triggerBox_post.Z)))
 
     -- 播放触发音效（不传递actor参数，使用位置播放）
     LevelRewardNodeInitializer.PlayTriggerSound(triggerBox)
@@ -260,6 +267,29 @@ function LevelRewardNodeInitializer.SendToServer(messageData)
     -- 使用项目的网络通道发送消息到服务端
     gg.network_channel:FireServer(messageData)
 
+end
+
+--- 按生成的距离配置对节点进行排序
+---@param idMap table<string, LevelNodeRewardItem> 节点映射表
+---@return table[] 排序后的节点数组
+function LevelRewardNodeInitializer.SortNodesByDistance(idMap)
+    local nodes = {}
+
+    -- 将idMap转换为数组
+    for uniqueId, rewardNode in pairs(idMap) do
+        table.insert(nodes, {
+            uniqueId = uniqueId,
+            rewardNode = rewardNode,
+            distance = rewardNode["生成的距离配置"] or 0
+        })
+    end
+
+    -- 按距离从小到大排序
+    table.sort(nodes, function(a, b)
+        return a.distance < b.distance
+    end)
+
+    return nodes
 end
 
 --- 获取table中元素数量的辅助函数

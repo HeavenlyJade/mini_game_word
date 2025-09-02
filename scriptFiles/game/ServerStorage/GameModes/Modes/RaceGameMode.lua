@@ -79,8 +79,8 @@ function RaceGameMode:OnPlayerEnter(player)
 
     self.participants[player.uin] = player
     local participantCount = self:_getParticipantCount()
-    
-    --gg.log(string.format("玩家 %s 加入比赛，状态: %s，人数: %d", 
+
+    --gg.log(string.format("玩家 %s 加入比赛，状态: %s，人数: %d",
         -- player.name or player.uin, self.state, participantCount))
 
     if self.state == RaceState.WAITING then
@@ -108,17 +108,17 @@ function RaceGameMode:OnPlayerLeave(player)
     if not player then return end
 
     local uin = player.uin
-    
+
     -- 从参赛者列表中移除
     self.participants[uin] = nil
-    
+
     -- 清理相关数据
     self:_cleanPlayerData(uin)
-    
+
     local remainingCount = self:_getParticipantCount()
-    gg.log(string.format("玩家 %s 离开比赛，剩余玩家: %d", 
+    gg.log(string.format("玩家 %s 离开比赛，剩余玩家: %d",
         player.name or uin, remainingCount))
-    
+
     -- 【修复】根据当前状态和剩余人数决定后续操作
     if self.state == RaceState.WAITING or self.state == RaceState.PREPARING then
         if remainingCount == 0 then
@@ -143,7 +143,7 @@ end
 function RaceGameMode:HandleLevelRewardTrigger(triggerPlayer, evt)
     -- 【修复】严格验证触发者身份
     local uin = triggerPlayer.uin
-    
+
     -- 【修复】用正确的遍历方式检查玩家是否在比赛中
     local playerInRace = self.participants[uin] ~= nil
 
@@ -151,26 +151,26 @@ function RaceGameMode:HandleLevelRewardTrigger(triggerPlayer, evt)
         gg.log(string.format("玩家 %s 不在当前比赛中，忽略奖励触发", triggerPlayer.name or uin))
         return
     end
-    
+
     -- 【修复】确保奖励只给触发者
     local uniqueId = evt.uniqueId
     if self.levelRewardsGiven[uin] and self.levelRewardsGiven[uin][uniqueId] then
         return -- 已经给过这个奖励
     end
-    
+
     -- 【修复】调用正确存在的函数 GetLevelRewardConfig，并传入正确顺序的参数
     local rewardNode = self:GetLevelRewardConfig(evt.configName, uniqueId)
     if not rewardNode then
         return
     end
-    
+
     local success = self:DistributeLevelReward(triggerPlayer, rewardNode, uniqueId)
     if success then
         if not self.levelRewardsGiven[uin] then
             self.levelRewardsGiven[uin] = {}
         end
         self.levelRewardsGiven[uin][uniqueId] = true
-        
+
         -- 【修复】奖励通知也只发给触发者
         self:SendLevelRewardNotification(triggerPlayer, rewardNode, uniqueId)
     end
@@ -219,50 +219,50 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
     if not player or not rewardConfig then
         return false
     end
-    
+
     local rewardType = rewardConfig["奖励类型"] or ""
     local itemType = rewardConfig["物品类型"] or ""
     local itemCount = rewardConfig["物品数量"] or 0
     local rewardCondition = rewardConfig["奖励条件"] or ""
-    
+
     -- 检查奖励条件（如果有的话）
     if rewardCondition ~= "" and not self:CheckRewardCondition(player, rewardCondition) then
         --gg.log(string.format("玩家 %s 不满足奖励条件:%s", player.name or player.uin, rewardCondition))
         return false
     end
-    
+
     -- 【新增】应用玩家加成计算
     local finalItemCount = itemCount
-    
+
     -- 1. 计算玩家所有物品加成（宠物、伙伴、翅膀、尾迹）
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
-    
+
     -- 2. 构建原始奖励数据
     local originalRewards = {
         [itemType] = itemCount
     }
-    
+
     -- 3. 应用加成到奖励
     local finalRewards = BonusManager.ApplyBonusesToRewards(originalRewards, bonuses)
-    
+
     -- 4. 获取应用加成后的最终数量
     finalItemCount = finalRewards[itemType] or itemCount
-    
+
     -- 记录加成计算日志
     if finalItemCount ~= itemCount then
-        --gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d", 
+        --gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d",
             -- player.name or player.uin, itemType, itemCount, finalItemCount))
     end
-    
+
     -- 使用现有的奖励发放系统，发放加成后的奖励
     if not PlayerRewardDispatcher then
         --gg.log("PlayerRewardDispatcher 未初始化，无法发放奖励")
         return false
     end
-    
+
     -- 发放最终奖励（已应用加成）
     local success, errmsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemType, finalItemCount)
-    
+
     if success then
 
         return true
@@ -369,12 +369,12 @@ function RaceGameMode:LaunchPlayer(player, startPosOverride)
 
     -- 【关键修复】从玩家属性中获取实际计算的速度值，而不是使用固定值
 
-    
+
     -- 获取其他参数（可以从levelType配置或使用默认值）
     local jumpSpeed = 200
     local jumpDuration = 0.5
     local recoveryDelay = self.levelType and self.levelType.raceTime or 60
-    
+
     -- 获取重生点坐标
     local respawnPosition = nil
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
@@ -384,7 +384,7 @@ function RaceGameMode:LaunchPlayer(player, startPosOverride)
     end
         -- 【新增】为当前发射的玩家执行游戏开始指令
     self:_executeGameStartCommandsForPlayer(player)
-    local actualMoveSpeed = player:GetStat("速度") 
+    local actualMoveSpeed = player:GetStat("速度")
     -- 【关键】发送包含实际速度值的网络消息
     local launchData = {
         cmd = EventPlayerConfig.NOTIFY.LAUNCH_PLAYER,
@@ -396,8 +396,7 @@ function RaceGameMode:LaunchPlayer(player, startPosOverride)
         respawnPosition = respawnPosition,
         variableData = player.variables or {} -- 同步玩家变量数据
     }
-    
-    gg.log("游戏玩家数据",launchData)
+
     self:PlaySceneMusic(player)
     gg.network_channel:fireClient(player.uin, launchData)
 end
@@ -442,16 +441,16 @@ end
 --- 开始比赛
 function RaceGameMode:Start()
     -- 【修复】防止重复启动
-    if self.state ~= RaceState.WAITING or self.isPreparing then 
-        --gg.log(string.format("比赛已在准备中，跳过重复启动。当前状态: %s, 准备标志: %s", 
+    if self.state ~= RaceState.WAITING or self.isPreparing then
+        --gg.log(string.format("比赛已在准备中，跳过重复启动。当前状态: %s, 准备标志: %s",
             -- self.state, tostring(self.isPreparing)))
-        return 
+        return
     end
 
     -- 【修复】标记为准备状态，防止重复启动
     self.state = RaceState.PREPARING
     self.isPreparing = true
-    
+
     local prepareTime = self.levelType.prepareTime or 10
     --gg.log(string.format("开始比赛准备倒计时: %d秒", prepareTime))
 
@@ -476,16 +475,16 @@ function RaceGameMode:_onPrepareCountdownFinished()
         self:_cancelRaceAndCleanup()
         return
     end
-    
+
     --gg.log("准备倒计时结束，开始比赛！")
-    
+
     -- 重置准备标志
     self.isPreparing = false
     self.prepareTimer = nil
     self.prepareStartTime = nil  -- 【新增】清理时间记录
     self.totalPrepareTime = nil  -- 【新增】清理时间记录
     self.state = RaceState.RACING
-    
+
     -- 执行比赛开始逻辑
     self:_executeRaceStart()
 end
@@ -494,14 +493,14 @@ end
 function RaceGameMode:_executeRaceStart()
     -- 传送所有玩家到传送节点
     local teleportSuccess = self:TeleportAllPlayersToStartPosition()
-    
+
     if teleportSuccess then
         -- 给传送一点时间完成，然后发射玩家
         self:AddDelay(0.5, function()
             for _, player in pairs(self.participants) do
                 self:LaunchPlayer(player)
             end
-            
+
             -- 启动实时追踪
             self:_startFlightDistanceTracking()
             self:_startContestUIUpdates()
@@ -516,19 +515,19 @@ end
 -- 【新增】取消准备倒计时
 function RaceGameMode:_cancelPrepareCountdown(reason)
     if not self.isPreparing then return end
-    
+
     --gg.log(string.format("取消准备倒计时，原因: %s", reason or "未知"))
-    
+
     -- 取消定时器
     if self.prepareTimer then
         self:RemoveTimer(self.prepareTimer)
         self.prepareTimer = nil
     end
-    
+
     -- 重置状态
     self.isPreparing = false
     self.state = RaceState.WAITING
-    
+
     -- 通知所有参赛者停止倒计时
     RaceGameEventManager.BroadcastStopPrepareCountdown(self:_getParticipantList(), reason)
 end
@@ -539,7 +538,7 @@ function RaceGameMode:GetRemainingPrepareTime()
    if not self.isPreparing or not self.prepareStartTime or not self.totalPrepareTime then
        return 0
    end
-   
+
    local currentTime = os.time()
    local elapsedTime = currentTime - self.prepareStartTime
    local remainingTime = self.totalPrepareTime - elapsedTime
@@ -550,22 +549,22 @@ end
 -- 【修复】向准备中加入的玩家发送当前倒计时状态
 function RaceGameMode:_notifyJoinDuringCountdown(player)
    if not player or not self.isPreparing then return end
-   
+
    -- 【关键修复】计算并发送剩余倒计时时间，而不是完整时间
    local remainingTime = self:GetRemainingPrepareTime()
-   
+
    -- 如果剩余时间不足1秒，不发送倒计时通知
    if remainingTime < 1 then
        return
    end
-   
+
    local eventData = {
        cmd = EventPlayerConfig.NOTIFY.RACE_PREPARE_COUNTDOWN,
        gameMode = EventPlayerConfig.GAME_MODES.RACE_GAME,
        prepareTime = remainingTime,  -- 【修复】发送剩余时间而不是总时间
        playerScene = player.currentScene
    }
-   
+
    if gg.network_channel then
        gg.network_channel:fireClient(player.uin, eventData)
    end
@@ -573,22 +572,22 @@ end
 
 --- 结束比赛
 function RaceGameMode:End()
-    if self.state ~= RaceState.RACING then 
-        return 
+    if self.state ~= RaceState.RACING then
+        return
     end
-    
+
     --gg.log(string.format("结束比赛 %s", self.instanceId))
     self.state = RaceState.FINISHED
 
     -- 停止所有定时器和追踪
     self:_stopFlightDistanceTracking()
     self:_stopContestUIUpdates()
-    
+
     -- 执行结算逻辑
     self:_executeGameEndCommands()
     self:_updateRankings()
     self:_calculateAndDistributeRewards()
-    
+
     -- 通知玩家结果
     for _, uin in ipairs(self.rankings) do
         local flightData = self.flightData[uin]
@@ -608,7 +607,7 @@ function RaceGameMode:End()
     -- 清理GameModeManager中的记录
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager
-    
+
     if GameModeManager then
         -- 清理玩家记录
         for _, player in pairs(self.participants) do
@@ -629,10 +628,10 @@ function RaceGameMode:End()
     self.startPositions = {}
     self.realtimeRewardsGiven = {}
     self.levelRewardsGiven = {}
-    
+
     -- 销毁自身
     self:Destroy()
-    
+
     --gg.log(string.format("比赛 %s 已结束并清理完成", self.instanceId))
 end
 
@@ -654,7 +653,7 @@ function RaceGameMode:_calculateAndDistributeRewards()
     for i = #self.rankings, 1, -1 do
         local uin = self.rankings[i]
         local playerStillInRace = false
-        
+
         -- 检查玩家是否还在参赛者列表中
         for _, participant in pairs(self.participants) do
             if participant.uin == uin then
@@ -662,7 +661,7 @@ function RaceGameMode:_calculateAndDistributeRewards()
                 break
             end
         end
-        
+
         -- 如果玩家已不在比赛中，从排名中移除
         if not playerStillInRace then
             table.remove(self.rankings, i)
@@ -704,7 +703,7 @@ function RaceGameMode:_calculateAndDistributeRewards()
                 local rankRewardsDict = {}
                 if rankRewardsArray and #rankRewardsArray > 0 then
                     for _, rewardItem in ipairs(rankRewardsArray) do
-                        local itemName = rewardItem["物品"] 
+                        local itemName = rewardItem["物品"]
                         local amount = rewardItem["数量"]
                         if itemName and amount then
                             rankRewardsDict[itemName] = (rankRewardsDict[itemName] or 0) + amount
@@ -760,7 +759,7 @@ function RaceGameMode:_giveItemToPlayer(player, itemName, amount)
 
     -- 使用统一奖励分发器发放物品
     local success, errorMsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemName, amount)
-    
+
     if success then
         --gg.log(string.format("RaceGameMode: 物品发放成功 - %s x%d", itemName, amount))
         -- 向玩家发送奖励通知
@@ -819,7 +818,7 @@ function RaceGameMode:_updateFlightDistances()
                     if distance then
                         local oldDistance = flightData.flightDistance
                         flightData.flightDistance = math.max(flightData.flightDistance, distance)
-                        
+
                         -- 【新增】检查并发放实时奖励
                         if flightData.flightDistance > oldDistance then
                             self:_checkAndGiveRealtimeRewards(player, flightData)
@@ -911,7 +910,7 @@ function RaceGameMode:_checkAndGiveRealtimeRewards(player, flightData)
     if not self.levelType or not self.levelType:HasRealTimeRewardRules() then
         return
     end
-    
+
     -- 构建玩家数据用于条件检查
     local playerData = {
         distance = flightData.flightDistance,
@@ -921,10 +920,10 @@ function RaceGameMode:_checkAndGiveRealtimeRewards(player, flightData)
         speed = flightData.speed or 0,
         time = os.time() - self.raceStartTime
     }
-    
+
     -- 获取所有实时奖励规则
     local realTimeRewardRules = self.levelType:GetRealTimeRewardRules()
-    
+
     -- 检查每个实时奖励规则
     for _, rule in ipairs(realTimeRewardRules) do
         -- 如果这个玩家已经获得过这个规则的奖励，跳过
@@ -935,22 +934,22 @@ function RaceGameMode:_checkAndGiveRealtimeRewards(player, flightData)
             if self.levelType:CheckRealTimeRewardTrigger(rule.triggerCondition, playerData) then
                 -- 计算奖励数量
                 local rewardAmount = self:_calculateRealtimeRewardAmount(rule.rewardFormula, playerData)
-                
+
                 if rewardAmount and rewardAmount > 0 then
                     -- 发放奖励
                     local success = self:_giveRealtimeReward(player, rule.rewardItem, rewardAmount)
-                    
+
                     if success then
                         -- 标记这个奖励已发放（使用规则ID）
                         if not self.realtimeRewardsGiven[player.uin] then
                             self.realtimeRewardsGiven[player.uin] = {}
                         end
                         self.realtimeRewardsGiven[player.uin][rule.ruleId] = true
-                        
+
                         -- 记录日志（包含规则ID）
-                        -- --gg.log(string.format("实时奖励发放成功: 玩家 %s [规则ID:%s] 达到条件 '%s'，获得 %s x%d", 
+                        -- --gg.log(string.format("实时奖励发放成功: 玩家 %s [规则ID:%s] 达到条件 '%s'，获得 %s x%d",
                         --player.name or player.uin, rule.ruleId, rule.triggerCondition, rule.rewardItem, rewardAmount))
-                            
+
                         -- 向玩家发送实时奖励通知
                         --player:SendHoverText(string.format("实时奖励: %s x%d！", rule.rewardItem, rewardAmount))
                     end
@@ -968,17 +967,17 @@ function RaceGameMode:_calculateRealtimeRewardAmount(rewardFormula, playerData)
     if not rewardFormula then
         return nil
     end
-    
+
     -- 如果是数字，直接返回
     if type(rewardFormula) == "number" then
         return rewardFormula
     end
-    
+
     -- 如果是字符串，使用关卡类型的计算方法
     if type(rewardFormula) == "string" then
         return self.levelType:_evaluateFormulaWithCalculator(rewardFormula, playerData)
     end
-    
+
     return nil
 end
 
@@ -996,13 +995,13 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
     local itemBonus = bonuses[itemName]
     if itemBonus and (itemBonus.fixed > 0 or itemBonus.percentage > 0) then
-        --gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)", 
+        --gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)",
             -- player.name or player.uin, itemName, amount, itemBonus.fixed or 0, itemBonus.percentage or 0))
     end
 
     -- 使用统一奖励分发器发放物品（内部会自动应用加成）
     local success, errorMsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemName, amount)
-    
+
     if success then
         --gg.log(string.format("实时奖励发放成功: 玩家 %s 获得 %s x%d", player.name or "未知", itemName, amount))
         return true
@@ -1047,10 +1046,10 @@ function RaceGameMode:_broadcastContestUIShow()
     local eventData = {
         raceTime = raceTime
     }
-    
+
     RaceGameEventManager.BroadcastRaceEvent(
-        self:_getParticipantList(), 
-        EventPlayerConfig.NOTIFY.RACE_CONTEST_SHOW, 
+        self:_getParticipantList(),
+        EventPlayerConfig.NOTIFY.RACE_CONTEST_SHOW,
         eventData
     )
 end
@@ -1058,7 +1057,7 @@ end
 --- 【新增】向所有参赛者广播隐藏比赛界面
 function RaceGameMode:_broadcastContestUIHide()
     RaceGameEventManager.BroadcastRaceEvent(
-        self:_getParticipantList(), 
+        self:_getParticipantList(),
         EventPlayerConfig.NOTIFY.RACE_CONTEST_HIDE,
         {}
     )
@@ -1069,15 +1068,15 @@ end
 ---@return table 前三名玩家的详细数据
 function RaceGameMode:_getTopThreePlayersData()
     local topThree = {}
-    
+
     -- 确保排名是最新的
     self:_updateRankings()
-    
+
     -- 获取前三名的数据
     for i = 1, math.min(3, #self.rankings) do
         local uin = self.rankings[i]
         local flightData = self.flightData[uin]
-        
+
         if flightData then
             -- 查找对应的玩家实例获取更多信息
             local player = self:GetPlayerByUin(uin)
@@ -1094,7 +1093,7 @@ function RaceGameMode:_getTopThreePlayersData()
             end
         end
     end
-    
+
     return topThree
 end
 
@@ -1102,10 +1101,10 @@ end
 ---@return table<table<string, any>> 所有玩家的详细数据
 function RaceGameMode:_getAllPlayersFlightData()
     local allPlayers = {}
-    
+
     -- 确保排名是最新的
     self:_updateRankings()
-    
+
     for i, uin in ipairs(self.rankings) do
         local flightData = self.flightData[uin]
         if flightData then
@@ -1123,7 +1122,7 @@ function RaceGameMode:_getAllPlayersFlightData()
             end
         end
     end
-    
+
     return allPlayers
 end
 
@@ -1147,11 +1146,11 @@ function RaceGameMode:_handleLateJoinPlayer(player)
             -- 【修复】传入正确的起始坐标进行初始化
             if targetPos then
                 self:_initializeLateJoinPlayerState(player, targetPos)
-            
+
                 -- 【修复】传入正确的起始坐标来发射玩家
                 self:LaunchPlayer(player, targetPos)
                 self:_executeGameStartCommandsForPlayer(player)
-                
+
                 -- 发送界面数据
                 self:_sendRaceUIToLateJoinPlayer(player)
                 player.actor:StopNavigate()
@@ -1160,7 +1159,7 @@ function RaceGameMode:_handleLateJoinPlayer(player)
             end
         end
     end)
-    
+
 end
 
 --- 【新增】初始化迟到加入玩家的比赛状态数据
@@ -1168,9 +1167,9 @@ end
 ---@param startPos Vector3 玩家的比赛起始位置
 function RaceGameMode:_initializeLateJoinPlayerState(player, startPos)
     if not player or not player.actor or not startPos then return end
-    
+
     local uin = player.uin
-    
+
     -- 初始化所有必要的数据
     self.flightData[uin] = {
         uin = uin,
@@ -1181,25 +1180,25 @@ function RaceGameMode:_initializeLateJoinPlayerState(player, startPos)
         rank = self:_getParticipantCount(),
         isFinished = false
     }
-    
+
     self.startPositions[uin] = startPos
     self.realtimeRewardsGiven[uin] = {}
     self.levelRewardsGiven[uin] = {}
-    
+
     -- 添加到排名列表
     table.insert(self.rankings, uin)
-    
+
     --gg.log(string.format("已初始化迟到玩家 %s 的状态数据", player.name or uin))
 end
 --- 【新增】向迟到加入的玩家发送比赛界面数据
----@param player MPlayer 迟到加入的玩家  
+---@param player MPlayer 迟到加入的玩家
 function RaceGameMode:_sendRaceUIToLateJoinPlayer(player)
     if not player then return end
-    
+
     -- 发送比赛开始通知
     local raceTime = self.levelType and self.levelType.raceTime or 60
     RaceGameEventManager.SendRaceStartNotification(player, raceTime)
-    
+
     -- 发送当前比赛状态
     self:AddDelay(0.2, function()
         if self.state == RaceState.RACING then
@@ -1213,49 +1212,49 @@ end
 ---@return boolean, Vector3|nil #是否传送成功, 目标位置
 function RaceGameMode:_teleportPlayerToStartPosition(player)
     if not player or not player.actor then return false, nil end
-    
+
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
-    
+
     if not handler or not handler.teleportNode or not handler.teleportNode.Position then
         --gg.log(string.format("错误: 无法获取传送位置，玩家 %s", player.name or player.uin))
         return false, nil
     end
-    
+
     local targetPosition = handler.teleportNode.Position
     --gg.log(string.format("正在传送玩家 %s 到 %s", player.name or player.uin, tostring(targetPosition)))
 
     -- 使用引擎内置 TeleportService
     local TeleportService = game:GetService("TeleportService")
     TeleportService:Teleport(player.actor, targetPosition)
-    
+
     return true, targetPosition
 end
 --- 【新增】取消比赛并完全清理实例（用于准备阶段所有玩家离开）
 function RaceGameMode:_cancelRaceAndCleanup()
     --gg.log(string.format("取消比赛并清理实例: %s", self.instanceId))
-    
+
     -- 取消准备倒计时（如果正在进行）
     self:_cancelPrepareCountdown("比赛已取消")
-    
+
     -- 设置状态为已结束，防止其他逻辑继续执行
     self.state = RaceState.FINISHED
-    
+
     -- 停止所有定时器
     self:_stopFlightDistanceTracking()
     self:_stopContestUIUpdates()
-    
+
     -- 通知剩余玩家
     for _, player in pairs(self.participants) do
         if player and player.SendHoverText then
             player:SendHoverText("比赛已取消")
         end
     end
-    
+
     -- 清理GameModeManager中的记录
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager
-    
+
     if GameModeManager then
         -- 清理玩家记录
         for _, player in pairs(self.participants) do
@@ -1267,10 +1266,10 @@ function RaceGameMode:_cancelRaceAndCleanup()
         -- 清理实例记录
         GameModeManager.activeModes[self.instanceId] = nil
     end
-    
+
     -- 清理自身数据
     self:_cleanAllData()
-    
+
     -- 销毁自身
     self:Destroy()
 end
@@ -1284,7 +1283,7 @@ function RaceGameMode:_cleanPlayerData(uin)
             break
         end
     end
-    
+
     -- 清理所有相关数据
     self.finishedPlayers[uin] = nil
     self.flightData[uin] = nil
@@ -1302,7 +1301,7 @@ function RaceGameMode:_cleanAllData()
     self.startPositions = {}
     self.realtimeRewardsGiven = {}
     self.levelRewardsGiven = {}
-    
+
     -- 清理定时器
     self.prepareTimer = nil
     self.isPreparing = false
@@ -1324,7 +1323,7 @@ function RaceGameMode:_executeGameStartCommandsForPlayer(player)
     end
 
     --gg.log(string.format("信息: [RaceGameMode] 为玩家 %s 执行 %d 条游戏开始指令", player.name or player.uin, #startCommands))
-    
+
     -- 遍历执行每条指令
     for i, command in ipairs(startCommands) do
         if command and type(command) == "string" then
@@ -1350,12 +1349,12 @@ function RaceGameMode:_executeGameEndCommands()
     end
 
     --gg.log(string.format("信息: [RaceGameMode] 开始执行 %d 条游戏结算指令", #endCommands))
-    
+
     -- 遍历执行每条指令，为所有参赛玩家执行
     for i, command in ipairs(endCommands) do
         if command and type(command) == "string" then
             --gg.log(string.format("信息: [RaceGameMode] 执行游戏结算指令 %d: %s", i, command))
-            
+
             -- 为所有参赛玩家执行结算指令
             for _, player in pairs(self.participants) do
                 if player then
@@ -1402,7 +1401,7 @@ function RaceGameMode:_executeCommandForPlayer(command, commandType, player)
 
     -- 使用现有的CommandManager执行指令
     local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
-    
+
     local success = CommandManager.ExecuteCommand(command, player, true) -- silent = true 避免重复日志
 end
 
@@ -1438,8 +1437,8 @@ function RaceGameMode:_updateContestUIData()
     }
 
     RaceGameEventManager.BroadcastRaceEvent(
-        self:_getParticipantList(), 
-        EventPlayerConfig.NOTIFY.RACE_CONTEST_UPDATE, 
+        self:_getParticipantList(),
+        EventPlayerConfig.NOTIFY.RACE_CONTEST_UPDATE,
         eventData
     )
 end

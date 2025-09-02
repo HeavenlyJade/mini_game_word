@@ -34,7 +34,10 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 ---@field lastUpdateTime number 最后更新时间戳
 
 ---@class ShopCloudDataMgr
-local ShopCloudDataMgr = {}
+local ShopCloudDataMgr = {
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "shop_player_cloud", -- 商城数据key前缀
+}
 
 
 
@@ -55,7 +58,7 @@ local function CalculateNextResetTime(resetType, currentTime)
         min = 0,
         sec = 0
     })
-    
+
     if resetType == "daily" then
         -- 如果当前时间已经过了今天的重置时间，则设置为明天的重置时间
         if currentTime >= nextReset then
@@ -85,7 +88,7 @@ local function CalculateNextResetTime(resetType, currentTime)
             sec = 0
         })
     end
-    
+
     return nextReset
 end
 
@@ -93,7 +96,7 @@ end
 ---@return PlayerShopData
 function ShopCloudDataMgr.CreateDefaultShopData()
     local currentTime = os.time()
-    
+
     return {
         purchaseRecords = {},
         limitCounters = {},
@@ -120,7 +123,7 @@ local function ValidateAndRepairShopData(shopData)
         --gg.log("商城数据无效，创建默认数据")
         return ShopCloudDataMgr.CreateDefaultShopData()
     end
-    
+
     -- 确保必要字段存在
     shopData.purchaseRecords = shopData.purchaseRecords or {}
     shopData.limitCounters = shopData.limitCounters or {}
@@ -129,13 +132,13 @@ local function ValidateAndRepairShopData(shopData)
     shopData.totalPurchaseValue = shopData.totalPurchaseValue or 0
     shopData.totalCoinSpent = shopData.totalCoinSpent or 0
     shopData.lastUpdateTime = os.time()
-    
+
     -- 重新计算重置时间
     local currentTime = os.time()
     shopData.dailyResetTime = shopData.dailyResetTime or CalculateNextResetTime("daily", currentTime)
     shopData.weeklyResetTime = shopData.weeklyResetTime or CalculateNextResetTime("weekly", currentTime)
     shopData.monthlyResetTime = shopData.monthlyResetTime or CalculateNextResetTime("monthly", currentTime)
-    
+
     return shopData
 end
 
@@ -145,8 +148,8 @@ end
 ---@param uin number 玩家ID
 ---@return PlayerShopData 玩家商城数据
 function ShopCloudDataMgr.LoadPlayerShopData(uin)
-    local ret, data = cloudService:GetTableOrEmpty('shop_player_' .. uin)
-    
+    local ret, data = cloudService:GetTableOrEmpty(ShopCloudDataMgr.CLOUD_KEY_PREFIX .. uin)
+
     if ret and data then
         --gg.log("加载玩家商城数据成功", uin)
         return ValidateAndRepairShopData(data)
@@ -165,19 +168,19 @@ function ShopCloudDataMgr.SavePlayerShopData(uin, shopData)
         --gg.log("商城数据为空，无法保存", uin)
         return false
     end
-    
+
     -- 更新最后保存时间
     shopData.lastUpdateTime = os.time()
-    
+
     -- 异步保存到云存储
-    cloudService:SetTableAsync('shop_player_' .. uin, shopData, function(success)
+    cloudService:SetTableAsync(ShopCloudDataMgr.CLOUD_KEY_PREFIX .. uin, shopData, function(success)
         if not success then
             --gg.log("保存玩家商城数据失败", uin)
         else
             --gg.log("保存玩家商城数据成功", uin)
         end
     end)
-    
+
     return true
 end
 
@@ -187,7 +190,7 @@ end
 function ShopCloudDataMgr.CheckAndResetLimitCounters(shopData)
     local currentTime = os.time()
     local hasReset = false
-    
+
     -- 检查每日重置
     if currentTime >= shopData.dailyResetTime then
         ShopCloudDataMgr.ResetDailyLimits(shopData)
@@ -195,7 +198,7 @@ function ShopCloudDataMgr.CheckAndResetLimitCounters(shopData)
         hasReset = true
         --gg.log("执行每日商城限购重置")
     end
-    
+
     -- 检查每周重置
     if currentTime >= shopData.weeklyResetTime then
         ShopCloudDataMgr.ResetWeeklyLimits(shopData)
@@ -203,7 +206,7 @@ function ShopCloudDataMgr.CheckAndResetLimitCounters(shopData)
         hasReset = true
         --gg.log("执行每周商城限购重置")
     end
-    
+
     -- 检查每月重置
     if currentTime >= shopData.monthlyResetTime then
         ShopCloudDataMgr.ResetMonthlyLimits(shopData)
@@ -211,7 +214,7 @@ function ShopCloudDataMgr.CheckAndResetLimitCounters(shopData)
         hasReset = true
         --gg.log("执行每月商城限购重置")
     end
-    
+
     return hasReset
 end
 
@@ -254,7 +257,7 @@ end
 ---@return ShopPurchaseRecord
 function ShopCloudDataMgr.CreatePurchaseRecord(shopItemId, purchaseAmount)
     local currentTime = os.time()
-    
+
     return {
         shopItemId = shopItemId,
         purchaseCount = 1,
@@ -270,8 +273,8 @@ end
 function ShopCloudDataMgr.CreateLimitCounter(limitType)
     return {
         count = 0,
-        resetTime = CalculateNextResetTime(limitType == "每日" and "daily" or 
-                                         limitType == "每周" and "weekly" or 
+        resetTime = CalculateNextResetTime(limitType == "每日" and "daily" or
+                                         limitType == "每周" and "weekly" or
                                          limitType == "每月" and "monthly" or "daily", os.time()),
         limitType = limitType
     }
@@ -283,12 +286,12 @@ end
 function ShopCloudDataMgr.GetShopDataStats(shopData)
     local totalPurchases = 0
     local uniqueItems = 0
-    
+
     for _, record in pairs(shopData.purchaseRecords) do
         totalPurchases = totalPurchases + record.purchaseCount
         uniqueItems = uniqueItems + 1
     end
-    
+
     return {
         totalPurchases = totalPurchases,
         uniqueItems = uniqueItems,

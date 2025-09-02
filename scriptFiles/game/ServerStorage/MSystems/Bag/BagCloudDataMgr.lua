@@ -31,6 +31,8 @@ local CONST_CLOUD_SAVE_TIME = 30 -- 每30秒存盘一次
 ---@class BagCloudDataMgr
 local BagCloudDataMgr = {
     last_time_bag = 0, -- 最后一次背包存盘时间
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "bag_key", -- 背包数据key前缀
 }
 
 -- 读取玩家的背包数据
@@ -40,8 +42,8 @@ local BagCloudDataMgr = {
 function BagCloudDataMgr.ReadPlayerBag(player)
     local Bag = require(ServerStorage.MSystems.Bag.Bag) ---@type Bag
     ---@type BagCloudData
-    local ret_, ret2_ = cloudService:GetTableOrEmpty('inv' .. player.uin)
-    print("读取玩家背包数据", 'inv' .. player.uin, ret_, ret2_)
+    local ret_, ret2_ = cloudService:GetTableOrEmpty(BagCloudDataMgr.CLOUD_KEY_PREFIX .. player.uin)
+    print("读取玩家背包数据", BagCloudDataMgr.CLOUD_KEY_PREFIX .. player.uin, ret_, ret2_)
 
     if ret_ then
         local bag = Bag.New(player)
@@ -77,7 +79,7 @@ function BagCloudDataMgr.SavePlayerBag(uin, bag, force_)
         -- Bag:Save() 现在只返回标准格式的数据
         local bagData = bag:Save()
         if bagData then
-            cloudService:SetTableAsync('inv' .. uin, bagData, function(ret_)
+            cloudService:SetTableAsync(BagCloudDataMgr.CLOUD_KEY_PREFIX .. uin, bagData, function(ret_)
                 if ret_ then
                     -- --gg.log("背包数据保存成功", uin)
                 else
@@ -93,13 +95,13 @@ end
 ---@param uin number 玩家UIN
 ---@return string 云存储键名
 function BagCloudDataMgr.GetBagCloudKey(uin)
-    return 'inv' .. uin
+    return BagCloudDataMgr.CLOUD_KEY_PREFIX .. uin
 end
 
 -- 清空玩家背包数据（慎用）
 ---@param uin number 玩家UIN
 function BagCloudDataMgr.ClearPlayerBag(uin)
-    cloudService:SetTableAsync('inv' .. uin, { items = {} }, function(ret_)
+    cloudService:SetTableAsync(BagCloudDataMgr.CLOUD_KEY_PREFIX .. uin, { items = {} }, function(ret_)
         if ret_ then
             --gg.log("背包数据清空成功", uin)
         else

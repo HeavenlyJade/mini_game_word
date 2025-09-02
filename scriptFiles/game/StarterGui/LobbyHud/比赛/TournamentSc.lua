@@ -37,6 +37,9 @@ function TournamentSc:OnInit(node, config)
 	-- 5. 更新初始距离标签
 	self:UpdateDistanceNodeLabels()
 
+	-- 6. 更新奖杯数量标签
+	self:UpdateTrophyLabels()
+
 	----gg.log("比赛UI初始化完成")
 end
 
@@ -51,7 +54,7 @@ function TournamentSc:InitNodes()
 	self.GmaeDisTop = self:Get("底图/比赛距离实时", ViewComponent)
 	-- 距离节点默认隐藏，只在比赛时显示
 	self.GmaeDisTop:SetVisible(false)
-	
+
 	-- 【新增】距离节点引用
 	self.distanceNodes = {}
 	-- 比赛进度条1: 距离1到10
@@ -59,19 +62,19 @@ function TournamentSc:InitNodes()
 	for i = 1, 10 do
 		self.distanceNodes[1][i] = self:Get("底图/功能/比赛进度条1/距离" .. i, ViewComponent)
 	end
-	
+
 	-- 比赛进度条2: 距离1到4
 	self.distanceNodes[2] = {}
 	for i = 1, 4 do
 		self.distanceNodes[2][i] = self:Get("底图/功能/比赛进度条2/距离" .. i, ViewComponent)
 	end
-	
+
 	-- 比赛进度条3: 距离1到3
 	self.distanceNodes[3] = {}
 	for i = 1, 2 do
 		self.distanceNodes[3][i] = self:Get("底图/功能/比赛进度条3/距离" .. i, ViewComponent)
 	end
-	
+
 	-- 比赛进度条
 	self.progressBars = {}
 	for i = 1, 3 do
@@ -84,7 +87,7 @@ function TournamentSc:InitNodes()
 			avatarNode = nil,
 		}
 	end
-	
+
 	-- 按钮
 	self.doubleTrainingButton = self:Get("底图/双倍训练", ViewButton)
 	self.leaveRaceButton = self:Get("底图/离开比赛", ViewButton)
@@ -113,12 +116,12 @@ function TournamentSc:InitData()
 	self.remainingTime = 0
 	self.playerAvatars = {} -- uin -> avatarNode
 	self.currentPlayerDistance = 0 -- 当前玩家飞行距离
-	
+
 	-- 【新增】客户端飞行距离追踪数据
 	self.clientFlightData = {} -- userId -> FlightData
 	self.clientStartPositions = {} -- userId -> Vector3
 	self.distanceUpdateTimer = nil -- 距离更新定时器
-	
+
 	-- 【新增】当前地图的距离循环器配置（默认使用init_map）
 	self.currentMapConfig = "init_map"
 	self.distanceConfig = NodeConf["距离循环器"][self.currentMapConfig]
@@ -170,11 +173,11 @@ function TournamentSc:RegisterButtonEvents()
 		end
 	end
 
-	if self.leaveAfkButton then
-		self.leaveAfkButton.clickCb = function()
-			self:OnClickLeaveAfk()
-		end
+
+	self.leaveAfkButton.clickCb = function()
+		self:OnClickLeaveAfk()
 	end
+	
 end
 
 -- =================================
@@ -207,19 +210,19 @@ function TournamentSc:OnClickLeaveRace()
 	if self.leaveRaceButton then self.leaveRaceButton:SetVisible(false) end
 	if self.speedPointer then self.speedPointer:SetVisible(false) end
 	if self.speedDashboard then self.speedDashboard:SetVisible(false) end
-	
+
 	-- 【新增】停止客户端飞行距离追踪
 	self:StopClientDistanceTracking()
 end
 
 function TournamentSc:OnClickLeaveAfk()
-	----gg.log("点击离开挂机按钮")
+	gg.log("点击离开挂机按钮")
 	-- 发送网络请求，通知服务端玩家想离开挂机状态
-	if gg and gg.network_channel then
-		gg.network_channel:FireServer({
-			cmd = EventPlayerConfig.REQUEST.REQUEST_LEAVE_IDLE
-		})
-	end
+
+	gg.network_channel:FireServer({
+		cmd = EventPlayerConfig.REQUEST.REQUEST_LEAVE_IDLE
+	})
+	
 end
 
 -- =================================
@@ -232,17 +235,17 @@ function TournamentSc:OnContestShow(data)
 	if self.basePanel then
 		self.basePanel:SetVisible(true)
 	end
-	
+
 	-- 【新增】显示距离节点并初始化距离显示
 	if self.GmaeDisTop then
 		self.GmaeDisTop:SetVisible(true)
 		self.currentPlayerDistance = 0
 		self:UpdateDistanceDisplay(0)
 	end
-	
+
 	-- 【新增】在比赛开始时记录所有玩家的起始位置
 	self:RecordAllPlayersStartPositions()
-	
+
 	-- 【新增】启动客户端飞行距离追踪
 	self:StartClientDistanceTracking()
 end
@@ -261,7 +264,7 @@ function TournamentSc:OnContestUpdate(data)
 			if playerData and playerData.userId then
 				local uin = playerData.userId
 				local distance = playerData.flightDistance or 0
-				
+
 				-- 跳过本地玩家（本地玩家由UpdateClientFlightDistances处理）
 				local localPlayer = gg.getClientLocalPlayer()
 				if localPlayer and localPlayer.UserId == uin then
@@ -269,7 +272,7 @@ function TournamentSc:OnContestUpdate(data)
 				else
 					-- 更新其他玩家的头像位置
 					self:UpdatePlayerAvatarPosition(uin, distance)
-					
+
 				end
 			end
 		end
@@ -308,10 +311,10 @@ function TournamentSc:OnContestHide(data)
 		end
 	end
 	self.playerAvatars = {}
-	
+
 	-- 【新增】停止客户端飞行距离追踪
 	self:StopClientDistanceTracking()
-	
+
 	-- 【新增】重置距离数据
 	self.currentPlayerDistance = 0
 end
@@ -330,13 +333,16 @@ function TournamentSc:SetMapDistanceConfig(mapName)
         -- 如果地图名称无效，使用默认的init_map配置
         mapName = "init_map"
     end
-    
+
     self.currentMapConfig = mapName
     self.distanceConfig = NodeConf["距离循环器"][mapName]
-    
+
     -- 【新增】更新距离节点显示
     self:UpdateDistanceNodeLabels()
-    
+
+    -- 【新增】更新奖杯数量标签
+    self:UpdateTrophyLabels()
+
     --gg.log("TournamentSc: 切换到地图 " .. mapName .. " 的距离配置")
 end
 
@@ -384,6 +390,29 @@ function TournamentSc:UpdateDistanceNodeLabels()
 	--gg.log("距离节点标签已根据地图 " .. self.currentMapConfig .. " 更新")
 end
 
+--- 【新增】根据当前地图配置更新奖杯节点的显示文本
+function TournamentSc:UpdateTrophyLabels()
+	if not self.progressBars or not self.currentMapConfig then return end
+	local trophyConfig = NodeConf["节点奖杯配置"][self.currentMapConfig]
+	if not trophyConfig then
+		--gg.log("更新奖杯数量失败：找不到地图配置 " .. self.currentMapConfig)
+		return
+	end
+
+	for i = 1, 3 do
+		local progressBar = self.progressBars[i]
+		if progressBar and progressBar.countLabel and progressBar.countLabel.node and progressBar.countLabel.node.Title ~= nil then
+			local trophyKey = "奖杯" .. i
+			local valueConfig = trophyConfig[i]
+			if valueConfig and valueConfig[trophyKey] then
+				local value = valueConfig[trophyKey]
+				progressBar.countLabel.node.Title = gg.FormatLargeNumber(value)
+			end
+		end
+	end
+	--gg.log("奖杯数量标签已根据地图 " .. self.currentMapConfig .. " 更新")
+end
+
 --- 接收比赛开始(发射)事件，获取服务端携带的数据（含 variableData）
 ---@param data table
 function TournamentSc:OnLaunchPlayer(data)
@@ -393,16 +422,16 @@ function TournamentSc:OnLaunchPlayer(data)
     self.speedPointer:SetVisible(true)
 	self.lastLaunchData = data or {}
 	self.variableData = (data and data.variableData) or {}
-	
+
 	-- 【新增】在发射时立即记录所有玩家的起始位置
 	local Players = game:GetService("Players")
 	local allPlayers = Players:GetPlayers()
-	
+
 	--gg.log("=== 比赛发射时客户端玩家列表 ===")
 	for _, playerActor in ipairs(allPlayers) do
 		if playerActor and playerActor.UserId then
 			local uin = playerActor.UserId
-			
+
 			-- 记录每个玩家的起始位置
 			self.clientStartPositions[uin] = playerActor.Position
 			self.clientFlightData[uin] = {
@@ -412,13 +441,13 @@ function TournamentSc:OnLaunchPlayer(data)
 				flightDistance = 0,
 				isFinished = false
 			}
-			
+
 			-- 🚨 新增：立即为每个玩家创建头像，确保所有玩家都能看到
 			self:UpdatePlayerAvatarPosition(uin, 0)
 		end
 	end
 	--gg.log("=== 玩家列表结束 ===")
-	
+
 	-- 可在此根据需要刷新UI或缓存到本地数据系统
 
 	-- 启动速度指针旋转定时器：从 -90 度逐步旋转到 90 度，历时 recoveryDelay
@@ -459,12 +488,12 @@ function TournamentSc:OnLaunchPlayer(data)
 	-- 计算并显示战力相关数值到 速度2/3/4/5
 	local variableData = self.variableData or {}
 	local basePower = tonumber(variableData["数据_固定值_战力值"]) or 100
-	
+
 	-- 确保basePower最小值为100
 	if basePower < 100 then
 		basePower = 100
 	end
-	
+
 	local A = basePower * 1.5
 	local v2 = A * 0.25
 	local v3 = A * 0.5
@@ -506,10 +535,10 @@ end
 --- 【新增】更新距离显示
 ---@param distance number 飞行距离
 function TournamentSc:UpdateDistanceDisplay(distance)
-    if not self.GmaeDisTop or not self.GmaeDisTop.node then 
-        return 
+    if not self.GmaeDisTop or not self.GmaeDisTop.node then
+        return
     end
-    
+
     -- 更新UI显示
     if self.GmaeDisTop.node.Title ~= nil then
         self.GmaeDisTop.node.Title = "+"..gg.FormatLargeNumber(math.floor(distance + 0.5))
@@ -520,12 +549,12 @@ end
 function TournamentSc:RecordAllPlayersStartPositions()
     local Players = game:GetService("Players")
     local allPlayers = Players:GetPlayers()
-    
+
     --gg.log("=== 比赛开始时记录所有玩家起始位置 ===")
     for _, playerActor in ipairs(allPlayers) do
         if playerActor and playerActor.UserId then
             local uin = playerActor.UserId
-            
+
             -- 记录每个玩家的起始位置
             self.clientStartPositions[uin] = playerActor.Position
             self.clientFlightData[uin] = {
@@ -535,7 +564,7 @@ function TournamentSc:RecordAllPlayersStartPositions()
                 flightDistance = 0,
                 isFinished = false
             }
-            
+
             -- 🚨 新增：立即为每个玩家创建头像，确保所有玩家都能看到
             self:UpdatePlayerAvatarPosition(uin, 0)
         end
@@ -548,7 +577,7 @@ function TournamentSc:StartClientDistanceTracking()
     if self.distanceUpdateTimer then
         self:StopClientDistanceTracking()
     end
-    
+
     -- 每0.2秒更新一次飞行距离（与服务端同步）
     self.distanceUpdateTimer = SandboxNode.New("Timer", game.WorkSpace)
     self.distanceUpdateTimer.Name = "TournamentSc_DistanceTimer"
@@ -559,7 +588,7 @@ function TournamentSc:StartClientDistanceTracking()
         self:UpdateClientFlightDistances()
     end
     self.distanceUpdateTimer:Start()
-    
+
     --gg.log("TournamentSc: 启动客户端飞行距离追踪")
 end
 
@@ -570,11 +599,11 @@ function TournamentSc:StopClientDistanceTracking()
         self.distanceUpdateTimer:Destroy()
         self.distanceUpdateTimer = nil
     end
-    
+
     -- 清理飞行数据
     self.clientFlightData = {}
     self.clientStartPositions = {}
-    
+
     --gg.log("TournamentSc: 停止客户端飞行距离追踪")
 end
 
@@ -585,9 +614,9 @@ function TournamentSc:UpdateClientFlightDistances()
     if not localPlayer or not localPlayer.UserId then
         return
     end
-    
+
     local uin = localPlayer.UserId
-    
+
     -- 检查是否有起始位置记录
     if not self.clientStartPositions[uin] then
         -- 记录起始位置
@@ -602,38 +631,38 @@ function TournamentSc:UpdateClientFlightDistances()
         }
         --gg.log(string.format("TournamentSc: 本地玩家 %s 起始位置已记录", uin))
     end
-    
+
     local flightData = self.clientFlightData[uin]
     if not flightData then
         --gg.log(string.format("TournamentSc: 警告 - 本地玩家 %s 的飞行数据不存在", uin))
         return
     end
-    
+
     if flightData.isFinished then
         return
     end
-    
+
     -- 获取本地玩家当前位置
     local currentPos = localPlayer.Position
     if currentPos then
         flightData.currentPosition = currentPos
-        
+
         -- 计算从起始位置到当前位置的距离
         local startPos = flightData.startPosition
         local distance = self:CalculateDistance(currentPos, startPos)
-        
+
         -- 更新飞行距离（只增不减，取最大值）
         if distance then
             local oldDistance = flightData.flightDistance
             flightData.flightDistance = math.max(flightData.flightDistance, distance)
-            
+
             -- 更新本地玩家的头像位置
             self:UpdatePlayerAvatarPosition(uin, flightData.flightDistance)
-            
+
             -- 更新距离显示
             self.currentPlayerDistance = flightData.flightDistance
             self:UpdateDistanceDisplay(flightData.flightDistance)
-            
+
 
         end
     end
@@ -647,12 +676,12 @@ function TournamentSc:CalculateDistance(pos1, pos2)
     if not pos1 or not pos2 then
         return nil
     end
-    
+
     -- 使用VectorUtils模块的距离计算方法（与服务端保持一致）
     local success, distance = pcall(function()
         return VectorUtils.Vec.Distance3(pos1, pos2)
     end)
-    
+
     if success and type(distance) == "number" then
         return distance
     else
@@ -686,12 +715,12 @@ function TournamentSc:GetProgressBarByDistance(distance)
         -- 如果没有配置，使用默认的init_map配置
         self.distanceConfig = NodeConf["距离循环器"]["init_map"]
     end
-    
+
     -- 计算当前循环周期
     local cycle = math.floor(distance / self.distanceConfig.cycleDistance)
     -- 计算当前周期内的相对距离
     local relativeDistance = distance % self.distanceConfig.cycleDistance
-    
+
     -- 根据配置确定进度条
     for i = 1, 3 do
         local barConfig = self.distanceConfig.progressBars[i]
@@ -699,7 +728,7 @@ function TournamentSc:GetProgressBarByDistance(distance)
             return i
         end
     end
-    
+
     -- 如果都不匹配，返回最后一个进度条
     return 3
 end
@@ -713,17 +742,17 @@ function TournamentSc:CalculatePositionPercentage(distance, progressBarIndex)
         -- 如果没有配置，使用默认的init_map配置
         self.distanceConfig = NodeConf["距离循环器"]["init_map"]
     end
-    
+
     -- 计算当前循环周期内的相对距离
     local relativeDistance = distance % self.distanceConfig.cycleDistance
-    
+
     -- 根据配置计算位置百分比
     local barConfig = self.distanceConfig.progressBars[progressBarIndex]
     if barConfig then
         local barDistance = relativeDistance - barConfig.start
         return math.min(1, math.max(0, barDistance / barConfig.range))
     end
-    
+
     return 0
 end
 
@@ -735,21 +764,21 @@ function TournamentSc:UpdatePlayerAvatarPosition(userId, distance)
 
     -- 确定应该在哪个进度条
     local targetProgressBar = self:GetProgressBarByDistance(distance)
-    
+
     -- 查找玩家当前的头像
     local currentAvatar = self.playerAvatars[userId]
-    
+
     -- 如果玩家头像不存在或需要切换进度条，创建新头像
     if not currentAvatar or currentAvatar.progressBarIndex ~= targetProgressBar then
         self:CreatePlayerAvatar(userId, targetProgressBar)
         currentAvatar = self.playerAvatars[userId]
     end
-    
+
     if not currentAvatar then return end
-    
+
     -- 计算位置百分比
     local positionPercent = self:CalculatePositionPercentage(distance, targetProgressBar)
-    
+
     -- 更新头像位置
     self:UpdateAvatarXPosition(currentAvatar, positionPercent)
 end
@@ -765,43 +794,43 @@ function TournamentSc:CreatePlayerAvatar(userId, progressBarIndex)
         end
         self.playerAvatars[userId] = nil
     end
-    
+
     -- 获取对应的头像模板
     local avatarTemplate
-    if progressBarIndex == 1 then 
+    if progressBarIndex == 1 then
         avatarTemplate = self.GameUserMag1
-    elseif progressBarIndex == 2 then 
+    elseif progressBarIndex == 2 then
         avatarTemplate = self.GameUserMag2
-    elseif progressBarIndex == 3 then 
+    elseif progressBarIndex == 3 then
         avatarTemplate = self.GameUserMag3
     end
-    
+
     if not avatarTemplate or not avatarTemplate.node then
         ----gg.log("警告: 找不到进度条 " .. progressBarIndex .. " 的头像模板")
         return
     end
-    
+
     -- 获取玩家头像节点
     local headNode = self.CoreUI:GetHeadNode(tostring(userId))
-    if not headNode then 
+    if not headNode then
         ----gg.log("警告: 无法获取玩家头像，userId: " .. tostring(userId))
-        return 
+        return
     end
-    
+
     -- 设置头像属性
     headNode.Parent = avatarTemplate.node.Parent
     headNode.Position = avatarTemplate.node.Position
     headNode.Size = avatarTemplate.node.Size
     headNode.Pivot = avatarTemplate.node.Pivot
     headNode.Visible = true
-    
+
     -- 获取进度条容器大小
     local progressBar = self.progressBars[progressBarIndex]
     local progressBarSize = 0
     if progressBar and progressBar.container and progressBar.container.node then
         progressBarSize = progressBar.container.node.Size.x
     end
-    
+
     -- 保存头像信息
     self.playerAvatars[userId] = {
         node = headNode,
@@ -809,7 +838,7 @@ function TournamentSc:CreatePlayerAvatar(userId, progressBarIndex)
         progressBarSize = progressBarSize,
         basePosition = headNode.Position
     }
-    
+
     -- 隐藏模板
     avatarTemplate:SetVisible(false)
 end
@@ -821,17 +850,17 @@ function TournamentSc:UpdateAvatarXPosition(avatarData, positionPercent)
     if not avatarData or not avatarData.node or avatarData.node.isDestroyed then
         return
     end
-    
+
     -- 计算新的X位置
     local moveDistance = avatarData.progressBarSize * positionPercent
     local basePos = avatarData.basePosition
-    
+
     -- UI节点使用Vector2而不是Vector3
     local newPosition = Vector2.new(
         basePos.x + moveDistance,
         basePos.y
     )
-    
+
     -- 更新位置
     avatarData.node.Position = newPosition
 end

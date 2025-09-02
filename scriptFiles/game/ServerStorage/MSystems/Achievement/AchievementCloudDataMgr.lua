@@ -6,7 +6,10 @@ local MainStorage = game:GetService("MainStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class AchievementCloudDataMgr
-local AchievementCloudDataMgr = {}
+local AchievementCloudDataMgr = {
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "achievement_data_new", -- 成就数据key前缀
+}
 
 ---@class AchievementData 单个成就/天赋数据
 ---@field achievementId string 成就/天赋ID标识符
@@ -25,7 +28,7 @@ function AchievementCloudDataMgr.LoadPlayerAchievements(playerId)
         return false, nil
     end
 
-    local key = "achievement_data_" .. playerId
+    local key = AchievementCloudDataMgr.CLOUD_KEY_PREFIX .. playerId
     local success, cloudData = cloudService:GetTableOrEmpty(key)
 
     if success and cloudData and cloudData.achievements then
@@ -59,7 +62,7 @@ function AchievementCloudDataMgr.SavePlayerAchievements(playerId, saveData, forc
         lastUpdate = os.time()
     }
 
-    local key = "achievement_data_" .. playerId
+    local key = AchievementCloudDataMgr.CLOUD_KEY_PREFIX .. playerId
 
     cloudService:SetTableAsync(key, cloudData, function(success)
         if success then
@@ -81,7 +84,7 @@ function AchievementCloudDataMgr.ClearPlayerAchievements(playerId)
         return false
     end
 
-    local key = "achievement_data_" .. playerId
+    local key = AchievementCloudDataMgr.CLOUD_KEY_PREFIX .. playerId
 
     cloudService:SetTableAsync(key, {}, function(success)
         if success then

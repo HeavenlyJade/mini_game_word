@@ -22,6 +22,10 @@ local  CONST_CLOUD_SAVE_TIME = 30    --每60秒存盘一次
 ---@class MCloudDataMgr
 local MCloudDataMgr = {
     last_time_player = {},     --最后一次玩家存盘时间
+    -- 云存储key配置
+    PLAYER_DATA_KEY_PREFIX = "player_cloud", -- 玩家数据key前缀
+    SKILL_DATA_KEY_PREFIX = "skill_cloud", -- 技能数据key前缀
+    GAME_TASK_KEY_PREFIX = "game_task_cloud", -- 游戏任务key前缀
 }
 
 function SaveAll()
@@ -33,7 +37,7 @@ end
 
 --读取玩家技能数据
 function MCloudDataMgr.ReadSkillData( uin_ )
-    local ret_, ret2_ = cloudService:GetTableOrEmpty( 'sk' .. uin_ )
+    local ret_, ret2_ = cloudService:GetTableOrEmpty( MCloudDataMgr.SKILL_DATA_KEY_PREFIX .. uin_ )
     --gg.log( '获取玩家技能数据信息', 'pd' .. uin_, ret_, ret2_ )
     if  ret_ then
         if  ret2_ and ret2_.uin == uin_ then
@@ -50,7 +54,7 @@ end
 
 -- 读取玩家数据 等级 经验值
 function MCloudDataMgr.ReadPlayerData( uin_ )
-    local ret_, ret2_ = cloudService:GetTableOrEmpty( 'pd' .. uin_ )
+    local ret_, ret2_ = cloudService:GetTableOrEmpty( MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_ )
 
     --gg.log( '获取与玩家当前的经验和等级', 'pd' .. uin_, ret_, ret2_ )
     if  ret_ then
@@ -79,7 +83,7 @@ function MCloudDataMgr.SavePlayerData( uin_,  force_ )
             level = player_.level,
             vars = player_.variables
         }
-        cloudService:SetTableAsync( 'pd' .. uin_, data_, function ( ret_ )
+        cloudService:SetTableAsync( MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_, data_, function ( ret_ )
         end )
     end
 end
@@ -89,7 +93,7 @@ end
 
 -- 读取玩家的任务配置
 function MCloudDataMgr.ReadGameTaskData(player)
-    local ret_, ret2_ = cloudService:GetTableOrEmpty('game_task' .. player.uin)
+    local ret_, ret2_ = cloudService:GetTableOrEmpty(MCloudDataMgr.GAME_TASK_KEY_PREFIX .. player.uin)
     if ret_ then
         if ret2_ and ret2_.uin == player.uin then
             -- 重建任务
@@ -131,7 +135,7 @@ function MCloudDataMgr.SaveGameTaskData(player)
         acceptedQuestIds = player.acceptedQuestIds
     }
 
-    cloudService:SetTableAsync('game_task' .. player.uin, data_, function(ret_)
+    cloudService:SetTableAsync(MCloudDataMgr.GAME_TASK_KEY_PREFIX .. player.uin, data_, function(ret_)
     end)
 end
 
@@ -153,7 +157,7 @@ function MCloudDataMgr.SaveSkillConfig(player)
             }
         end
     end
-    cloudService:SetTableAsync( 'sk' .. player.uin, skillData, function ( ret_ )
+    cloudService:SetTableAsync( MCloudDataMgr.SKILL_DATA_KEY_PREFIX .. player.uin, skillData, function ( ret_ )
     end )
 end
 
@@ -185,7 +189,7 @@ function MCloudDataMgr.ClearCorePlayerData(uin_)
     end
 
     -- 2. 清理云端数据
-    local key = 'pd' .. uin_
+    local key = MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_
     -- 设置为空表来清空数据
     cloudService:SetTableAsync(key, {}, function(success)
         if success then

@@ -26,13 +26,16 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 ---@field unlockedEquipSlots number 玩家当前可携带(已解锁)的尾迹栏位数量
 
 ---@class CloudTrailDataAccessor
-local CloudTrailDataAccessor = {}
+local CloudTrailDataAccessor = {
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "trail_player_cloud", -- 尾迹数据key前缀
+}
 
 --- 加载玩家尾迹数据
 ---@param uin number 玩家ID
 ---@return PlayerTrailData 玩家尾迹数据
 function CloudTrailDataAccessor:LoadPlayerTrailData(uin)
-    local ret, data = cloudService:GetTableOrEmpty('trail_player_' .. uin)
+    local ret, data = cloudService:GetTableOrEmpty(CloudTrailDataAccessor.CLOUD_KEY_PREFIX .. uin)
 
     if ret and data and data.companionList then
         return data
@@ -57,7 +60,7 @@ function CloudTrailDataAccessor:SavePlayerTrailData(uin, trailData)
     end
 
     -- 保存到云存储
-    cloudService:SetTableAsync('trail_player_' .. uin, trailData, function(success)
+    cloudService:SetTableAsync(CloudTrailDataAccessor.CLOUD_KEY_PREFIX .. uin, trailData, function(success)
         if not success then
             --gg.log("保存玩家尾迹数据失败", uin)
         else
@@ -79,9 +82,9 @@ function CloudTrailDataAccessor:ClearPlayerTrailData(uin)
         trailSlots = 30,
         unlockedEquipSlots = 1, -- 默认解锁1个栏位
     }
-    
+
     -- 清空云存储数据
-    cloudService:SetTableAsync('trail_player_' .. uin, emptyTrailData, function(success)
+    cloudService:SetTableAsync(CloudTrailDataAccessor.CLOUD_KEY_PREFIX .. uin, emptyTrailData, function(success)
         if not success then
             gg.log("清空玩家尾迹云数据失败", uin)
         else
@@ -92,4 +95,4 @@ function CloudTrailDataAccessor:ClearPlayerTrailData(uin)
     return true
 end
 
-return CloudTrailDataAccessor 
+return CloudTrailDataAccessor

@@ -28,13 +28,16 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 
 
 ---@class CloudPetDataAccessor
-local CloudPetDataAccessor = {}
+local CloudPetDataAccessor = {
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "pet_player_cloud", -- 宠物数据key前缀
+}
 
 --- 加载玩家宠物数据
 ---@param uin number 玩家ID
 ---@return PlayerPetData 玩家宠物数据
 function CloudPetDataAccessor:LoadPlayerPetData(uin)
-    local ret, data = cloudService:GetTableOrEmpty('pet_player_' .. uin)
+    local ret, data = cloudService:GetTableOrEmpty(CloudPetDataAccessor.CLOUD_KEY_PREFIX .. uin)
 
     if ret and data and data.petList then
         return data
@@ -60,7 +63,7 @@ function CloudPetDataAccessor:SavePlayerPetData(uin, petData)
     end
 
     -- 保存到云存储
-    cloudService:SetTableAsync('pet_player_' .. uin, petData, function(success)
+    cloudService:SetTableAsync(CloudPetDataAccessor.CLOUD_KEY_PREFIX .. uin, petData, function(success)
         if not success then
             --gg.log("保存玩家宠物数据失败", uin)
         else
@@ -82,9 +85,9 @@ function CloudPetDataAccessor:ClearPlayerPetData(uin)
         petSlots = 50,
         unlockedEquipSlots = 3, -- 默认解锁3个栏位
     }
-    
+
     -- 清空云存储数据
-    cloudService:SetTableAsync('pet_player_' .. uin, emptyPetData, function(success)
+    cloudService:SetTableAsync(CloudPetDataAccessor.CLOUD_KEY_PREFIX .. uin, emptyPetData, function(success)
         if not success then
             gg.log("清空玩家宠物云数据失败", uin)
         else

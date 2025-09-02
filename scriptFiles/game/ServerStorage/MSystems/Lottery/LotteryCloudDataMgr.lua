@@ -38,13 +38,16 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 ---@field poolStats table<string, LotteryPoolStats> 各抽奖池统计数据 {poolName = statsData}
 
 ---@class LotteryCloudDataMgr
-local LotteryCloudDataMgr = {}
+local LotteryCloudDataMgr = {
+    -- 云存储key配置
+    CLOUD_KEY_PREFIX = "lottery_player_key", -- 抽奖数据key前缀
+}
 
 --- 加载玩家抽奖数据
 ---@param uin number 玩家ID
 ---@return PlayerLotteryData 玩家抽奖数据
 function LotteryCloudDataMgr.LoadPlayerLotteryData(uin)
-    local ret, data = cloudService:GetTableOrEmpty('lottery_player_' .. uin)
+    local ret, data = cloudService:GetTableOrEmpty(LotteryCloudDataMgr.CLOUD_KEY_PREFIX .. uin)
 
     if ret and data and data.lotteryPools then
         return data
@@ -69,7 +72,7 @@ function LotteryCloudDataMgr.SavePlayerLotteryData(uin, lotteryData)
     end
 
     -- 保存到云存储
-    cloudService:SetTableAsync('lottery_player_' .. uin, lotteryData, function(success)
+    cloudService:SetTableAsync(LotteryCloudDataMgr.CLOUD_KEY_PREFIX .. uin, lotteryData, function(success)
         if not success then
             --gg.log("保存玩家抽奖数据失败", uin)
         else
@@ -96,7 +99,7 @@ end
 ---@param rewards LotteryRecord[] 本次获得的奖励
 function LotteryCloudDataMgr.UpdatePoolStats(uin, poolName, cost, rewards)
     local data = LotteryCloudDataMgr.LoadPlayerLotteryData(uin)
-    
+
     -- 初始化统计数据
     if not data.poolStats[poolName] then
         data.poolStats[poolName] = {
@@ -107,30 +110,30 @@ function LotteryCloudDataMgr.UpdatePoolStats(uin, poolName, cost, rewards)
             bestRewardTime = 0,
         }
     end
-    
+
     local stats = data.poolStats[poolName]
     stats.totalCost = stats.totalCost + cost
-    
+
     -- 统计奖励数据
     for _, reward in ipairs(rewards) do
         -- 稀有度统计
         local rarity = reward.rarity or "N"
         stats.rarityStats[rarity] = (stats.rarityStats[rarity] or 0) + 1
-        
+
         -- 奖励类型统计
         stats.rewardTypeStats[reward.rewardType] = (stats.rewardTypeStats[reward.rewardType] or 0) + 1
-        
+
         -- 保底触发统计
         if reward.isPity then
             stats.pityTriggerCount = stats.pityTriggerCount + 1
         end
-        
+
         -- 更新最佳奖励时间（SSR及以上）
         if rarity == "SSR" or rarity == "UR" then
             stats.bestRewardTime = reward.drawTime
         end
     end
-    
+
     -- 保存更新后的数据
     LotteryCloudDataMgr.SavePlayerLotteryData(uin, data)
 end
