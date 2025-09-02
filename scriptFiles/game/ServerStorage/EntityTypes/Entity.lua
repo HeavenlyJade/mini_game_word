@@ -75,12 +75,10 @@ function _M:OnInit(info_)
     self.isDestroyed = false
     self.isEntity = true
     self.isPlayer = false
-    -- 属性系统
-    self.stats = {} ---@type table<string, table<string, number>> 属性存储 [source][statName] = value
-    self._attackCache = 0 -- 攻击力缓存
-    
-    -- 初始属性存储（用于恢复默认值）
-    self.initialStats = {} ---@type table<string, number> 初始属性值存储
+    -- 简化属性系统 - 去掉来源机制
+    self.stats = {} ---@type table<string, number> 属性直接存储 statName = value
+    self._attackCache = 0
+    self.initialStats = {} ---@type table<string, number>
     
     -- Actor相关
     self.actor = nil -- game_actor
@@ -443,117 +441,60 @@ end
 
 -- 属性管理系统 --------------------------------------------------------
 
---- 添加属性
----@param statName string 属性名
----@param amount number 属性值
----@param source string|nil 来源，默认为"BASE"
----@param refresh boolean|nil 是否刷新，默认为true
-function _M:AddStat(statName, amount, source, refresh)
-    if not amount then
-        return
-    end
-    source = source or "BASE"
-    refresh = refresh == nil and true or refresh
-
-    if not self.stats[source] then
-        self.stats[source] = {}
-    end
-
-    if not self.stats[source][statName] then
-        self.stats[source][statName] = 0
-    end
-
-    self.stats[source][statName] = self.stats[source][statName] + amount
-
-    if self.actor and refresh and TRIGGER_STAT_TYPES[statName] then
-        TRIGGER_STAT_TYPES[statName](self, self:GetStat(statName))
-    end
-end
-
 --- 设置属性
 ---@param statName string 属性名
 ---@param amount number 属性值
----@param source string|nil 来源，默认为"BASE"
 ---@param refresh boolean|nil 是否刷新，默认为true
-function _M:SetStat(statName, amount, source, refresh)
-    source = source or "BASE"
+function _M:SetStat(statName, amount, refresh)
     refresh = refresh == nil and true or refresh
-
-    if not self.stats[source] then
-        self.stats[source] = {}
-    end
-
-    self.stats[source][statName] = amount
+    
+    self.stats[statName] = amount
 
     if self.actor and refresh and TRIGGER_STAT_TYPES[statName] then
-        -- 修改：直接使用传入的amount，而不是GetStat的累加值
         TRIGGER_STAT_TYPES[statName](self, amount)
     end
 end
 
 --- 获取属性值
 ---@param statName string 属性名
----@param sources string[]|nil 来源列表，nil表示所有来源
 ---@return number 属性值
-function _M:GetStat(statName, sources)
-    local amount = 0
+function _M:GetStat(statName)
+    return self.stats[statName] or 0
+end
 
-    -- 遍历所有来源的属性
-    for source, statMap in pairs(self.stats) do
-        if not sources or self:TableContains(sources, source) then
-            if statMap[statName] then
-                amount = amount + statMap[statName]
-            end
-        end
-    end
-
-    return amount
+--- 添加属性
+---@param statName string 属性名
+---@param amount number 属性值
+---@param refresh boolean|nil 是否刷新，默认为true
+function _M:AddStat(statName, amount, refresh)
+    if not amount then return end
+    
+    local current = self:GetStat(statName)
+    self:SetStat(statName, current + amount, refresh)
 end
 
 --- 重置属性
----@param source string 来源ID
-function _M:ResetStats(source)
-    if self.stats[source] then
-        self.stats[source] = nil
+---@param statName string|nil 属性名，nil表示重置所有
+function _M:ResetStats(statName)
+    if statName then
+        self:SetStat(statName, 0, true)
+    else
+        for name in pairs(self.stats) do
+            self.stats[name] = 0
+        end
+        self:RefreshStats()
     end
 end
 
 --- 刷新属性（触发实体属性更新）
 function _M:RefreshStats()
-    -- 重置装备属性
-    self:ResetStats("EQUIP")
-
-    -- 遍历所有需要触发的属性类型并刷新
-    for statName, triggerFunc in pairs(TRIGGER_STAT_TYPES) do
-        local value = self:GetStat(statName)
-        if value > 0 then
-            if self.actor then
-                triggerFunc(self, value)
-                --gg.log(string.format("属性 '%s' 已刷新到actor，值: %s", statName, tostring(value)))
-            else
-                --gg.log(string.format("属性 '%s' 值: %s，但actor不存在，跳过刷新", statName, tostring(value)))
-            end
+    for statName, value in pairs(self.stats) do
+        if self.actor and TRIGGER_STAT_TYPES[statName] then
+            TRIGGER_STAT_TYPES[statName](self, value)
         end
     end
     
-    -- 更新攻击缓存
     self._attackCache = self:GetStat("攻击")
-    
-    -- 添加调试信息
-    --gg.log(string.format("实体 %s 属性刷新完成，当前速度: %s", self.name or "未知", tostring(self:GetStat("速度"))))
-end
-
---- 检查表中是否包含值
----@param tbl table 表
----@param value any 值
----@return boolean
-function _M:TableContains(tbl, value)
-    for _, v in ipairs(tbl) do
-        if v == value then
-            return true
-        end
-    end
-    return false
 end
 
 -- 初始属性管理 --------------------------------------------------------
@@ -576,54 +517,28 @@ function _M:GetInitialStat(statName)
 end
 
 --- 恢复指定属性到初始值
-function _M:RestoreStatToInitial(statName, source)
-    source = source or "BASE"  -- 使用传入的source，如果没有则默认BASE
+---@param statName string 属性名
+function _M:RestoreStatToInitial(statName)
     local initialValue = self:GetInitialStat(statName)
-    
-    if initialValue > 0 then
-        -- 清除该属性的所有来源
-        for statSource, statMap in pairs(self.stats) do
-            if statMap[statName] then
-                statMap[statName] = nil
-                gg.log(string.format("已清除属性 '%s' 的来源 '%s'", statName, statSource))
-            end
-        end
-        
-        -- 使用传入的source参数设置初始值
-        self:SetStat(statName, initialValue, source, true)
-        gg.log(string.format("属性 '%s' 已恢复到初始值: %s (来源: %s)", statName, tostring(initialValue), source))
-    else
-        gg.log(string.format("属性 '%s' 没有设置初始值", statName))
-    end
+    self:SetStat(statName, initialValue, true)
+    gg.log(string.format("属性 '%s' 已恢复到初始值: %s", statName, tostring(initialValue)))
 end
 
 --- 恢复所有属性到初始值
----@param source string|nil 来源，默认为"BASE"
-function _M:RestoreAllStatsToInitial(source)
-    local restoredCount = 0
-    
+---@return number 恢复的属性数量
+function _M:RestoreAllStatsToInitial()
+    local count = 0
     for statName, initialValue in pairs(self.initialStats) do
-        if initialValue > 0 then
-            -- 清除该属性的所有来源（包括BASE来源）
-            for statSource, statMap in pairs(self.stats) do
-                if statMap[statName] then
-                    statMap[statName] = nil
-                end
-            end
-            
-            -- 初始值总是设置到BASE来源，确保一致性
-            self:SetStat(statName, initialValue, "BASE", true)
-            restoredCount = restoredCount + 1
-        end
+        self:SetStat(statName, initialValue, false)
+        count = count + 1
     end
     
-    if restoredCount > 0 then
-        --gg.log(string.format("已恢复 %d 个属性到初始值", restoredCount))
-    else
-        --gg.log("没有找到需要恢复的属性")
+    if count > 0 then
+        self:RefreshStats()
+        gg.log(string.format("已恢复 %d 个属性到初始值", count))
     end
     
-    return restoredCount
+    return count
 end
 
 --- 批量设置初始属性
@@ -635,6 +550,16 @@ function _M:SetInitialStats(stats)
         end
         --gg.log(string.format("批量设置了 %d 个属性的初始值", table.getn(stats)))
     end
+end
+
+--- 获取所有当前属性
+---@return table<string, number>
+function _M:GetAllStats()
+    local result = {}
+    for statName, value in pairs(self.stats) do
+        result[statName] = value
+    end
+    return result
 end
 
 --- 获取所有初始属性

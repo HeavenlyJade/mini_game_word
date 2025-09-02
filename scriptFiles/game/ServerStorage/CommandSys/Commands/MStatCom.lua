@@ -19,104 +19,101 @@ StatCommand.handlers = {}
 
 
 
---- 新增属性值
+--- 新增属性值 - 简化版
 ---@param params table
 ---@param player MPlayer
 function StatCommand.handlers.add(params, player)
     local statName = params["属性名"]
     local value = tonumber(params["数值"])
-    local source = params["来源"] or "StatCommand"
     local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
-    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0
 
     if not (statName and value) then
-        --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
+        gg.log("错误：缺少 '属性名' 或 '数值' 字段")
         return false
     end
 
-    -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
+        player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
     
-    -- 应用最终倍率
     local valueToAdd = finalValue * finalMultiplier
-
     local oldValue = player:GetStat(statName)
-    player:AddStat(statName, valueToAdd, source, true)
+
+    -- 新增 = 当前值 + 增加值
+    player:AddStat(statName, valueToAdd, true)
     local newValue = player:GetStat(statName)
 
-    local msg = string.format("成功为玩家 %s 的属性 '%s' 新增 %s (最终倍率: %s, 来源: %s)，新值为: %s.%s", 
-        player.name, statName, tostring(valueToAdd), tostring(finalMultiplier), source, tostring(newValue), bonusInfo)
-    --player:SendHoverText(msg)
-    gg.log(msg)
+    gg.log(string.format("新增玩家 %s 属性 '%s': %s + %s = %s (计算值: %s, 倍率: %s).%s", 
+        player.name, statName, tostring(oldValue), tostring(valueToAdd), tostring(newValue), 
+        tostring(finalValue), tostring(finalMultiplier), bonusInfo))
+    
     return true
 end
 
---- 设置属性值
+--- 设置属性值 - 简化版
 ---@param params table
 ---@param player MPlayer
 function StatCommand.handlers.set(params, player)
     local statName = params["属性名"]
     local value = tonumber(params["数值"])
-    local source = params["来源"] or "COMMAND"
     local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
-    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0
 
     if not (statName and value) then
-        gg.log("缺少 '属性名' 或 '数值' 字段。")
+        gg.log("错误：缺少 '属性名' 或 '数值' 字段")
         return false
     end
 
-    -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+    -- 计算最终值（包含所有加成）
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
+        player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
 
-    -- 应用最终倍率
     local valueToSet = finalValue * finalMultiplier
 
-    player:SetStat(statName, valueToSet, source, true)
-    local newValue = player:GetStat(statName)
+    -- 直接设置 - 设置什么就是什么
+    player:SetStat(statName, valueToSet, true)
+    local actualValue = player:GetStat(statName)
 
-    local msg = string.format("成功将玩家 %s 的属性 '%s' 设置为: %s (最终倍率: %s, 来源: %s).%s", 
-        player.name, statName, tostring(newValue), tostring(finalMultiplier), source, bonusInfo)
-    --player:SendHoverText(msg)
-    gg.log(msg)
+    gg.log(string.format("设置玩家 %s 属性 '%s' = %s (计算值: %s, 倍率: %s).%s", 
+        player.name, statName, tostring(actualValue), tostring(finalValue), tostring(finalMultiplier), bonusInfo))
+    
     return true
 end
 
---- 减少属性值
+--- 减少属性值 - 简化版
 ---@param params table
 ---@param player MPlayer
 function StatCommand.handlers.reduce(params, player)
     local statName = params["属性名"]
     local value = tonumber(params["数值"])
-    local source = params["来源"] or "COMMAND"
     local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
-    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0
 
     if not (statName and value) then
-        --player:SendHoverText("缺少 '属性名' 或 '数值' 字段。")
+        gg.log("错误：缺少 '属性名' 或 '数值' 字段")
         return false
     end
 
-    -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
+        player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
     
-    -- 应用最终倍率
     local valueToReduce = finalValue * finalMultiplier
-
     local oldValue = player:GetStat(statName)
-    player:AddStat(statName, -valueToReduce, source, true)
+
+    -- 减少 = 当前值 - 减少值
+    player:AddStat(statName, -valueToReduce, true)
     local newValue = player:GetStat(statName)
 
-    local msg = string.format("成功为玩家 %s 的属性 '%s' 减少 %s (最终倍率: %s, 来源: %s)，新值为: %s.%s", 
-        player.name, statName, tostring(valueToReduce), tostring(finalMultiplier), source, tostring(newValue), bonusInfo)
-    --player:SendHoverText(msg)
-    gg.log(msg)
+    gg.log(string.format("减少玩家 %s 属性 '%s': %s - %s = %s (计算值: %s, 倍率: %s).%s", 
+        player.name, statName, tostring(oldValue), tostring(valueToReduce), tostring(newValue), 
+        tostring(finalValue), tostring(finalMultiplier), bonusInfo))
+    
     return true
 end
 
@@ -126,7 +123,6 @@ end
 ---@param player MPlayer
 function StatCommand.handlers.bonusonly(params, player)
     local statName = params["属性名"]
-    local source = params["来源"] or "COMMAND"
     local playerStatBonuses = params["玩家属性加成"]
     local playerVariableBonuses = params["玩家变量加成"]
     local otherBonuses = params["其他加成"]
@@ -147,11 +143,11 @@ function StatCommand.handlers.bonusonly(params, player)
     local finalBonusValue = bonusValue * finalMultiplier
     
     if finalBonusValue ~= 0 then
-        player:AddStat(statName, finalBonusValue, source, true)
+        player:AddStat(statName, finalBonusValue, true)
         local newValue = player:GetStat(statName)
         
-        local msg = string.format("成功为玩家 %s 的属性 '%s' 应用加成 %s (最终倍率: %s, 来源: %s)，新值为: %s.%s", 
-            player.name, statName, tostring(finalBonusValue), tostring(finalMultiplier), source, tostring(newValue), bonusInfo)
+        local msg = string.format("成功为玩家 %s 的属性 '%s' 应用加成 %s (最终倍率: %s)，新值为: %s.%s", 
+            player.name, statName, tostring(finalBonusValue), tostring(finalMultiplier), tostring(newValue), bonusInfo)
         -- --player:SendHoverText(msg)
         gg.log(msg)
     else
@@ -164,7 +160,7 @@ function StatCommand.handlers.bonusonly(params, player)
     return true
 end
 
---- 查看属性值
+--- 查看属性值 - 简化版
 ---@param params table
 ---@param player MPlayer
 function StatCommand.handlers.view(params, player)
@@ -175,133 +171,56 @@ function StatCommand.handlers.view(params, player)
         local value = player:GetStat(statName)
         local initialValue = player:GetInitialStat(statName)
         
-        local response = {
-            string.format("--- 属性 '%s' 详情 (玩家: %s) ---", statName, player.name),
-            string.format("当前值: %s", tostring(value)),
-            string.format("初始值: %s", tostring(initialValue)),
-            "--- 来源详情 ---"
-        }
-
-        -- 显示各来源的贡献
-        local hasSources = false
-        if player.stats then
-            for source, statMap in pairs(player.stats) do
-                if statMap[statName] and statMap[statName] ~= 0 then
-                    table.insert(response, string.format("  - %s: %s", source, tostring(statMap[statName])))
-                    hasSources = true
-                end
-            end
-        end
-
-        if not hasSources then
-            table.insert(response, "  (无来源)")
-        end
-
-        local fullMessage = table.concat(response, "\n")
-        --player:SendHoverText(fullMessage)
-        gg.log(fullMessage)
+        gg.log(string.format("--- 属性 '%s' (玩家: %s) ---\n当前值: %s\n初始值: %s", 
+            statName, player.name, tostring(value), tostring(initialValue)))
     else
         -- 查看所有属性
-        local response = {
-            string.format("--- 玩家 %s 的所有属性详情 ---", player.name)
-        }
+        local allStats = player:GetAllStats()
+        local response = {string.format("--- 玩家 %s 所有属性 ---", player.name)}
         
-        -- 获取所有属性
-        local allStats = {}
-        if player.stats then
-            for source, statMap in pairs(player.stats) do
-                for statName in pairs(statMap) do
-                    allStats[statName] = true
-                end
+        local count = 0
+        for statName, value in pairs(allStats) do
+            if value ~= 0 then
+                local initialValue = player:GetInitialStat(statName)
+                table.insert(response, string.format("%s: %s (初始: %s)", statName, tostring(value), tostring(initialValue)))
+                count = count + 1
             end
         end
         
-        local count = 0
-        for statName in pairs(allStats) do
-            count = count + 1
-            local value = player:GetStat(statName)
-            local initialValue = player:GetInitialStat(statName)
-            table.insert(response, string.format("\n--- %s ---", statName))
-            table.insert(response, string.format("当前值: %s", tostring(value)))
-            table.insert(response, string.format("初始值: %s", tostring(initialValue)))
-        end
-
         if count == 0 then
-            table.insert(response, "  (该玩家无任何属性)")
+            table.insert(response, "(无非零属性)")
         end
-
-        local fullMessage = table.concat(response, "\n")
-        --player:SendHoverText(fullMessage)
-        gg.log(fullMessage)
+        
+        gg.log(table.concat(response, "\n"))
     end
+    
     return true
 end
 
---- 恢复属性到初始值
+--- 恢复属性到初始值 - 简化版
 ---@param params table
 ---@param player MPlayer
 function StatCommand.handlers.restore(params, player)
     local statName = params["属性名"]
     
     if statName then
-        -- 恢复指定属性到初始值
-        if player.RestoreStatToInitial then
-            player:RestoreStatToInitial(statName, "RESTORE")
-            
-            -- 强制刷新属性到actor（确保变更生效）
-            if player.ForceRefreshStatsToActor then
-                player:ForceRefreshStatsToActor()
-            end
-            
-            local msg = string.format("玩家 %s 的属性 '%s' 已恢复到初始值", player.name, statName)
-            --player:SendHoverText(msg)
-            gg.log(msg)
-        else
-            --player:SendHoverText("错误：玩家对象不支持属性恢复功能")
-            return false
-        end
+        -- 恢复指定属性
+        player:RestoreStatToInitial(statName)
     else
-        -- 恢复所有属性到初始值
-        if player.RestoreAllStatsToInitial then
-            local restoredCount = player:RestoreAllStatsToInitial("RESTORE")
-            
-            -- 强制刷新属性到actor（确保变更生效）
-            if player.ForceRefreshStatsToActor then
-                player:ForceRefreshStatsToActor()
-            end
-            
-            local msg = string.format("玩家 %s 的 %d 个属性已恢复到初始值", player.name, restoredCount)
-            --player:SendHoverText(msg)
-            gg.log(msg)
-        else
-            --player:SendHoverText("错误：玩家对象不支持属性恢复功能")
-            return false
-        end
+        -- 恢复所有属性
+        local count = player:RestoreAllStatsToInitial()
+        gg.log(string.format("玩家 %s 共恢复 %d 个属性到初始值", player.name, count))
     end
     
     return true
 end
 
---- 刷新属性（触发游戏表现更新）
+--- 刷新属性 - 简化版
 ---@param params table
 ---@param player MPlayer
 function StatCommand.handlers.refresh(params, player)
-    if player.RefreshStats then
-        player:RefreshStats()
-        
-        -- 强制刷新属性到actor（确保变更生效）
-        if player.ForceRefreshStatsToActor then
-            player:ForceRefreshStatsToActor()
-        end
-        
-        local msg = string.format("玩家 %s 的属性已刷新", player.name)
-        --player:SendHoverText(msg)
-        gg.log(msg)
-    else
-        --player:SendHoverText("错误：玩家对象不支持属性刷新功能")
-        return false
-    end
-    
+    player:RefreshStats()
+    gg.log(string.format("玩家 %s 属性已刷新", player.name))
     return true
 end
 
