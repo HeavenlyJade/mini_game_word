@@ -25,29 +25,6 @@ local WingMgr = {
     SAVE_INTERVAL = 60
 }
 
--- 移除定时存盘功能，现在使用统一的定时存盘机制
--- function SaveAllPlayerWING_()
---     local count = 0
---     for uin, wingManager in pairs(WingMgr.server_player_wings) do
---         if wingManager then
---             -- 提取数据并保存到云端
---             local playerWingData = wingManager:GetSaveData()
---             if playerWingData then
---                 CloudWingDataAccessor:SavePlayerWingData(uin, playerWingData)
---             end
---         end
---     end
---     -- --gg.log("定时保存翅膀数据完成，保存了", count, "个玩家的翅膀")
--- end
-
--- local saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
--- saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
--- saveTimer.Name = 'WING_SAVE_ALL'
--- saveTimer.Delay = 60
--- saveTimer.Loop = true
--- saveTimer.Interval = 60
--- saveTimer.Callback = SaveAllPlayerWING_
--- saveTimer:Start()
 
 ---保存指定玩家的翅膀数据（供统一存盘机制调用）
 ---@param uin number 玩家ID
@@ -789,6 +766,30 @@ function WingMgr.GetWingEffectRanking(uin, limit)
     end
     
     return wingManager:GetWingEffectRanking(limit)
+end
+
+---【新增】检查玩家是否装备了翅膀
+---@param uin number 玩家ID
+---@return boolean 是否装备了翅膀
+function WingMgr.HasEquippedWings(uin)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if not wingManager then
+        return false
+    end
+    
+    -- 检查是否有激活的装备槽位
+    local activeSlots = wingManager.activeCompanionSlots or {}
+    for equipSlotId, companionSlotId in pairs(activeSlots) do
+        if companionSlotId and companionSlotId > 0 then
+            -- 检查该槽位是否真的有翅膀实例
+            local companionInstance = wingManager:GetWingBySlot(companionSlotId)
+            if companionInstance then
+                return true -- 找到至少一个装备的翅膀
+            end
+        end
+    end
+    
+    return false
 end
 
 return WingMgr 

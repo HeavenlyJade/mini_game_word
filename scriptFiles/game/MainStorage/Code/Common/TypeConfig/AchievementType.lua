@@ -211,6 +211,94 @@ function AchievementType:GetUpgradeCostValue(formula, level)
     return self._rewardCalculator:CalculateUpgradeCost(formula, level, self)
 end
 
+--- 计算玩家可执行某个天赋动作的最大次数
+---@param variableData table 玩家的变量数据字典
+---@param bagData Bag|nil 玩家的背包数据
+---@param currentTalentLevel number 当前天赋等级
+---@return number maxActions可以执行的最大次数
+function AchievementType:CalculateMaxActionExecutions(variableData, bagData, currentTalentLevel)
+    --gg.log("【重生计算】开始:数据计算=", variableData, bagData, currentTalentLevel)
+
+    if not self:IsTalentAchievement() or currentTalentLevel == 0 then
+        --gg.log("【重生计算】失败: 不是天赋或等级为0. IsTalent:", self:IsTalentAchievement(), "Level:", currentTalentLevel)
+        return 0
+    end
+
+    if not self.actionCostType then
+        --gg.log("【重生计算】失败: 天赋 " .. self.name .. " 没有找到有效的 actionCostType 配置。")
+        return 0
+    end
+    --gg.log("【重生计算】actionCostType.CostList:", self.actionCostType.CostList)
+
+
+    local costsForLevel1 = self:GetActionCosts(1, variableData, bagData)
+    --gg.log("【重生计算】等级1的单次消耗 (costsForLevel1):", costsForLevel1)
+    
+    if not costsForLevel1 or #costsForLevel1 == 0 then
+        --gg.log("【重生计算】失败: 无法计算天赋动作等级1的消耗。")
+        return 0
+    end
+
+    local costsMap = {}
+    for _, cost in ipairs(costsForLevel1) do
+        costsMap[cost.item] = cost.amount
+    end
+    --gg.log("【重生计算】消耗映射表 (costsMap):", costsMap)
+
+
+    local maxExecutions = math.huge
+
+    for i, costConfigItem in ipairs(self.actionCostType.CostList) do
+        --gg.log(string.format("【重生计算】循环 %d/%d:", i, #self.actionCostType.CostList))
+        local resourceName = costConfigItem.Name
+        local resourceSource = costConfigItem.CostType
+        --gg.log(string.format("  - 资源名: '%s', 来源: '%s'", tostring(resourceName), tostring(resourceSource)))
+
+        local singleCostAmount = costsMap[resourceName]
+        --gg.log(string.format("  - 单次消耗 (from costsMap): %s", tostring(singleCostAmount)))
+
+
+        if singleCostAmount and singleCostAmount > 0 then
+            local playerTotalAmount = 0
+            if resourceSource == "玩家变量" then
+                if variableData and variableData[resourceName] then
+                    local var = variableData[resourceName]
+                    --gg.log("  - 找到玩家变量:", resourceName, var)
+                    -- 兼容客户端和服务端的数据结构
+                    if type(var) == "table" and var.base then
+                        playerTotalAmount = var.base
+                    elseif type(var) == "number" then
+                         playerTotalAmount = var
+                    end
+                else
+                    --gg.log("  - 玩家变量数据中未找到:", resourceName)
+                end
+            elseif bagData and bagData.GetItemAmount then
+                playerTotalAmount = bagData:GetItemAmount(resourceName)
+            end
+            --gg.log(string.format("  - 玩家拥有总量: %s", playerTotalAmount))
+
+
+            local maxForThisResource = math.floor(playerTotalAmount / singleCostAmount)
+            --gg.log(string.format("  - 此资源可支持次数: floor(%s / %s) = %d", playerTotalAmount, singleCostAmount, maxForThisResource))
+
+            maxExecutions = math.min(maxExecutions, maxForThisResource)
+            --gg.log(string.format("  - 当前最小可执行次数 (maxExecutions): %d", maxExecutions))
+
+        else
+            --gg.log("  - 单次消耗为0或未找到，跳过此资源瓶颈计算。")
+        end
+    end
+
+    if maxExecutions == math.huge then
+        --gg.log("【重生计算】最终结果: maxExecutions从未更新，返回0")
+        return 0
+    end
+
+    --gg.log("【重生计算】最终结果: ", maxExecutions)
+    return maxExecutions
+end
+
 
 
 return AchievementType

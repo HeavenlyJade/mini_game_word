@@ -168,6 +168,10 @@ function MServerInitPlayer.player_enter_game(player)
 
     MServerInitPlayer.syncPlayerDataToClient(player_)
     MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_,player_)
+    
+    -- 【新增】设置玩家Actor事件监听
+    MServerInitPlayer.setupPlayerActorEvents(player_)
+    
     gg.log("玩家碰撞组设置验证:", player.name, "CollideGroupID:", player_actor_.CollideGroupID)
     gg.log("玩家进入了游戏", gg.player_scene_map,player)
 
@@ -345,6 +349,64 @@ end
 -- 获取初始化状态（用于调试）
 function MServerInitPlayer.getInitFinished()
     return initFinished
+end
+
+-- 监听玩家Actor的各种事件
+function MServerInitPlayer.setupPlayerActorEvents(mplayer)
+    local actor = mplayer.actor
+    if not actor then
+        gg.log("错误：玩家", mplayer.uin, "的Actor不存在，无法设置事件监听")
+        return
+    end
+
+    -- 监听行走事件
+    actor.Walking:Connect(function(isWalking)
+        if isWalking then
+            -- 检查是否装备了翅膀，如果装备了则播放翅膀扇动音效
+            MServerInitPlayer.playWingSoundIfEquipped(mplayer, true)
+        else
+            -- 停止翅膀扇动音效
+            MServerInitPlayer.playWingSoundIfEquipped(mplayer, false)
+        end
+    end)
+
+end
+
+-- 检查是否装备了翅膀并播放/停止翅膀扇动音效
+function MServerInitPlayer.playWingSoundIfEquipped(mplayer, isPlaying)
+    if not mplayer or not mplayer.uin then
+        return
+    end
+
+    local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
+    
+    -- 检查玩家是否装备了翅膀
+    -- local hasEquippedWings = WingMgr.HasEquippedWings(mplayer.uin)
+    
+    -- if hasEquippedWings then
+    --     local CardIcon = require(MainStorage.Code.Common.Icon.card_icon) ---@type CardIcon
+    --     local wingSoundAssetId = CardIcon.soundResources["翅膀扇动音效1"]
+        
+    --     if wingSoundAssetId then
+    --         if isPlaying then
+    --             -- 播放翅膀扇动音效
+    --             gg.network_channel:fireClient(mplayer.uin, {
+    --                 cmd = "PlaySound",
+    --                 soundAssetId = wingSoundAssetId,
+    --                 key = "wing_flap_" .. mplayer.uin, -- 使用玩家ID作为唯一键
+    --                 volume = 3, -- 设置合适的音量
+    --                 isLoop = true -- 循环播放
+    --             })
+    --         else
+    --             -- 停止翅膀扇动音效
+    --             gg.network_channel:fireClient(mplayer.uin, {
+    --                 cmd = "StopKeyedSound",
+    --                 key = "wing_flap_" .. mplayer.uin
+    --             })
+    --         end
+    --     else
+    --     end
+    -- end
 end
 
 return MServerInitPlayer

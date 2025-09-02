@@ -150,7 +150,7 @@ end
 
 ---@param level number
 function RebirthGui:OnClickRebirthLevel(level)
-    ----gg.log(string.format("点击重生等级 %d 按钮", level))
+    gg.log(string.format("点击重生等级 %d 按钮", level))
 
     -- 发送执行单次重生的请求
     gg.network_channel:FireServer({
@@ -177,8 +177,58 @@ end
 -- UI刷新方法
 -- =================================
 
+-- 将玩家变量数据转换为 k->v（number）的简单结构
+function RebirthGui:_BuildVariableKV()
+    local kv = {}
+    if not self.playerVariableData then
+        return kv
+    end
+    for name, val in pairs(self.playerVariableData) do
+        if type(val) == "table" then
+            if val.base ~= nil then
+                kv[name] = val.base
+            end
+        elseif type(val) == "number" then
+            kv[name] = val
+        elseif type(val) == "string" then
+            local num = tonumber(val)
+            if num then kv[name] = num end
+        end
+    end
+    return kv
+end
+
 function RebirthGui:RefreshDisplay()
     ----gg.log("根据天赋等级刷新重生列表:", self.currentTalentLevel)
+
+    -- 新增：在客户端重新计算最大重生次数和消耗
+    local achievementType = ConfigLoader.GetAchievement(TALENT_ID)
+    if achievementType and self.currentTalentLevel > 0 then
+        -- 使用 AchievementType 中的新方法来计算（传入 k->v 结构）
+        local kvVars = self:_BuildVariableKV()
+        self.maxExecutions = achievementType:CalculateMaxActionExecutions(kvVars, nil, self.currentTalentLevel)
+
+        -- 重新计算总消耗
+        if self.maxExecutions > 0 then
+            local singleActionCosts = achievementType:GetActionCosts(1, kvVars, nil)
+            if singleActionCosts and #singleActionCosts > 0 then
+                local costInfo = singleActionCosts[1]
+                if costInfo then
+                    self.maxExecutionTotalCost = (costInfo.amount or 0) * self.maxExecutions
+                else
+                    self.maxExecutionTotalCost = 0
+                end
+            else
+                self.maxExecutionTotalCost = 0
+            end
+        else
+            self.maxExecutionTotalCost = 0
+        end
+    else
+        -- 如果没有天赋或等级为0，则重置
+        self.maxExecutions = 0
+        self.maxExecutionTotalCost = 0
+    end
 
     -- 刷新最大重生节点
     self:RefreshMaxRebirthNode()
@@ -201,7 +251,8 @@ function RebirthGui:RefreshDisplay()
                 
                 -- 优先使用缓存的变量数据
                 if self.playerVariableData and self.playerVariableData[costInfo.item] then
-                    playerAmount = self.playerVariableData[costInfo.item].base or 0
+                    local varData = self.playerVariableData[costInfo.item]
+                    playerAmount = (type(varData) == "table" and varData.base) or (type(varData) == "number" and varData) or 0
                 else
                     -- 回退到服务器返回的资源数据
                     playerAmount = self.playerResources[costInfo.item] or 0
@@ -231,12 +282,8 @@ function RebirthGui:RefreshDisplay()
             itemButton:SetTouchEnable(canAfford) -- 如果canAfford为false，按钮将自动变灰且不可点击
 
             itemButton.clickCb = function()
-                -- SetTouchEnable会阻止不可用按钮的点击事件，但为了保险起见，可以再加一层判断
-                if canAfford then
-                    self:OnClickRebirthLevel(level)
-                else
-                    ----gg.log("资源不足，无法执行此等级的重生。") -- 可以加一个用户提示
-                end
+                self:OnClickRebirthLevel(level)
+             
             end
             self.rebirthList:AppendChild(itemNode)
             self.rebirthListButtonDict[level] = itemButton

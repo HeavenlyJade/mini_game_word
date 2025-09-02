@@ -50,6 +50,11 @@ function SoundPool.Init(poolSize)
         SoundPool.PlaySound(data)
     end)
     
+    -- 【新增】订阅停止有键值音效事件
+    ClientEventManager.Subscribe("StopKeyedSound", function(data)
+        SoundPool.StopKeyedSound(data.key)
+    end)
+    
     -- 【修改】订阅背景音乐播放事件
     ClientEventManager.Subscribe("PlayBackgroundMusic", function(data)
         SoundPool.PlayBackgroundMusic(data.soundAssetId, data.musicKey, data.volume)

@@ -141,7 +141,6 @@ function HudMoney:OnSyncInventoryItems(data)
         return
     end
     local currencyType = MConfig.ItemTypeEnum["货币"]
-
     -- 1. 检查更新中是否包含货币数据
     local incomingCurrencyList = nil
     for category, itemList in pairs(items) do

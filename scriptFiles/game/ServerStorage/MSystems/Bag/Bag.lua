@@ -391,8 +391,20 @@ end
 ---@param amount number 新数量
 function Bag:SetItemAmount(position, amount)
     if amount <= 0 then
-        self:RemoveItem(position)
-        return
+        local itemZero = self:GetItemByPosition(position)
+        if not itemZero then
+            return
+        end
+        local itemTypeZero = ItemUtils.GetItemType(itemZero)
+        -- 【修改】货币数量归0时保留在背包，显示为0；非货币仍按原逻辑删除
+        if itemTypeZero and itemTypeZero.isMoney then
+            itemZero.amount = 0
+            self:MarkDirty(position)
+            return
+        else
+            self:RemoveItem(position)
+            return
+        end
     end
     local item = self:GetItemByPosition(position)
     if not item then
@@ -603,7 +615,7 @@ function Bag:RemoveItems(items)
         return false
     end
 
-    -- 移除物品
+    -- 移除物品（货币归0保留，非货币删掉）
     for itemName, count in pairs(items) do
         local remaining = count
         local positions = self.bag_index[itemName] or {}
@@ -618,7 +630,8 @@ function Bag:RemoveItems(items)
                     self:SetItemAmount(position, amount - remaining)
                     remaining = 0
                 else
-                    self:RemoveItem(position)
+                    -- 计算将要变成0的情况，交由 SetItemAmount 处理货币归0保留
+                    self:SetItemAmount(position, 0)
                     remaining = remaining - amount
                 end
             end
