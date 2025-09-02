@@ -38,6 +38,7 @@ end
 --- 处理客户端请求离开挂机点的事件
 ---@param evt table 事件数据，包含 player 对象
 function SceneInteractionEventManager.OnRequestLeaveIdle(evt)
+    gg.log("接收到离开挂机请求")
     ---@type MPlayer
     local player = SceneInteractionEventManager.ValidatePlayer(evt)
     -- 【新增】如果玩家正在自动挂机，则停止它
@@ -47,21 +48,21 @@ function SceneInteractionEventManager.OnRequestLeaveIdle(evt)
 
     local idleSpotName = player:GetCurrentIdleSpotName()
     if not idleSpotName then
-        --gg.log("玩家 " .. player.name .. " 处于挂机状态，但无法找到挂机点名称。")
+        gg.log("玩家 " .. player.name .. " 处于挂机状态，但无法找到挂机点名称。")
         return
     end
 
     -- 1. 根据名称从配置中获取场景节点配置
     local nodeConfig = ConfigLoader.GetSceneNode(idleSpotName)
     if not nodeConfig then
-        --gg.log(string.format("警告：无法在配置中找到名为 '%s' 的场景节点。", idleSpotName))
+        gg.log(string.format("警告：无法在配置中找到名为 '%s' 的场景节点。", idleSpotName))
         return
     end
 
     -- 2. 从配置中获取唯一ID
     local handlerId = nodeConfig.uuid
     if not handlerId then
-        --gg.log(string.format("警告：场景节点 '%s' 的配置中缺少 'uuid'。", idleSpotName))
+        gg.log(string.format("警告：场景节点 '%s' 的配置中缺少 'uuid'。", idleSpotName))
         return
     end
 
@@ -72,11 +73,9 @@ function SceneInteractionEventManager.OnRequestLeaveIdle(evt)
     if handler and handler.OnEntityLeave then
         gg.log(string.format("玩家 '%s' 通过UI请求离开挂机点 '%s'", player.name, idleSpotName))
         handler:OnEntityLeave(player)
-
-    else
-        --gg.log(string.format("警告：玩家 '%s' 请求离开挂机点 '%s'，但找不到对应的处理器 (ID: %s)。", player.name, idleSpotName, handlerId))
     end
     SceneInteractionEventManager.NotifyLeaveIdleSuccess(player, wasAutoPlaying)
+
 
 end
 
@@ -113,7 +112,7 @@ end
 
 --- 初始化，订阅所有相关的客户端请求事件
 function SceneInteractionEventManager.Init()
-    ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.GET_ONLINE_REWARD_DATA, function(evt)
+    ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.REQUEST_LEAVE_IDLE, function(evt)
         SceneInteractionEventManager.OnRequestLeaveIdle(evt)
     end)
         --gg.log("场景交互事件管理器（SceneInteractionEventManager）初始化完成，已监听离开挂机请求。")
@@ -126,7 +125,7 @@ function SceneInteractionEventManager.NotifyLeaveIdleSuccess(player, wasAutoPlay
     if not player or not player.uin then return end
     
     gg.network_channel:fireClient(player.uin, {
-        cmd = "LEAVE_IDLE_SUCCESS",
+        cmd = EventPlayerConfig.NOTIFY.LEAVE_IDLE_SUCCESS,
         data = {
             success = true,
             wasAutoPlaying = wasAutoPlaying,

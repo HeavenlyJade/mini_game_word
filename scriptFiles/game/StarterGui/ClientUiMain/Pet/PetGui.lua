@@ -25,6 +25,7 @@ function PetGui:OnInit(node, config)
     self.petPanel = self:Get("宠物界面", ViewComponent) ---@type ViewComponent
     self.closeButton = self:Get("宠物界面/关闭", ViewButton) ---@type ViewButton
     self.petCountLabel = self:Get("宠物界面/宠物数量文本", ViewComponent) ---@type ViewComponent
+    self.getMoreButton = self:Get("宠物界面/获取更多", ViewButton) ---@type ViewButton
 
     -- 宠物显示栏
     self.displayBar = self:Get("宠物界面/宠物显示栏", ViewComponent) ---@type ViewComponent
@@ -161,6 +162,11 @@ function PetGui:RegisterButtonEvents()
         self.UltimateEqu.clickCb = function()
             self:OnClickUltimateEquip()
         end
+    end
+
+    -- 获取更多按钮
+    self.getMoreButton.clickCb = function()
+        self:OnClickGetMorePet()
     end
 
     ----gg.log("宠物界面按钮事件注册完成")
@@ -458,6 +464,22 @@ function PetGui:OnClickUltimateEquip()
     
     -- 按钮变灰并禁用触摸，等待服务端响应
 
+end
+
+--- 获取更多按钮点击
+function PetGui:OnClickGetMorePet()
+    -- 获取ShopDetailGui界面实例
+    local shopGui = ViewBase.GetUI("ShopDetailGui")
+    if shopGui then
+        -- 打开商城界面
+        shopGui:Open()
+        -- 自动选择"宠物"分类
+        shopGui:SelectCategory("宠物")
+        -- 隐藏当前宠物界面
+        self:Close()
+    else
+        ----gg.log("错误：找不到ShopDetailGui界面")
+    end
 end
 
 -- =================================

@@ -83,7 +83,7 @@ function ShopDetailGui:InitData()
     self.shopData = nil -- 商城云端数据缓存
     -- "宠物"， "金币"
     -- 商品类型列表
-    self.productTypes = {"伙伴", "翅膀", "尾迹", "特权",}
+    self.productTypes = {"伙伴", "翅膀", "尾迹", "宠物","特权",}
     
     -- 为每个商品类型创建对应的itemList
     self.categoryItemLists = {}

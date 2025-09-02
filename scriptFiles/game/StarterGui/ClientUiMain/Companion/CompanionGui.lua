@@ -28,6 +28,8 @@ function CompanionGui:OnInit(node, config)
     self.UltimateEqu = self:Get("伙伴界面/伙伴显示栏/装备最佳", ViewButton) ---@type ViewButton
     self.deleteButton = self:Get("伙伴界面/删除", ViewButton) ---@type ViewButton
     self.lockButton = self:Get("伙伴界面/锁定", ViewButton) ---@type ViewButton
+    self.getMoreButton = self:Get("伙伴界面/获取更多", ViewButton) ---@type ViewButton
+
     -- 伙伴显示栏
     self.displayBar = self:Get("伙伴界面/伙伴显示栏", ViewComponent) ---@type ViewComponent
     self.upgradeButton = self:Get("伙伴界面/伙伴显示栏/升星", ViewButton) ---@type ViewButton
@@ -163,6 +165,11 @@ function CompanionGui:RegisterButtonEvents()
         self.lockButton.clickCb = function()
             self:OnClickLockCompanion()
         end
+    end
+
+    -- 获取更多按钮
+    self.getMoreButton.clickCb = function()
+        self:OnClickGetMoreCompanion()
     end
 
     ----gg.log("伙伴界面按钮事件注册完成")
@@ -452,6 +459,22 @@ function CompanionGui:OnClickLockCompanion()
 
     ----gg.log("请求切换伙伴锁定状态:", self.selectedCompanion.slotIndex)
     self:SendToggleLockRequest(self.selectedCompanion.slotIndex)
+end
+
+--- 获取更多按钮点击
+function CompanionGui:OnClickGetMoreCompanion()
+    -- 获取ShopDetailGui界面实例
+    local shopGui = ViewBase.GetUI("ShopDetailGui")
+    if shopGui then
+        -- 打开商城界面
+        shopGui:Open()
+        -- 自动选择"伙伴"分类
+        shopGui:SelectCategory("伙伴")
+        -- 隐藏当前伙伴界面
+        self:Close()
+    else
+        ----gg.log("错误：找不到ShopDetailGui界面")
+    end
 end
 
 -- =================================

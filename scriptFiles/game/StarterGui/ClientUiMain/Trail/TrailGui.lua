@@ -24,6 +24,7 @@ function TrailGui:OnInit(node, config)
     -- 1. 节点初始化
     self.trailPanel = self:Get("尾迹界面", ViewComponent) ---@type ViewComponent
     self.closeButton = self:Get("尾迹界面/关闭", ViewButton) ---@type ViewButton
+    self.getMoreButton = self:Get("尾迹界面/获取更多", ViewButton) ---@type ViewButton
 
     -- 尾迹显示栏
     self.displayBar = self:Get("尾迹界面/尾迹显示栏", ViewComponent) ---@type ViewComponent
@@ -111,6 +112,11 @@ function TrailGui:RegisterButtonEvents()
     -- 卸下按钮
     self.unequipButton.clickCb = function()
         self:OnClickUnequipTrail()
+    end
+
+    -- 获取更多按钮
+    self.getMoreButton.clickCb = function()
+        self:OnClickGetMoreTrail()
     end
 
     ----gg.log("尾迹界面按钮事件注册完成")
@@ -254,6 +260,22 @@ function TrailGui:OnClickUnequipTrail()
 
     ----gg.log("点击卸下按钮:", "从装备栏", equipSlotId)
     self:SendUnequipTrailRequest(equipSlotId)
+end
+
+--- 获取更多按钮点击
+function TrailGui:OnClickGetMoreTrail()
+    -- 获取ShopDetailGui界面实例
+    local shopGui = ViewBase.GetUI("ShopDetailGui")
+    if shopGui then
+        -- 打开商城界面
+        shopGui:Open()
+        -- 自动选择"尾迹"分类
+        shopGui:SelectCategory("尾迹")
+        -- 隐藏当前尾迹界面
+        self:Close()
+    else
+        ----gg.log("错误：找不到ShopDetailGui界面")
+    end
 end
 
 -- =================================

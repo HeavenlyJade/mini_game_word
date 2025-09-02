@@ -28,6 +28,7 @@ function WingGui:OnInit(node, config)
     self.UltimateEqu = self:Get("翅膀界面/翅膀显示栏/装备最佳", ViewButton) ---@type ViewButton
     self.deleteButton = self:Get("翅膀界面/删除", ViewButton) ---@type ViewButton
     self.lockButton = self:Get("翅膀界面/锁定", ViewButton) ---@type ViewButton
+    self.getMoreButton = self:Get("翅膀界面/获取更多", ViewButton) ---@type ViewButton
 
     -- 翅膀显示栏
     self.displayBar = self:Get("翅膀界面/翅膀显示栏", ViewComponent) ---@type ViewComponent
@@ -167,6 +168,9 @@ function WingGui:RegisterButtonEvents()
         end
     end
 
+    self.getMoreButton.clickCb = function()
+        self:OnClickGetMoreWing()
+    end
     --gg.log("翅膀界面按钮事件注册完成")
 end
 
@@ -219,6 +223,20 @@ function WingGui:OnWingListResponse(data)
     end
 end
 
+function WingGui:OnClickGetMoreWing()
+    -- 获取ShopDetailGui界面实例
+    local shopGui = ViewBase.GetUI("ShopDetailGui")
+    if shopGui then
+        -- 打开商城界面
+        shopGui:Open()
+        -- 自动选择"翅膀"分类
+        shopGui:SelectCategory("翅膀")
+        -- 隐藏当前翅膀界面
+        self:Close()
+    else
+        --gg.log("错误：找不到ShopDetailGui界面")
+    end
+end
 --- 处理升星响应
 function WingGui:OnUpgradeStarResponse(data)
     --gg.log("收到升星响应:", data)
