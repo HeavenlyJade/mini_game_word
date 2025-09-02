@@ -92,7 +92,7 @@ function ShopGui:RegisterButtonEvents()
 
         RankingGui:Open()
         
-        --gg.log("排行榜按钮被点击")
+        gg.log("排行榜按钮被点击")
         -- TODO: 实现排行榜界面
     end
 

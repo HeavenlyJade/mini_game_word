@@ -207,7 +207,7 @@ end
 -- 关闭按钮点击事件
 function RankingGui:OnCloseButtonClicked()
     --gg.log("点击关闭排行榜界面")
-    self:SetVisible(false)
+    self:Close()
 end
 
 --- 排行榜类型按钮点击事件
