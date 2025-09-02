@@ -67,8 +67,13 @@ function PlayerActionHandler:SubscribeServerEvents()
         self:OnNavigateToPosition(data)
     end)
 
-    -- 订阅停止导航事件
-    ClientEventManager.Subscribe("STOP_NAVIGATION", function(data)
+    -- 订阅停止导航事件（使用配置常量）
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.STOP_NAVIGATION, function(data)
+        self:OnStopNavigation(data)
+    end)
+
+    -- 订阅自动比赛停止事件 -> 停止导航
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.AUTO_RACE_STOPPED, function(data)
         self:OnStopNavigation(data)
     end)
 

@@ -47,7 +47,8 @@ function RaceGameMode:OnInit(instanceId, modeName, levelType)
     self.state = RaceState.WAITING
     self.participants = {} -- 存放所有参赛玩家的table, key: uin, value: MPlayer
     self.levelType = levelType -- 存储完整的LevelType实例
-
+    self.modeName = modeName
+    self.ModeType = "RaceGameMode"
     -- 【新增】倒计时控制
     self.prepareTimer = nil      -- 准备倒计时定时器
     self.isPreparing = false     -- 防止重复启动标志
@@ -68,7 +69,7 @@ end
 --- 【修复】优化玩家进入逻辑，防止状态不一致
 function RaceGameMode:OnPlayerEnter(player)
     if player and player.actor and player.actor.Position then
-        --gg.log(string.format("玩家 %s 进入比赛区域", player.name or player.uin))
+        gg.log(string.format("玩家 %s 进入比赛区域", player.name or player.uin))
     end
 
     -- 防重复加入

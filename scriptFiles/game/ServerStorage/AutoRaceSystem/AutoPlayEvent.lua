@@ -11,16 +11,8 @@ local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type E
 ---@class AutoPlayEventManager
 local AutoPlayEventManager = {}
 
--- 事件名称定义
-AutoPlayEventManager.REQUEST = {
-    AUTO_PLAY_TOGGLE = EventPlayerConfig.REQUEST.AUTO_PLAY_TOGGLE
-}
 
--- 通知事件名称定义
-AutoPlayEventManager.NOTIFY = {
-    AUTO_PLAY_STARTED = "AUTO_PLAY_STARTED",
-    AUTO_PLAY_STOPPED = "AUTO_PLAY_STOPPED"
-}
+
 
 -- 初始化自动挂机事件管理器
 function AutoPlayEventManager.Init()
@@ -30,11 +22,11 @@ end
 -- 注册所有事件处理器
 function AutoPlayEventManager.RegisterEventHandlers()
     -- 自动挂机开关
-    ServerEventManager.Subscribe(AutoPlayEventManager.REQUEST.AUTO_PLAY_TOGGLE, function(evt) 
+    ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.AUTO_PLAY_TOGGLE, function(evt) 
         AutoPlayEventManager.HandleAutoPlayToggle(evt) 
     end)
     
-    --gg.log("已注册自动挂机事件处理器")
+    gg.log("已注册自动挂机事件处理器")
 end
 
 --- 【新增】通知客户端自动挂机已停止
@@ -42,7 +34,7 @@ end
 ---@param message string 停止原因
 function AutoPlayEventManager.NotifyAutoPlayStopped(player, message)
     if not player then return end
-    AutoPlayEventManager.SendSuccessResponse(player.uin, AutoPlayEventManager.NOTIFY.AUTO_PLAY_STOPPED, {
+    AutoPlayEventManager.SendSuccessResponse(player.uin, EventPlayerConfig.NOTIFY.AUTO_PLAY_STOPPED, {
         enabled = false,
         message = message or "自动挂机已停止"
     })
@@ -78,7 +70,7 @@ local function ClearPlayerAutoRaceState(player, reason)
         autoRaceManager.SetPlayerAutoRaceState(player, false)
         -- 发送自动比赛停止通知
         local autoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
-        autoRaceEventManager.SendSuccessResponse(player.uin, autoRaceEventManager.NOTIFY.AUTO_RACE_STOPPED, {
+        autoRaceEventManager.SendSuccessResponse(player.uin, EventPlayerConfig.NOTIFY.AUTO_RACE_STOPPED, {
             enabled = false,
             message = reason
         })
@@ -88,12 +80,28 @@ end
 -- 处理自动挂机开关请求
 ---@param evt table 事件数据 {enabled}
 function AutoPlayEventManager.HandleAutoPlayToggle(evt)
-    local player = AutoPlayEventManager.ValidatePlayer(evt)
+    local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
+
+    local player = AutoPlayEventManager.ValidatePlayer(evt) ---@type MPlayer 
     if not player then return end
 
     local enabled = evt.enabled
     local uin = player.uin
-    
+    local instanceId = GameModeManager.playerModes[player.uin]
+    if instanceId then
+        local currentMode = GameModeManager.activeModes[instanceId]
+        if currentMode and currentMode.ModeType == "RaceGameMode" then
+            -- 比赛模式分支
+            gg.log("当前处于游戏模式", currentMode.modeName)
+            player:SendHoverText("当前正在比赛，无法开启自动挂机")
+            AutoPlayEventManager.SendSuccessResponse(uin, EventPlayerConfig.NOTIFY.AUTO_PLAY_STOPPED, {
+                enabled = false,
+                message = "自动挂机结束，当前正在比赛"
+            })
+            return 
+        end
+    end
+
     -- 无论启用或停用自动挂机，都要清理自动比赛状态
     if enabled then
         ClearPlayerAutoRaceState(player, "自动比赛已停止（因启动自动挂机）")
@@ -107,13 +115,13 @@ function AutoPlayEventManager.HandleAutoPlayToggle(evt)
     
     -- 发送相应通知
     if enabled then
-        AutoPlayEventManager.SendSuccessResponse(uin, AutoPlayEventManager.NOTIFY.AUTO_PLAY_STARTED, {
+        AutoPlayEventManager.SendSuccessResponse(uin, EventPlayerConfig.NOTIFY.AUTO_PLAY_STARTED, {
             enabled = true,
             message = "自动挂机已启动，正在寻找最佳挂机点..."
         })
         --gg.log("玩家", uin, "启动自动挂机")
     else
-        AutoPlayEventManager.SendSuccessResponse(uin, AutoPlayEventManager.NOTIFY.AUTO_PLAY_STOPPED, {
+        AutoPlayEventManager.SendSuccessResponse(uin, EventPlayerConfig.NOTIFY.AUTO_PLAY_STOPPED, {
             enabled = false,
             message = "自动挂机已停止"
         })
@@ -121,10 +129,6 @@ function AutoPlayEventManager.HandleAutoPlayToggle(evt)
     end
 end
 
--- 【新增】发送自动挂机开始事件到客户端（供AutoPlayManager调用时也可直接使用）
----@param uin number 玩家UIN
----@param player MPlayer 玩家对象
----@param targetPosition Vector3|nil 目标传送位置
 -- 删除：客户端传送改为服务端直接传送，不再发送 AUTO_PLAY_START
 
 -- 删除：自动挂机的传送成功/失败客户端提示，不再使用

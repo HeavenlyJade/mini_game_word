@@ -73,7 +73,7 @@ function LevelExpCommand.addLevelExp(player, level, exp)
     end
 
     if message ~= "" then
-        player:SendHoverText(message)
+        --player:SendHoverText(message)
         gg.log("玩家 %s 新增等级和经验成功：%s", player.name, message)
     end
 
@@ -103,7 +103,7 @@ function LevelExpCommand.setLevelExp(player, level, exp)
     end
 
     if message ~= "" then
-        player:SendHoverText(message)
+        --player:SendHoverText(message)
         gg.log("玩家 %s 设置等级和经验成功：%s", player.name, message)
     end
 
@@ -135,7 +135,7 @@ function LevelExpCommand.reduceLevelExp(player, level, exp)
     end
 
     if message ~= "" then
-        player:SendHoverText(message)
+        --player:SendHoverText(message)
         gg.log("玩家 %s 减少等级和经验成功：%s", player.name, message)
     end
 

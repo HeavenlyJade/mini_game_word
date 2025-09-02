@@ -38,14 +38,14 @@ function OpenUICommand.handlers.open(params, player)
     local lotteryType = params["抽奖类型"]
     
     if not uiName then
-        player:SendHoverText("缺少'界面名'字段")
+        --player:SendHoverText("缺少'界面名'字段")
         return false
     end
     
     -- 根据不同界面类型处理
     if uiName == "LotteryGui" then
         if not lotteryType then
-            player:SendHoverText("抽奖界面需要'抽奖类型'字段")
+            --player:SendHoverText("抽奖界面需要'抽奖类型'字段")
             return false
         end
         
@@ -96,7 +96,7 @@ end
 function OpenUICommand.handlers.close(params, player)
     local uiName = params["界面名"]
     if not uiName then
-        player:SendHoverText("缺少'界面名'字段")
+        --player:SendHoverText("缺少'界面名'字段")
         return false
     end
 
@@ -141,14 +141,14 @@ function OpenUICommand.main(params, player)
     local operationType = params["操作类型"]
     
     if not operationType then
-        player:SendHoverText("缺少'操作类型'字段。有效类型: '打开界面'")
+        --player:SendHoverText("缺少'操作类型'字段。有效类型: '打开界面'")
         return false
     end
     
     -- 将中文指令映射到英文处理器
     local handlerName = operationMap[operationType]
     if not handlerName then
-        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '打开界面'")
+        --player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '打开界面'")
         return false
     end
     
@@ -157,7 +157,7 @@ function OpenUICommand.main(params, player)
         --gg.log("UI指令执行", "操作类型:", operationType, "参数:", params, "执行者:", player.name)
         return handler(params, player)
     else
-        player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
+        --player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
         return false
     end
 end

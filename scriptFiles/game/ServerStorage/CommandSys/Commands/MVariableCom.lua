@@ -65,11 +65,11 @@ function VariableCommand.handlers.add(params, player)
     local otherBonuses = params["其他加成"]
 
     if not (variableName and value) then
-        player:SendHoverText("缺少 '变量名' 或 '数值' 字段。")
+        --player:SendHoverText("缺少 '变量名' 或 '数值' 字段。")
         return false
     end
     if not isValidVariableName(variableName) then
-        player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
+        --player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
     end
 
     local variableSystem = player.variableSystem
@@ -83,7 +83,7 @@ function VariableCommand.handlers.add(params, player)
 
     local msg = string.format("成功为玩家 %s 的变量 '%s' 新增 %s (来源: %s)，新值为: %s.%s", player.name, variableName, tostring(valueToAdd), source, tostring(newValue), bonusInfo)
     -- gg.log(msg)
-    -- player:SendHoverText(msg)
+    -- --player:SendHoverText(msg)
     
     -- 检查依赖规则
     DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
@@ -104,12 +104,12 @@ function VariableCommand.handlers.set(params, player)
     local otherBonuses = params["其他加成"]
 
     if not (variableName and value) then
-        player:SendHoverText("缺少 '变量名' 或 '数值' 字段。")
+        --player:SendHoverText("缺少 '变量名' 或 '数值' 字段。")
         return false
     end
 
     if not isValidVariableName(variableName) then
-        player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
+        --player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
     end
 
     -- 使用BonusCalculator计算加成
@@ -120,8 +120,8 @@ function VariableCommand.handlers.set(params, player)
     local newValue = variableSystem:GetVariable(variableName)
 
     local msg = string.format("成功将玩家 %s 的变量 '%s' 设置为: %s (来源: %s).%s", player.name, variableName, tostring(newValue), source, bonusInfo)
-    player:SendHoverText(msg)
-    ----gg.log(msg)
+    --player:SendHoverText(msg)
+    gg.log(msg)
     
     -- 检查依赖规则
     DependencyRuleChecker.CheckAndProcess(player, variableName, newValue)
@@ -142,12 +142,12 @@ function VariableCommand.handlers.reduce(params, player)
     local otherBonuses = params["其他加成"]
 
     if not (variableName and value) then
-        player:SendHoverText("缺少 '变量名' 或 '数值' 字段。")
+        --player:SendHoverText("缺少 '变量名' 或 '数值' 字段。")
         return false
     end
 
     if not isValidVariableName(variableName) then
-        player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
+        --player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
     end
 
     local variableSystem = player.variableSystem
@@ -179,12 +179,12 @@ function VariableCommand.handlers.view(params, player)
     if variableName then
         -- 查看单个变量的详细信息
         if not isValidVariableName(variableName) then
-            player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，但仍会尝试查询。")
+            --player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，但仍会尝试查询。")
         end
         local details = variableSystem:GetVariableSources(variableName)
         if not details then
             local msg = string.format("玩家 %s 没有名为 '%s' 的变量。", player.name, variableName)
-            player:SendHoverText(msg)
+            --player:SendHoverText(msg)
             gg.log(msg)
             return false
         end
@@ -209,7 +209,7 @@ function VariableCommand.handlers.view(params, player)
         end
 
         local fullMessage = table.concat(response, "\n")
-        player:SendHoverText(fullMessage)
+        --player:SendHoverText(fullMessage)
         local lines = gg.split(fullMessage, "\n")
         for _, line in ipairs(lines) do
             gg.log(line)
@@ -249,7 +249,7 @@ function VariableCommand.handlers.view(params, player)
         end
 
         local fullMessage = table.concat(response, "\n")
-        player:SendHoverText(fullMessage)
+        --player:SendHoverText(fullMessage)
         local lines = gg.split(fullMessage, "\n")
         for _, line in ipairs(lines) do
             gg.log(line)
@@ -271,7 +271,7 @@ function VariableCommand.handlers.bonusonly(params, player)
     local otherBonuses = params["其他加成"]
 
     if not variableName then
-        player:SendHoverText("缺少 '变量名' 字段。")
+        --player:SendHoverText("缺少 '变量名' 字段。")
         return false
     end
 
@@ -289,12 +289,12 @@ function VariableCommand.handlers.bonusonly(params, player)
         
         local msg = string.format("成功为玩家 %s 的变量 '%s' 应用加成 %s (来源: %s)，新值为: %s.%s", 
             player.name, variableName, tostring(bonusValue), source, tostring(newValue), bonusInfo)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         ----gg.log(msg)
     else
         local msg = string.format("玩家 %s 的变量 '%s' 没有可应用的加成，保持原值。%s", 
             player.name, variableName, bonusInfo)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         ----gg.log(msg)
     end
     
@@ -311,18 +311,18 @@ function VariableCommand.handlers.clearsources(params, player)
     local variableSystem = player.variableSystem
 
     if not variableName then
-        player:SendHoverText("缺少 '变量名' 字段。")
+        --player:SendHoverText("缺少 '变量名' 字段。")
         return false
     end
 
     if not isValidVariableName(variableName) then
-        player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
+        --player:SendHoverText("警告：变量名 '" .. variableName .. "' 不在推荐列表中，请确认是否正确。")
     end
 
     -- 检查变量是否存在
     if not variableSystem.variables[variableName] then
         local msg = string.format("玩家 %s 没有名为 '%s' 的变量。", player.name, variableName)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         gg.log(msg)
         return false
     end
@@ -345,7 +345,7 @@ function VariableCommand.handlers.clearsources(params, player)
     local msg = string.format("成功清空玩家 %s 的变量 '%s' 的所有来源（共%d个），值从 %s 变为 %s", 
         player.name, variableName, sourceCount, tostring(oldValue), tostring(newValue))
     
-    player:SendHoverText(msg)
+    --player:SendHoverText(msg)
     gg.log(msg)
     
     -- 检查依赖规则
@@ -375,18 +375,18 @@ function VariableCommand.main(params, player)
     local operationType = params["操作类型"]
 
     if not operationType then
-        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '设置', '减少', '查看', '测试加成', '仅加成'")
+        --player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '设置', '减少', '查看', '测试加成', '仅加成'")
         return false
     end
 
     local handlerName = operationMap[operationType]
     if not handlerName then
-        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '设置', '减少', '查看', '测试加成', '仅加成'")
+        --player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '设置', '减少', '查看', '测试加成', '仅加成'")
         return false
     end
 
     if not player.variableSystem then
-        player:SendHoverText("错误：找不到玩家的变量系统实例。")
+        --player:SendHoverText("错误：找不到玩家的变量系统实例。")
         ----gg.log("错误：玩家 " .. player.name .. " 的variableSystem为空。")
         return false
     end
@@ -397,7 +397,7 @@ function VariableCommand.main(params, player)
         return handler(params, player)
     else
         -- This case should not be reached due to the handlerName check above
-        player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
+        --player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
         return false
     end
 end

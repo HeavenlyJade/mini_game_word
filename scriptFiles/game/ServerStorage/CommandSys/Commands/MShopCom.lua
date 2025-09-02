@@ -29,12 +29,12 @@ function ShopCommand.simulateMiniGrant(params, player)
 
 	if miniId <= 0 then
 		if not shopItemId or shopItemId == "" then
-			player:SendHoverText("缺少'迷你商品ID'或'商品ID'")
+			--player:SendHoverText("缺少'迷你商品ID'或'商品ID'")
 			return false
 		end
 		local shopItem = ConfigLoader.GetShopItem(shopItemId)
 		if not shopItem then
-			player:SendHoverText("商品配置不存在：" .. tostring(shopItemId))
+			--player:SendHoverText("商品配置不存在：" .. tostring(shopItemId))
 			return false
 		end
 		local special = shopItem.specialProperties
@@ -42,14 +42,14 @@ function ShopCommand.simulateMiniGrant(params, player)
 	end
 
 	if not miniId or miniId <= 0 then
-		player:SendHoverText("迷你币商品ID无效，无法发放")
+		--player:SendHoverText("迷你币商品ID无效，无法发放")
 		return false
 	end
 
 	-- 直接走回调逻辑：发奖、更新记录、限购与客户端通知
 	ShopMgr.HandleMiniPurchaseCallback(player.uin, miniId, num)
 	gg.log("已模拟迷你币购买发放", player.name, "goodsid:", miniId, "数量:", num)
-	player:SendHoverText("已模拟迷你币购买发放")
+	--player:SendHoverText("已模拟迷你币购买发放")
 	return true
 end
 
@@ -66,13 +66,13 @@ local operationMap = {
 function ShopCommand.main(params, player)
 	local operationType = params["操作类型"]
 	if not operationType then
-		player:SendHoverText("缺少'操作类型'字段。有效类型: '模拟迷你币购买'")
+		--player:SendHoverText("缺少'操作类型'字段。有效类型: '模拟迷你币购买'")
 		return false
 	end
 
 	local handlerName = operationMap[operationType]
 	if not handlerName or not ShopCommand[handlerName] then
-		player:SendHoverText("未知的操作类型: " .. tostring(operationType))
+		--player:SendHoverText("未知的操作类型: " .. tostring(operationType))
 		return false
 	end
 

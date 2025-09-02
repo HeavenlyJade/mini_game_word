@@ -85,19 +85,19 @@ function ShopEventManager.HandlePurchaseItem(evt)
     local categoryName = args.categoryName
     
     if not shopItemId then
-        player:SendHoverText("商品ID不能为空")
+        --player:SendHoverText("商品ID不能为空")
         return
     end
     
     if not currencyType then
-        player:SendHoverText("货币类型不能为空")
+        --player:SendHoverText("货币类型不能为空")
         return
     end
     
     -- 拒绝迷你币购买请求，引导使用专用接口
     if currencyType == "迷你币" then
         gg.log("迷你币购买请求被拒绝，请使用专用接口", player.name, shopItemId)
-        player:SendHoverText("请使用迷你币专用购买接口")
+        --player:SendHoverText("请使用迷你币专用购买接口")
         return
     end
     
@@ -122,7 +122,7 @@ function ShopEventManager.HandlePurchaseItem(evt)
         })
     else
         gg.log("商品购买失败", player.name, shopItemId, currencyType, message)
-        player:SendHoverText(message)
+        --player:SendHoverText(message)
     end
 end
 
@@ -141,7 +141,7 @@ function ShopEventManager.HandlePurchaseMiniItem(evt)
     local categoryName = args.categoryName
     
     if not shopItemId then
-        player:SendHoverText("商品ID不能为空")
+        --player:SendHoverText("商品ID不能为空")
         return
     end
     
@@ -164,7 +164,7 @@ function ShopEventManager.HandlePurchaseMiniItem(evt)
         })
     else
         gg.log("迷你币购买失败", player.name, shopItemId, message)
-        player:SendHoverText(message)
+        --player:SendHoverText(message)
     end
 end
 
@@ -180,7 +180,7 @@ function ShopEventManager.HandleValidatePurchase(evt)
     
     local shopItemId = args.shopItemId
     if not shopItemId then
-        player:SendHoverText("商品ID不能为空")
+        --player:SendHoverText("商品ID不能为空")
         return
     end
     
@@ -241,13 +241,13 @@ function ShopEventManager.HandleGetLimitStatus(evt)
     
     local shopItemId = args.shopItemId
     if not shopItemId then
-        player:SendHoverText("商品ID不能为空")
+        --player:SendHoverText("商品ID不能为空")
         return
     end
     
     local shopInstance = ShopMgr.GetOrCreatePlayerShop(player)
     if not shopInstance then
-        player:SendHoverText("商城系统异常")
+        --player:SendHoverText("商城系统异常")
         return
     end
     
@@ -319,7 +319,7 @@ function ShopEventManager.HandleRefreshShopData(evt)
             errorMsg = nil
         })
     else
-        player:SendHoverText("商城数据刷新失败")
+        --player:SendHoverText("商城数据刷新失败")
     end
 end
 

@@ -133,6 +133,9 @@ function AutoRaceEventManager.HandleAutoRaceToggle(evt)
             message = "自动比赛已停止"
         })
         
+        -- 同步通知客户端停止导航（确保客户端立即停止自动导航）
+        AutoRaceEventManager.SendStopNavigation(uin, "自动比赛已停止，停止导航")
+        
         --gg.log("玩家", uin, "停止自动比赛")
     end
 end

@@ -151,7 +151,7 @@ function AnimationCommand.handlers.setAnimation(params, player)
     local animationName = params["动画名称"]
     
     if not animationName then
-        player:SendHoverText("缺少'动画名称'字段")
+        -- player:SendHoverText("缺少'动画名称'字段")
         return false
     end
     
@@ -181,7 +181,7 @@ function AnimationCommand.handlers.setGravity(params, player)
     local gravityValue = params["重力值"]
     
     if not gravityValue then
-        player:SendHoverText("缺少'重力值'字段")
+        -- player:SendHoverText("缺少'重力值'字段")
         return false
     end
     
@@ -211,7 +211,7 @@ function AnimationCommand.handlers.setMoveSpeed(params, player)
     local moveSpeed = params["移动速度"]
     
     if not moveSpeed then
-        player:SendHoverText("缺少'移动速度'字段")
+        -- player:SendHoverText("缺少'移动速度'字段")
         return false
     end
     

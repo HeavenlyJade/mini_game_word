@@ -70,24 +70,23 @@ end
 
 -- 确保始终在最上层
 function HoverTextHud:EnsureOnTop()
-    if self.node then
         -- 重新设置渲染层级
-        if self.node.RenderIndex then
-            self.node.RenderIndex = 9999
-        end
-        self.node.Visible =true
-        -- 确保节点启用
-        self.node.Enabled = true
-        
-        -- 为所有活动文本重新设置层级
-        for _, textInfo in ipairs(self.activeTexts) do
-            if textInfo.node and textInfo.node.RenderIndex then
-                textInfo.node.RenderIndex = 9999
-            end
-        end
-        
-        gg.log("HoverTextHud: 重新确保在最上层显示")
+    if self.node.RenderIndex then
+        self.node.RenderIndex = 9999
     end
+    self.node.Visible =true
+    -- 确保节点启用
+    self.node.Enabled = true
+    
+    -- 为所有活动文本重新设置层级
+    for _, textInfo in ipairs(self.activeTexts) do
+        if textInfo.node and textInfo.node.RenderIndex then
+            textInfo.node.RenderIndex = 9999
+        end
+    end
+    
+    gg.log("HoverTextHud: 重新确保在最上层显示")
+   
 end
 
 function HoverTextHud:GetTextFromPool()
@@ -225,7 +224,6 @@ function HoverTextHud:Open()
     -- 确保在最上层
     self:EnsureOnTop()
     
-    gg.log("HoverTextHud: 悬浮文本显示，脱离层级管理")
 end
 
 -- 重写Close方法，避免影响其他UI

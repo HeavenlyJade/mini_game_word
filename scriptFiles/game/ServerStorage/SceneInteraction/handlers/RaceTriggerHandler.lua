@@ -71,9 +71,9 @@ function RaceTriggerHandler:OnEntityLeave(player)
         -- 获取玩家当前所在的比赛实例
         local instanceId = GameModeManager.playerModes[player.uin]
         local currentMode = GameModeManager.activeModes[instanceId]
-        gg.log("currentMode", currentMode)
-        gg.log("currentMode.state", currentMode.state)
-        gg.log("instanceId",instanceId)
+        gg.log("当前的模式", currentMode)
+        gg.log("当前的游戏状态.state", currentMode.state)
+        gg.log("实例ID",instanceId)
         -- 如果比赛还在准备阶段，将玩家从比赛中移除
         if currentMode and (currentMode.state == "WAITING" or currentMode.state == "PREPARING") then
             local participantsCount = currentMode:_getParticipantCount()

@@ -56,6 +56,8 @@ EventPlayerConfig.NOTIFY = {
     AUTO_RACE_RESPONSE = "AutoRaceResponse", -- 新增：自动比赛请求的响应
     STOP_NAVIGATION = "StopNavigation", -- 新增：停止导航
     AUTO_RACE_STARTED = "AutoRaceStarted", -- 新增：自动比赛已开始
+    AUTO_PLAY_STARTED = "AutoPlayStarted", -- 新增：自动挂机已开始
+    AUTO_PLAY_STOPPED = "AutoPlayStopped", -- 新增：自动挂机已停止
     PLAYER_LAUNCH_END = "sPlayerLaunchEnd", -- 玩家发射结束
     -- 【新增】玩家切换地图通知
     PLAYER_MAP_CHANGED = "sPlayerMapChanged", -- 玩家地图切换
@@ -75,7 +77,9 @@ EventPlayerConfig.ACTION_PARAMS = {
     [EventPlayerConfig.NOTIFY.LAUNCH_PLAYER] = {
         jumpSpeed = 200,     -- 发射高度
         moveSpeed = 400,      -- 速度（修改为100）
-        jumpDuration = 0.5    -- Jump(true)的持续时间
+        recoveryDelay = 0.0,  -- 恢复延迟
+        jumpDuration = 0.5,   -- Jump(true)的持续时间
+        gameMode = ""         -- 游戏模式（调用方可覆盖）
     }
 }
 

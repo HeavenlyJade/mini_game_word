@@ -192,12 +192,11 @@ end
 ---@param player MPlayer
 function GameModeBase:OnPlayerEnter(player)
     self.participants[player.uin] = player
-    
+
     -- 标注玩家当前所在的游戏模式实例
-    if player then
-        player.currentGameModeInstanceId = self.instanceId
-        player.currentGameModeName = self.modeName
-    end
+    player.currentGameModeInstanceId = self.instanceId
+    player.currentGameModeName = self.modeName
+    gg.log("设置了玩家的游戏模式", player.currentGameModeInstanceId, player.currentGameModeName)
 end
 
 --- 当有玩家离开此游戏模式时调用
@@ -206,10 +205,10 @@ function GameModeBase:OnPlayerLeave(player)
     self.participants[player.uin] = nil
     
     -- 清理玩家的游戏模式标记
-    if player then
-        player.currentGameModeInstanceId = nil
-        player.currentGameModeName = nil
-    end
+    player.currentGameModeInstanceId = nil
+    player.currentGameModeName = nil
+    gg.log("清除了玩家的游戏模式", player.currentGameModeInstanceId, player.currentGameModeName)
+  
 end
 
 --- 【新增】获取参赛者数量

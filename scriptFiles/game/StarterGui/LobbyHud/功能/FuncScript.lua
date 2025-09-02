@@ -93,35 +93,18 @@ end
 function FuncScript:HandleAutoPlay()
     gg.log("触发自动挂机功能")
     
-    -- 更新本地状态
-    self.autoPlayState = not (self.autoPlayState or false)
-    
-    -- 如果启动自动挂机，先停止自动比赛
-    if self.autoPlayState and self.autoRaceState then
-        self.autoRaceState = false
-        self:HandleStopAutoRace(true) -- 调用停止函数，并传递一个标志以避免重复发送请求
-    end
     
     -- 发送自动挂机请求到服务端
     gg.network_channel:FireServer({
         cmd = EventPlayerConfig.REQUEST.AUTO_PLAY_TOGGLE,
-        enabled = self.autoPlayState
+        enabled = true
     })
-    
-    -- 更新按钮显示状态
-    if self.autoPlay then
-        self.autoPlay.Title = self.autoPlayState and "关闭挂机" or "自动挂机"
-    end
     
     -- 更新按钮显示状态
     self:UpdateAutoPlayButtonDisplay()
     
     -- 显示状态提示
-    if self.autoPlayState then
-        gg.log("正在启动自动挂机，系统将自动寻找最佳挂机点...")
-    else
-        gg.log("正在停止自动挂机...")
-    end
+
 end
 
 -- 自动比赛功能处理

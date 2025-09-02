@@ -58,7 +58,7 @@ function AchievementCommand.UnlockTalent(params, player)
     gg.log(string.format("玩家[%s]解锁天赋[%s]成功，等级设置为%d", player.name, talentId, level))
     
     -- 向客户端发送成功通知
-    player:SendHoverText(string.format("成功解锁天赋：%s (等级%d)", talentId, level))
+    -- player:SendHoverText(string.format("成功解锁天赋：%s (等级%d)", talentId, level))
 end
 
 --- 设置天赋等级
@@ -95,7 +95,7 @@ function AchievementCommand.SetTalentLevel(params, player)
     gg.log(string.format("玩家[%s]天赋[%s]等级设置为%d", player.name, talentId, level))
     
     -- 向客户端发送成功通知
-    player:SendHoverText(string.format("天赋等级设置成功：%s -> 等级%d", talentId, level))
+    -- player:SendHoverText(string.format("天赋等级设置成功：%s -> 等级%d", talentId, level))
 end
 
 --- 升级天赋
@@ -122,10 +122,10 @@ function AchievementCommand.UpgradeTalent(params, player)
     if success then
         local newLevel = playerAchievement:GetTalentLevel(talentId)
         gg.log(string.format("玩家[%s]天赋[%s]升级成功，当前等级：%d", player.name, talentId, newLevel))
-        player:SendHoverText(string.format("天赋升级成功：%s -> 等级%d", talentId, newLevel))
+        -- player:SendHoverText(string.format("天赋升级成功：%s -> 等级%d", talentId, newLevel))
     else
         gg.log(string.format("玩家[%s]天赋[%s]升级失败", player.name, talentId))
-        player:SendHoverText(string.format("天赋升级失败：%s", talentId))
+        -- player:SendHoverText(string.format("天赋升级失败：%s", talentId))
     end
 end
 
@@ -151,7 +151,7 @@ function AchievementCommand.ResetTalent(params, player)
     playerAchievement:ResetTalent(talentId, player)
     
     gg.log(string.format("玩家[%s]天赋[%s]重置成功", player.name, talentId))
-    player:SendHoverText(string.format("天赋重置成功：%s -> 等级1", talentId))
+    -- player:SendHoverText(string.format("天赋重置成功：%s -> 等级1", talentId))
 end
 
 return AchievementCommand

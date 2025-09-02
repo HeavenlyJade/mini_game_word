@@ -18,25 +18,25 @@ function BagCommand.add(params, player)
     local amount = tonumber(params["数量"]) or 1
 
     if not itemType then
-        player:SendHoverText("缺少'物品类型'字段")
+        --player:SendHoverText("缺少'物品类型'字段")
         return false
     end
 
     if amount <= 0 then
-        player:SendHoverText("物品数量必须大于0")
+        --player:SendHoverText("物品数量必须大于0")
         return false
     end
 
     local success = BagMgr.AddItem(player, itemType, amount)
     if success then
         local msg = string.format("获取物品 %s x%d", itemType, amount)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         gg.log(msg)
         BagMgr.ForceSyncToClient(player.uin)
         return true
     else
         local msg = string.format("给玩家 %s 添加物品失败: %s x%d", player.name, itemType, amount)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         gg.log(msg)
         return false
     end
@@ -50,25 +50,25 @@ function BagCommand.remove(params, player)
     local amount = tonumber(params["数量"]) or 1
 
     if not itemType then
-        player:SendHoverText("缺少'物品类型'字段")
+        --player:SendHoverText("缺少'物品类型'字段")
         return false
     end
 
     if amount <= 0 then
-        player:SendHoverText("物品数量必须大于0")
+        --player:SendHoverText("物品数量必须大于0")
         return false
     end
 
     local success = BagMgr.RemoveItem(player, itemType, amount)
     if success then
         local msg = string.format("成功从玩家 %s 移除物品: %s x%d", player.name, itemType, amount)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         gg.log(msg)
         BagMgr.ForceSyncToClient(player.uin)
         return true
     else
         local msg = string.format("从玩家 %s 移除物品失败 (可能数量不足): %s x%d", player.name, itemType, amount)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         gg.log(msg)
         return false
     end
@@ -82,19 +82,19 @@ function BagCommand.set(params, player)
     local amount = tonumber(params["数量"]) or 0
 
     if not itemType then
-        player:SendHoverText("缺少'物品类型'字段")
+        --player:SendHoverText("缺少'物品类型'字段")
         return false
     end
 
     if amount < 0 then
-        player:SendHoverText("物品数量不能为负数")
+        --player:SendHoverText("物品数量不能为负数")
         return false
     end
 
     -- 获取玩家背包
     local bag = BagMgr.GetPlayerBag(player.uin)
     if not bag then
-        player:SendHoverText("玩家背包不存在")
+        --player:SendHoverText("玩家背包不存在")
         return false
     end
 
@@ -107,18 +107,18 @@ function BagCommand.set(params, player)
             local success = BagMgr.RemoveItem(player, itemType, currentAmount)
             if success then
                 local msg = string.format("成功清空玩家 %s 的物品: %s", player.name, itemType)
-                player:SendHoverText(msg)
+                --player:SendHoverText(msg)
                 gg.log(msg)
                 return true
             else
                 local msg = string.format("清空玩家 %s 的物品失败: %s", player.name, itemType)
-                player:SendHoverText(msg)
+                --player:SendHoverText(msg)
                 gg.log(msg)
                 return false
             end
         else
             local msg = string.format("玩家 %s 没有物品: %s", player.name, itemType)
-            player:SendHoverText(msg)
+            --player:SendHoverText(msg)
             gg.log(msg)
             return true
         end
@@ -126,7 +126,7 @@ function BagCommand.set(params, player)
         -- 设置指定数量
         if currentAmount == amount then
             local msg = string.format("玩家 %s 的物品 %s 数量已经是 %d", player.name, itemType, amount)
-            player:SendHoverText(msg)
+            --player:SendHoverText(msg)
             gg.log(msg)
             return true
         elseif currentAmount > amount then
@@ -135,12 +135,12 @@ function BagCommand.set(params, player)
             local success = BagMgr.RemoveItem(player, itemType, removeAmount)
             if success then
                 local msg = string.format("成功设置玩家 %s 的物品数量: %s %d→%d", player.name, itemType, currentAmount, amount)
-                player:SendHoverText(msg)
+                --player:SendHoverText(msg)
                 gg.log(msg)
                 return true
             else
                 local msg = string.format("设置玩家 %s 的物品数量失败: %s", player.name, itemType)
-                player:SendHoverText(msg)
+                --player:SendHoverText(msg)
                 gg.log(msg)
                 return false
             end
@@ -150,12 +150,12 @@ function BagCommand.set(params, player)
             local success = BagMgr.AddItem(player, itemType, addAmount)
             if success then
                 local msg = string.format("成功设置玩家 %s 的物品数量: %s %d→%d", player.name, itemType, currentAmount, amount)
-                player:SendHoverText(msg)
+                --player:SendHoverText(msg)
                 gg.log(msg)
                 return true
             else
                 local msg = string.format("设置玩家 %s 的物品数量失败: %s", player.name, itemType)
-                player:SendHoverText(msg)
+                --player:SendHoverText(msg)
                 gg.log(msg)
                 return false
             end
@@ -174,12 +174,12 @@ function BagCommand.main(params, player)
 
     -- 参数验证
     if not operationType then
-        player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '减少', '设置'")
+        --player:SendHoverText("缺少'操作类型'字段。有效类型: '新增', '减少', '设置'")
         return false
     end
 
     if not itemType then
-        player:SendHoverText("缺少'物品类型'字段")
+        --player:SendHoverText("缺少'物品类型'字段")
         return false
     end
 
@@ -192,7 +192,7 @@ function BagCommand.main(params, player)
     elseif operationType == "设置" then
         return BagCommand.set(params, player)
     else
-        player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '减少', '设置'")
+        --player:SendHoverText("未知的操作类型: " .. operationType .. "。有效类型: '新增', '减少', '设置'")
         return false
     end
 end

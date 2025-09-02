@@ -122,12 +122,12 @@ function MailCommand.main(params, player)
 
     -- 参数验证
     if not deliveryMethod then
-        player:SendHoverText("缺少'投递方式'字段。有效方式: '全服', '个人'")
+        --player:SendHoverText("缺少'投递方式'字段。有效方式: '全服', '个人'")
         return false
     end
 
     if not senderType then
-        player:SendHoverText("缺少'发件人'字段。有效类型: '系统', '玩家'")
+        --player:SendHoverText("缺少'发件人'字段。有效类型: '系统', '玩家'")
         return false
     end
 
@@ -136,7 +136,7 @@ function MailCommand.main(params, player)
     if deliveryMethod == "全服" then
         -- 全服邮件只能由系统发送
         if senderType ~= "系统" then
-            player:SendHoverText("全服邮件只能由系统发送")
+            --player:SendHoverText("全服邮件只能由系统发送")
             return false
         end
         return MailCommand.sendGlobalMail(params, player)
@@ -145,7 +145,7 @@ function MailCommand.main(params, player)
         return MailCommand.sendPersonalMail(params, player)
 
     else
-        player:SendHoverText("未知的投递方式: " .. deliveryMethod .. "。有效方式: '全服', '个人'")
+        --player:SendHoverText("未知的投递方式: " .. deliveryMethod .. "。有效方式: '全服', '个人'")
         return false
     end
 end

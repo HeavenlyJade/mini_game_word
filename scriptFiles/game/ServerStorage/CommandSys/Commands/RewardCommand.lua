@@ -21,24 +21,24 @@ function RewardCommand.setOnlineTime(params, player)
     
     -- 参数验证
     if not todayTime and not roundTime then
-        player:SendHoverText("缺少时长参数：至少需要提供'今日时长'或'本轮时长'")
+        --player:SendHoverText("缺少时长参数：至少需要提供'今日时长'或'本轮时长'")
         return false
     end
     
     if todayTime and todayTime < 0 then
-        player:SendHoverText("今日时长不能为负数")
+        --player:SendHoverText("今日时长不能为负数")
         return false
     end
     
     if roundTime and roundTime < 0 then
-        player:SendHoverText("本轮时长不能为负数")
+        --player:SendHoverText("本轮时长不能为负数")
         return false
     end
     
     -- 获取玩家奖励实例
     local rewardInstance = RewardMgr.GetPlayerReward(player.uin)
     if not rewardInstance then
-        player:SendHoverText("玩家奖励数据未加载")
+        --player:SendHoverText("玩家奖励数据未加载")
         gg.log(string.format("错误：玩家 %s (UIN:%d) 奖励数据未加载", player.name, player.uin))
         return false
     end
@@ -66,7 +66,7 @@ function RewardCommand.setOnlineTime(params, player)
     RewardMgr.SavePlayerData(player.uin)
     
     local msg = string.format("成功设置玩家 %s 的在线时长: %s", player.name, table.concat(modified, ", "))
-    player:SendHoverText(msg)
+    --player:SendHoverText(msg)
     gg.log(msg)
     
     return true
@@ -81,19 +81,19 @@ function RewardCommand.setRound(params, player)
     
     -- 参数验证
     if not round then
-        player:SendHoverText("缺少'轮次'参数或参数格式错误")
+        --player:SendHoverText("缺少'轮次'参数或参数格式错误")
         return false
     end
     
     if round < 1 then
-        player:SendHoverText("轮次必须大于等于1")
+        --player:SendHoverText("轮次必须大于等于1")
         return false
     end
     
     -- 获取玩家奖励实例
     local rewardInstance = RewardMgr.GetPlayerReward(player.uin)
     if not rewardInstance then
-        player:SendHoverText("玩家奖励数据未加载")
+        --player:SendHoverText("玩家奖励数据未加载")
         gg.log(string.format("错误：玩家 %s (UIN:%d) 奖励数据未加载", player.name, player.uin))
         return false
     end
@@ -111,7 +111,7 @@ function RewardCommand.setRound(params, player)
     RewardMgr.SavePlayerData(player.uin)
     
     local msg = string.format("成功设置玩家 %s 的奖励轮次: %d→%d", player.name, oldRound, round)
-    player:SendHoverText(msg)
+    --player:SendHoverText(msg)
     gg.log(msg)
     
     return true
@@ -126,7 +126,7 @@ function RewardCommand.setClaimed(params, player)
     
     -- 参数验证
     if not indexList or type(indexList) ~= "table" then
-        player:SendHoverText("缺少'索引列表'参数或参数格式错误，应为数组格式")
+        --player:SendHoverText("缺少'索引列表'参数或参数格式错误，应为数组格式")
         return false
     end
     
@@ -134,7 +134,7 @@ function RewardCommand.setClaimed(params, player)
     for _, index in ipairs(indexList) do
         local indexNum = tonumber(index)
         if not indexNum or indexNum < 1 then
-            player:SendHoverText(string.format("无效的奖励索引: %s", tostring(index)))
+            --player:SendHoverText(string.format("无效的奖励索引: %s", tostring(index)))
             return false
         end
     end
@@ -142,7 +142,7 @@ function RewardCommand.setClaimed(params, player)
     -- 获取玩家奖励实例
     local rewardInstance = RewardMgr.GetPlayerReward(player.uin)
     if not rewardInstance then
-        player:SendHoverText("玩家奖励数据未加载")
+        --player:SendHoverText("玩家奖励数据未加载")
         gg.log(string.format("错误：玩家 %s (UIN:%d) 奖励数据未加载", player.name, player.uin))
         return false
     end
@@ -172,7 +172,7 @@ function RewardCommand.setClaimed(params, player)
     
     local msg = string.format("成功设置玩家 %s 的已领取奖励: %d个→%d个 [%s]", 
         player.name, oldClaimedCount, #newClaimedIndices, table.concat(newClaimedIndices, ","))
-    player:SendHoverText(msg)
+    --player:SendHoverText(msg)
     gg.log(msg)
     
     return true
@@ -188,7 +188,7 @@ function RewardCommand.clearClaimed(params, player)
     -- 获取玩家奖励实例
     local rewardInstance = RewardMgr.GetPlayerReward(player.uin)
     if not rewardInstance then
-        player:SendHoverText("玩家奖励数据未加载")
+        --player:SendHoverText("玩家奖励数据未加载")
         gg.log(string.format("错误：玩家 %s (UIN:%d) 奖励数据未加载", player.name, player.uin))
         return false
     end
@@ -204,7 +204,7 @@ function RewardCommand.clearClaimed(params, player)
         
         local msg = string.format("成功清除玩家 %s 的所有已领取奖励状态 (原有%d个)", 
             player.name, #oldClaimedIndices)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         gg.log(msg)
     else
         -- 清除指定索引的已领取状态
@@ -229,7 +229,7 @@ function RewardCommand.clearClaimed(params, player)
         local clearedCount = #oldClaimedIndices - #newClaimedIndices
         local msg = string.format("成功清除玩家 %s 的指定奖励领取状态: 清除%d个，剩余%d个", 
             player.name, clearedCount, #newClaimedIndices)
-        player:SendHoverText(msg)
+        --player:SendHoverText(msg)
         gg.log(msg)
     end
     
@@ -259,15 +259,15 @@ function RewardCommand.main(params, player)
     
     -- 参数验证
     if not operationType then
-        player:SendHoverText("缺少'操作类型'字段。有效类型: '设置在线时长', '设置轮次', '设置已领取', '清除已领取'")
+        --player:SendHoverText("缺少'操作类型'字段。有效类型: '设置在线时长', '设置轮次', '设置已领取', '清除已领取'")
         return false
     end
     
     -- 将中文指令映射到英文处理器
     local handlerName = operationMap[operationType]
     if not handlerName then
-        player:SendHoverText("未知的操作类型: " .. operationType .. 
-            "。有效类型: '设置在线时长', '设置轮次', '设置已领取', '清除已领取'")
+        --player:SendHoverText("未知的操作类型: " .. operationType .. 
+            -- "。有效类型: '设置在线时长', '设置轮次', '设置已领取', '清除已领取'")
         return false
     end
     
@@ -277,7 +277,7 @@ function RewardCommand.main(params, player)
         return handler(params, player)
     else
         -- 理论上不会执行到这里，因为上面已经检查过了
-        player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
+        --player:SendHoverText("内部错误：找不到指令处理器 " .. handlerName)
         return false
     end
 end

@@ -28,7 +28,6 @@ function AutoRaceManager.StartAutoRaceCheck()
         AutoRaceManager.CheckAllPlayersAutoRace()
     end)
     
-    gg.log("自动比赛检查定时器已启动，每5秒检查一次11")
 end
 
 -- 检查所有玩家的自动比赛状态
@@ -86,11 +85,7 @@ function AutoRaceManager.StartAutoRace(mPlayer)
         return
     end
     
-    -- 额外检查：如果玩家正在比赛场景中，也应跳过
-    if mPlayer.currentGameMode and mPlayer.currentGameMode:IsA("RaceGameMode") then
-        gg.log("玩家正在比赛模式中，跳过自动导航:", uin)
-        return
-    end
+
     -- 查找当前玩家所在场景的飞行比赛节点
     local currentScene = mPlayer.currentScene 
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
