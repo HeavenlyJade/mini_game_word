@@ -18,6 +18,7 @@ local SceneNodeType = require(MainStorage.Code.Common.TypeConfig.SceneNodeType)
 local AchievementType = require(MainStorage.Code.Common.TypeConfig.AchievementType)
 local ActionCostType = require(MainStorage.Code.Common.TypeConfig.ActionCostType) ---@type ActionCostType
 local RewardType = require(MainStorage.Code.Common.TypeConfig.RewardType) ---@type RewardType
+local RewardBonusType = require(MainStorage.Code.Common.TypeConfig.RewardBonusType) ---@type RewardBonusType
 local LotteryType = require(MainStorage.Code.Common.TypeConfig.LotteryType) ---@type LotteryType
 local ShopItemType = require(MainStorage.Code.Common.TypeConfig.ShopItemType) ---@type ShopItemType
 local TeleportPointType = require(MainStorage.Code.Common.TypeConfig.TeleportPointType) ---@type TeleportPointType
@@ -38,6 +39,7 @@ local PlayerInitConfig = require(MainStorage.Code.Common.Config.PlayerInitConfig
 local VariableNameConfig = require(MainStorage.Code.Common.Config.VariableNameConfig)
 local GameModeConfig = require(MainStorage.Code.Common.Config.GameModeConfig)
 local RewardConfig = require(MainStorage.Code.Common.Config.RewardConfig)
+local RewardBonusConfig = require(MainStorage.Code.Common.Config.RewardBonusConfig)
 local LotteryConfig = require(MainStorage.Code.Common.Config.LotteryConfig)
 local ShopItemConfig = require(MainStorage.Code.Common.Config.ShopItemConfig)
 local TeleportPointConfig = require(MainStorage.Code.Common.Config.TeleportPointConfig)
@@ -71,13 +73,14 @@ ConfigLoader.PlayerInits = {}
 ConfigLoader.VariableNames = {}
 ConfigLoader.GameModes = {}
 ConfigLoader.Rewards = {} -- 新增奖励配置存储
+ConfigLoader.RewardBonuses = {} -- 新增奖励配置存储
 ConfigLoader.Lotteries = {} -- 新增抽奖配置存储
 ConfigLoader.ShopItems = {} -- 新增商城商品配置存储
 ConfigLoader.MiniShopItems = {} -- 迷你币商品映射表：miniItemId -> ShopItemType
 
 --- 一个通用的加载函数，避免重复代码
 ---@param configData table 从Config目录加载的原始数据
----@param typeClass table 从TypeConfig目录加载的类
+---@param typeClass table|nil 从TypeConfig目录加载的类，可以为nil
 ---@param storageTable table 用来存储实例化后对象的表
 ---@param configName string 配置的名称，用于日志打印
 function ConfigLoader.LoadConfig(configData, typeClass, storageTable, configName)
@@ -115,6 +118,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(SkillConfig, SkillTypes, ConfigLoader.Skills, "Skill")
     ConfigLoader.LoadConfig(AchievementConfig, AchievementType, ConfigLoader.Achievements, "Achievement")
     ConfigLoader.LoadConfig(RewardConfig, RewardType, ConfigLoader.Rewards, "Reward")
+    ConfigLoader.LoadConfig(RewardBonusConfig, RewardBonusType, ConfigLoader.RewardBonuses, "RewardBonus")
     ConfigLoader.LoadConfig(LotteryConfig, LotteryType, ConfigLoader.Lotteries, "Lottery")
     ConfigLoader.LoadConfig(ShopItemConfig, ShopItemType, ConfigLoader.ShopItems, "ShopItem")
     ConfigLoader.LoadConfig(TeleportPointConfig, TeleportPointType, ConfigLoader.TeleportPoints, "TeleportPoint")
@@ -385,6 +389,17 @@ end
 ---@return table<string, RewardType>
 function ConfigLoader.GetAllRewards()
     return ConfigLoader.Rewards
+end
+
+---@param id string
+---@return RewardBonusType
+function ConfigLoader.GetRewardBonus(id)
+    return ConfigLoader.RewardBonuses[id]
+end
+
+---@return table<string, RewardBonusType>
+function ConfigLoader.GetAllRewardBonuses()
+    return ConfigLoader.RewardBonuses
 end
 
 ---@param id string
