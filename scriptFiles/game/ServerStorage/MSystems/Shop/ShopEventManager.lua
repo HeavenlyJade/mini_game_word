@@ -6,6 +6,7 @@ local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local CardIcon = require(MainStorage.Code.Common.Icon.card_icon) ---@type CardIcon
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local ShopEventConfig = require(MainStorage.Code.Event.EventShop) ---@type ShopEventConfig
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
@@ -367,6 +368,13 @@ function ShopEventManager.SendShopItemAcquiredNotification(uin, rewards, source)
             source = source,
             message = string.format("恭喜通过%s获得了以下物品！", source or "商城购买")
         }
+    })
+    
+    -- 播放物品获得音效（客户端 SoundPool 监听 PlaySound 事件）
+    local itemGetSound = CardIcon.soundResources["物品获得音效"]
+    gg.network_channel:fireClient(uin, {
+        cmd = "PlaySound",
+        soundAssetId = itemGetSound
     })
     
     gg.log("已发送商城物品获得通知给玩家", uin, "奖励数量:", #noticeRewards)

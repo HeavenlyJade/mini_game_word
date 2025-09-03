@@ -264,7 +264,7 @@ function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
     -- 使用 ConfigLoader 直接获取迷你币商品配置
     local targetItem = ConfigLoader.GetMiniShopItem(goodsid)
     if not targetItem then
-        --gg.log("迷你币购买成功但未找到对应配置", goodsid)
+        gg.log("迷你币购买成功但未找到对应配置", goodsid)
         return
     end
 
@@ -287,6 +287,16 @@ function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
     -- 记录购买与限购计数（以迷你币计）
     shopInstance:UpdatePurchaseRecord(targetItem.configName, targetItem, "迷你币")
     shopInstance:UpdateLimitCounter(targetItem.configName, targetItem)
+    
+    -- 更新迷你币消费统计（这里需要手动更新，因为跳过了ProcessPayment）
+    local miniCoinAmount = targetItem.price.miniCoinAmount or 0
+    
+
+    if miniCoinAmount > 0 then
+        shopInstance.totalPurchaseValue = shopInstance.totalPurchaseValue + miniCoinAmount
+    end
+    gg.log("更新迷你币消费统计", player.name, "商品:", targetItem.configName, "金额:", miniCoinAmount, "累计:", shopInstance.totalPurchaseValue)
+
     -- 执行商品配置的额外指令（如果有）
     if targetItem.executeCommands and type(targetItem.executeCommands) == "table" and #targetItem.executeCommands > 0 then
         for _, commandStr in ipairs(targetItem.executeCommands) do

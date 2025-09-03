@@ -436,8 +436,15 @@ function LotteryEventManager.SendItemAcquiredNotification(uin, rewards, poolName
             amount = reward.quantity or 1
         })
     end
-    
+    local CardIcon = require(MainStorage.Code.Common.Icon.card_icon) ---@type CardIcon
+
     -- 发送物品获得通知
+    local itemGetSound = CardIcon.soundResources["物品获得音效"]
+    gg.network_channel:fireClient(uin, {
+        cmd = "PlaySound",
+        soundAssetId = itemGetSound
+    })
+    
     gg.network_channel:fireClient(uin, {
         cmd = EventPlayerConfig.NOTIFY.ITEM_ACQUIRED_NOTIFY,
         data = {

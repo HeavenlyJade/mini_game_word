@@ -23,6 +23,7 @@ function WelfareGui:OnInit(node, config)
     -- 基础节点获取
 
     -- 商城下的所有子节点
+    self.node.Parent.Visible = false
     self.rechargeRebateSection = self:Get("底图/福利/返利", ViewButton) ---@type ViewButton
     self.monthlyCard = self:Get("底图/福利/月卡", ViewButton) ---@type ViewButton
 

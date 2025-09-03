@@ -127,7 +127,8 @@ CardIcon.soundResources = {
     ["翅膀扇动音效3"] = "sandboxId://音效资源/翅膀扇动音效3.ogg",
     ["能量获得音效1"] = "sandboxId://音效资源/能量获得音效1.ogg",
     ["能量获得音效2"] = "sandboxId://音效资源/能量获得音效2.ogg",
-    ["能量获得音效3"] = "sandboxId://音效资源/能量获得音效3.ogg"
+    ["能量获得音效3"] = "sandboxId://音效资源/能量获得音效3.ogg",
+    ["物品获得音效"] = "sandboxId://音效资源/获得物品音效.ogg"
 }
 
 return CardIcon
