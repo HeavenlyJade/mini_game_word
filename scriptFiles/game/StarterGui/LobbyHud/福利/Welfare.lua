@@ -27,7 +27,6 @@ function WelfareGui:OnInit(node, config)
     self.rechargeRebateSection = self:Get("底图/福利/返利", ViewButton) ---@type ViewButton
     self.monthlyCard = self:Get("底图/福利/月卡", ViewButton) ---@type ViewButton
     self.BaseImage = self:Get("底图", ViewComponent) ---@type ViewComponent
-    self.BaseImage:SetVisible(false)
     -- 注册事件
     -- self:RegisterEvents()
     self:RegisterButtonEvents()

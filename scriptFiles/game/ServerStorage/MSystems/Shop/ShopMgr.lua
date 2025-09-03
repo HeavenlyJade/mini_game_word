@@ -683,7 +683,7 @@ function ShopMgr.PushShopDataToClient(uin)
         }
     })
     
-    --gg.log("已向客户端推送商城数据", uin)
+    gg.log("已向客户端推送商城数据", uin,shopData)
     return true
 end
 

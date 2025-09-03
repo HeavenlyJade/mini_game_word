@@ -63,7 +63,9 @@ function RewardBonusType:OnInit(configData)
             ConditionFormula = tierData['条件公式'] or "",
             CostMiniCoin = tierData['消耗迷你币'] or 0,
             Weight = tierData['权重'] or 1,
-            RewardItemList = rewardItemList
+            RewardItemList = rewardItemList,
+            Description = tierData['描述'] or "",
+
         }
         table.insert(self.RewardTierList, rewardTier)
     end

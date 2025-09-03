@@ -39,7 +39,7 @@ function RechargeRebateGui:OnInit(node, config)
     self:InitData()
     
     -- -- 3. 事件注册
-    -- self:RegisterEvents()
+    self:RegisterEvents()
     
     -- -- 4. 按钮点击事件注册
     self:RegisterButtonEvents()
@@ -75,6 +75,7 @@ end
 
 -- 数据初始化
 function RechargeRebateGui:InitData()
+    self.rewardTierNodes = {}
     -- 从配置中获取"累计充值"的奖励配置
     self.rewardBonusConfig = ConfigLoader.GetRewardBonus("累计充值") ---@type RewardBonusType
     
@@ -95,7 +96,7 @@ function RechargeRebateGui:InitData()
         local processBar =  clonedReward["进度条"]
         processBar.FillAmount = 0
 
-
+        description.Title = rewardTier.Description
         local rewardItemList = ViewList.New(clonedReward["物品栏"], self, "奖励等级_" .. i .. "", function(child)
             return ViewComponent.New(child, self, "奖励等级_" .. i .. "/物品栏/" .. child.Name)
         end)
@@ -124,9 +125,74 @@ function RechargeRebateGui:InitData()
         end
         self.rewardList:AppendChild(clonedReward)
 
+        table.insert(self.rewardTierNodes, {
+            node = clonedReward,
+            processBar = processBar,
+            claimButton = claimButton,
+            rewardTierData = rewardTier,
+            description = description
+        })
+
     end
     
     --gg.log(string.format("累计充值奖励配置加载完成，共 %d 个奖励等级", #rewardTierList))
+end
+
+-- 注册事件
+function RechargeRebateGui:RegisterEvents()
+        
+        ClientEventManager.Subscribe(ShopEventConfig.NOTIFY.SHOP_DATA_SYNC, function(data)
+            self:OnShopDataSync(data)
+        end)
+
+end
+
+-- 商城数据同步处理
+function RechargeRebateGui:OnShopDataSync(data)
+	-- 兼容服务端发送结构：{ cmd=..., success=true, data={ shopData=... } }
+	-- 也兼容直接传入 { shopData=... }
+	local payload = data and data.data or data
+	if not payload or not payload.shopData then
+		return
+	end
+
+	local shopData = payload.shopData
+	-- 累计迷你币消费优先使用 totalPurchaseValue，回退到 totalCoinSpent
+	local totalPurchase = shopData.totalPurchaseValue or shopData.totalCoinSpent or 0
+	local claimedTiers = (shopData.preferences and shopData.preferences.claimedRechargeTiers) or {}
+
+	self:UpdateRebateUI(totalPurchase, claimedTiers)
+end
+
+-- 更新累计充值界面的UI
+function RechargeRebateGui:UpdateRebateUI(totalPurchase, claimedTiers)
+    gg.log("totalPurchase",totalPurchase,claimedTiers)
+    self.spendingAmount.node.Title = gg.FormatLargeNumber(totalPurchase)
+    
+
+    for i, tierNode in ipairs(self.rewardTierNodes) do
+        gg.log("tierNode",tierNode)
+        local rewardTier = tierNode.rewardTierData
+        local requiredAmount = rewardTier.CostMiniCoin
+        gg.log("requiredAmount",requiredAmount)
+        -- 更新进度条
+        local progress = 0
+        if requiredAmount and requiredAmount > 0 then
+            progress = math.min((totalPurchase or 0) / requiredAmount, 1)
+        end
+        tierNode.processBar.FillAmount = progress
+        if totalPurchase >= requiredAmount then
+            tierNode.claimButton:SetGray(false)
+            tierNode.claimButton:SetTouchEnable(true, nil)
+        else
+            tierNode.claimButton:SetGray(true)
+            tierNode.claimButton:SetTouchEnable(false, nil)
+        end
+        -- 更新按钮状态
+        tierNode.node["当前消费"].Title = gg.FormatLargeNumber(totalPurchase).."/"..gg.FormatLargeNumber(requiredAmount)
+
+ 
+    end
 end
 
 -- 注册按钮事件
