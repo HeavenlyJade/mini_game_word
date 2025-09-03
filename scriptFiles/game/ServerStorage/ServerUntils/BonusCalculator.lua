@@ -169,29 +169,29 @@ function BonusCalculator.GetOtherStatBonuses(player, statName, otherBonuses, pla
             end
         elseif bonusType == "翅膀" then
             local wingBonuses = BonusManager.GetWingItemBonuses(player)
-            ------gg.log(string.format("[BonusCalculator调试] GetOtherStatBonuses: 处理翅膀类型，目标属性: %s，翅膀加成数据: %s", statName, tostring(wingBonuses)))
+            --------gg.log(string.format("[BonusCalculator调试] GetOtherStatBonuses: 处理翅膀类型，目标属性: %s，翅膀加成数据: %s", statName, tostring(wingBonuses)))
             for itemName, bonusData in pairs(wingBonuses) do
                 local isMatch = bonusData.targetVariable == statName or
                                (not bonusData.targetVariable and bonusData.itemTarget == statName)
-                ------gg.log(string.format("[BonusCalculator调试] 翅膀加成匹配检查: %s, targetVariable: %s, itemTarget: %s, isMatch: %s",
+                --------gg.log(string.format("[BonusCalculator调试] 翅膀加成匹配检查: %s, targetVariable: %s, itemTarget: %s, isMatch: %s",
                  --itemName, tostring(bonusData.targetVariable), tostring(bonusData.itemTarget), tostring(isMatch)))
                 if isMatch then
                     if bonusData.fixed and bonusData.fixed > 0 then
                         totalValue = totalValue + bonusData.fixed
                         table.insert(bonusDescriptions, string.format("翅膀属性加成(%s, +%d)", itemName, bonusData.fixed))
-                        ------gg.log(string.format("[BonusCalculator调试] 添加翅膀固定加成: %s +%d", itemName, bonusData.fixed))
+                        --------gg.log(string.format("[BonusCalculator调试] 添加翅膀固定加成: %s +%d", itemName, bonusData.fixed))
                     end
                     if bonusData.percentage and bonusData.percentage > 0 then
                         local percentageBonus = math.floor(playerStatValue * bonusData.percentage / 100)
                         totalValue = totalValue + percentageBonus
                         table.insert(bonusDescriptions, string.format("翅膀属性加成(%s, +%d%%)", itemName, bonusData.percentage))
-                        ------gg.log(string.format("[BonusCalculator调试] 添加翅膀百分比加成: %s +%d%% (计算值: %d)", itemName, bonusData.percentage, percentageBonus))
+                        --------gg.log(string.format("[BonusCalculator调试] 添加翅膀百分比加成: %s +%d%% (计算值: %d)", itemName, bonusData.percentage, percentageBonus))
                     end
                 end
             end
         end
     end
-
+    --gg.log("其它属性加成", totalValue, bonusDescriptions)
     return totalValue, bonusDescriptions
 end
 
@@ -208,7 +208,7 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
     if not (playerStatBonuses and type(playerStatBonuses) == "table") then
         return totalBonus, bonusDescriptions
     end
-    ------gg.log("playerStatBonuses111121",playerStatBonuses)
+    --------gg.log("playerStatBonuses111121",playerStatBonuses)
 
     for _, bonusItem in ipairs(playerStatBonuses) do
         local bonusStatName = bonusItem["名称"]
@@ -278,10 +278,13 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
                 local addValue = bonusValue * (1 + scalingRate)
                 baseValue = baseValue + addValue
                 table.insert(bonusDescriptions, string.format("属性基础相加(%s, +%s)", bonusStatName, tostring(addValue)))
+            elseif actionType == "仅作引用" then
+                -- 仅作引用：不改变任何数值，只记录当前值供其它加成引用
+                table.insert(bonusDescriptions, string.format("属性仅作引用(%s, 值=%s)", bonusStatName, tostring(bonusValue)))
             end
         end
     end
-
+    --gg.log("玩家属性加成", totalBonus, bonusDescriptions)
     return totalBonus, bonusDescriptions
 end
 
@@ -336,8 +339,8 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
             table.insert(allDescriptions, desc)
         end
 
-        -- gg.log(string.format("玩家属性加成阶段: 基础值 %s → 加成后 %s (增加 %s)",
-        --     tostring(baseValue), tostring(currentValue), tostring(statBonus)))
+        --gg.log(string.format("玩家属性加成阶段: 基础值 %s → 加成后 %s (增加 %s)",
+            -- tostring(baseValue), tostring(currentValue), tostring(statBonus)))
     end
 
     -- 阶段2：计算玩家变量加成（基于属性加成后的值）
@@ -351,7 +354,7 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
             table.insert(allDescriptions, "变量加成")
         end
 
-        -- gg.log(string.format("玩家变量加成阶段: 输入值 %s → 加成后 %s (增加 %s)",tostring(currentValue - variableBonus), tostring(currentValue), tostring(variableBonus)))
+        --gg.log(string.format("玩家变量加成阶段: 输入值 %s → 加成后 %s (增加 %s)",tostring(currentValue - variableBonus), tostring(currentValue), tostring(variableBonus)))
     end
 
     -- 阶段3：计算其他加成（宠物、伙伴等，基于变量加成后的值）
@@ -365,8 +368,8 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
             table.insert(allDescriptions, desc)
         end
 
-        -- gg.log(string.format("其他加成阶段: 输入值 %s → 加成后 %s (增加 %s)",
-        --     tostring(currentValue - otherBonus), tostring(currentValue), tostring(otherBonus)))
+        --gg.log(string.format("其他加成阶段: 输入值 %s → 加成后 %s (增加 %s)",
+            -- tostring(currentValue - otherBonus), tostring(currentValue), tostring(otherBonus)))
     end
 
     local finalValue = currentValue
