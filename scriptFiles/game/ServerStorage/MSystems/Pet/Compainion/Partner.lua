@@ -206,6 +206,15 @@ function Partner:UpgradePartnerStar(slotIndex)
     return self:UpgradeCompanionStar(slotIndex)
 end
 
+---直接设置伙伴星级（不消耗材料）
+---@param slotIndex number 槽位索引
+---@param targetStarLevel number 目标星级
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function Partner:SetPartnerStarLevel(slotIndex, targetStarLevel)
+    return self:SetCompanionStarLevel(slotIndex, targetStarLevel)
+end
+
 ---伙伴学习技能
 ---@param slotIndex number 槽位索引
 ---@param skillId string 技能ID

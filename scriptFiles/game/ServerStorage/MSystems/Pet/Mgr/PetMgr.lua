@@ -149,6 +149,21 @@ function PetMgr.UpgradePetStar(uin, slotIndex)
     return petManager:UpgradePetStar(slotIndex)
 end
 
+---直接设置宠物星级（不消耗材料）
+---@param uin number 玩家ID
+---@param slotIndex number 槽位索引
+---@param targetStarLevel number 目标星级
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function PetMgr.SetPetStarLevel(uin, slotIndex, targetStarLevel)
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        return false, "玩家数据不存在"
+    end
+
+    return petManager:SetPetStarLevel(slotIndex, targetStarLevel)
+end
+
 ---宠物学习技能
 ---@param uin number 玩家ID
 ---@param slotIndex number 槽位索引

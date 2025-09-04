@@ -202,6 +202,15 @@ function Pet:UpgradePetStar(slotIndex)
     return self:UpgradeCompanionStar(slotIndex)
 end
 
+---直接设置宠物星级（不消耗材料）
+---@param slotIndex number 槽位索引
+---@param targetStarLevel number 目标星级
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function Pet:SetPetStarLevel(slotIndex, targetStarLevel)
+    return self:SetCompanionStarLevel(slotIndex, targetStarLevel)
+end
+
 ---宠物学习技能（兼容接口）
 ---@param slotIndex number 槽位索引
 ---@param skillId string 技能ID

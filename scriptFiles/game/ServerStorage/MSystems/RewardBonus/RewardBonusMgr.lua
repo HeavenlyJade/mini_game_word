@@ -91,6 +91,7 @@ end
 ---@param uniqueId string 奖励等级唯一ID
 ---@return boolean 是否成功
 ---@return string|nil 错误信息
+---@return table|nil 奖励物品列表
 function RewardBonusMgr.ClaimTierReward(player, configName, uniqueId)
     if not player or not player.uin then
         return false, "无效玩家"
@@ -127,12 +128,12 @@ function RewardBonusMgr.ClaimTierReward(player, configName, uniqueId)
     
     if giveSuccess then
         -- 立即保存数据
-        RewardBonusMgr.SavePlayerRewardBonusData(uin)
+        RewardBonusMgr.SavePlayerData(uin)
         
         -- 同步数据到客户端
         RewardBonusMgr.SyncDataToClient(player)
         
-        return true, "领取成功"
+        return true, "领取成功", rewardItems
     else
         return false, "奖励发放失败: " .. (giveMessage or "未知错误")
     end

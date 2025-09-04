@@ -83,7 +83,7 @@ function RewardBonusEventManager.HandleClaimTierReward(evt)
     end
     
     -- 领取奖励
-    local success, errorMsg = RewardBonusMgr.ClaimTierReward(player, configName, uniqueId)
+    local success, errorMsg, rewardItems = RewardBonusMgr.ClaimTierReward(player, configName, uniqueId)
     
     if success then
         gg.log("奖励领取成功", player.name, configName, uniqueId)
@@ -93,7 +93,7 @@ function RewardBonusEventManager.HandleClaimTierReward(evt)
         RewardBonusEventManager.SyncPlayerRewardData(player.uin)
         
         -- 发送奖励获得通知
-        RewardBonusEventManager.SendRewardAcquiredNotification(player.uin, configName, uniqueId, "奖励加成")
+        RewardBonusEventManager.SendRewardAcquiredNotification(player.uin, configName, uniqueId, "奖励加成", rewardItems)
         
     else
         gg.log("奖励领取失败", player.name, configName, uniqueId, errorMsg)
@@ -129,16 +129,72 @@ end
 ---@param configName string 配置名称
 ---@param uniqueId string 奖励等级唯一ID
 ---@param source string 来源描述
-function RewardBonusEventManager.SendRewardAcquiredNotification(uin, configName, uniqueId, source)
+---@param rewardItems table|nil 奖励物品列表
+function RewardBonusEventManager.SendRewardAcquiredNotification(uin, configName, uniqueId, source, rewardItems)
     -- 发送奖励已领取通知
     gg.network_channel:fireClient(uin, {
         cmd = RewardBonusEvent.NOTIFY.REWARD_CLAIMED,
         configName = configName,
         uniqueId = uniqueId,
-        reward = {} -- 具体奖励信息由客户端从数据同步中获取
+        reward = rewardItems or {} -- 传递具体的奖励信息
     })
     
-    -- 播放物品获得音效
+    -- 发送物品获得通知给NoticeGui（参考ShopEventManager实现）
+    if rewardItems and #rewardItems > 0 then
+        RewardBonusEventManager.SendRewardItemAcquiredNotification(uin, rewardItems, source or "奖励加成")
+    end
+    
+    gg.log("已发送奖励获得通知给玩家", uin, configName, uniqueId)
+end
+
+-- 发送奖励物品获得通知给NoticeGui
+---@param uin number 玩家UIN
+---@param rewards table[] 奖励列表
+---@param source string 来源说明
+function RewardBonusEventManager.SendRewardItemAcquiredNotification(uin, rewards, source)
+    if not rewards or #rewards == 0 then
+        return
+    end
+    
+    -- 转换奖励数据格式为NoticeGui需要的格式
+    local noticeRewards = {}
+    for _, reward in ipairs(rewards) do
+        -- 奖励加成奖励配置结构：{itemType="物品", itemName="具体名称", amount=1, stars=1}
+        local itemType = reward.itemType or "物品"
+        local itemName = reward.itemName or "未知物品"
+        
+        -- 确保itemType是中文格式
+        if itemType == "pet" then
+            itemType = "宠物"
+        elseif itemType == "partner" then
+            itemType = "伙伴"  
+        elseif itemType == "wing" then
+            itemType = "翅膀"
+        elseif itemType == "trail" then
+            itemType = "尾迹"
+        elseif itemType == "item" then
+            itemType = "物品"
+        end
+        
+        table.insert(noticeRewards, {
+            itemType = itemType,
+            itemName = itemName,
+            amount = reward.amount or 1,
+            stars = reward.stars or 1 -- 添加星级信息
+        })
+    end
+    
+    -- 发送物品获得通知
+    gg.network_channel:fireClient(uin, {
+        cmd = EventPlayerConfig.NOTIFY.ITEM_ACQUIRED_NOTIFY,
+        data = {
+            rewards = noticeRewards,
+            source = source,
+            message = string.format("恭喜通过%s获得了以下物品！", source or "奖励加成")
+        }
+    })
+    
+    -- 播放物品获得音效（客户端 SoundPool 监听 PlaySound 事件）
     local itemGetSound = CardIcon.soundResources["物品获得音效"]
     if itemGetSound then
         gg.network_channel:fireClient(uin, {
@@ -147,7 +203,7 @@ function RewardBonusEventManager.SendRewardAcquiredNotification(uin, configName,
         })
     end
     
-    gg.log("已发送奖励获得通知给玩家", uin, configName, uniqueId)
+    gg.log("已发送奖励物品获得通知给玩家", uin, "奖励数量:", #noticeRewards)
 end
 
 

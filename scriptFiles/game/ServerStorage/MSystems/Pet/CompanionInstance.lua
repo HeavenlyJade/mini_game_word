@@ -420,6 +420,27 @@ function CompanionInstance:DoUpgradeStar()
     return true, nil
 end
 
+---直接设置星级
+---@param targetStarLevel number 目标星级
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function CompanionInstance:SetStarLevel(targetStarLevel)
+    if not targetStarLevel or targetStarLevel < 1 then
+        return false, "无效的星级"
+    end
+    
+    local currentStarLevel = self:GetStarLevel()
+    if targetStarLevel == currentStarLevel then
+        return true, nil -- 已经是目标星级
+    end
+    
+    -- 直接设置星级
+    self.companionData.starLevel = targetStarLevel
+    self:RefreshAttributeCache()
+    
+    return true, nil
+end
+
 ---是否已学会指定技能
 ---@param skillId string 技能ID
 ---@return boolean 是否已学会

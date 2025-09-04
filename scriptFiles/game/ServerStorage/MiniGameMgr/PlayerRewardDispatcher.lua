@@ -70,6 +70,7 @@ local function dispatchSingleReward(player, reward)
     local itemType = reward.itemType
     local itemName = reward.itemName
     local amount = reward.amount or 1
+    local stars = reward.stars or 1
     
     if itemType == RewardType.ITEM then
         -- 发放背包物品
@@ -97,8 +98,13 @@ local function dispatchSingleReward(player, reward)
         if not success then
             return false, string.format("添加宠物失败：%s", itemName)
         end
+
+        -- 如果奖励中有星级信息，直接设置宠物星级
+        if stars > 1 and actualSlot then
+            PetMgr.SetPetStarLevel(player.uin, actualSlot, reward.stars)
+        end
         
-        --gg.log("宠物发放成功", player.name, itemName, "槽位", actualSlot)
+        --gg.log("宠物发放成功", player.name, itemName, "槽位", actualSlot, "星级", reward.stars or 1)
         return true
         
     elseif itemType == RewardType.PARTNER then
@@ -112,8 +118,13 @@ local function dispatchSingleReward(player, reward)
         if not success then
             return false, string.format("添加伙伴失败：%s", itemName)
         end
+
+        -- 如果奖励中有星级信息，直接设置伙伴星级
+        if reward.stars and reward.stars > 1 and actualSlot then
+            PartnerMgr.SetPartnerStarLevel(player.uin, actualSlot, reward.stars)
+        end
         
-        --gg.log("伙伴发放成功", player.name, itemName, "槽位", actualSlot)
+        --gg.log("伙伴发放成功", player.name, itemName, "槽位", actualSlot, "星级", reward.stars or 1)
         return true
         
     elseif itemType == RewardType.WING then
@@ -127,8 +138,13 @@ local function dispatchSingleReward(player, reward)
         if not success then
             return false, string.format("添加翅膀失败：%s", itemName)
         end
+
+        -- 如果奖励中有星级信息，直接设置翅膀星级
+        if reward.stars and reward.stars > 1 and actualSlot then
+            WingMgr.SetWingStarLevel(player.uin, actualSlot, reward.stars)
+        end
         
-        --gg.log("翅膀发放成功", player.name, itemName, "槽位", actualSlot)
+        --gg.log("翅膀发放成功", player.name, itemName, "槽位", actualSlot, "星级", reward.stars or 1)
         return true
         
     elseif itemType == RewardType.TRAIL then

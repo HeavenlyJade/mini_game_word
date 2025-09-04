@@ -209,6 +209,21 @@ function PartnerMgr.UpgradePartnerStar(uin, slotIndex)
     return partnerManager:UpgradePartnerStar(slotIndex)
 end
 
+---直接设置伙伴星级（不消耗材料）
+---@param uin number 玩家ID
+---@param slotIndex number 槽位索引
+---@param targetStarLevel number 目标星级
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function PartnerMgr.SetPartnerStarLevel(uin, slotIndex, targetStarLevel)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if not partnerManager then
+        return false, "玩家数据不存在"
+    end
+
+    return partnerManager:SetPartnerStarLevel(slotIndex, targetStarLevel)
+end
+
 ---伙伴学习技能
 ---@param uin number 玩家ID
 ---@param slotIndex number 槽位索引

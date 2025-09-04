@@ -210,6 +210,21 @@ function WingMgr.UpgradeWingStar(uin, slotIndex)
     return wingManager:UpgradeWingStar(slotIndex)
 end
 
+---直接设置翅膀星级（不消耗材料）
+---@param uin number 玩家ID
+---@param slotIndex number 槽位索引
+---@param targetStarLevel number 目标星级
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function WingMgr.SetWingStarLevel(uin, slotIndex, targetStarLevel)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if not wingManager then
+        return false, "玩家数据不存在"
+    end
+
+    return wingManager:SetWingStarLevel(slotIndex, targetStarLevel)
+end
+
 ---翅膀学习技能
 ---@param uin number 玩家ID
 ---@param slotIndex number 槽位索引

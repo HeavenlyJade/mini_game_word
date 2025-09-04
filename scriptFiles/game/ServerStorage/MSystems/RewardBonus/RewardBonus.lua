@@ -214,12 +214,33 @@ function RewardBonus:ClaimTierReward(configName, uniqueId)
         isTier = true
     }
 
-    -- 返回奖励物品
-    local rewardItems = tier.RewardItemList
+    -- 转换奖励物品格式为PlayerRewardDispatcher期望的格式
+    local convertedRewards = {}
+    for _, rewardItem in ipairs(tier.RewardItemList) do
+                local convertedReward = {
+            itemType = rewardItem.RewardType,
+            amount = rewardItem.Quantity,
+            stars = rewardItem.Stars or 1
+        }
+        
+        -- 根据奖励类型设置不同的字段
+        if rewardItem.RewardType == "物品" then
+            convertedReward.itemName = rewardItem.Item
+        elseif rewardItem.RewardType == "宠物" then
+            convertedReward.itemName = rewardItem.PetConfig
+        elseif rewardItem.RewardType == "伙伴" then
+            convertedReward.itemName = rewardItem.PartnerConfig
+        elseif rewardItem.RewardType == "翅膀" then
+            convertedReward.itemName = rewardItem.WingConfig
+        end
+        
+        table.insert(convertedRewards, convertedReward)
+    end
     
-    gg.log("领取奖励等级成功", self.uin, configName, uniqueId, "奖励数量:", #rewardItems)
+    gg.log("领取奖励等级成功", self.uin, configName, uniqueId, "奖励数量:", #convertedRewards)
+    gg.log("转换后的奖励格式:", convertedRewards)
     
-    return true, "领取成功", rewardItems
+    return true, "领取成功", convertedRewards
 end
 
 
