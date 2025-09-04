@@ -3,11 +3,12 @@
 -- 使用新的云端多配置数据结构，舍弃旧版数据兼容
 
 local MainStorage = game:GetService("MainStorage")
+local ServerStorage = game:GetService("ServerStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local RewardBonusType = require(MainStorage.Code.Common.TypeConfig.RewardBonusType) ---@type RewardBonusType
-local RewardBonusCloudDataMgr = require(game:GetService("ServerStorage").MSystems.RewardBonus.RewardBonusCloudDataMgr) ---@type RewardBonusCloudDataMgr
+local RewardBonusCloudDataMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusCloudDataMgr) ---@type RewardBonusCloudDataMgr
 
 ---@class RewardBonus : Class
 ---@field uin number 玩家ID
@@ -18,42 +19,14 @@ local RewardBonus = ClassMgr.Class("RewardBonus")
 ---@param uin number 玩家ID
 ---@param cloudData RewardBonusCloudData|nil 云端数据
 function RewardBonus:OnInit(uin, cloudData)
-    if not uin then
-        gg.log("错误：RewardBonus初始化时玩家ID无效")
-        return
-    end
-    
     self.uin = uin
-    
     -- 使用传入的云端数据或加载数据
-    if cloudData then
-        self.cloudData = cloudData
-    else
-        local ret, data = RewardBonusCloudDataMgr.LoadPlayerData(uin)
-        if ret == 0 then
-            self.cloudData = data
-        else
-            gg.log("错误：加载玩家奖励加成数据失败", uin)
-            self.cloudData = RewardBonusCloudDataMgr.CreateDefaultData()
-        end
-    end
-    
-    gg.log("RewardBonus初始化完成", uin, "配置数量:", self:GetConfigCount())
+    if not cloudData then
+        return nil
+    end    self.cloudData = cloudData
+
 end
 
---- 获取配置数量
----@return number 配置数量
-function RewardBonus:GetConfigCount()
-    if not self.cloudData or not self.cloudData.configs then
-        return 0
-    end
-    
-    local count = 0
-    for _ in pairs(self.cloudData.configs) do
-        count = count + 1
-    end
-    return count
-end
 
 --- 获取所有配置名称
 ---@return string[] 配置名称列表
@@ -100,14 +73,8 @@ end
 
 --- 获取指定配置的可领取等级列表
 ---@param configName string 配置名称
----@param playerProgress table 玩家进度数据
 ---@return number[] 可领取的等级索引列表
-function RewardBonus:GetAvailableTiers(configName, playerProgress)
-    if not playerProgress then
-        gg.log("错误：玩家进度数据为空", self.uin, configName)
-        return {}
-    end
-
+function RewardBonus:GetAvailableTiers(configName)
     local config = ConfigLoader.GetRewardBonus(configName)
     if not config then
         gg.log("错误：奖励配置不存在", configName)
@@ -122,7 +89,7 @@ function RewardBonus:GetAvailableTiers(configName, playerProgress)
         -- 检查是否已领取
         if not self:IsTierClaimed(configName, tierIndex) then
             -- 检查条件是否满足
-            if self:CheckTierCondition(tier.ConditionFormula, playerProgress, configName) then
+            if self:CheckTierCondition(tier.ConditionFormula, configName) then
                 table.insert(availableTiers, tierIndex)
             end
         end
@@ -133,21 +100,29 @@ end
 
 --- 检查等级条件是否满足
 ---@param conditionFormula string 条件公式
----@param playerProgress table 玩家进度数据
 ---@param configName string|nil 配置名称（用于获取计算方式）
 ---@return boolean 是否满足条件
-function RewardBonus:CheckTierCondition(conditionFormula, playerProgress, configName)
+function RewardBonus:CheckTierCondition(conditionFormula, configName)
+    local ShopMgr = require(game:GetService("ServerStorage").MSystems.Shop.ShopMgr) ---@type ShopMgr
+
     if not conditionFormula or conditionFormula == "" then
-        return true -- 无条件限制，默认通过
+        return false -- 
     end
 
     -- 如果提供了配置名称，检查计算方式
     if configName then
         local config = ConfigLoader.GetRewardBonus(configName)
         if config and config:GetCalculationMethod() == "迷你币" then
+            -- 获取玩家商城数据
+            local shopData = ShopMgr.GetPlayerShop(self.uin)
+            if not shopData then
+                gg.log("错误：无法获取玩家商城数据", self.uin)
+                return false
+            end
+            
             -- 使用迷你币验证方式
-            local consumedMiniCoin = playerProgress.consumedMiniCoin or 0
-            return config:ValidateMiniCoinConsumption(playerProgress, consumedMiniCoin)
+            local consumedMiniCoin = shopData.totalPurchaseValue or 0
+            return config:ValidateMiniCoinConsumption({}, consumedMiniCoin)
         end
     end
 
@@ -157,7 +132,7 @@ function RewardBonus:CheckTierCondition(conditionFormula, playerProgress, config
     -- 使用RewardBonusType的条件检测方法
     -- 这里需要从缓存中获取任一配置来调用方法（所有配置的检测逻辑相同）
     for _, config in pairs(self.configCache or {}) do
-        return config:CheckTierCondition(tier, playerProgress, nil)
+        return config:CheckTierCondition(tier, {}, nil)
     end
     
     -- 如果缓存为空，回退到简单检查
@@ -168,34 +143,35 @@ end
 --- 领取指定等级的奖励
 ---@param configName string 配置名称
 ---@param tierIndex number 等级索引
----@param playerProgress table 玩家进度数据
----@return RewardItem[]|nil, string|nil 奖励列表, 错误信息
-function RewardBonus:ClaimTierReward(configName, tierIndex, playerProgress)
+---@return boolean 是否成功
+---@return string 结果消息
+---@return table|nil 奖励列表
+function RewardBonus:ClaimTierReward(configName, tierIndex)
     -- 参数验证
-    if not configName or not tierIndex or not playerProgress then
-        return nil, "参数无效"
+    if not configName or not tierIndex then
+        return false, "参数无效", nil
     end
 
     -- 检查配置是否存在
     if not self:HasConfig(configName) then
-        return nil, "配置不存在"
+        return false, "配置不存在", nil
     end
 
     -- 检查是否已领取
     if self:IsTierClaimed(configName, tierIndex) then
-        return nil, "奖励已被领取"
+        return false, "奖励已被领取", nil
     end
 
     local config = ConfigLoader.GetRewardBonus(configName)
     if not config or not config.RewardTierList[tierIndex] then
-        return nil, "等级配置不存在"
+        return false, "等级配置不存在", nil
     end
 
     local tier = config.RewardTierList[tierIndex]
 
     -- 检查条件是否满足
-    if not self:CheckTierCondition(tier.ConditionFormula, playerProgress, configName) then
-        return nil, "条件不满足"
+    if not self:CheckTierCondition(tier.ConditionFormula, configName) then
+        return false, "条件不满足", nil
     end
 
     -- 标记为已领取
@@ -213,29 +189,20 @@ function RewardBonus:ClaimTierReward(configName, tierIndex, playerProgress)
     
     gg.log("领取奖励等级成功", self.uin, configName, tierIndex, "奖励数量:", #rewardItems)
     
-    return rewardItems, nil
+    return true, "领取成功", rewardItems
 end
 
---- 根据权重选择奖励
----@param rewardItemList RewardItem[] 奖励列表
----@param weight number 权重
----@return RewardItem[] 选中的奖励
-function RewardBonus:SelectRewardsByWeight(rewardItemList, weight)
-    -- 简化实现：返回所有奖励
-    return rewardItemList or {}
-end
 
 --- 获取指定配置的状态信息
 ---@param configName string 配置名称
----@param playerProgress table 玩家进度数据
 ---@return table|nil 状态信息
-function RewardBonus:GetConfigStatus(configName, playerProgress)
+function RewardBonus:GetConfigStatus(configName)
     if not self:HasConfig(configName) then
         return nil
     end
 
     local claimedTiers = self:GetClaimedTiers(configName)
-    local availableTiers = self:GetAvailableTiers(configName, playerProgress)
+    local availableTiers = self:GetAvailableTiers(configName)
 
     -- 统计已领取数量
     local claimedCount = 0
@@ -253,14 +220,13 @@ function RewardBonus:GetConfigStatus(configName, playerProgress)
 end
 
 --- 获取所有配置的状态概览
----@param playerProgress table 玩家进度数据
 ---@return table 状态概览
-function RewardBonus:GetAllConfigsStatus(playerProgress)
+function RewardBonus:GetAllConfigsStatus()
     local allStatus = {}
     local totalAvailableCount = 0
 
     for configName in pairs(self.cloudData.configs or {}) do
-        local status = self:GetConfigStatus(configName, playerProgress)
+        local status = self:GetConfigStatus(configName)
         if status then
             allStatus[configName] = status
             totalAvailableCount = totalAvailableCount + status.availableTierCount
@@ -286,32 +252,8 @@ function RewardBonus:ResetConfig(configName)
     gg.log("重置配置数据", self.uin, configName)
 end
 
---- 添加新配置（自动检测）
-function RewardBonus:UpdateConfigsFromLoader()
-    local allConfigs = ConfigLoader.GetAllRewardBonuses()
-    if not allConfigs then
-        return
-    end
 
-    local addedCount = 0
-    for configName in pairs(allConfigs) do
-        if not self:HasConfig(configName) then
-            self.cloudData.configs[configName] = RewardBonusCloudDataMgr.CreateDefaultConfigData(configName)
-            addedCount = addedCount + 1
-            gg.log("自动添加新配置", self.uin, configName)
-        end
-    end
 
-    if addedCount > 0 then
-        gg.log("检测到新配置，已自动添加", self.uin, addedCount)
-    end
-end
-
---- 保存数据到云端
----@return boolean 是否保存成功
-function RewardBonus:SaveToCloud()
-    return RewardBonusCloudDataMgr.SavePlayerData(self.uin, self.cloudData)
-end
 
 --- 获取云端数据引用（用于管理器保存）
 ---@return RewardBonusCloudData 云端数据
@@ -319,53 +261,24 @@ function RewardBonus:GetCloudData()
     return self.cloudData
 end
 
---- 获取缓存的配置数量
----@return number 缓存配置数量
-function RewardBonus:GetCachedConfigCount()
-    if not self.configCache then
-        return 0
-    end
-    
-    local count = 0
-    for _ in pairs(self.configCache) do
-        count = count + 1
-    end
-    return count
-end
 
---- 获取配置信息
----@param configName string 配置名称
----@return table|nil 配置信息
-function RewardBonus:GetConfigInfo(configName)
-    local config = ConfigLoader.GetRewardBonus(configName)
-    if not config then
-        return nil
-    end
-    
-    return {
-        tierCount = #config.RewardTierList,
-        calculationMethod = config:GetCalculationMethod(),
-        rewardType = config:GetRewardType()
-    }
-end
 
 --- 调试信息：打印所有配置状态
----@param playerProgress table 玩家进度数据
-function RewardBonus:DebugPrintStatus(playerProgress)
+function RewardBonus:DebugPrintStatus()
     gg.log("=== RewardBonus调试信息 ===", self.uin)
     gg.log("云端配置数量:", self:GetConfigCount())
     gg.log("缓存配置数量:", self:GetCachedConfigCount())
     
     -- 打印缓存的配置名称
     local cachedNames = {}
-    for configName in pairs(self.configCache) do
+    for configName in pairs(self.configCache or {}) do
         table.insert(cachedNames, configName)
     end
     gg.log("缓存的配置:", table.concat(cachedNames, ", "))
     
     -- 打印各配置状态
     for configName in pairs(self.cloudData.configs or {}) do
-        local status = self:GetConfigStatus(configName, playerProgress)
+        local status = self:GetConfigStatus(configName)
         if status then
             local configInfo = self:GetConfigInfo(configName)
             gg.log(string.format("配置[%s]: 已领取%d个, 可领取%d个, 总等级%d个", 
