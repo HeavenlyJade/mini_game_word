@@ -124,7 +124,7 @@ end
 ---@return boolean 是否满足条件
 function RewardBonusType:CheckTierCondition(tier, playerData, externalContext)
     if not tier.ConditionFormula or tier.ConditionFormula == "" then
-        return true -- 无条件限制，默认通过
+        return false -- 无条件限制，默认通过
     end
     
     -- 使用gg.eval计算条件公式
@@ -316,13 +316,10 @@ function RewardBonusType:ValidateMiniCoinConsumption(playerData, consumedMiniCoi
         return false
     end
     
-    -- 检查是否有任何奖励等级满足条件
+    -- 检查是否有任何奖励等级满足消耗迷你币条件
     for _, tier in ipairs(self.RewardTierList) do
         if consumedMiniCoin >= tier.CostMiniCoin then
-            -- 如果满足消耗条件，还需要检查其他条件
-            if self:CheckTierCondition(tier, playerData, {consumedMiniCoin = consumedMiniCoin}) then
-                return true
-            end
+            return true
         end
     end
     
@@ -347,10 +344,7 @@ function RewardBonusType:GetAvailableRewardTiers(playerData, consumedMiniCoin)
     
     for _, tier in ipairs(self.RewardTierList) do
         if consumedMiniCoin >= tier.CostMiniCoin then
-            -- 检查其他条件是否满足
-            if self:CheckTierCondition(tier, playerData, {consumedMiniCoin = consumedMiniCoin}) then
-                table.insert(availableTiers, tier)
-            end
+            table.insert(availableTiers, tier)
         end
     end
     

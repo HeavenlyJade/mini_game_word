@@ -122,7 +122,7 @@ function RewardBonus:GetAvailableTiers(configName, playerProgress)
         -- 检查是否已领取
         if not self:IsTierClaimed(configName, tierIndex) then
             -- 检查条件是否满足
-            if self:CheckTierCondition(tier.ConditionFormula, playerProgress) then
+            if self:CheckTierCondition(tier.ConditionFormula, playerProgress, configName) then
                 table.insert(availableTiers, tierIndex)
             end
         end
@@ -134,10 +134,21 @@ end
 --- 检查等级条件是否满足
 ---@param conditionFormula string 条件公式
 ---@param playerProgress table 玩家进度数据
+---@param configName string|nil 配置名称（用于获取计算方式）
 ---@return boolean 是否满足条件
-function RewardBonus:CheckTierCondition(conditionFormula, playerProgress)
+function RewardBonus:CheckTierCondition(conditionFormula, playerProgress, configName)
     if not conditionFormula or conditionFormula == "" then
         return true -- 无条件限制，默认通过
+    end
+
+    -- 如果提供了配置名称，检查计算方式
+    if configName then
+        local config = ConfigLoader.GetRewardBonus(configName)
+        if config and config:GetCalculationMethod() == "迷你币" then
+            -- 使用迷你币验证方式
+            local consumedMiniCoin = playerProgress.consumedMiniCoin or 0
+            return config:ValidateMiniCoinConsumption(playerProgress, consumedMiniCoin)
+        end
     end
 
     -- 构造伪等级对象用于条件检查
@@ -145,7 +156,7 @@ function RewardBonus:CheckTierCondition(conditionFormula, playerProgress)
     
     -- 使用RewardBonusType的条件检测方法
     -- 这里需要从缓存中获取任一配置来调用方法（所有配置的检测逻辑相同）
-    for _, config in pairs(self.configCache) do
+    for _, config in pairs(self.configCache or {}) do
         return config:CheckTierCondition(tier, playerProgress, nil)
     end
     
@@ -183,7 +194,7 @@ function RewardBonus:ClaimTierReward(configName, tierIndex, playerProgress)
     local tier = config.RewardTierList[tierIndex]
 
     -- 检查条件是否满足
-    if not self:CheckTierCondition(tier.ConditionFormula, playerProgress) then
+    if not self:CheckTierCondition(tier.ConditionFormula, playerProgress, configName) then
         return nil, "条件不满足"
     end
 
@@ -306,6 +317,36 @@ end
 ---@return RewardBonusCloudData 云端数据
 function RewardBonus:GetCloudData()
     return self.cloudData
+end
+
+--- 获取缓存的配置数量
+---@return number 缓存配置数量
+function RewardBonus:GetCachedConfigCount()
+    if not self.configCache then
+        return 0
+    end
+    
+    local count = 0
+    for _ in pairs(self.configCache) do
+        count = count + 1
+    end
+    return count
+end
+
+--- 获取配置信息
+---@param configName string 配置名称
+---@return table|nil 配置信息
+function RewardBonus:GetConfigInfo(configName)
+    local config = ConfigLoader.GetRewardBonus(configName)
+    if not config then
+        return nil
+    end
+    
+    return {
+        tierCount = #config.RewardTierList,
+        calculationMethod = config:GetCalculationMethod(),
+        rewardType = config:GetRewardType()
+    }
 end
 
 --- 调试信息：打印所有配置状态
