@@ -19,6 +19,7 @@ local CardIcon = require(MainStorage.Code.Common.Icon.card_icon) ---@type CardIc
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local ShopEventConfig = require(MainStorage.Code.Event.EventShop) ---@type ShopEventConfig
 local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
+local RewardBonusEvent = require(MainStorage.Code.Event.RewardBonusEvent) ---@type RewardBonusEvent
 
 -- UI配置
 local uiConfig = {
@@ -44,6 +45,8 @@ function RechargeRebateGui:OnInit(node, config)
     -- -- 4. 按钮点击事件注册
     self:RegisterButtonEvents()
     
+    -- 5. 请求初始数据
+    self:RequestInitialData()
     
     ----gg.log("RechargeRebateGui 累计充值界面初始化完成")
 end
@@ -130,7 +133,9 @@ function RechargeRebateGui:InitData()
             processBar = processBar,
             claimButton = claimButton,
             rewardTierData = rewardTier,
-            description = description
+            description = description,
+            uniqueId = rewardTier.UniqueId,
+            isClaimed = false
         })
 
     end
@@ -143,6 +148,11 @@ function RechargeRebateGui:RegisterEvents()
         
         ClientEventManager.Subscribe(ShopEventConfig.NOTIFY.SHOP_DATA_SYNC, function(data)
             self:OnShopDataSync(data)
+        end)
+
+        -- 注册奖励加成数据同步事件
+        ClientEventManager.Subscribe(RewardBonusEvent.NOTIFY.DATA_SYNC, function(data)
+            self:OnRewardBonusDataSync(data)
         end)
 
 end
@@ -164,6 +174,29 @@ function RechargeRebateGui:OnShopDataSync(data)
 	self:UpdateRebateUI(totalPurchase, claimedTiers)
 end
 
+-- 奖励加成数据同步处理
+function RechargeRebateGui:OnRewardBonusDataSync(data)
+    if not data or not data.configs then
+        return
+    end
+
+    local configData = data.configs["累计充值"]
+    if not configData then
+        return
+    end
+
+    -- 更新已领取状态
+    for _, tierNode in ipairs(self.rewardTierNodes) do
+        local uniqueId = tierNode.uniqueId
+        if uniqueId and configData.claimedTiers and configData.claimedTiers[uniqueId] then
+            tierNode.isClaimed = true
+            tierNode.claimButton:SetGray(true)
+            tierNode.claimButton:SetTouchEnable(false, nil)
+            tierNode.node["领取"].Title = "已领取"
+        end
+    end
+end
+
 -- 更新累计充值界面的UI
 function RechargeRebateGui:UpdateRebateUI(totalPurchase, claimedTiers)
     gg.log("totalPurchase",totalPurchase,claimedTiers)
@@ -181,13 +214,19 @@ function RechargeRebateGui:UpdateRebateUI(totalPurchase, claimedTiers)
             progress = math.min((totalPurchase or 0) / requiredAmount, 1)
         end
         tierNode.processBar.FillAmount = progress
-        if totalPurchase >= requiredAmount then
+        
+        -- 检查是否已领取
+        if tierNode.isClaimed then
+            tierNode.claimButton:SetGray(true)
+            tierNode.claimButton:SetTouchEnable(false, nil)
+        elseif totalPurchase >= requiredAmount then
             tierNode.claimButton:SetGray(false)
             tierNode.claimButton:SetTouchEnable(true, nil)
         else
             tierNode.claimButton:SetGray(true)
             tierNode.claimButton:SetTouchEnable(false, nil)
         end
+        
         -- 更新按钮状态
         tierNode.node["当前消费"].Title = gg.FormatLargeNumber(totalPurchase).."/"..gg.FormatLargeNumber(requiredAmount)
 
@@ -246,8 +285,36 @@ end
 
 -- 奖励槽位点击事件
 function RechargeRebateGui:OnRewardSlotClick(index, rewardTier)
-    --gg.log(string.format("点击奖励槽位 %d，消耗迷你币：%d", index, rewardTier.CostMiniCoin))
-    -- TODO: 实现奖励领取逻辑
+    gg.log(string.format("点击奖励槽位 %d，消耗迷你币：%d", index, rewardTier.CostMiniCoin))
+    
+    -- 检查是否已领取
+    local tierNode = self.rewardTierNodes[index]
+    if not tierNode or tierNode.isClaimed then
+        gg.log("奖励已领取或不存在")
+        return
+    end
+    
+    -- 发送领取请求到服务端
+    gg.network_channel:fireServer({
+        cmd = RewardBonusEvent.REQUEST.CLAIM_TIER_REWARD,
+        args = {
+            configName = "累计充值",
+            uniqueId = rewardTier.UniqueId
+        }
+    })
+    
+    gg.log("发送奖励领取请求", rewardTier.UniqueId)
+end
+
+-- 请求初始数据
+function RechargeRebateGui:RequestInitialData()
+    -- 请求奖励加成数据
+    gg.network_channel:fireServer({
+        cmd = RewardBonusEvent.REQUEST.GET_REWARD_BONUS_DATA,
+        args = {}
+    })
+    
+    gg.log("请求奖励加成初始数据")
 end
 
 return RechargeRebateGui.New(script.Parent, uiConfig)

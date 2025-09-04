@@ -63,17 +63,17 @@ end
 
 --- 检查等级是否已被领取
 ---@param configName string 配置名称
----@param tierIndex number 等级索引
+---@param uniqueId string 奖励等级唯一ID
 ---@return boolean 是否已领取
-function RewardBonus:IsTierClaimed(configName, tierIndex)
+function RewardBonus:IsTierClaimed(configName, uniqueId)
     local claimedTiers = self:GetClaimedTiers(configName)
-    local claimed = claimedTiers[tierIndex]
+    local claimed = claimedTiers[uniqueId]
     return claimed and claimed.isTier == true
 end
 
 --- 获取指定配置的可领取等级列表
 ---@param configName string 配置名称
----@return number[] 可领取的等级索引列表
+---@return string[] 可领取的等级唯一ID列表
 function RewardBonus:GetAvailableTiers(configName)
     local config = ConfigLoader.GetRewardBonus(configName)
     if not config then
@@ -85,12 +85,12 @@ function RewardBonus:GetAvailableTiers(configName)
     local claimedTiers = self:GetClaimedTiers(configName)
 
     -- 遍历所有奖励等级
-    for tierIndex, tier in ipairs(config.RewardTierList) do
+    for uniqueId, tier in pairs(config:GetRewardTierMap()) do
         -- 检查是否已领取
-        if not self:IsTierClaimed(configName, tierIndex) then
+        if not self:IsTierClaimed(configName, uniqueId) then
             -- 检查条件是否满足
             if self:CheckTierCondition(tier.ConditionFormula, configName) then
-                table.insert(availableTiers, tierIndex)
+                table.insert(availableTiers, uniqueId)
             end
         end
     end
@@ -142,13 +142,13 @@ end
 
 --- 领取指定等级的奖励
 ---@param configName string 配置名称
----@param tierIndex number 等级索引
+---@param uniqueId string 奖励等级唯一ID
 ---@return boolean 是否成功
 ---@return string 结果消息
 ---@return table|nil 奖励列表
-function RewardBonus:ClaimTierReward(configName, tierIndex)
+function RewardBonus:ClaimTierReward(configName, uniqueId)
     -- 参数验证
-    if not configName or not tierIndex then
+    if not configName or not uniqueId then
         return false, "参数无效", nil
     end
 
@@ -158,16 +158,19 @@ function RewardBonus:ClaimTierReward(configName, tierIndex)
     end
 
     -- 检查是否已领取
-    if self:IsTierClaimed(configName, tierIndex) then
+    if self:IsTierClaimed(configName, uniqueId) then
         return false, "奖励已被领取", nil
     end
 
     local config = ConfigLoader.GetRewardBonus(configName)
-    if not config or not config.RewardTierList[tierIndex] then
-        return false, "等级配置不存在", nil
+    if not config then
+        return false, "配置不存在", nil
     end
 
-    local tier = config.RewardTierList[tierIndex]
+    local tier = config:GetRewardTierById(uniqueId)
+    if not tier then
+        return false, "等级配置不存在", nil
+    end
 
     -- 检查条件是否满足
     if not self:CheckTierCondition(tier.ConditionFormula, configName) then
@@ -179,15 +182,15 @@ function RewardBonus:ClaimTierReward(configName, tierIndex)
         self.cloudData.configs[configName] = RewardBonusCloudDataMgr.CreateDefaultConfigData(configName)
     end
     
-    self.cloudData.configs[configName].claimedTiers[tierIndex] = {
+    self.cloudData.configs[configName].claimedTiers[uniqueId] = {
         collectionTime = gg.GetTimeStamp(),
         isTier = true
     }
 
     -- 返回奖励物品
-    local rewardItems = self:SelectRewardsByWeight(tier.RewardItemList, tier.Weight)
+    local rewardItems = tier.RewardItemList
     
-    gg.log("领取奖励等级成功", self.uin, configName, tierIndex, "奖励数量:", #rewardItems)
+    gg.log("领取奖励等级成功", self.uin, configName, uniqueId, "奖励数量:", #rewardItems)
     
     return true, "领取成功", rewardItems
 end

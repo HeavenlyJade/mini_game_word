@@ -45,6 +45,7 @@ function Reward:OnInit(uin, data)
     self:LoadOnlineConfig()
 end
 
+
 --- 加载在线奖励配置
 function Reward:LoadOnlineConfig()
     local RewardConfig = require(MainStorage.Code.Common.Config.RewardConfig)

@@ -15,6 +15,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field Star number 星级
 
 ---@class RewardTier
+---@field UniqueId string 唯一ID
 ---@field ConditionFormula string 条件公式
 ---@field CostMiniCoin number 消耗迷你币数量
 ---@field Weight number 权重
@@ -26,7 +27,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field RewardType string 奖励类型
 ---@field ResetCycle string 重置周期
 ---@field CalculationMethod string 计算方式
----@field RewardTierList RewardTier[] 奖励等级列表
+---@field RewardTierMap table<string, RewardTier> 奖励等级映射表（key为唯一ID）
 local RewardBonusType = ClassMgr.Class("RewardBonusType")
 
 --- 初始化
@@ -37,7 +38,7 @@ function RewardBonusType:OnInit(configData)
     self.RewardType = configData['奖励类型'] or ""
     self.ResetCycle = configData['重置周期'] or ""
     self.CalculationMethod = configData['计算方式'] or ""
-    self.RewardTierList = {}
+    self.RewardTierMap = {}
 
     -- 解析奖励等级列表
     local rawRewardTierList = configData['奖励列表'] or {}
@@ -60,14 +61,21 @@ function RewardBonusType:OnInit(configData)
 
         ---@type RewardTier
         local rewardTier = {
+            UniqueId = tierData['唯一ID'] or "",
             ConditionFormula = tierData['条件公式'] or "",
             CostMiniCoin = tierData['消耗迷你币'] or 0,
             Weight = tierData['权重'] or 1,
             RewardItemList = rewardItemList,
             Description = tierData['描述'] or "",
-
         }
-        table.insert(self.RewardTierList, rewardTier)
+        
+        -- 使用唯一ID作为key存储
+        local uniqueId = rewardTier.UniqueId
+        if uniqueId and uniqueId ~= "" then
+            self.RewardTierMap[uniqueId] = rewardTier
+        else
+            gg.log("警告：奖励等级缺少唯一ID，跳过存储", self.ConfigName)
+        end
     end
 end
 
@@ -98,7 +106,24 @@ end
 --- 获取所有奖励等级列表
 ---@return RewardTier[]
 function RewardBonusType:GetRewardTierList()
-    return self.RewardTierList
+    local tierList = {}
+    for _, tier in pairs(self.RewardTierMap) do
+        table.insert(tierList, tier)
+    end
+    return tierList
+end
+
+--- 获取奖励等级映射表
+---@return table<string, RewardTier>
+function RewardBonusType:GetRewardTierMap()
+    return self.RewardTierMap
+end
+
+--- 根据唯一ID获取奖励等级
+---@param uniqueId string 唯一ID
+---@return RewardTier|nil
+function RewardBonusType:GetRewardTierById(uniqueId)
+    return self.RewardTierMap[uniqueId]
 end
 
 --- 根据条件获取符合条件的奖励等级
@@ -108,7 +133,7 @@ end
 function RewardBonusType:GetEligibleRewardTiers(playerData, externalContext)
     local eligibleTiers = {}
     
-    for _, tier in ipairs(self.RewardTierList) do
+    for _, tier in pairs(self.RewardTierMap) do
         if self:CheckTierCondition(tier, playerData, externalContext) then
             table.insert(eligibleTiers, tier)
         end
@@ -254,7 +279,7 @@ function RewardBonusType:GetRewardTierByCost(costMiniCoin)
         return nil
     end
     
-    for _, tier in ipairs(self.RewardTierList) do
+    for _, tier in pairs(self.RewardTierMap) do
         if tier.CostMiniCoin == costMiniCoin then
             return tier
         end
@@ -268,7 +293,7 @@ end
 function RewardBonusType:GetAllRewardItemsSummary()
     local summary = {}
     
-    for _, tier in ipairs(self.RewardTierList) do
+    for _, tier in pairs(self.RewardTierMap) do
         for _, item in ipairs(tier.RewardItemList) do
             local itemKey = self:GetItemKey(item)
             if itemKey then
@@ -317,7 +342,7 @@ function RewardBonusType:ValidateMiniCoinConsumption(playerData, consumedMiniCoi
     end
     
     -- 检查是否有任何奖励等级满足消耗迷你币条件
-    for _, tier in ipairs(self.RewardTierList) do
+    for _, tier in pairs(self.RewardTierMap) do
         if consumedMiniCoin >= tier.CostMiniCoin then
             return true
         end
@@ -342,7 +367,7 @@ function RewardBonusType:GetAvailableRewardTiers(playerData, consumedMiniCoin)
         return availableTiers
     end
     
-    for _, tier in ipairs(self.RewardTierList) do
+    for _, tier in pairs(self.RewardTierMap) do
         if consumedMiniCoin >= tier.CostMiniCoin then
             table.insert(availableTiers, tier)
         end
@@ -364,25 +389,32 @@ function RewardBonusType:ValidateConfig()
         return false
     end
     
-    if not self.RewardTierList or #self.RewardTierList == 0 then
-        gg.log("错误：[RewardBonus] 奖励等级列表不能为空")
+    if not self.RewardTierMap or next(self.RewardTierMap) == nil then
+        gg.log("错误：[RewardBonus] 奖励等级映射表不能为空")
         return false
     end
     
     -- 验证每个奖励等级
-    for i, tier in ipairs(self.RewardTierList) do
+    local tierIndex = 0
+    for uniqueId, tier in pairs(self.RewardTierMap) do
+        tierIndex = tierIndex + 1
         if not tier.RewardItemList or #tier.RewardItemList == 0 then
-            gg.log(string.format("错误：[RewardBonus] 第%d个奖励等级的奖励物品列表不能为空", i))
+            gg.log(string.format("错误：[RewardBonus] 奖励等级[%s]的奖励物品列表不能为空", uniqueId))
             return false
         end
         
         if tier.CostMiniCoin < 0 then
-            gg.log(string.format("错误：[RewardBonus] 第%d个奖励等级的消耗迷你币不能为负数", i))
+            gg.log(string.format("错误：[RewardBonus] 奖励等级[%s]的消耗迷你币不能为负数", uniqueId))
             return false
         end
         
         if tier.Weight <= 0 then
-            gg.log(string.format("错误：[RewardBonus] 第%d个奖励等级的权重必须大于0", i))
+            gg.log(string.format("错误：[RewardBonus] 奖励等级[%s]的权重必须大于0", uniqueId))
+            return false
+        end
+        
+        if not tier.UniqueId or tier.UniqueId == "" then
+            gg.log(string.format("错误：[RewardBonus] 奖励等级[%s]的唯一ID不能为空", uniqueId))
             return false
         end
     end

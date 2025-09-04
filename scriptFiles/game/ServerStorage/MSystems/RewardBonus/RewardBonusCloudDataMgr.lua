@@ -107,7 +107,7 @@ end
 ---@return table 默认配置数据
 function RewardBonusCloudDataMgr.CreateDefaultConfigData(configName)
     return {
-        claimedTiers = {} -- {tierIndex = {collectionTime=时间戳, isTier=true}}
+        claimedTiers = {} -- {UniqueId = {collectionTime=时间戳, isTier=true}}
     }
 end
 

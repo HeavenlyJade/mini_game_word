@@ -153,6 +153,8 @@ function MServerInitPlayer.player_enter_game(player)
     LotteryMgr.OnPlayerJoin(player_)
     local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
     ShopMgr.OnPlayerJoin(player_)
+    local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
+    RewardBonusMgr.OnPlayerJoin(player_)
     if cloud_player_data_ == nil or next(cloud_player_data_) == nil then
         PlayerInitMgr.InitializeNewPlayer(player_)
     end
@@ -243,6 +245,9 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
     ShopMgr.PushShopDataToClient(uin)
 
+    -- 【新增】同步奖励加成数据
+    local RewardBonusEventManager = require(ServerStorage.MSystems.RewardBonus.RewardBonusEventManager) ---@type RewardBonusEventManager
+    RewardBonusEventManager.SyncPlayerRewardData(uin)
 
     -- 获取变量数据
     if mplayer.variableSystem then
@@ -304,6 +309,8 @@ function MServerInitPlayer.player_leave_game(player)
         AchievementMgr.OnPlayerLeave(uin_)
         RewardMgr.OnPlayerLeave(uin_)
         LotteryMgr.OnPlayerLeave(uin_)
+        local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
+        RewardBonusMgr.OnPlayerLeave(mplayer)
         mplayer:leaveGame()
         serverDataMgr.removePlayer(uin_, player.Name)
         local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
@@ -334,6 +341,8 @@ function MServerInitPlayer.OnPlayerSave(uin_)
     LotteryMgr.SavePlayerLotteryData(uin_)
     local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
     ShopMgr.SavePlayerShopData(uin_)
+    local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
+    RewardBonusMgr.SavePlayerData(uin_)
     -- 保存玩家基础数据
     mplayer:leaveGame()
     gg.log("统一存盘：玩家", uin_, "数据已保存")

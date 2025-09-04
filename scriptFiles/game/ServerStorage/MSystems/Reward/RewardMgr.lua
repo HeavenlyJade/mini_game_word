@@ -21,49 +21,7 @@ local RewardMgr = {
 }
 
 -- ==================== 初始化 ====================
-function RewardMgr.Init()
-    --gg.log("初始化奖励系统管理器")
-    RewardMgr.StartUpdateTimer()
-    -- 移除定时存盘功能，现在使用统一的定时存盘机制
-    -- RewardMgr.StartSaveTimer()
-end
 
---- 启动更新定时器
-function RewardMgr.StartUpdateTimer()
-    if RewardMgr.updateTimer then
-        return
-    end
-    
-    RewardMgr.updateTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
-    RewardMgr.updateTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
-    RewardMgr.updateTimer.Name = "RewardMgr_UpdateTimer"
-    RewardMgr.updateTimer.Delay = 1
-    RewardMgr.updateTimer.Loop = true
-    RewardMgr.updateTimer.Interval = 1  -- 每秒执行
-    RewardMgr.updateTimer.Callback = function()
-        RewardMgr.UpdateAllOnlineTime()
-    end
-    RewardMgr.updateTimer:Start()
-end
-
--- 移除定时存盘功能，现在使用统一的定时存盘机制
--- --- 启动保存定时器
--- function RewardMgr.StartSaveTimer()
---     if RewardMgr.saveTimer then
---         return
---     end
---     
---     RewardMgr.saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
---     RewardMgr.saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
---     RewardMgr.saveTimer.Name = "RewardMgr_SaveTimer"
---     RewardMgr.saveTimer.Delay = 60
---     RewardMgr.saveTimer.Loop = true
---     RewardMgr.saveTimer.Interval = 60  -- 每60秒保存
---     RewardMgr.saveTimer.Callback = function()
---         RewardMgr.SaveAllPlayerData()
---     end
---     RewardMgr.saveTimer:Start()
--- end
 
 -- ==================== 玩家管理 ====================
 

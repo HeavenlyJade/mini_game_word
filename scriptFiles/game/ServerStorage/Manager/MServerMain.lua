@@ -107,7 +107,6 @@ function MainServer.initModule()
     local RankingMgr = require(ServerStorage.MSystems.Ranking.RankingMgr) ---@type RankingMgr
     local SceneNodeManager = require(ServerStorage.SceneInteraction.SceneNodeManager) ---@type SceneNodeManager
 
-    RewardMgr.Init()
     -- 延迟加载RewardMgr以避免循环引用
     serverDataMgr.BagMgr = BagMgr
     serverDataMgr.MailMgr = MailMgr
@@ -137,6 +136,7 @@ function MainServer.initModule()
     local RewardEventManager = require(ServerStorage.MSystems.Reward.RewardEventManager) ---@type RewardEventManager
     local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
     local ShopEventManager = require(ServerStorage.MSystems.Shop.ShopEventManager) ---@type ShopEventManager
+    local RewardBonusEventManager = require(ServerStorage.MSystems.RewardBonus.RewardBonusEventManager) ---@type RewardBonusEventManager
     local CommonEventManager = require(ServerStorage.MiniGameMgr.CommonEventManager) ---@type CommonEventManager
     local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
     local SceneInteractionEventManager = require(ServerStorage.SceneInteraction.SceneInteractionEventManager) ---@type SceneInteractionEventManager
@@ -155,6 +155,7 @@ function MainServer.initModule()
     RewardEventManager.Init()
     LotteryEventManager.Init()
     ShopEventManager.Init()
+    RewardBonusEventManager.Init()
     CommonEventManager.Init()
     RankingEventManager.Init()
     SceneInteractionEventManager.Init()
