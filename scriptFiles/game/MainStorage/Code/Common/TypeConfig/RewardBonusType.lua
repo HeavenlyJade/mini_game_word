@@ -209,19 +209,6 @@ function RewardBonusType:GetPlayerVariable(playerData, varName)
     end
 end
 
---- 获取玩家属性值
----@param playerData table 玩家数据
----@param attrName string 属性名
----@return number
-function RewardBonusType:GetPlayerAttribute(playerData, attrName)
-    if not playerData or not attrName then
-        return 0
-    end
-    
-    -- TODO: 实现玩家属性系统后，这里需要调用相应的属性获取方法
-    -- 目前返回0作为占位符
-    return 0
-end
 
 --- 根据权重随机选择一个奖励等级
 ---@param eligibleTiers RewardTier[] 符合条件的奖励等级列表
@@ -312,6 +299,62 @@ function RewardBonusType:GetItemKey(item)
     end
     
     return nil
+end
+
+--- 验证玩家是否满足消耗迷你币条件
+---@param playerData table 玩家数据
+---@param consumedMiniCoin number 玩家已消耗的迷你币数量
+---@return boolean 是否满足条件
+function RewardBonusType:ValidateMiniCoinConsumption(playerData, consumedMiniCoin)
+    -- 只有计算方式为迷你币时才进行验证
+    if self.CalculationMethod ~= "迷你币" then
+        return false
+    end
+    
+    if not consumedMiniCoin or consumedMiniCoin < 0 then
+        gg.log("错误：[RewardBonus] 消耗迷你币数量无效")
+        return false
+    end
+    
+    -- 检查是否有任何奖励等级满足条件
+    for _, tier in ipairs(self.RewardTierList) do
+        if consumedMiniCoin >= tier.CostMiniCoin then
+            -- 如果满足消耗条件，还需要检查其他条件
+            if self:CheckTierCondition(tier, playerData, {consumedMiniCoin = consumedMiniCoin}) then
+                return true
+            end
+        end
+    end
+    
+    return false
+end
+
+--- 获取玩家可领取的奖励等级列表（基于消耗迷你币）
+---@param playerData table 玩家数据
+---@param consumedMiniCoin number 玩家已消耗的迷你币数量
+---@return RewardTier[] 可领取的奖励等级列表
+function RewardBonusType:GetAvailableRewardTiers(playerData, consumedMiniCoin)
+    local availableTiers = {}
+    
+    -- 只有计算方式为迷你币时才进行验证
+    if self.CalculationMethod ~= "迷你币" then
+        return self:GetEligibleRewardTiers(playerData, {consumedMiniCoin = consumedMiniCoin})
+    end
+    
+    if not consumedMiniCoin or consumedMiniCoin < 0 then
+        return availableTiers
+    end
+    
+    for _, tier in ipairs(self.RewardTierList) do
+        if consumedMiniCoin >= tier.CostMiniCoin then
+            -- 检查其他条件是否满足
+            if self:CheckTierCondition(tier, playerData, {consumedMiniCoin = consumedMiniCoin}) then
+                table.insert(availableTiers, tier)
+            end
+        end
+    end
+    
+    return availableTiers
 end
 
 --- 验证奖励配置的有效性

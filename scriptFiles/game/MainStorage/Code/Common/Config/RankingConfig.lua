@@ -6,9 +6,9 @@ local RankingConfig = {}
 
 -- 排行榜类型定义
 RankingConfig.TYPES = {
-    POWER = "power_ranking",        -- 战力排行榜
-    RECHARGE = "recharge_ranking",  -- 充值排行榜
-    REBIRTH = "rebirth_ranking",    -- 重生排行榜
+    POWER = "power_ranking_cloud",        -- 战力排行榜
+    RECHARGE = "recharge_ranking_cloud",  -- 充值排行榜
+    REBIRTH = "rebirth_ranking_cloud",    -- 重生排行榜
 }
 
 -- 排行榜详细配置
