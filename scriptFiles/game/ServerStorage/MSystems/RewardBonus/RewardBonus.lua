@@ -184,9 +184,9 @@ function RewardBonus:ClaimTierReward(configName, uniqueId)
     end
 
     -- -- 检查是否已领取
-    -- if self:IsTierClaimed(configName, uniqueId) then
-    --     return false, "奖励已被领取", nil
-    -- end
+    if self:IsTierClaimed(configName, uniqueId) then
+        return false, "奖励已被领取", nil
+    end
 
     local config = ConfigLoader.GetRewardBonus(configName)
     if not config then

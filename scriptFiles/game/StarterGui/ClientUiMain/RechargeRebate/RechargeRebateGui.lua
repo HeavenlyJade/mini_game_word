@@ -24,7 +24,7 @@ local RewardBonusEvent = require(MainStorage.Code.Event.RewardBonusEvent) ---@ty
 -- UI配置
 local uiConfig = {
     uiName = "RechargeRebateGui",
-    layer = 3,
+    layer = 3, -- 根据实际情况调整
     hideOnInit = true,
 }
 
