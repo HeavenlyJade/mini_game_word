@@ -46,7 +46,7 @@ function RewardBonusMgr.OnPlayerJoin(player)
     if ret ~= 0 then
         gg.log("警告：加载奖励加成数据失败，使用默认数据", uin)
     end
-
+    gg.log("装载的奖励数据", cloudData)
     -- 创建RewardBonus实例
     local rewardBonusInstance = RewardBonus.New(uin, cloudData)
     if not rewardBonusInstance then
@@ -110,8 +110,20 @@ function RewardBonusMgr.ClaimTierReward(player, configName, uniqueId)
     if not rewardItems then
         return false, "奖励物品列表为空"
     end
+    
+    gg.log("=== 开始发放奖励 ===")
+    gg.log("玩家:", player.name, "UIN:", player.uin)
+    gg.log("奖励物品数量:", #rewardItems)
+    gg.log("奖励物品详情:", rewardItems)
+    
     -- 发放奖励物品
-    local giveSuccess = PlayerRewardDispatcher.DispatchRewards(player, rewardItems)
+    local giveSuccess, giveMessage, failedRewards = PlayerRewardDispatcher.DispatchRewards(player, rewardItems)
+    
+    gg.log("奖励发放结果:", giveSuccess)
+    gg.log("发放消息:", giveMessage)
+    if failedRewards then
+        gg.log("失败的奖励:", failedRewards)
+    end
     
     if giveSuccess then
         -- 立即保存数据
@@ -122,7 +134,7 @@ function RewardBonusMgr.ClaimTierReward(player, configName, uniqueId)
         
         return true, "领取成功"
     else
-        return false, "奖励发放失败"
+        return false, "奖励发放失败: " .. (giveMessage or "未知错误")
     end
 end
 

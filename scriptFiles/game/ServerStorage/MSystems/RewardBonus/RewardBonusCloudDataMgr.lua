@@ -39,7 +39,7 @@ function RewardBonusCloudDataMgr.LoadPlayerData(uin)
     local cloudKey = RewardBonusCloudDataMgr.GetCloudKey(uin)
     local success, cloudData = cloudService:GetTableOrEmpty(cloudKey)
         
-    gg.log("读取玩家奖励加成数据", cloudKey, success, cloudData ~= nil)
+    gg.log("读取玩家奖励加成数据", cloudKey, success, cloudData )
 
     if success then
         if cloudData then
@@ -114,7 +114,7 @@ end
 --- 检查并更新配置数据，如果存在新的奖励配置则自动添加
 ---@param cloudData RewardBonusCloudData 云端数据
 function RewardBonusCloudDataMgr.UpdateConfigsIfNeeded(cloudData)
-    if not cloudData or not cloudData.configs then
+    if not cloudData then
         return cloudData
     end
 
@@ -123,6 +123,11 @@ function RewardBonusCloudDataMgr.UpdateConfigsIfNeeded(cloudData)
         return cloudData
     end
 
+    -- 如果cloudData没有configs字段，则创建它
+    if not cloudData.configs then
+        cloudData.configs = {}
+        gg.log("云端数据缺少configs字段，已创建", cloudData)
+    end
     
     -- 检查是否有新的配置需要添加
     for configName, _ in pairs(allBonusConfigs) do

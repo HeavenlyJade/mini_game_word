@@ -90,6 +90,11 @@ function RechargeRebateGui:InitData()
     -- 获取奖励等级列表
     local rewardTierList = self.rewardBonusConfig:GetRewardTierList()
     
+    -- 按照Weight从小到大排序
+    table.sort(rewardTierList, function(a, b)
+        return a.Weight < b.Weight
+    end)
+    
     -- 循环处理每个奖励等级
     for i, rewardTier in ipairs(rewardTierList) do
         -- 克隆模板节点

@@ -100,39 +100,65 @@ end
 
 --- 检查等级条件是否满足
 ---@param conditionFormula string 条件公式
----@param configName string|nil 配置名称（用于获取计算方式）
+---@param configName string 配置名称（用于获取计算方式）
 ---@return boolean 是否满足条件
 function RewardBonus:CheckTierCondition(conditionFormula, configName)
-    local ShopMgr = require(game:GetService("ServerStorage").MSystems.Shop.ShopMgr) ---@type ShopMgr
+    local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
 
-    if not conditionFormula or conditionFormula == "" then
-        return false -- 
-    end
+    gg.log("=== CheckTierCondition 开始检查 ===")
+    gg.log("玩家ID:", self.uin)
+    gg.log("条件公式:", conditionFormula)
+    gg.log("配置名称:", configName)
+
 
     -- 如果提供了配置名称，检查计算方式
-    if configName then
-        local config = ConfigLoader.GetRewardBonus(configName)
-        if config and config:GetCalculationMethod() == "迷你币" then
+
+    local config = ConfigLoader.GetRewardBonus(configName)
+    gg.log("获取到的配置:", config ~= nil)
+    if config then
+        local calculationMethod = config:GetCalculationMethod()
+        gg.log("计算方式:", calculationMethod)
+        
+        if calculationMethod == "迷你币" then
             -- 获取玩家商城数据
             local shopData = ShopMgr.GetPlayerShop(self.uin)
+            gg.log("商城数据:", shopData ~= nil)
             if not shopData then
                 gg.log("错误：无法获取玩家商城数据", self.uin)
                 return false
             end
             
-            -- 使用迷你币验证方式
             local consumedMiniCoin = shopData.totalPurchaseValue or 0
-            return config:ValidateMiniCoinConsumption({}, consumedMiniCoin)
+            gg.log("玩家已消耗迷你币:", consumedMiniCoin)
+            
+            -- 使用迷你币验证方式
+            local isValid = config:ValidateMiniCoinConsumption({}, consumedMiniCoin)
+            gg.log("迷你币验证结果:", isValid)
+            return isValid
+        else
+            gg.log("计算方式不是迷你币，跳过迷你币验证")
         end
+    else
+        gg.log("错误：无法获取配置", configName)
+    end
+    
+    if not conditionFormula or conditionFormula == "" then
+        gg.log("条件公式为空，返回false")
+        return false -- 
     end
 
     -- 构造伪等级对象用于条件检查
     local tier = { ConditionFormula = conditionFormula }
+    gg.log("构造的等级对象:", tier)
     
     -- 使用RewardBonusType的条件检测方法
     -- 这里需要从缓存中获取任一配置来调用方法（所有配置的检测逻辑相同）
+    gg.log("配置缓存:", self.configCache)
     for _, config in pairs(self.configCache or {}) do
-        return config:CheckTierCondition(tier, {}, nil)
+        gg.log("使用缓存配置进行条件检查")
+        local result = config:CheckTierCondition(tier, {}, nil)
+        gg.log("条件检查结果:", result)
+        return result
     end
     
     -- 如果缓存为空，回退到简单检查
@@ -151,20 +177,21 @@ function RewardBonus:ClaimTierReward(configName, uniqueId)
     if not configName or not uniqueId then
         return false, "参数无效", nil
     end
-
+    gg.log("领取奖励等级", configName, uniqueId,self.cloudData.configs)
     -- 检查配置是否存在
     if not self:HasConfig(configName) then
         return false, "配置不存在", nil
     end
 
-    -- 检查是否已领取
-    if self:IsTierClaimed(configName, uniqueId) then
-        return false, "奖励已被领取", nil
-    end
+    -- -- 检查是否已领取
+    -- if self:IsTierClaimed(configName, uniqueId) then
+    --     return false, "奖励已被领取", nil
+    -- end
 
     local config = ConfigLoader.GetRewardBonus(configName)
     if not config then
-        return false, "配置不存在", nil
+        gg.log("错误：找不到奖励配置", configName, "所有可用配置:", ConfigLoader.GetAllRewardBonuses())
+        return false, "奖励配置不存在", nil
     end
 
     local tier = config:GetRewardTierById(uniqueId)

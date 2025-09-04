@@ -97,6 +97,7 @@ function RewardBonusEventManager.HandleClaimTierReward(evt)
         
     else
         gg.log("奖励领取失败", player.name, configName, uniqueId, errorMsg)
+        player:SendHoverText(errorMsg)
     end
 end
 
