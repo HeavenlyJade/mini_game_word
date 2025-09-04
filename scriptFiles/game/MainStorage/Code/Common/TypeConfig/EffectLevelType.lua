@@ -92,7 +92,7 @@ function EffectLevelType:OnInit(data)
     self.maxLevel = self:CalculateMaxLevel()
     --gg.log("计算出的最大等级:", self.maxLevel)
     
-    gg.log("=== EffectLevelType:OnInit 结束 ===")
+    -- gg.log("=== EffectLevelType:OnInit 结束 ===")
 end
 
 --- 计算最大等级

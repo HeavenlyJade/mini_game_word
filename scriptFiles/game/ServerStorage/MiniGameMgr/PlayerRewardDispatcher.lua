@@ -94,17 +94,33 @@ local function dispatchSingleReward(player, reward)
         end
         
         local PetMgr = getPetMgr()
-        local success, actualSlot = PetMgr.AddPet(player, itemName)
-        if not success then
-            return false, string.format("添加宠物失败：%s", itemName)
-        end
-
-        -- 如果奖励中有星级信息，直接设置宠物星级
-        if stars > 1 and actualSlot then
-            PetMgr.SetPetStarLevel(player.uin, actualSlot, reward.stars)
+        local successCount = 0
+        local lastSlot = nil
+        
+        -- 根据amount参数循环添加宠物
+        for i = 1, amount do
+            local success, actualSlot = PetMgr.AddPet(player, itemName)
+            if success then
+                successCount = successCount + 1
+                lastSlot = actualSlot
+                
+                -- 如果奖励中有星级信息，直接设置宠物星级
+                if stars > 1 and actualSlot then
+                    PetMgr.SetPetStarLevel(player.uin, actualSlot, reward.stars)
+                end
+            else
+                -- 如果添加失败，记录错误但继续尝试添加剩余的
+                gg.log("添加宠物失败", player.name, itemName, "第", i, "个")
+            end
         end
         
-        --gg.log("宠物发放成功", player.name, itemName, "槽位", actualSlot, "星级", reward.stars or 1)
+        if successCount == 0 then
+            return false, string.format("添加宠物失败：%s", itemName)
+        elseif successCount < amount then
+            gg.log("宠物发放部分成功", player.name, itemName, "成功", successCount, "个，失败", amount - successCount, "个")
+        end
+        
+        --gg.log("宠物发放成功", player.name, itemName, "数量", successCount, "星级", reward.stars or 1)
         return true
         
     elseif itemType == RewardType.PARTNER then
@@ -114,17 +130,33 @@ local function dispatchSingleReward(player, reward)
         end
         
         local PartnerMgr = getPartnerMgr()
-        local success, actualSlot = PartnerMgr.AddPartner(player, itemName)
-        if not success then
-            return false, string.format("添加伙伴失败：%s", itemName)
-        end
-
-        -- 如果奖励中有星级信息，直接设置伙伴星级
-        if reward.stars and reward.stars > 1 and actualSlot then
-            PartnerMgr.SetPartnerStarLevel(player.uin, actualSlot, reward.stars)
+        local successCount = 0
+        local lastSlot = nil
+        
+        -- 根据amount参数循环添加伙伴
+        for i = 1, amount do
+            local success, actualSlot = PartnerMgr.AddPartner(player, itemName)
+            if success then
+                successCount = successCount + 1
+                lastSlot = actualSlot
+                
+                -- 如果奖励中有星级信息，直接设置伙伴星级
+                if reward.stars and reward.stars > 1 and actualSlot then
+                    PartnerMgr.SetPartnerStarLevel(player.uin, actualSlot, reward.stars)
+                end
+            else
+                -- 如果添加失败，记录错误但继续尝试添加剩余的
+                gg.log("添加伙伴失败", player.name, itemName, "第", i, "个")
+            end
         end
         
-        --gg.log("伙伴发放成功", player.name, itemName, "槽位", actualSlot, "星级", reward.stars or 1)
+        if successCount == 0 then
+            return false, string.format("添加伙伴失败：%s", itemName)
+        elseif successCount < amount then
+            gg.log("伙伴发放部分成功", player.name, itemName, "成功", successCount, "个，失败", amount - successCount, "个")
+        end
+        
+        --gg.log("伙伴发放成功", player.name, itemName, "数量", successCount, "星级", reward.stars or 1)
         return true
         
     elseif itemType == RewardType.WING then
@@ -134,17 +166,33 @@ local function dispatchSingleReward(player, reward)
         end
         
         local WingMgr = getWingMgr()
-        local success, actualSlot = WingMgr.AddWing(player, itemName)
-        if not success then
-            return false, string.format("添加翅膀失败：%s", itemName)
-        end
-
-        -- 如果奖励中有星级信息，直接设置翅膀星级
-        if reward.stars and reward.stars > 1 and actualSlot then
-            WingMgr.SetWingStarLevel(player.uin, actualSlot, reward.stars)
+        local successCount = 0
+        local lastSlot = nil
+        
+        -- 根据amount参数循环添加翅膀
+        for i = 1, amount do
+            local success, actualSlot = WingMgr.AddWing(player, itemName)
+            if success then
+                successCount = successCount + 1
+                lastSlot = actualSlot
+                
+                -- 如果奖励中有星级信息，直接设置翅膀星级
+                if reward.stars and reward.stars > 1 and actualSlot then
+                    WingMgr.SetWingStarLevel(player.uin, actualSlot, reward.stars)
+                end
+            else
+                -- 如果添加失败，记录错误但继续尝试添加剩余的
+                gg.log("添加翅膀失败", player.name, itemName, "第", i, "个")
+            end
         end
         
-        --gg.log("翅膀发放成功", player.name, itemName, "槽位", actualSlot, "星级", reward.stars or 1)
+        if successCount == 0 then
+            return false, string.format("添加翅膀失败：%s", itemName)
+        elseif successCount < amount then
+            gg.log("翅膀发放部分成功", player.name, itemName, "成功", successCount, "个，失败", amount - successCount, "个")
+        end
+        
+        --gg.log("翅膀发放成功", player.name, itemName, "数量", successCount, "星级", reward.stars or 1)
         return true
         
     elseif itemType == RewardType.TRAIL then
@@ -154,12 +202,28 @@ local function dispatchSingleReward(player, reward)
         end
         
         local TrailMgr = getTrailMgr()
-        local success, actualSlot = TrailMgr.AddTrail(player, itemName)
-        if not success then
-            return false, string.format("添加尾迹失败：%s", itemName)
+        local successCount = 0
+        local lastSlot = nil
+        
+        -- 根据amount参数循环添加尾迹
+        for i = 1, amount do
+            local success, actualSlot = TrailMgr.AddTrail(player, itemName)
+            if success then
+                successCount = successCount + 1
+                lastSlot = actualSlot
+            else
+                -- 如果添加失败，记录错误但继续尝试添加剩余的
+                gg.log("添加尾迹失败", player.name, itemName, "第", i, "个")
+            end
         end
         
-        --gg.log("尾迹发放成功", player.name, itemName, "槽位", actualSlot)
+        if successCount == 0 then
+            return false, string.format("添加尾迹失败：%s", itemName)
+        elseif successCount < amount then
+            gg.log("尾迹发放部分成功", player.name, itemName, "成功", successCount, "个，失败", amount - successCount, "个")
+        end
+        
+        --gg.log("尾迹发放成功", player.name, itemName, "数量", successCount)
         return true
         
     elseif itemType == RewardType.COMMAND then

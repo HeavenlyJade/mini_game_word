@@ -101,6 +101,10 @@ function RaceTrack.CloneFlightEnvironment(trackPath)
         table.insert(trackInfo.clonedNodes, clonedEnvironment)
         
         --gg.log("赛道", trackPath, "克隆节点", i, "完成，位置:", clonedEnvironment.Position)
+        
+        -- 使用 Lua 的 wait 函数设置克隆间隔，避免一次性生成导致卡顿
+        ---@diagnostic disable-next-line: undefined-global
+        wait(0.1)
     end
     
     --gg.log("赛道", trackPath, "的所有", cloneCount, "个飞行环境节点克隆完成")

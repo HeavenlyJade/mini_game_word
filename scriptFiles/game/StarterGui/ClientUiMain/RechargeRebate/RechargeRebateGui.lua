@@ -45,10 +45,7 @@ function RechargeRebateGui:OnInit(node, config)
     -- -- 4. 按钮点击事件注册
     self:RegisterButtonEvents()
     
-    -- 5. 请求初始数据
-    self:RequestInitialData()
-    
-    ----gg.log("RechargeRebateGui 累计充值界面初始化完成")
+    ------gg.log("RechargeRebateGui 累计充值界面初始化完成")
 end
 
 -- 节点初始化
@@ -83,7 +80,7 @@ function RechargeRebateGui:InitData()
     self.rewardBonusConfig = ConfigLoader.GetRewardBonus("累计充值") ---@type RewardBonusType
     
     if not self.rewardBonusConfig then
-        --gg.log("错误：找不到'累计充值'的奖励配置")
+        ----gg.log("错误：找不到'累计充值'的奖励配置")
         return
     end
     
@@ -111,9 +108,19 @@ function RechargeRebateGui:InitData()
 
         rewardItemList:SetElementSize(#rewardTier.RewardItemList)
         for j, rewardItem in ipairs(rewardTier.RewardItemList) do
-             
+            
             local rewardItemNode = rewardItemList:GetChild(j)
-            --gg.log("奖励物品：" .. j,rewardItemNode.node)
+            ----gg.log("奖励物品：" .. j,rewardItemNode.node)
+            local startList = ViewList.New(rewardItemNode.node["星级列表"], self, "奖励等级_" .. i .. "/物品栏/" .. j .. "/星级")
+            -- 仅非“物品”类型展示星级
+            if rewardItem.RewardType ~= "物品" then
+                startList:SetElementSize(rewardItem.Stars or 1)
+                startList:SetVisible(true)
+            else
+                startList:SetElementSize(0)
+                startList:SetVisible(false)
+            end
+     
             local rewardItemIcon = rewardItemNode.node["图标"]
             local rewardItemAmount = rewardItemNode.node["数量"]
              
@@ -123,7 +130,7 @@ function RechargeRebateGui:InitData()
             rewardItemAmount.Title = "x" .. gg.FormatLargeNumber(rewardItem.Quantity)
          end
         -- 使用 ViewList 的 AppendChild 功能添加到 rewardList
-        --gg.log("奖励等级_" .. i .. "",clonedReward["领取"])
+        ----gg.log("奖励等级_" .. i .. "",clonedReward["领取"])
         local claimButton = ViewButton.New(clonedReward["领取"], self, "奖励等级_" .. i .. "")
 
         claimButton:SetGray(true)
@@ -145,12 +152,13 @@ function RechargeRebateGui:InitData()
 
     end
     
-    --gg.log(string.format("累计充值奖励配置加载完成，共 %d 个奖励等级", #rewardTierList))
+    ----gg.log(string.format("累计充值奖励配置加载完成，共 %d 个奖励等级", #rewardTierList))
 end
 
 -- 注册事件
 function RechargeRebateGui:RegisterEvents()
         
+        ---玩家的消费数据更新
         ClientEventManager.Subscribe(ShopEventConfig.NOTIFY.SHOP_DATA_SYNC, function(data)
             self:OnShopDataSync(data)
         end)
@@ -189,30 +197,41 @@ function RechargeRebateGui:OnRewardBonusDataSync(data)
     if not configData then
         return
     end
-
+    --gg.log("奖励加成数据同步处理", configData)
     -- 更新已领取状态
     for _, tierNode in ipairs(self.rewardTierNodes) do
         local uniqueId = tierNode.uniqueId
-        if uniqueId and configData.claimedTiers and configData.claimedTiers[uniqueId] then
-            tierNode.isClaimed = true
-            tierNode.claimButton:SetGray(true)
-            tierNode.claimButton:SetTouchEnable(false, nil)
-            tierNode.node["领取"].Title = "已领取"
+        if uniqueId then
+            -- 检查是否已领取
+            local isClaimed = configData.claimedTiers and configData.claimedTiers[uniqueId] or false
+            tierNode.isClaimed = isClaimed
+            
+            if isClaimed then
+                -- 已领取：禁用按钮并更新文本
+                tierNode.claimButton:SetGray(true)
+                tierNode.claimButton:SetTouchEnable(false, nil)
+                tierNode.claimButton:SetVisible(false)
+                --gg.log("奖励已领取，禁用按钮", uniqueId)
+            else
+                -- 未领取：确保按钮可见，由UI更新逻辑控制启用/禁用
+                tierNode.claimButton:SetVisible(true)
+            end
         end
     end
+    
 end
 
 -- 更新累计充值界面的UI
 function RechargeRebateGui:UpdateRebateUI(totalPurchase, claimedTiers)
-    gg.log("totalPurchase",totalPurchase,claimedTiers)
+    --gg.log("totalPurchase",totalPurchase,claimedTiers)
     self.spendingAmount.node.Title = gg.FormatLargeNumber(totalPurchase)
     
 
     for i, tierNode in ipairs(self.rewardTierNodes) do
-        gg.log("tierNode",tierNode)
+        --gg.log("tierNode",tierNode)
         local rewardTier = tierNode.rewardTierData
         local requiredAmount = rewardTier.CostMiniCoin
-        gg.log("requiredAmount",requiredAmount)
+        --gg.log("requiredAmount",requiredAmount)
         -- 更新进度条
         local progress = 0
         if requiredAmount and requiredAmount > 0 then
@@ -222,12 +241,15 @@ function RechargeRebateGui:UpdateRebateUI(totalPurchase, claimedTiers)
         
         -- 检查是否已领取
         if tierNode.isClaimed then
+            tierNode.claimButton:SetVisible(false)
             tierNode.claimButton:SetGray(true)
             tierNode.claimButton:SetTouchEnable(false, nil)
         elseif totalPurchase >= requiredAmount then
+            tierNode.claimButton:SetVisible(true)
             tierNode.claimButton:SetGray(false)
             tierNode.claimButton:SetTouchEnable(true, nil)
         else
+            tierNode.claimButton:SetVisible(true)
             tierNode.claimButton:SetGray(true)
             tierNode.claimButton:SetTouchEnable(false, nil)
         end
@@ -290,12 +312,12 @@ end
 
 -- 奖励槽位点击事件
 function RechargeRebateGui:OnRewardSlotClick(index, rewardTier)
-    gg.log(string.format("点击奖励槽位 %d，消耗迷你币：%d", index, rewardTier.CostMiniCoin))
+    --gg.log(string.format("点击奖励槽位 %d，消耗迷你币：%d", index, rewardTier.CostMiniCoin))
     
     -- 检查是否已领取
     local tierNode = self.rewardTierNodes[index]
     if not tierNode or tierNode.isClaimed then
-        gg.log("奖励已领取或不存在")
+        --gg.log("奖励已领取或不存在")
         return
     end
     
@@ -308,18 +330,9 @@ function RechargeRebateGui:OnRewardSlotClick(index, rewardTier)
         }
     })
     
-    gg.log("发送奖励领取请求", rewardTier.UniqueId)
+    --gg.log("发送奖励领取请求", rewardTier.UniqueId)
 end
 
 -- 请求初始数据
-function RechargeRebateGui:RequestInitialData()
-    -- 请求奖励加成数据
-    gg.network_channel:fireServer({
-        cmd = RewardBonusEvent.REQUEST.GET_REWARD_BONUS_DATA,
-        args = {}
-    })
-    
-    gg.log("请求奖励加成初始数据")
-end
 
 return RechargeRebateGui.New(script.Parent, uiConfig)

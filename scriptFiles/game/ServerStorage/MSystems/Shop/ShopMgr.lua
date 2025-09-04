@@ -310,6 +310,10 @@ function ShopMgr.HandleMiniPurchaseCallback(uin, goodsid, num)
     
     -- 持久化
     ShopMgr.SavePlayerShopData(player.uin)
+    
+    -- 推送更新后的商城数据到客户端
+    ShopMgr.PushShopDataToClient(player.uin)
+    
     local ShopEventManager = require(ServerStorage.MSystems.Shop.ShopEventManager) ---@type ShopEventManager
     ShopEventManager.SendShopItemAcquiredNotification(player.uin, targetItem.rewards, "商城购买")
 

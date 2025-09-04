@@ -486,12 +486,14 @@ function TournamentSc:OnLaunchPlayer(data)
 	self.speedPointerTimer:Start()
 
 	-- 计算并显示战力相关数值到 速度2/3/4/5
+	-- gg.log("比赛计算并显示战力相关数值到 速度2/3/4/5", self.variableData)
 	local variableData = self.variableData or {}
-	local basePower = tonumber(variableData["数据_固定值_战力值"]) or 100
+	-- 保持为数字，避免与字符串比较导致错误
+	local basePower = variableData["数据_固定值_战力值"] and variableData["数据_固定值_战力值"].base or 100
 
 	-- 确保basePower最小值为100
 	if basePower < 100 then
-		basePower = 100
+		basePower = 100	
 	end
 
 	local A = basePower * 1.5

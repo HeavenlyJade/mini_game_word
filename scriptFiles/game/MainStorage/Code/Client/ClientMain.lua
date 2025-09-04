@@ -54,9 +54,7 @@ function ClientMain.start_client()
     local SoundPool = require(MainStorage.Code.Client.Graphic.SoundPool) ---@type SoundPool
     SoundPool.Init()
     
-    -- 导入并初始化赛道系统
-    local RaceTrack = require(MainStorage.Code.Client.SceneNode.RaceTrack) ---@type RaceTrack
-    RaceTrack.InitializeRaceTrack()
+
 
     -- 导入并初始化挂机区域节点配置
     local InitAutoSpotNodes = require(MainStorage.Code.Client.SceneNode.InitAutoSpotNodes) ---@type InitAutoSpotNodes
@@ -97,6 +95,9 @@ function ClientMain.start_client()
             end
         end
     end
+    -- 导入并初始化赛道系统
+    local RaceTrack = require(MainStorage.Code.Client.SceneNode.RaceTrack) ---@type RaceTrack
+    RaceTrack.InitializeRaceTrack()
 
 end
 

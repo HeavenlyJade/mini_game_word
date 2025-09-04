@@ -177,7 +177,7 @@ function PlayerActionHandler:OnNavigateToPosition(data)
 
     actor:NavigateTo(targetPosition)
 
-    gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition),actor.uin)
+    -- gg.log("PlayerActionHandler: 已开始导航到位置: " .. tostring(targetPosition),actor.uin)
 
 end
 

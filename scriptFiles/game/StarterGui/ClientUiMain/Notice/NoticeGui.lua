@@ -158,7 +158,7 @@ function NoticeGui:DisplayNotice(notice)
             -- 设置物品数量
             if reward.amount and reward.amount > 1 then
                 if itemNode["数量"] then
-                    itemNode["数量"].Title = "x" .. reward.amount
+                    itemNode["数量"].Title = "x" .. gg.FormatLargeNumber(reward.amount)
                 end
             end
         end

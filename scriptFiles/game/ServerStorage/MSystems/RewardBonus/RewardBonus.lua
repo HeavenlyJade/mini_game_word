@@ -266,6 +266,7 @@ function RewardBonus:GetConfigStatus(configName)
         claimedTierCount = claimedCount,
         availableTierCount = #availableTiers,
         availableTiers = availableTiers,
+        claimedTiers = claimedTiers, -- 添加已领取的奖励列表
         hasAvailableRewards = #availableTiers > 0
     }
 end

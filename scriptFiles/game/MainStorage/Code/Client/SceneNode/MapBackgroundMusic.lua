@@ -54,7 +54,7 @@ function MapBackgroundMusic.PlayBackgroundMusic(musicAssetPath)
     -- 使用SoundPool的地图音乐播放功能
     SoundPool.PlayMapMusic(musicAssetPath, 0.5)
     
-    gg.log("开始播放地图背景音乐:", musicAssetPath)
+    -- gg.log("开始播放地图背景音乐:", musicAssetPath)
 end
 
 --- 停止背景音乐
