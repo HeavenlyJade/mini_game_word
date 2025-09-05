@@ -21,12 +21,12 @@ local cloudStoreCache = {} ---@type table<string, CloudKVStore>
 ---@return boolean 是否有效
 function RankingCloudDataMgr.ValidateRankingType(rankType)
     if not rankType or type(rankType) ~= "string" then
-        --gg.log("排行榜类型无效：类型不是字符串", rankType)
+        ----gg.log("排行榜类型无效：类型不是字符串", rankType)
         return false
     end
 
     if not RankingConfig.CONFIGS[rankType] then
-        --gg.log("排行榜类型无效：未找到配置", rankType)
+        ----gg.log("排行榜类型无效：未找到配置", rankType)
         return false
     end
 
@@ -43,33 +43,33 @@ function RankingCloudDataMgr.GetOrCreateCloudStore(rankType)
 
     -- 检查缓存
     if cloudStoreCache[rankType] then
-        -- --gg.log("使用缓存的CloudKVStore", rankType)
+        -- ----gg.log("使用缓存的CloudKVStore", rankType)
         return cloudStoreCache[rankType]
     end
 
     -- 创建新的CloudKVStore实例
-    --gg.log("尝试创建CloudKVStore", rankType)
+    ----gg.log("尝试创建CloudKVStore", rankType)
     local cloudStore = CloudService:GetOrderDataCloud(rankType)
     if not cloudStore then
-        --gg.log("创建CloudKVStore失败", rankType)
+        ----gg.log("创建CloudKVStore失败", rankType)
         return nil
     end
 
     -- 验证CloudKVStore对象的可用性
     if type(cloudStore) ~= "userdata" and type(cloudStore) ~= "table" then
-        --gg.log("创建CloudKVStore失败：返回类型无效", rankType, "类型:", type(cloudStore))
+        ----gg.log("创建CloudKVStore失败：返回类型无效", rankType, "类型:", type(cloudStore))
         return nil
     end
 
     -- 检查必要的方法是否存在
     if not cloudStore.SetValue then
-        --gg.log("创建CloudKVStore失败：缺少SetValue方法", rankType)
+        ----gg.log("创建CloudKVStore失败：缺少SetValue方法", rankType)
         return nil
     end
 
     -- 缓存实例
     cloudStoreCache[rankType] = cloudStore
-    --gg.log("创建排行榜CloudKVStore成功", rankType, "类型:", type(cloudStore),cloudStore.Value_Dict)
+    ----gg.log("创建排行榜CloudKVStore成功", rankType, "类型:", type(cloudStore),cloudStore.Value_Dict)
 
     return cloudStore
 end
@@ -85,7 +85,7 @@ function RankingCloudDataMgr.InitRankingStore(rankType)
     end
 
     -- CloudKVStore会自动处理初始化，这里只需要确保实例存在
-    --gg.log("排行榜存储初始化完成", rankType)
+    ----gg.log("排行榜存储初始化完成", rankType)
     return true
 end
 
@@ -100,7 +100,7 @@ function RankingCloudDataMgr.ClearRankingStore(rankType)
 
     -- 使用CloudKVStore的Clean方法清理数据
     cloudStore:Clean()
-    --gg.log("排行榜数据已清空", rankType)
+    ----gg.log("排行榜数据已清空", rankType)
     return true
 end
 
@@ -119,23 +119,23 @@ function RankingCloudDataMgr.SafeUpdatePlayerScore(rankType, uin, playerName, ne
 
     -- 详细的参数验证和调试
     if not uin or not playerName or not newScore then
-        --gg.log("安全更新排行榜分数失败：参数无效", rankType, uin, playerName, newScore)
+        ----gg.log("安全更新排行榜分数失败：参数无效", rankType, uin, playerName, newScore)
         return false, 0, 0
     end
 
     -- 验证参数类型并转换为整数
     if type(newScore) ~= "number" then
-        --gg.log("安全更新排行榜分数失败：分数类型无效", rankType, uin, playerName, newScore, "类型:", type(newScore))
+        ----gg.log("安全更新排行榜分数失败：分数类型无效", rankType, uin, playerName, newScore, "类型:", type(newScore))
         return false, 0, 0
     end
 
     -- CloudKVStore要求value为int类型，转换为整数
     local intScore = math.floor(newScore)
     if intScore ~= newScore then
-        --gg.log("排行榜分数转换为整数", rankType, uin, newScore, "->", intScore)
+        ----gg.log("排行榜分数转换为整数", rankType, uin, newScore, "->", intScore)
     end
 
-    --gg.log("开始安全更新排行榜分数", rankType, "玩家:", uin, playerName, "新分数:", newScore)
+    ----gg.log("开始安全更新排行榜分数", rankType, "玩家:", uin, playerName, "新分数:", newScore)
 
     -- 先获取云端当前分数进行比对
     local currentCloudScore = RankingCloudDataMgr.GetPlayerScore(rankType, uin, playerName)
@@ -145,16 +145,16 @@ function RankingCloudDataMgr.SafeUpdatePlayerScore(rankType, uin, playerName, ne
 
     -- 验证是否需要更新
     if not forceUpdate and intScore <= currentCloudScore then
-        ----gg.log("跳过更新：新分数不高于云端分数", rankType, uin, currentCloudScore, "->", intScore)
+        ------gg.log("跳过更新：新分数不高于云端分数", rankType, uin, currentCloudScore, "->", intScore)
         return false, currentCloudScore, currentCloudScore
     end
 
     -- 执行更新操作，使用整数分数
-    --gg.log("调用CloudStore:SetValue", "key:", tostring(uin), "name:", playerName, "value:", intScore)
+    ----gg.log("调用CloudStore:SetValue", "key:", tostring(uin), "name:", playerName, "value:", intScore)
     local result = cloudStore:SetValue(tostring(uin), playerName, intScore)
 
     -- 增强错误处理和调试日志
-    --gg.log("CloudStore:SetValue返回值", "类型:", type(result), "值:", result)
+    ----gg.log("CloudStore:SetValue返回值", "类型:", type(result), "值:", result)
 
     -- 兼容不同的返回值格式：根据实际测试，SetValue可能返回boolean或number
     local success = false
@@ -167,10 +167,10 @@ function RankingCloudDataMgr.SafeUpdatePlayerScore(rankType, uin, playerName, ne
     end
 
     if success then
-        --gg.log("安全更新排行榜分数成功", rankType, uin, currentCloudScore, "->", intScore)
+        ----gg.log("安全更新排行榜分数成功", rankType, uin, currentCloudScore, "->", intScore)
         return true, currentCloudScore, intScore
     else
-        --gg.log("安全更新排行榜分数失败", rankType, uin, playerName, intScore, "错误码:", result, "类型:", type(result))
+        ----gg.log("安全更新排行榜分数失败", rankType, uin, playerName, intScore, "错误码:", result, "类型:", type(result))
         return false, currentCloudScore, currentCloudScore
     end
 end
@@ -201,14 +201,14 @@ function RankingCloudDataMgr.SafeUpdatePlayerScoreAsync(rankType, uin, playerNam
     end
 
     if not uin or not playerName or not newScore then
-        --gg.log("异步安全更新排行榜分数失败：参数无效", rankType, uin, playerName, newScore)
+        ----gg.log("异步安全更新排行榜分数失败：参数无效", rankType, uin, playerName, newScore)
         if callback then callback(false, 0, 0) end
         return
     end
 
     -- 验证参数类型并转换为整数
     if type(newScore) ~= "number" then
-        --gg.log("异步安全更新排行榜分数失败：分数类型无效", rankType, uin, playerName, newScore, "类型:", type(newScore))
+        ----gg.log("异步安全更新排行榜分数失败：分数类型无效", rankType, uin, playerName, newScore, "类型:", type(newScore))
         if callback then callback(false, 0, 0) end
         return
     end
@@ -216,7 +216,7 @@ function RankingCloudDataMgr.SafeUpdatePlayerScoreAsync(rankType, uin, playerNam
     -- CloudKVStore要求value为int类型，转换为整数
     local intScore = math.floor(newScore)
     if intScore ~= newScore then
-        --gg.log("异步排行榜分数转换为整数", rankType, uin, newScore, "->", intScore)
+        ----gg.log("异步排行榜分数转换为整数", rankType, uin, newScore, "->", intScore)
     end
 
     -- 异步获取云端当前分数
@@ -227,16 +227,16 @@ function RankingCloudDataMgr.SafeUpdatePlayerScoreAsync(rankType, uin, playerNam
 
         -- 验证是否需要更新
         if not forceUpdate and intScore <= currentCloudScore then
-            ----gg.log("跳过异步更新：新分数不高于云端分数", rankType, uin, currentCloudScore, "->", intScore)
+            ------gg.log("跳过异步更新：新分数不高于云端分数", rankType, uin, currentCloudScore, "->", intScore)
             if callback then callback(false, currentCloudScore, currentCloudScore) end
             return
         end
 
         -- 执行异步更新，使用整数分数
-        --gg.log("调用CloudStore:SetValueAsync", "key:", tostring(uin), "name:", playerName, "value:", intScore)
+        ----gg.log("调用CloudStore:SetValueAsync", "key:", tostring(uin), "name:", playerName, "value:", intScore)
         cloudStore:SetValueAsync(tostring(uin), playerName, intScore, function(code)
             -- 兼容不同的返回值格式：根据实际测试，SetValueAsync回调可能返回boolean或number
-            --gg.log("CloudStore:SetValueAsync回调返回值", "类型:", type(code), "值:", code)
+            ----gg.log("CloudStore:SetValueAsync回调返回值", "类型:", type(code), "值:", code)
 
             local success = false
             if type(code) == "number" then
@@ -248,10 +248,10 @@ function RankingCloudDataMgr.SafeUpdatePlayerScoreAsync(rankType, uin, playerNam
             end
 
             if success then
-                --gg.log("异步安全更新排行榜分数成功", rankType, uin, currentCloudScore, "->", intScore)
+                ----gg.log("异步安全更新排行榜分数成功", rankType, uin, currentCloudScore, "->", intScore)
                 if callback then callback(true, currentCloudScore, intScore) end
             else
-                --gg.log("异步安全更新排行榜分数失败", rankType, uin, playerName, intScore, "错误码:", code, "类型:", type(code))
+                ----gg.log("异步安全更新排行榜分数失败", rankType, uin, playerName, intScore, "错误码:", code, "类型:", type(code))
                 if callback then callback(false, currentCloudScore, currentCloudScore) end
             end
         end)
@@ -290,37 +290,15 @@ function RankingCloudDataMgr.GetTopRankingData(rankType, count)
 
     local result = cloudStore:GetTopSync(count)
     if result and type(result) == "table" then
-        ----gg.log("获取TOP排行榜数据成功", rankType, "数量:", #result)
+        ------gg.log("获取TOP排行榜数据成功", rankType, "数量:", #result)
         return result
     else
-        --gg.log("获取TOP排行榜数据失败", rankType, count)
+        ----gg.log("获取TOP排行榜数据失败", rankType, count)
         return {}
     end
 end
 
---- 获取排行榜BOTTOM数据
----@param rankType string 排行榜类型
----@param count number 获取数量
----@return table 排行榜数据
-function RankingCloudDataMgr.GetBottomRankingData(rankType, count)
-    local cloudStore = RankingCloudDataMgr.GetOrCreateCloudStore(rankType)
-    if not cloudStore then
-        return {}
-    end
 
-    if not count or count <= 0 then
-        count = 10 -- 默认获取后10名
-    end
-
-    local result = cloudStore:GetBottomSync(count)
-    if result and type(result) == "table" then
-        ----gg.log("获取BOTTOM排行榜数据成功", rankType, "数量:", #result)
-        return result
-    else
-        --gg.log("获取BOTTOM排行榜数据失败", rankType, count)
-        return {}
-    end
-end
 
 --- 获取指定排名的数据
 ---@param rankType string 排行榜类型
@@ -334,16 +312,16 @@ function RankingCloudDataMgr.GetRankingDataByIndex(rankType, bAscend, index)
     end
 
     if not index or index <= 0 then
-        --gg.log("获取排名数据失败：索引无效", rankType, index)
+        ----gg.log("获取排名数据失败：索引无效", rankType, index)
         return {}
     end
 
     local result = cloudStore:GetOrderDataIndex(bAscend, index)
     if result and type(result) == "table" then
-        ----gg.log("获取指定排名数据成功", rankType, "排名:", index)
+        ------gg.log("获取指定排名数据成功", rankType, "排名:", index)
         return result
     else
-        --gg.log("获取指定排名数据失败", rankType, bAscend, index)
+        ----gg.log("获取指定排名数据失败", rankType, bAscend, index)
         return {}
     end
 end
@@ -360,16 +338,16 @@ function RankingCloudDataMgr.GetPlayerScore(rankType, uin, playerName)
     end
 
     if not uin or not playerName then
-        --gg.log("获取玩家分数失败：参数无效", rankType, uin, playerName)
+        ----gg.log("获取玩家分数失败：参数无效", rankType, uin, playerName)
         return -1
     end
 
     local result = cloudStore:GetValue(tostring(uin), playerName)
     if result and type(result) == "number" then
-        ----gg.log("获取玩家分数成功", rankType, uin, playerName, result)
+        ------gg.log("获取玩家分数成功", rankType, uin, playerName, result)
         return result
     else
-        ----gg.log("获取玩家分数失败或玩家未上榜", rankType, uin, playerName)
+        ------gg.log("获取玩家分数失败或玩家未上榜", rankType, uin, playerName)
         return -1
     end
 end
@@ -385,50 +363,21 @@ function RankingCloudDataMgr.RemovePlayer(rankType, uin)
     end
 
     if not uin then
-        --gg.log("移除玩家数据失败：UIN无效", rankType, uin)
+        ----gg.log("移除玩家数据失败：UIN无效", rankType, uin)
         return false
     end
 
     local result = cloudStore:RemoveKey(tostring(uin))
     if result == 0 then
-        --gg.log("移除玩家排行榜数据成功", rankType, uin)
+        ----gg.log("移除玩家排行榜数据成功", rankType, uin)
         return true
     else
-        --gg.log("移除玩家排行榜数据失败", rankType, uin, "错误码:", result)
+        ----gg.log("移除玩家排行榜数据失败", rankType, uin, "错误码:", result)
         return false
     end
 end
 
---- 异步移除玩家数据
----@param rankType string 排行榜类型
----@param uin string 玩家UIN
----@param callback function|nil 回调函数
-function RankingCloudDataMgr.RemovePlayerAsync(rankType, uin, callback)
-    local cloudStore = RankingCloudDataMgr.GetOrCreateCloudStore(rankType)
-    if not cloudStore then
-        if callback then callback(false) end
-        return
-    end
 
-    if not uin then
-        --gg.log("异步移除玩家数据失败：UIN无效", rankType, uin)
-        if callback then callback(false) end
-        return
-    end
-
-    cloudStore:RemoveKeyAsync(tostring(uin), function(code)
-        local success = (code == 0)
-        if success then
-            --gg.log("异步移除玩家排行榜数据成功", rankType, uin)
-        else
-            --gg.log("异步移除玩家排行榜数据失败", rankType, uin, "错误码:", code)
-        end
-
-        if callback then
-            callback(success)
-        end
-    end)
-end
 
 --- 获取排行榜配置信息
 ---@param rankType string 排行榜类型
@@ -441,127 +390,106 @@ function RankingCloudDataMgr.GetRankingConfig(rankType)
     return RankingConfig.CONFIGS[rankType]
 end
 
---- 批量安全更新玩家分数
+-- 批量安全更新玩家分数 (重构版)
+--- 1. 获取Top100数据
+--- 2. 内存比对
+--- 3. 异步更新
 ---@param rankType string 排行榜类型
 ---@param updates table 更新数据数组 {{uin, playerName, score}, ...}
 ---@param forceUpdate boolean|nil 是否强制更新
----@return number, table 成功更新的数量，详细结果
+---@return number, table 成功发起的更新数量，详细结果
 function RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, forceUpdate)
     if not updates or type(updates) ~= "table" or #updates == 0 then
-        --gg.log("批量安全更新失败：更新数据无效", rankType)
+        ----gg.log("批量安全更新失败：更新数据无效", rankType)
         return 0, {}
     end
 
-    local successCount = 0
-    local results = {}
+    -- 获取CloudStore实例
+    local cloudStore = RankingCloudDataMgr.GetOrCreateCloudStore(rankType)
+    if not cloudStore then
+        ----gg.log("批量安全更新失败：无法获取CloudStore", rankType)
+        return 0, {}
+    end
 
+    -- 1. 使用GetTopSync获取排行榜Top100数据
+    local topDataList = cloudStore:GetTopSync(100) or {}
+    local cloudScores = {} -- { [uin_string] = score }
+    for _, data in pairs(topDataList) do
+        if data and data.key then
+            cloudScores[data.key] = data.value or 0
+        end
+    end
+    --gg.log("获取Top100数据成功", rankType, "数量:", #topDataList)
+
+    -- 2. 在内存中进行批量比对，筛选出需要更新的数据
+    local needUpdateList = {}
+    local results = {}
+    
     for i, updateData in pairs(updates) do
         if updateData and type(updateData) == "table" and #updateData >= 3 then
             local uin = updateData[1]
             local playerName = updateData[2]
-            local score = updateData[3]
-
-            local success, oldScore, newScore = RankingCloudDataMgr.SafeUpdatePlayerScore(
-                rankType, tostring(uin), playerName, score, forceUpdate
-            )
-
-            local result = {
-                index = i,
-                uin = uin,
-                playerName = playerName,
-                success = success,
-                oldScore = oldScore,
-                newScore = newScore,
-                scoreChanged = (oldScore ~= newScore)
-            }
-            table.insert(results, result)
-
-            if success then
-                successCount = successCount + 1
-                if oldScore ~= newScore then
-                    --gg.log("批量更新成功", uin, playerName, oldScore, "->", newScore)
+            local newScore = updateData[3]
+            
+            if uin and playerName and type(newScore) == "number" then
+                local uinStr = tostring(uin)
+                local intScore = math.floor(newScore)
+                
+                -- 从获取的Top100数据中查找旧分数，如果找不到则默认为0
+                local oldScore = cloudScores[uinStr] or 0
+                
+                -- 判断是否需要更新
+                local needUpdate = forceUpdate or (intScore > oldScore)
+                
+                if needUpdate then
+                    table.insert(needUpdateList, {
+                        uin = uinStr,
+                        playerName = playerName,
+                        score = intScore,
+                        oldScore = oldScore
+                    })
                 end
+                
+                -- 记录比对结果
+                table.insert(results, {
+                    index = i,
+                    uin = uin,
+                    playerName = playerName,
+                    success = needUpdate, -- success 在这里表示“将要尝试更新”
+                    oldScore = oldScore,
+                    newScore = intScore,
+                    scoreChanged = needUpdate and (oldScore ~= intScore)
+                })
+            else
+                -- 无效数据
+                 table.insert(results, { index = i, uin = uin, success = false, error = "数据格式无效" })
             end
         else
-            --gg.log("批量更新跳过无效数据", i, updateData)
-            table.insert(results, {
-                index = i,
-                success = false,
-                error = "数据格式无效"
-            })
+            -- 数据格式无效
+            table.insert(results, { index = i, success = false, error = "数据格式无效" })
         end
     end
 
-    --gg.log("批量安全更新完成", rankType, "总数:", #updates, "成功:", successCount)
-    return successCount, results
-end
-
---- 批量异步安全更新玩家分数
----@param rankType string 排行榜类型
----@param updates table 更新数据数组 {{uin, playerName, score}, ...}
----@param forceUpdate boolean|nil 是否强制更新
----@param callback function|nil 回调函数 function(successCount, results)
-function RankingCloudDataMgr.BatchSafeUpdatePlayerScoreAsync(rankType, updates, forceUpdate, callback)
-    if not updates or type(updates) ~= "table" or #updates == 0 then
-        --gg.log("批量异步安全更新失败：更新数据无效", rankType)
-        if callback then callback(0, {}) end
-        return
-    end
-
-    local successCount = 0
-    local results = {}
-    local completedCount = 0
-    local totalCount = #updates
-
-    local function checkComplete()
-        completedCount = completedCount + 1
-        if completedCount >= totalCount then
-            --gg.log("批量异步安全更新完成", rankType, "总数:", totalCount, "成功:", successCount)
-            if callback then callback(successCount, results) end
-        end
-    end
-
-    for i, updateData in pairs(updates) do
-        if updateData and type(updateData) == "table" and #updateData >= 3 then
-            local uin = updateData[1]
-            local playerName = updateData[2]
-            local score = updateData[3]
-
-            RankingCloudDataMgr.SafeUpdatePlayerScoreAsync(
-                rankType, tostring(uin), playerName, score, forceUpdate,
-                function(success, oldScore, newScore)
-                    local result = {
-                        index = i,
-                        uin = uin,
-                        playerName = playerName,
-                        success = success,
-                        oldScore = oldScore,
-                        newScore = newScore,
-                        scoreChanged = (oldScore ~= newScore)
-                    }
-                    table.insert(results, result)
-
-                    if success then
-                        successCount = successCount + 1
-                        if oldScore ~= newScore then
-                            --gg.log("批量异步更新成功", uin, playerName, oldScore, "->", newScore)
-                        end
-                    end
-
-                    checkComplete()
+    -- 3. 异步更新需要变更的数据
+    if #needUpdateList > 0 then
+        ----gg.log("批量异步更新开始", rankType, "需要更新数量:", #needUpdateList)
+        
+        for _, item in pairs(needUpdateList) do
+            cloudStore:SetValueAsync(item.uin, item.playerName, item.score, function(code)
+                if code == 0 then
+                    --gg.log("异步更新成功", item.uin, item.playerName, item.oldScore, "->", item.score)
+                else
+                    ----gg.log("异步更新失败", item.uin, item.playerName, item.score, "错误码:", code)
                 end
-            )
-        else
-            --gg.log("批量异步更新跳过无效数据", i, updateData)
-            table.insert(results, {
-                index = i,
-                success = false,
-                error = "数据格式无效"
-            })
-            checkComplete()
+            end)
         end
     end
+
+    --gg.log("批量安全更新检查完成", rankType, "总数:", #updates, "需要更新:", #needUpdateList)
+    return #needUpdateList, results
 end
+
+
 
 --- 获取所有支持的排行榜类型
 ---@return table 排行榜类型列表
@@ -573,50 +501,24 @@ function RankingCloudDataMgr.GetAllRankingTypes()
     return types
 end
 
---- 检查排行榜是否需要重置（根据配置的重置类型）
----@param rankType string 排行榜类型
----@return boolean 是否需要重置
-function RankingCloudDataMgr.CheckNeedReset(rankType)
-    local config = RankingCloudDataMgr.GetRankingConfig(rankType)
-    if not config then
-        return false
-    end
 
-    local resetType = config.resetType
-    if resetType == "none" then
-        return false
-    end
-
-    -- TODO: 实现具体的时间检查逻辑
-    -- 这里可以根据resetType和当前时间判断是否需要重置
-    -- 暂时返回false，实际项目中可以扩展
-    return false
-end
 
 --- 系统初始化 - 预加载所有排行榜类型
 function RankingCloudDataMgr.SystemInit()
-    --gg.log("排行榜云数据管理器初始化开始")
+    ----gg.log("排行榜云数据管理器初始化开始")
 
     for rankType, config in pairs(RankingConfig.CONFIGS) do
         local success = RankingCloudDataMgr.InitRankingStore(rankType)
         if success then
-            --gg.log("排行榜类型初始化成功", rankType, config.displayName)
+            ----gg.log("排行榜类型初始化成功", rankType, config.displayName)
         else
-            --gg.log("排行榜类型初始化失败", rankType, config.displayName)
+            ----gg.log("排行榜类型初始化失败", rankType, config.displayName)
         end
     end
 
-    --gg.log("排行榜云数据管理器初始化完成")
+    ----gg.log("排行榜云数据管理器初始化完成")
 end
 
---- 系统关闭清理
-function RankingCloudDataMgr.SystemShutdown()
-    --gg.log("排行榜云数据管理器关闭清理开始")
 
-    -- 清理CloudKVStore实例缓存
-    cloudStoreCache = {}
-
-    --gg.log("排行榜云数据管理器关闭清理完成")
-end
 
 return RankingCloudDataMgr

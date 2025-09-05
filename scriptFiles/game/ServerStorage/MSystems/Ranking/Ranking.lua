@@ -455,15 +455,6 @@ function Ranking:GetRankType()
     return self.rankType
 end
 
---- 检查是否需要重置
----@return boolean 是否需要重置
-function Ranking:CheckNeedReset()
-    if not self.config then
-        return false
-    end
-    
-    return RankingCloudDataMgr.CheckNeedReset(self.rankType)
-end
 
 --- 获取排行榜摘要信息
 ---@return table 摘要信息

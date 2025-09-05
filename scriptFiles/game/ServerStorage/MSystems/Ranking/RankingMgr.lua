@@ -460,31 +460,7 @@ function RankingMgr.NotifyRankChange(uin, rankType, playerName, oldRank, newRank
     ------gg.log("排名变化通知", uin, rankType, oldRank, "->", newRank, "分数:", newScore)
 end
 
---- 定期维护任务
-function RankingMgr.PerformMaintenance()
-    local currentTime = os.time()
-    
-    -- 检查是否到了维护时间
-    if currentTime - lastMaintenanceTime < maintenanceInterval then
-        return
-    end
-    
-    lastMaintenanceTime = currentTime
-    ------gg.log("排行榜系统开始执行定期维护")
-    
-    -- 检查排行榜重置
-    for rankType, rankingInstance in pairs(server_ranking_instances) do
-        if rankingInstance then
-            -- 检查是否需要重置
-            if RankingCloudDataMgr.CheckNeedReset(rankType) then
-                ----gg.log("检测到排行榜需要重置", rankType)
-                RankingMgr.ClearRanking(rankType)
-            end
-        end
-    end
-    
-    ------gg.log("排行榜系统定期维护完成")
-end
+
 
 --- 更新重生排行榜（使用批量安全更新）
 function RankingMgr.UpdateRebirthRanking()
@@ -597,13 +573,6 @@ function RankingMgr.UpdatePowerRanking()
     if #updates > 0 then
         local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
         
-        -- 统计有意义的更新
-        local actualUpdates = 0
-        for _, result in pairs(results) do
-            if result.success and result.scoreChanged then
-                actualUpdates = actualUpdates + 1
-            end
-        end
         
         --gg.log("战力排行榜更新完成", "检查玩家:", #players, "有效数据:", #updates, "实际更新:", actualUpdates)
     else
@@ -633,27 +602,7 @@ function RankingMgr.SystemInit()
 
 end
 
---- 系统关闭
-function RankingMgr.SystemShutdown()
-    ----gg.log("排行榜管理器关闭开始")
-    
-    -- 清理所有排行榜实例
-    for rankType, rankingInstance in pairs(server_ranking_instances) do
-        if rankingInstance then
-            rankingInstance:Destroy()
-            ----gg.log("清理排行榜实例", rankType)
-        end
-    end
-    
-    -- 清空缓存
-    server_ranking_instances = {}
-    ranking_cache_status = {}
-    
-    -- 关闭云数据管理器
-    RankingCloudDataMgr.SystemShutdown()
-    
-    ----gg.log("排行榜管理器关闭完成")
-end
+
 
 --- 获取系统状态信息
 ---@return table 系统状态
