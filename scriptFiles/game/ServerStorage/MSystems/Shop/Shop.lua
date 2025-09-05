@@ -287,6 +287,9 @@ function Shop:GrantRewards(shopItem, player)
         
         if lotteryResult.success then
             -- 使用抽奖结果作为奖励
+            local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
+            LotteryEventManager.SendItemAcquiredNotification(player.uin, lotteryResult.rewards, poolName)
+            
             return true, "抽奖奖励发放成功"
         else
             return false, lotteryResult.errorMsg
