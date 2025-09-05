@@ -71,7 +71,8 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field limitConfig ShopItemLimitConfig 限购配置
 ---@field rewards ShopItemReward[] 获得物品
 ---@field executeCommands table[] 执行指令
----@field pool ShopItemPool 奖池配置
+---@field pool ShopItemPool|nil 奖池配置（table格式时使用）
+---@field lotteryConfig LotteryType|nil 抽奖配置（字符串格式时使用）
 ---@field uiConfig ShopItemUIConfig 界面配置
 ---@field specialProperties ShopItemSpecialProperties 特殊属性
 ---@field New fun(data:table):ShopItemType
@@ -96,7 +97,9 @@ function ShopItemType:OnInit(data)
     self.executeCommands = data["执行指令"] or {}
     
     -- 奖池配置
-    self.pool = self:ParsePool(data["奖池"] or {})
+    self.pool = nil
+    self.lotteryConfig = nil
+    self:ParsePool(data["奖池"])
     
     -- 界面配置
     self.uiConfig = self:ParseUIConfig(data["界面配置"] or {})
@@ -157,20 +160,19 @@ function ShopItemType:ParseRewards(rewardsData)
 end
 
 --- 解析奖池配置
----@param poolData table 奖池数据
----@return ShopItemPool 奖池配置对象
+---@param poolData table|string|nil 奖池数据，可能是table、字符串或nil
 function ShopItemType:ParsePool(poolData)
-    local guaranteedItem = poolData["保底物品"] or {}
-    return {
-        poolName = poolData["奖池名称"] or "",
-        poolItems = poolData["奖池物品"] or {},
-        guaranteedItem = {
-            itemType = guaranteedItem["商品类型"] or "物品",
-            itemName = guaranteedItem["商品名称"],
-            variableName = guaranteedItem["变量名称"],
-            amount = guaranteedItem["数量"] or 1
-        }
-    }
+    -- 如果poolData是字符串，则从ConfigLoader加载对应的LotteryType配置
+    if type(poolData) == "string" and poolData ~= "" then
+        local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+        local lotteryConfig = ConfigLoader.GetLottery(poolData)
+        
+        if lotteryConfig then
+            self.lotteryConfig = lotteryConfig
+        else
+            self.lotteryConfig  =nil
+        end
+    end
 end
 
 --- 解析界面配置
@@ -529,6 +531,44 @@ function ShopItemType:GetSortWeight()
         return self.uiConfig.sortWeight
     end
     return 0
+end
+
+-- 检查是否有奖池配置
+function ShopItemType:HasPool()
+    return (self.pool and self.pool.poolName and self.pool.poolName ~= "") or self.lotteryConfig ~= nil
+end
+
+-- 获取奖池配置（table格式）
+function ShopItemType:GetPool()
+    return self.pool
+end
+
+-- 获取奖池名称
+function ShopItemType:GetPoolName()
+    if self.lotteryConfig then
+        return self.lotteryConfig:GetConfigName()
+    elseif self.pool then
+        return self.pool.poolName
+    end
+    return ""
+end
+
+-- 检查奖池是否基于LotteryType配置
+function ShopItemType:IsLotteryPool()
+    return self.lotteryConfig ~= nil
+end
+
+-- 获取LotteryType配置
+function ShopItemType:GetLotteryConfig()
+    return self.lotteryConfig
+end
+
+-- 从奖池中随机选择奖励
+function ShopItemType:RandomSelectFromPool()
+    if self.lotteryConfig then
+        return self.lotteryConfig:RandomSelectReward()
+    end
+    return nil
 end
 
 return ShopItemType
