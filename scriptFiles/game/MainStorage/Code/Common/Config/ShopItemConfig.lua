@@ -1563,7 +1563,7 @@ ShopItemConfig.Data = {
         ['热卖标签'] = false,
         ['限定标签'] = false,
         ['推荐标签'] = false,
-        ['图标路径'] = 'sandboxId://FlyUi/迷你界面/物品图标/礼包3.png',
+        ['图标路径'] = 'sandboxId://FlyUi/迷你界面/物品图标/礼包2.png',
         ['图标数量'] = 0,
         ['背景样式'] = 'UR',
       },

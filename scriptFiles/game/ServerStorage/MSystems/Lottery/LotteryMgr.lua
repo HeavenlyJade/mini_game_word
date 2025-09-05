@@ -102,6 +102,17 @@ function LotteryMgr.SingleDraw(uin, poolName)
         }
     end
 
+    -- 检查奖励容量
+    gg.log("开始检查抽奖奖励容量...")
+    local hasCapacity, capacityError = LotteryMgr.CheckRewardCapacity(uin, poolName, "single")
+    if not hasCapacity then
+        gg.log("容量检查失败:", capacityError)
+        return {
+            success = false,
+            errorMsg = capacityError
+        }
+    end
+
     -- 检查消耗
     gg.log("开始检查抽奖消耗...")
     local canConsume, consumeError = LotteryMgr.CheckAndConsumeCost(uin, poolName, "single")
@@ -146,6 +157,17 @@ function LotteryMgr.FiveDraw(uin, poolName)
         }
     end
 
+    -- 检查奖励容量
+    gg.log("开始检查抽奖奖励容量...")
+    local hasCapacity, capacityError = LotteryMgr.CheckRewardCapacity(uin, poolName, "five")
+    if not hasCapacity then
+        gg.log("容量检查失败:", capacityError)
+        return {
+            success = false,
+            errorMsg = capacityError
+        }
+    end
+
     -- 检查消耗
     gg.log("开始检查抽奖消耗...")
     local canConsume, consumeError = LotteryMgr.CheckAndConsumeCost(uin, poolName, "five")
@@ -186,6 +208,15 @@ function LotteryMgr.TenDraw(uin, poolName)
         }
     end
 
+    -- 检查奖励容量
+    local hasCapacity, capacityError = LotteryMgr.CheckRewardCapacity(uin, poolName, "ten")
+    if not hasCapacity then
+        return {
+            success = false,
+            errorMsg = capacityError
+        }
+    end
+
     -- 检查消耗
     local canConsume, consumeError = LotteryMgr.CheckAndConsumeCost(uin, poolName, "ten")
     if not canConsume then
@@ -204,6 +235,102 @@ function LotteryMgr.TenDraw(uin, poolName)
     end
 
     return result
+end
+
+--- 检查抽奖池奖励类型的容量是否满足
+---@param uin number 玩家ID
+---@param poolName string 抽奖池名称
+---@param drawType string 抽奖类型
+---@return boolean, string 是否满足，错误信息
+function LotteryMgr.CheckRewardCapacity(uin, poolName, drawType)
+    gg.log("=== 开始检查抽奖奖励容量 ===")
+    gg.log("玩家UIN:", uin, "抽奖池:", poolName, "抽奖类型:", drawType)
+    
+    -- 获取抽奖配置
+    local lotteryConfig = ConfigLoader.GetLottery(poolName)
+    if not lotteryConfig then
+        gg.log("错误：抽奖池配置不存在，poolName:", poolName)
+        return false, "抽奖池配置不存在"
+    end
+
+    -- 获取玩家对象
+    local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
+    local player = serverDataMgr.getPlayerByUin(uin)
+    if not player then
+        gg.log("错误：未找到玩家对象，UIN:", uin)
+        return false, "玩家对象未找到"
+    end
+
+    -- 分析抽奖池中的奖励类型
+    local rewardTypes = {}
+    local rewardPool = lotteryConfig.rewardPool
+    if not rewardPool then
+        gg.log("错误：抽奖池奖励配置不存在，poolName:", poolName)
+        return false, "抽奖池奖励配置不存在"
+    end
+
+    -- 统计可能获得的奖励类型
+    for _, reward in ipairs(rewardPool) do
+        local rewardType = reward.rewardType
+        if rewardType then
+            rewardTypes[rewardType] = (rewardTypes[rewardType] or 0) + 1
+        end
+    end
+
+    -- 根据抽奖类型确定需要检查的槽位数量
+    local drawCount = 1
+    if drawType == "five" then
+        drawCount = 5
+    elseif drawType == "ten" then
+        drawCount = 10
+    end
+
+    -- 检查各类型奖励的容量
+    for rewardType, count in pairs(rewardTypes) do
+        if rewardType == "宠物" then
+            local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
+            -- 检查是否有足够的槽位进行多次抽奖
+            for i = 1, drawCount do
+                if not PetMgr.HasAvailableSlot(uin) then
+                    gg.log("错误：宠物槽位不足，第", i, "次抽奖时槽位已满")
+                    return false, string.format("宠物槽位不足，无法进行%d连抽", drawType == "five" and 5 or (drawType == "ten" and 10 or 1))
+                end
+            end
+            
+        elseif rewardType == "伙伴" then
+            local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
+            -- 检查是否有足够的槽位进行多次抽奖
+            for i = 1, drawCount do
+                if not PartnerMgr.HasAvailableSlot(uin) then
+                    gg.log("错误：伙伴槽位不足，第", i, "次抽奖时槽位已满")
+                    return false, string.format("伙伴槽位不足，无法进行%d连抽", drawType == "five" and 5 or (drawType == "ten" and 10 or 1))
+                end
+            end
+            
+        elseif rewardType == "翅膀" then
+            local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
+            -- 检查是否有足够的槽位进行多次抽奖
+            for i = 1, drawCount do
+                if not WingMgr.HasAvailableSlot(uin) then
+                    gg.log("错误：翅膀槽位不足，第", i, "次抽奖时槽位已满")
+                    return false, string.format("翅膀槽位不足，无法进行%d连抽", drawType == "five" and 5 or (drawType == "ten" and 10 or 1))
+                end
+            end
+            
+        elseif rewardType == "尾迹" then
+            local TrailMgr = require(ServerStorage.MSystems.Trail.TrailMgr) ---@type TrailMgr
+            -- 检查是否有足够的槽位进行多次抽奖
+            for i = 1, drawCount do
+                if not TrailMgr.HasAvailableSlot(uin) then
+                    gg.log("错误：尾迹槽位不足，第", i, "次抽奖时槽位已满")
+                    return false, string.format("尾迹槽位不足，无法进行%d连抽", drawType == "five" and 5 or (drawType == "ten" and 10 or 1))
+                end
+            end
+        end
+    end
+
+    gg.log("=== 抽奖奖励容量检查完成，容量充足 ===")
+    return true, ""
 end
 
 --- 检查并扣除抽奖消耗
@@ -230,6 +357,7 @@ function LotteryMgr.CheckAndConsumeCost(uin, poolName, drawType)
         gg.log("错误：抽奖消耗配置不存在，drawType:", drawType)
         return false, "抽奖消耗配置不存在"
     end
+    
 
     -- 检查背包系统中的货币
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)

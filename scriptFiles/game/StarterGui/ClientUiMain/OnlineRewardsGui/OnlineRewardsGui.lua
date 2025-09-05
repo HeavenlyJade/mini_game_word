@@ -528,7 +528,7 @@ end
 
 function OnlineRewardsGui:OnClaimRewardResponse(data)
     if not data or not data.success then
-        ------gg.log("领取奖励失败:", data and data.errorMsg or "未知错误")
+        gg.log("领取奖励失败:", data and data.errorMsg or "未知错误")
         
         -- 领取失败时，恢复按钮状态
         if data and data.index then
@@ -537,13 +537,19 @@ function OnlineRewardsGui:OnClaimRewardResponse(data)
         end
         return
     end
-    
+    if data.index and self.rewardData and self.rewardData.rewards then
+        local rewardStatus = self.rewardData.rewards[data.index]
+        if rewardStatus then
+            rewardStatus.status = 2  -- 立即标记为已领取
+            gg.log(string.format("立即更新本地数据：奖励 %d 标记为已领取", data.index))
+        end
+    end
     -- 领取成功，立即更新状态
     if data.index then
         self:UpdateSingleRewardStatus(data.index, 2)  -- 标记为已领取
     end
     
-    ------gg.log(string.format("奖励领取成功: %d", data.index))
+    gg.log(string.format("奖励领取成功: %d", data.index))
 end
 
 function OnlineRewardsGui:OnClaimAllResponse(data)
@@ -964,7 +970,8 @@ function OnlineRewardsGui:UpdateAllRewardTimeDisplays()
                     end
                     
                     -- 如果时间到了，更新按钮状态
-                    if remainingTime <= 0 and currentStatus == 0 then
+                    -- gg.log(string.format("奖励 %d 时间到了，更新按钮状态%s,剩余时间%s", index, remainingTime, currentStatus))
+                    if remainingTime <= 0 and currentStatus ~= 2  then
                         self:UpdateRewardButtonState(index, 1)  -- 标记为可领取
                     end
                 end
@@ -1012,21 +1019,21 @@ function OnlineRewardsGui:UpdateRewardButtonState(index, status)
         if rewardStatus then
             local oldStatus = rewardStatus.status
             rewardStatus.status = status
-            ----gg.log(string.format("本地数据状态更新: %d -> %d", oldStatus, status))
+            -- gg.log(string.format("本地数据状态更新: %d -> %d", oldStatus, status))
         end
     end
     
     -- 额外检查：只有时间真正到达的奖励才能设置为可领取
-    if status == 1 then
-        local reward = self.rewardConfig and self.rewardConfig:GetRewardByIndex(index)
-        if reward and reward.timeNode then
-            ----gg.log(string.format("时间检查：需要 %d 秒，当前 %d 秒", reward.timeNode, self.onlineTime))
-            if self.onlineTime < reward.timeNode then
-                ----gg.log(string.format("警告：奖励 %d 时间未到，强制设置为不可领取", index))
-                status = 0  -- 强制设置为未达成
-            end
-        end
-    end
+    -- if status == 1 then
+    --     local reward = self.rewardConfig and self.rewardConfig:GetRewardByIndex(index)
+    --     if reward and reward.timeNode then
+    --         ----gg.log(string.format("时间检查：需要 %d 秒，当前 %d 秒", reward.timeNode, self.onlineTime))
+    --         if self.onlineTime < reward.timeNode then
+    --             ----gg.log(string.format("警告：奖励 %d 时间未到，强制设置为不可领取", index))
+    --             status = 0  -- 强制设置为未达成
+    --         end
+    --     end
+    -- end
     
     -- 更新UI显示
     local slotButton = self.rewardButtons[index]
@@ -1034,7 +1041,7 @@ function OnlineRewardsGui:UpdateRewardButtonState(index, status)
         local canClaim = status == 1
         slotButton:SetGray(not canClaim)
         slotButton:SetTouchEnable(canClaim, nil)
-        ----gg.log(string.format("按钮 %d 设置为可点击: %s", index, tostring(canClaim)))
+        gg.log(string.format("按钮 %d 设置为可点击: %s", index, tostring(canClaim)))
     end
     
     -- 根据状态显示或隐藏按钮

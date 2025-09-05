@@ -309,8 +309,7 @@ function MServerInitPlayer.player_leave_game(player)
         AchievementMgr.OnPlayerLeave(uin_)
         RewardMgr.OnPlayerLeave(uin_)
         LotteryMgr.OnPlayerLeave(uin_)
-        local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
-        RewardBonusMgr.OnPlayerLeave(mplayer)
+
         mplayer:leaveGame()
         serverDataMgr.removePlayer(uin_, player.Name)
         local AutoPlayManager = require(ServerStorage.AutoRaceSystem.AutoPlayManager) ---@type AutoPlayManager
@@ -318,6 +317,8 @@ function MServerInitPlayer.player_leave_game(player)
         local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
 
         AutoRaceManager.CleanupPlayerAutoRaceState(uin_)
+        local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
+        RewardBonusMgr.OnPlayerLeave(mplayer)
     end
 end
 

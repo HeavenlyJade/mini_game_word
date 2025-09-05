@@ -71,7 +71,7 @@ function MainServer.start_server()
     serverDataMgr.uuid_start = gg.rand_int_between(100000, 999999)
     MServerInitPlayer.register_player_in_out()   --玩家进出游戏
     -- local physxService = PhysXService:GetInstance()
-    -- physxService:SetCollideInfo(1, 1, false)  
+    -- physxService:SetCollideInfo(1, 1, false)
     MainServer.initModule()
 
     MainServer.createNetworkChannel()     --建立网络通道
@@ -161,7 +161,7 @@ function MainServer.initModule()
     SceneInteractionEventManager.Init()
 
 
- 
+
     SceneNodeManager.Init()
     local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
     local AutoRaceManager = require(ServerStorage.AutoRaceSystem.AutoRaceManager) ---@type AutoRaceManager
@@ -171,6 +171,7 @@ function MainServer.initModule()
     AutoRaceEventManager.Init()
     AutoPlayManager.Init()
     AutoPlayEventManager.Init()
+    RewardMgr.Init()
 
 
 
