@@ -100,7 +100,10 @@ function LotteryGui:OnInit(node, config)
     -- 3. 按钮点击事件注册
     self:RegisterButtonEvents()
 
-    -- 4. 初始化抽奖物品列表
+    -- 4. 设置所有ViewList的布局属性
+    self:SetAllViewListsLayout()
+    
+    -- 5. 初始化抽奖物品列表
     self:InitializeLotteryItemLists()
     self:SyncAllViewListsToTemplate()
 
@@ -201,6 +204,74 @@ function LotteryGui:RegisterButtonEvents()
 
 
     ----gg.log("抽奖界面按钮事件注册完成")
+end
+
+--- 设置所有ViewList的布局属性
+function LotteryGui:SetAllViewListsLayout()
+    -- 收集所有需要设置的ViewList
+    local allViewLists = {
+        -- 翅膀抽奖列表
+        { name = "wingUltimateLotteryList", viewList = self.wingUltimateLotteryList },
+        { name = "wingMidUltimateLotteryList", viewList = self.wingMidUltimateLotteryList },
+        { name = "wingHighUltimateLotteryList", viewList = self.wingHighUltimateLotteryList },
+        
+        -- 宠物初级档位抽奖列表
+        { name = "petBeginnerLotteryList", viewList = self.petBeginnerLotteryList },
+        { name = "petIntermediateLotteryList", viewList = self.petIntermediateLotteryList },
+        { name = "petAdvancedLotteryList", viewList = self.petAdvancedLotteryList },
+        
+        -- 宠物中级档位抽奖列表
+        { name = "petMidBeginnerLotteryList", viewList = self.petMidBeginnerLotteryList },
+        { name = "petMidIntermediateLotteryList", viewList = self.petMidIntermediateLotteryList },
+        { name = "petMidAdvancedLotteryList", viewList = self.petMidAdvancedLotteryList },
+        
+        -- 宠物高级档位抽奖列表
+        { name = "petHighBeginnerLotteryList", viewList = self.petHighBeginnerLotteryList },
+        { name = "petHighIntermediateLotteryList", viewList = self.petHighIntermediateLotteryList },
+        { name = "petHighAdvancedLotteryList", viewList = self.petHighAdvancedLotteryList },
+        
+        -- 伙伴初级档位抽奖列表
+        { name = "partnerBeginnerLotteryList", viewList = self.partnerBeginnerLotteryList },
+        { name = "partnerUltimateLotteryList", viewList = self.partnerUltimateLotteryList },
+        
+        -- 伙伴中级档位抽奖列表
+        { name = "partnerMidBeginnerLotteryList", viewList = self.partnerMidBeginnerLotteryList },
+        { name = "partnerMidUltimateLotteryList", viewList = self.partnerMidUltimateLotteryList },
+        
+        -- 伙伴高级档位抽奖列表
+        { name = "partnerHighBeginnerLotteryList", viewList = self.partnerHighBeginnerLotteryList },
+        { name = "partnerHighUltimateLotteryList", viewList = self.partnerHighUltimateLotteryList }
+    }
+
+    -- 统计设置成功/失败的数量
+    local successCount = 0
+    local failCount = 0
+
+    -- 遍历所有ViewList并设置布局属性
+    for _, listInfo in ipairs(allViewLists) do
+        local viewList = listInfo.viewList
+        local listName = listInfo.name
+        
+        if viewList and viewList.node then
+            -- 设置布局属性
+            pcall(function()
+                viewList.node.ScrollType = Enum.ListLayoutType.FLOW_VERTICAL
+                viewList.node.OverflowType = Enum.OverflowType.VERTICAL
+                viewList.node.IsNotifyEventStop = false
+                successCount = successCount + 1
+                --gg.log("✅ 成功设置ViewList布局:", listName)
+            end)
+        else
+            failCount = failCount + 1
+            --gg.log("❌ ViewList不存在或无效:", listName)
+        end
+    end
+
+    -- 输出设置结果统计
+    --gg.log("ViewList布局设置完成:")
+    --gg.log("  成功:", successCount, "个")
+    --gg.log("  失败:", failCount, "个")
+    --gg.log("  总计:", successCount + failCount, "个")
 end
 
 --- 将所有ViewList的Size、OverflowType、ScrollType设置为与模版界面一致
