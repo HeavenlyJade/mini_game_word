@@ -26,7 +26,6 @@ local RankingMgr = {}
 local server_ranking_instances = {} ---@type table<string, Ranking>
 
 -- 排行榜缓存状态记录
-local ranking_cache_status = {} ---@type table<string, boolean>
 
 -- 定时器相关
 local lastMaintenanceTime = 0
@@ -486,7 +485,7 @@ function RankingMgr.PerformMaintenance()
     ------gg.log("排行榜系统定期维护完成")
 end
 
---- 更新重生排行榜（使用批量安全更新）
+--- 修改：UpdateRebirthRanking - 适配缓存模式（保持原有接口）
 function RankingMgr.UpdateRebirthRanking()
     local rankType = RankingConfig.TYPES.REBIRTH
     if not rankType then 
@@ -497,7 +496,7 @@ function RankingMgr.UpdateRebirthRanking()
     local players = serverDataMgr.getAllPlayers()
     local updates = {}
 
-    -- 收集需要更新的玩家数据
+    -- 收集需要更新的玩家数据（保持原有逻辑）
     for uin, player in pairs(players) do
         if player and player.variableSystem then
             local rebirthCount = player.variableSystem:GetVariable("数据_固定值_重生次数", 0)
@@ -508,11 +507,11 @@ function RankingMgr.UpdateRebirthRanking()
         end
     end
 
-    -- 批量安全更新排行榜
+    -- 批量更新（现在使用缓存优化，但接口保持不变）
     if #updates > 0 then
         local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
         
-        -- 统计有意义的更新
+        -- 统计有意义的更新（保持原有逻辑）
         local actualUpdates = 0
         for _, result in pairs(results) do
             if result.success and result.scoreChanged then
@@ -526,20 +525,20 @@ function RankingMgr.UpdateRebirthRanking()
     end
 end
 
---- 更新充值排行榜（使用批量安全更新）
+--- 修改：UpdateRechargeRanking - 适配缓存模式（保持原有接口）
 function RankingMgr.UpdateRechargeRanking()
     local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
 
     local rankType = RankingConfig.TYPES.RECHARGE
     if not rankType then 
-        ----gg.log("充值排行榜更新失败：排行榜类型无效")
+        --gg.log("充值排行榜更新失败：排行榜类型无效")
         return 
     end
 
     local players = serverDataMgr.getAllPlayers()
     local updates = {}
 
-    -- 收集需要更新的玩家数据
+    -- 收集需要更新的玩家数据（保持原有逻辑）
     for uin, player in pairs(players) do
         if player then
             -- 获取玩家商城实例
@@ -553,11 +552,11 @@ function RankingMgr.UpdateRechargeRanking()
         end
     end
 
-    -- 批量安全更新排行榜
+    -- 批量更新（现在使用缓存优化，但接口保持不变）
     if #updates > 0 then
         local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
         
-        -- 统计有意义的更新
+        -- 统计有意义的更新（保持原有逻辑）
         local actualUpdates = 0
         for _, result in pairs(results) do
             if result.success and result.scoreChanged then
@@ -565,24 +564,24 @@ function RankingMgr.UpdateRechargeRanking()
             end
         end
         
-        ----gg.log("充值排行榜更新完成", "检查玩家:", #players, "有效数据:", #updates, "实际更新:", actualUpdates)
+        --gg.log("充值排行榜更新完成", "检查玩家:", #players, "有效数据:", #updates, "实际更新:", actualUpdates)
     else
-        ----gg.log("充值排行榜更新：无有效玩家数据")
+        --gg.log("充值排行榜更新：无有效玩家数据")
     end
 end
 
---- 更新战力排行榜（使用批量安全更新）
+--- 修改：UpdatePowerRanking - 适配缓存模式（保持原有接口）
 function RankingMgr.UpdatePowerRanking()
     local rankType = RankingConfig.TYPES.POWER
     if not rankType then 
-        ----gg.log("战力排行榜更新失败：排行榜类型无效")
+        --gg.log("战力排行榜更新失败：排行榜类型无效")
         return 
     end
 
     local players = serverDataMgr.getAllPlayers()
     local updates = {}
 
-    -- 收集需要更新的玩家数据
+    -- 收集需要更新的玩家数据（保持原有逻辑）
     for uin, player in pairs(players) do
         if player and player.variableSystem then
             local maxPowerValue = player.variableSystem:GetVariable("数据_固定值_历史最大战力值", 0)
@@ -593,11 +592,11 @@ function RankingMgr.UpdatePowerRanking()
         end
     end
 
-    -- 批量安全更新排行榜
+    -- 批量更新（现在使用缓存优化，但接口保持不变）
     if #updates > 0 then
         local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
         
-        -- 统计有意义的更新
+        -- 统计有意义的更新（保持原有逻辑）
         local actualUpdates = 0
         for _, result in pairs(results) do
             if result.success and result.scoreChanged then
@@ -673,22 +672,28 @@ function RankingMgr.GetSystemStatus()
     return status
 end
 
+--- 重构：UpdateRanking - 改为缓存优先模式（最小修改）
 function RankingMgr.UpdateRanking()
-    ----gg.log("开始执行排行榜更新任务")
+    --gg.log("开始执行排行榜更新任务")
+    
+    -- 确保缓存已初始化
+    for rankType, _ in pairs(RankingConfig.CONFIGS or {}) do
+        RankingCloudDataMgr.InitCacheFromCloud(rankType)
+    end
     
     -- 更新重生排行榜
-    ----gg.log("正在更新重生排行榜...")
+    --gg.log("正在更新重生排行榜...")
     RankingMgr.UpdateRebirthRanking()
     
     -- 更新充值排行榜
-    ----gg.log("正在更新充值排行榜...")
+    --gg.log("正在更新充值排行榜...")
     RankingMgr.UpdateRechargeRanking()
     
     -- 更新战力排行榜
-    ----gg.log("正在更新战力排行榜...")
+    --gg.log("正在更新战力排行榜...")
     RankingMgr.UpdatePowerRanking()
     
-    -- 通知客户端排行榜数据更新
+    -- 通知客户端排行榜数据更新（保持原有逻辑）
     local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
     local players = serverDataMgr.getAllPlayers()
     local playerCount = 0
@@ -699,6 +704,6 @@ function RankingMgr.UpdateRanking()
         playerCount = playerCount + 1
     end
     
-    ----gg.log("排行榜更新任务完成", "通知玩家数量:", playerCount)
+    --gg.log("排行榜更新任务完成", "通知玩家数量:", playerCount)
 end
 return RankingMgr
