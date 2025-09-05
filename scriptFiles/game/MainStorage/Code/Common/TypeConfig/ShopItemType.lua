@@ -71,7 +71,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field limitConfig ShopItemLimitConfig 限购配置
 ---@field rewards ShopItemReward[] 获得物品
 ---@field executeCommands table[] 执行指令
----@field pool ShopItemPool|nil 奖池配置（table格式时使用）
+---@field pool string|nil 奖池配置（table格式时使用）
 ---@field lotteryConfig LotteryType|nil 抽奖配置（字符串格式时使用）
 ---@field uiConfig ShopItemUIConfig 界面配置
 ---@field specialProperties ShopItemSpecialProperties 特殊属性
@@ -548,9 +548,9 @@ function ShopItemType:GetPoolName()
     if self.lotteryConfig then
         return self.lotteryConfig:GetConfigName()
     elseif self.pool then
-        return self.pool.poolName
+        return self.pool
     end
-    return ""
+    return nil
 end
 
 -- 检查奖池是否基于LotteryType配置

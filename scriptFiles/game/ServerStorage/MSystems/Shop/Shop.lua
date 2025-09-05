@@ -274,11 +274,28 @@ end
 ---@param player MPlayer 玩家对象
 ---@return boolean, string 是否成功，失败原因
 function Shop:GrantRewards(shopItem, player)
-    if not shopItem.rewards or not next(shopItem.rewards) then
-        return true, "无奖励物品"
+
+    gg.log("发放奖励抽奖", shopItem.configName, shopItem:IsLotteryPool())
+    if shopItem:IsLotteryPool() and shopItem.lotteryConfig then
+        -- 调用抽奖系统进行奖励发放
+        local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
+        local poolName = shopItem:GetPoolName()
+        if not poolName then
+            return false, "抽奖池名称不存在"
+        end
+        local lotteryResult = LotteryMgr.SingleDraw(player.uin, poolName)
+        
+        if lotteryResult.success then
+            -- 使用抽奖结果作为奖励
+            return true, "抽奖奖励发放成功"
+        else
+            return false, lotteryResult.errorMsg
+        end
     end
-    
     -- 使用统一奖励分发器发放奖励
+    if not shopItem.rewards or not next(shopItem.rewards) then
+        return false, "无奖励物品"
+    end
     local success, resultMsg, failedRewards = PlayerRewardDispatcher.DispatchRewards(player, shopItem.rewards)
     
     if not success then
