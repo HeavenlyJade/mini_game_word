@@ -25,8 +25,6 @@ local RankingMgr = {}
 -- 排行榜实例缓存 {排行榜类型 = Ranking实例}
 local server_ranking_instances = {} ---@type table<string, Ranking>
 
--- 排行榜缓存状态记录
-
 -- 定时器相关
 local lastMaintenanceTime = 0
 local maintenanceInterval = 300 -- 5分钟执行一次维护
@@ -36,7 +34,6 @@ local maintenanceInterval = 300 -- 5分钟执行一次维护
 ---@return Ranking|nil 排行榜实例
 function RankingMgr.GetRankingInstance(rankType)
     if not rankType or type(rankType) ~= "string" then
-        ----gg.log("获取排行榜实例失败：排行榜类型无效", rankType)
         return nil
     end
     
@@ -48,7 +45,6 @@ end
 ---@return Ranking|nil 排行榜实例
 function RankingMgr.GetOrCreateRanking(rankType)
     if not rankType or type(rankType) ~= "string" then
-        ----gg.log("获取或创建排行榜失败：排行榜类型无效", rankType)
         return nil
     end
     
@@ -60,29 +56,24 @@ function RankingMgr.GetOrCreateRanking(rankType)
     
     -- 验证排行榜类型是否支持
     if not RankingCloudDataMgr.ValidateRankingType(rankType) then
-        ----gg.log("创建排行榜失败：不支持的排行榜类型", rankType)
         return nil
     end
     
     -- 创建新的排行榜实例
     rankingInstance = Ranking.New(rankType)
     if not rankingInstance then
-        ----gg.log("创建排行榜实例失败", rankType)
         return nil
     end
     
     -- 初始化排行榜
     local success = rankingInstance:Initialize()
     if not success then
-        ----gg.log("初始化排行榜失败", rankType)
         return nil
     end
     
     -- 缓存实例
     server_ranking_instances[rankType] = rankingInstance
-    ranking_cache_status[rankType] = true
     
-    ----gg.log("创建并缓存排行榜实例成功", rankType)
     return rankingInstance
 end
 
@@ -95,12 +86,10 @@ end
 ---@return boolean 是否成功
 function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score, forceUpdate)
     if not uin or not rankType or not playerName or not score then
-        ----gg.log("更新玩家分数失败：参数无效", uin, rankType, playerName, score)
         return false
     end
     
     if type(uin) ~= "number" or type(score) ~= "number" then
-        ----gg.log("更新玩家分数失败：参数类型错误", uin, score)
         return false
     end
     
@@ -120,13 +109,7 @@ function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score, forceUpd
     )
     
     if not success then
-        if newScore == oldScore then
-            -- 分数没有变化，这是正常的，不需要记录错误
-            return false
-        else
-            ----gg.log("更新玩家分数失败", uin, rankType, playerName, score)
-            return false
-        end
+        return false
     end
     
     -- 获取新排名
@@ -138,9 +121,6 @@ function RankingMgr.UpdatePlayerScore(uin, rankType, playerName, score, forceUpd
         RankingMgr.NotifyRankChange(uin, rankType, playerName, oldRank, newRank, newScore)
     end
     
-    if oldScore ~= newScore then
-        ----gg.log("更新玩家分数成功", uin, rankType, playerName, oldScore, "->", newScore, "排名:", newRank)
-    end
     return true
 end
 
@@ -207,7 +187,6 @@ end
 ---@return table 排行榜数据
 function RankingMgr.GetRankingList(rankType, startRank, count)
     if not rankType then
-        ----gg.log("获取排行榜列表失败：排行榜类型无效", rankType)
         return {}
     end
     
@@ -216,7 +195,6 @@ function RankingMgr.GetRankingList(rankType, startRank, count)
     count = count or 10
     
     if startRank <= 0 or count <= 0 or count > 100 then
-        ----gg.log("获取排行榜列表失败：参数范围无效", startRank, count)
         return {}
     end
     
@@ -228,7 +206,6 @@ function RankingMgr.GetRankingList(rankType, startRank, count)
     
     -- 获取排行榜数据
     local rankingList = rankingInstance:GetRankingList(startRank, count)
-    ------gg.log("获取排行榜列表成功", rankType, startRank, count, "实际返回:", #rankingList)
     
     return rankingList
 end
@@ -239,7 +216,6 @@ end
 ---@return table 排名信息 {rank: number, score: number, playerName: string}
 function RankingMgr.GetPlayerRank(uin, rankType)
     if not uin or not rankType then
-        ----gg.log("获取玩家排名失败：参数无效", uin, rankType)
         return {rank = -1, score = 0, playerName = ""}
     end
     
@@ -251,7 +227,6 @@ function RankingMgr.GetPlayerRank(uin, rankType)
     
     -- 获取玩家排名信息
     local rankInfo = rankingInstance:GetPlayerRank(uin)
-    ------gg.log("获取玩家排名成功", uin, rankType, rankInfo.rank, rankInfo.score)
     
     return rankInfo
 end
@@ -261,23 +236,16 @@ end
 ---@return boolean 是否成功
 function RankingMgr.RefreshRanking(rankType)
     if not rankType then
-        ----gg.log("刷新排行榜失败：排行榜类型无效", rankType)
         return false
     end
     
     local rankingInstance = server_ranking_instances[rankType]
     if not rankingInstance then
-        ----gg.log("刷新排行榜失败：排行榜实例不存在", rankType)
         return false
     end
     
     -- CloudKVStore是实时的，这里主要是标记刷新状态
     local success = rankingInstance:Refresh()
-    if success then
-        ----gg.log("刷新排行榜成功", rankType)
-    else
-        ----gg.log("刷新排行榜失败", rankType)
-    end
     
     return success
 end
@@ -287,7 +255,6 @@ end
 ---@return boolean 是否成功
 function RankingMgr.ClearRanking(rankType)
     if not rankType then
-        ----gg.log("清空排行榜失败：排行榜类型无效", rankType)
         return false
     end
     
@@ -299,11 +266,6 @@ function RankingMgr.ClearRanking(rankType)
     
     -- 清空排行榜数据
     local success = rankingInstance:ClearRanking()
-    if success then
-        ----gg.log("清空排行榜成功", rankType)
-    else
-        ----gg.log("清空排行榜失败", rankType)
-    end
     
     return success
 end
@@ -314,23 +276,16 @@ end
 ---@return boolean 是否成功
 function RankingMgr.RemovePlayer(uin, rankType)
     if not uin or not rankType then
-        ----gg.log("移除玩家数据失败：参数无效", uin, rankType)
         return false
     end
     
     local rankingInstance = server_ranking_instances[rankType]
     if not rankingInstance then
-        ----gg.log("移除玩家数据失败：排行榜实例不存在", rankType)
         return false
     end
     
     -- 移除玩家数据
     local success = rankingInstance:RemovePlayer(uin)
-    if success then
-        ----gg.log("移除玩家排行榜数据成功", uin, rankType)
-    else
-        ----gg.log("移除玩家排行榜数据失败", uin, rankType)
-    end
     
     return success
 end
@@ -363,7 +318,6 @@ end
 ---@return number 成功更新的数量
 function RankingMgr.BatchUpdatePlayerScores(updates, forceUpdate)
     if not updates or type(updates) ~= "table" then
-        ----gg.log("批量更新玩家分数失败：参数无效")
         return 0
     end
     
@@ -409,7 +363,6 @@ function RankingMgr.BatchUpdatePlayerScores(updates, forceUpdate)
         end
     end
     
-    ----gg.log("批量更新玩家分数完成", "总数:", #updates, "成功:", totalSuccessCount)
     return totalSuccessCount
 end
 
@@ -455,8 +408,6 @@ function RankingMgr.NotifyRankChange(uin, rankType, playerName, oldRank, newRank
     local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager)
     RankingEventManager.BroadcastRankingUpdate(rankType, updateData)
     --]]
-    
-    ------gg.log("排名变化通知", uin, rankType, oldRank, "->", newRank, "分数:", newScore)
 end
 
 --- 定期维护任务
@@ -469,79 +420,52 @@ function RankingMgr.PerformMaintenance()
     end
     
     lastMaintenanceTime = currentTime
-    ------gg.log("排行榜系统开始执行定期维护")
     
     -- 检查排行榜重置
     for rankType, rankingInstance in pairs(server_ranking_instances) do
         if rankingInstance then
             -- 检查是否需要重置
             if RankingCloudDataMgr.CheckNeedReset(rankType) then
-                ----gg.log("检测到排行榜需要重置", rankType)
                 RankingMgr.ClearRanking(rankType)
             end
         end
     end
-    
-    ------gg.log("排行榜系统定期维护完成")
 end
 
---- 修改：UpdateRebirthRanking - 适配缓存模式（保持原有接口）
+--- 修改：UpdateRebirthRanking - 简化为核心功能
 function RankingMgr.UpdateRebirthRanking()
     local rankType = RankingConfig.TYPES.REBIRTH
-    if not rankType then 
-        --gg.log("重生排行榜更新失败：排行榜类型无效")
-        return 
-    end
+    if not rankType then return end
 
     local players = serverDataMgr.getAllPlayers()
     local updates = {}
 
-    -- 收集需要更新的玩家数据（保持原有逻辑）
     for uin, player in pairs(players) do
         if player and player.variableSystem then
             local rebirthCount = player.variableSystem:GetVariable("数据_固定值_重生次数", 0)
-            
             if rebirthCount and rebirthCount > 0 then
                 table.insert(updates, {uin, player.name, rebirthCount})
             end
         end
     end
 
-    -- 批量更新（现在使用缓存优化，但接口保持不变）
     if #updates > 0 then
-        local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
-        
-        -- 统计有意义的更新（保持原有逻辑）
-        local actualUpdates = 0
-        for _, result in pairs(results) do
-            if result.success and result.scoreChanged then
-                actualUpdates = actualUpdates + 1
-            end
-        end
-        
-        --gg.log("重生排行榜更新完成", "检查玩家:", #players, "有效数据:", #updates, "实际更新:", actualUpdates)
-    else
-        --gg.log("重生排行榜更新：无有效玩家数据")
+        RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
     end
 end
 
---- 修改：UpdateRechargeRanking - 适配缓存模式（保持原有接口）
+--- 修改：UpdateRechargeRanking - 简化为核心功能
 function RankingMgr.UpdateRechargeRanking()
     local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
 
     local rankType = RankingConfig.TYPES.RECHARGE
-    if not rankType then 
-        --gg.log("充值排行榜更新失败：排行榜类型无效")
-        return 
-    end
+    if not rankType then return end
 
     local players = serverDataMgr.getAllPlayers()
     local updates = {}
 
-    -- 收集需要更新的玩家数据（保持原有逻辑）
     for uin, player in pairs(players) do
         if player then
-            -- 获取玩家商城实例
             local shopInstance = ShopMgr.GetPlayerShop(uin)
             if shopInstance then
                 local totalPurchaseValue = shopInstance.totalPurchaseValue or 0
@@ -552,71 +476,37 @@ function RankingMgr.UpdateRechargeRanking()
         end
     end
 
-    -- 批量更新（现在使用缓存优化，但接口保持不变）
     if #updates > 0 then
-        local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
-        
-        -- 统计有意义的更新（保持原有逻辑）
-        local actualUpdates = 0
-        for _, result in pairs(results) do
-            if result.success and result.scoreChanged then
-                actualUpdates = actualUpdates + 1
-            end
-        end
-        
-        --gg.log("充值排行榜更新完成", "检查玩家:", #players, "有效数据:", #updates, "实际更新:", actualUpdates)
-    else
-        --gg.log("充值排行榜更新：无有效玩家数据")
+        RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
     end
 end
 
---- 修改：UpdatePowerRanking - 适配缓存模式（保持原有接口）
+--- 修改：UpdatePowerRanking - 简化为核心功能
 function RankingMgr.UpdatePowerRanking()
     local rankType = RankingConfig.TYPES.POWER
-    if not rankType then 
-        --gg.log("战力排行榜更新失败：排行榜类型无效")
-        return 
-    end
+    if not rankType then return end
 
     local players = serverDataMgr.getAllPlayers()
     local updates = {}
 
-    -- 收集需要更新的玩家数据（保持原有逻辑）
     for uin, player in pairs(players) do
         if player and player.variableSystem then
             local maxPowerValue = player.variableSystem:GetVariable("数据_固定值_历史最大战力值", 0)
-            
             if maxPowerValue and maxPowerValue > 0 then
                 table.insert(updates, {uin, player.name, maxPowerValue})
             end
         end
     end
 
-    -- 批量更新（现在使用缓存优化，但接口保持不变）
     if #updates > 0 then
-        local successCount, results = RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
-        
-        -- 统计有意义的更新（保持原有逻辑）
-        local actualUpdates = 0
-        for _, result in pairs(results) do
-            if result.success and result.scoreChanged then
-                actualUpdates = actualUpdates + 1
-            end
-        end
-        
-        --gg.log("战力排行榜更新完成", "检查玩家:", #players, "有效数据:", #updates, "实际更新:", actualUpdates)
-    else
-        --gg.log("战力排行榜更新：无有效玩家数据")
+        RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, false)
     end
 end
 
 --- 系统初始化
 function RankingMgr.SystemInit()
-    ----gg.log("排行榜管理器初始化开始")
-    
     -- 初始化云数据管理器
     RankingCloudDataMgr.SystemInit()
-    
     
     -- 重置维护时间
     lastMaintenanceTime = os.time()
@@ -629,29 +519,22 @@ function RankingMgr.SystemInit()
     timer.Interval = 60 -- 每60秒更新一次
     timer.Callback = RankingMgr.UpdateRanking
     timer:Start()
-
 end
 
 --- 系统关闭
 function RankingMgr.SystemShutdown()
-    ----gg.log("排行榜管理器关闭开始")
-    
     -- 清理所有排行榜实例
     for rankType, rankingInstance in pairs(server_ranking_instances) do
         if rankingInstance then
             rankingInstance:Destroy()
-            ----gg.log("清理排行榜实例", rankType)
         end
     end
     
     -- 清空缓存
     server_ranking_instances = {}
-    ranking_cache_status = {}
     
     -- 关闭云数据管理器
     RankingCloudDataMgr.SystemShutdown()
-    
-    ----gg.log("排行榜管理器关闭完成")
 end
 
 --- 获取系统状态信息
@@ -672,38 +555,19 @@ function RankingMgr.GetSystemStatus()
     return status
 end
 
---- 重构：UpdateRanking - 改为缓存优先模式（最小修改）
+--- 重构：UpdateRanking - 简化为核心功能
 function RankingMgr.UpdateRanking()
-    --gg.log("开始执行排行榜更新任务")
-    
-    -- 确保缓存已初始化
-    for rankType, _ in pairs(RankingConfig.CONFIGS or {}) do
-        RankingCloudDataMgr.InitCacheFromCloud(rankType)
-    end
-    
-    -- 更新重生排行榜
-    --gg.log("正在更新重生排行榜...")
+    -- 更新三个排行榜
     RankingMgr.UpdateRebirthRanking()
-    
-    -- 更新充值排行榜
-    --gg.log("正在更新充值排行榜...")
     RankingMgr.UpdateRechargeRanking()
-    
-    -- 更新战力排行榜
-    --gg.log("正在更新战力排行榜...")
     RankingMgr.UpdatePowerRanking()
     
-    -- 通知客户端排行榜数据更新（保持原有逻辑）
+    -- 通知客户端
     local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
     local players = serverDataMgr.getAllPlayers()
-    local playerCount = 0
     
-    -- 收集需要更新的玩家数据
     for uin, player in pairs(players) do
         RankingEventManager.NotifyAllDataToClient(uin)
-        playerCount = playerCount + 1
     end
-    
-    --gg.log("排行榜更新任务完成", "通知玩家数量:", playerCount)
 end
 return RankingMgr
