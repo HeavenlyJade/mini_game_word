@@ -23,10 +23,15 @@ local MPlayer = require(ServerStorage.EntityTypes.MPlayer) ---@type MPlayer
 local RankingMgr = {}
 
 -- 排行榜实例缓存 {排行榜类型 = Ranking实例}
-local server_ranking_instances = {} ---@type table<string, Ranking>
+local server_ranking_instances = {} ---@type table<string, any>
 
 -- 排行榜缓存状态记录
 local ranking_cache_status = {} ---@type table<string, boolean>
+
+-- 全局排行榜数据缓存
+local all_rankings_data_cache = {} ---@type table<string, {list: table, config: table}>
+local cache_last_refresh_time = 0
+local CACHE_EXPIRATION_TIME = 55 -- 缓存有效期55秒，略小于定时器60秒的间隔
 
 -- 定时器相关
 local lastMaintenanceTime = 0
@@ -34,7 +39,7 @@ local maintenanceInterval = 300 -- 5分钟执行一次维护
 
 --- 获取排行榜实例
 ---@param rankType string 排行榜类型
----@return Ranking|nil 排行榜实例
+---@return any|nil 排行榜实例
 function RankingMgr.GetRankingInstance(rankType)
     if not rankType or type(rankType) ~= "string" then
         ----gg.log("获取排行榜实例失败：排行榜类型无效", rankType)
@@ -44,9 +49,39 @@ function RankingMgr.GetRankingInstance(rankType)
     return server_ranking_instances[rankType]
 end
 
+--- 获取或加载所有排行榜的缓存数据
+---@return table
+function RankingMgr.GetOrLoadAllRankingsData()
+    local currentTime = os.time()
+    -- 检查缓存是否有效 (使用 next 检查是否为空表)
+    if next(all_rankings_data_cache) and (currentTime - cache_last_refresh_time < CACHE_EXPIRATION_TIME) then
+        --gg.log("使用有效的排行榜全局缓存")
+        return all_rankings_data_cache
+    end
+
+    --gg.log("排行榜全局缓存不存在或已过期，重新加载...")
+    -- 缓存无效，重新加载
+    local newCache = {}
+    local rankingTypes = RankingMgr.GetAllRankingTypes()
+    for _, rankTypeData in pairs(rankingTypes) do
+        local rankType = rankTypeData.rankType
+        local rankingList = RankingMgr.GetRankingList(rankType, 1, 100)
+        newCache[rankType] = {
+            list = rankingList,
+            config = rankTypeData
+        }
+    end
+
+    all_rankings_data_cache = newCache
+    cache_last_refresh_time = currentTime
+    --gg.log("排行榜全局缓存已更新")
+    
+    return all_rankings_data_cache
+end
+
 --- 获取或创建排行榜实例
 ---@param rankType string 排行榜类型
----@return Ranking|nil 排行榜实例
+---@return any|nil 排行榜实例
 function RankingMgr.GetOrCreateRanking(rankType)
     if not rankType or type(rankType) ~= "string" then
         ----gg.log("获取或创建排行榜失败：排行榜类型无效", rankType)
@@ -623,31 +658,36 @@ function RankingMgr.GetSystemStatus()
 end
 
 function RankingMgr.UpdateRanking()
-    ----gg.log("开始执行排行榜更新任务")
+    --gg.log("开始执行排行榜更新任务")
     
-    -- 更新重生排行榜
-    ----gg.log("正在更新重生排行榜...")
+    -- 1. 先执行所有排行榜的数据更新
+    --gg.log("正在更新重生排行榜...")
     RankingMgr.UpdateRebirthRanking()
-    
-    -- 更新充值排行榜
-    ----gg.log("正在更新充值排行榜...")
+    --gg.log("正在更新充值排行榜...")
     RankingMgr.UpdateRechargeRanking()
-    
-    -- 更新战力排行榜
-    ----gg.log("正在更新战力排行榜...")
+    --gg.log("正在更新战力排行榜...")
     RankingMgr.UpdatePowerRanking()
     
-    -- 通知客户端排行榜数据更新
+    -- 2. 更新并刷新全局排行榜缓存
+    --gg.log("更新并刷新排行榜全局缓存...")
+    -- 强制刷新缓存
+    all_rankings_data_cache = {} -- 清空
+    all_rankings_data_cache = RankingMgr.GetOrLoadAllRankingsData()
+    --gg.log("所有排行榜数据预加载完成，缓存已刷新")
+
+    -- 3. 遍历所有在线玩家，使用缓存数据进行通知
     local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
     local players = serverDataMgr.getAllPlayers()
     local playerCount = 0
     
-    -- 收集需要更新的玩家数据
     for uin, player in pairs(players) do
-        RankingEventManager.NotifyAllDataToClient(uin)
-        playerCount = playerCount + 1
+        if player then
+            -- 使用带有缓存的通知函数
+            RankingEventManager.NotifyAllDataToClient(uin, all_rankings_data_cache)
+            playerCount = playerCount + 1
+        end
     end
     
-    ----gg.log("排行榜更新任务完成", "通知玩家数量:", playerCount)
+    gg.log("排行榜更新任务完成", "通知玩家数量:", playerCount)
 end
 return RankingMgr

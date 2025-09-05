@@ -88,22 +88,63 @@ function RankingEventManager.BroadcastRankingUpdate(rankType, updateData)
     ----gg.log("广播排行榜更新通知", rankType, updateData.playerUin)
 end
 
---- 向客户端同步所有排行榜数据
+--- 在预加载的排行榜列表中查找玩家排名信息
 ---@param uin number 玩家UIN
-function RankingEventManager.NotifyAllDataToClient(uin)
+---@param rankingList table 预加载的排行榜列表
+---@return table 玩家排名信息
+function RankingEventManager.FindPlayerRankInList(uin, rankingList)
+    local rankInfo = {
+        playerUin = uin,
+        rank = -1,
+        score = 0,
+        playerName = "",
+        isOnRanking = false
+    }
+
+    if not rankingList or not uin then
+        return rankInfo
+    end
+
+    for _, data in pairs(rankingList) do
+        if data and data.uin == uin then
+            rankInfo.rank = data.rank
+            rankInfo.score = data.score
+            rankInfo.playerName = data.playerName
+            rankInfo.isOnRanking = true
+            return rankInfo -- 找到后立即返回
+        end
+    end
+
+    -- 如果在列表中没找到，说明玩家未上榜
+    return rankInfo
+end
+
+--- 向客户端同步所有排行榜数据（优化版，使用预加载数据）
+---@param uin number 玩家UIN
+---@param allRankingsDataCache table|nil 预加载的所有排行榜数据 (可选)
+function RankingEventManager.NotifyAllDataToClient(uin, allRankingsDataCache)
     if not uin then
         --gg.log("同步排行榜数据失败：玩家UIN无效")
         return
     end
-    -- 获取所有支持的排行榜类型
-    local rankingTypes = RankingMgr.GetAllRankingTypes()
-    
-    -- 为每个排行榜类型获取完整的排行榜数据
-    for _, rankTypeData in pairs(rankingTypes) do
-        local rankType = rankTypeData.rankType
-        
-        -- 获取该排行榜的完整数据（前100名）
-        local rankingList = RankingMgr.GetRankingList(rankType, 1, 100)
+
+    -- 如果没有传入缓存数据，则从RankingMgr获取或加载
+    if not allRankingsDataCache then
+        --gg.log("未提供缓存，从RankingMgr获取或加载...", uin)
+        allRankingsDataCache = RankingMgr.GetOrLoadAllRankingsData()
+    end
+
+    if not allRankingsDataCache then
+        --gg.log("同步排行榜数据失败：无法获取排行榜数据", uin)
+        return
+    end
+
+    local rankingTypesForClient = {}
+
+    -- 遍历预加载的排行榜数据
+    for rankType, cachedData in pairs(allRankingsDataCache) do
+        local rankingList = cachedData.list or {}
+        local rankTypeData = cachedData.config or {}
         
         -- 过滤掉uin=0的假数据
         local filteredRankingList = {}
@@ -113,38 +154,43 @@ function RankingEventManager.NotifyAllDataToClient(uin)
             end
         end
         
-        -- 获取玩家在该排行榜的排名信息
-        local playerRankInfo = RankingMgr.GetPlayerRank(uin, rankType)
+        -- 从预加载的列表中查找玩家排名，避免云端读取
+        local playerRankInfo = RankingEventManager.FindPlayerRankInList(uin, filteredRankingList)
         
-        -- 发送完整排行榜数据到客户端
+        -- 如果没找到玩家信息，尝试从 MServerDataManager 获取玩家名字
+        if not playerRankInfo.playerName or playerRankInfo.playerName == "" then
+             local player = MServerDataManager.getPlayerByUin(uin)
+             if player then
+                 playerRankInfo.playerName = player.name or ""
+             end
+        end
+
+        -- 发送单个排行榜数据到客户端
         gg.network_channel:fireClient(uin, {
             cmd = RankingEvent.NOTIFY.RANKING_DATA_SYNC,
             rankType = rankType,
-            rankingConfig = rankTypeData, -- 排行榜配置信息
-            rankingList = filteredRankingList, -- 过滤后的排行榜数据
-            playerRankInfo = { -- 玩家排名信息
-                playerUin = uin,
-                rank = playerRankInfo.rank or -1,
-                score = playerRankInfo.score or 0,
-                playerName = playerRankInfo.playerName or "",
-                isOnRanking = playerRankInfo.rank and playerRankInfo.rank > 0
-            },
+            rankingConfig = rankTypeData,
+            rankingList = filteredRankingList,
+            playerRankInfo = playerRankInfo,
             count = #filteredRankingList,
             timestamp = os.time()
         })
         
-        --gg.log("发送排行榜数据", rankType, "原始条目数:", #rankingList, "过滤后条目数:", #filteredRankingList, "玩家排名:", playerRankInfo.rank)
+        --gg.log("发送缓存的排行榜数据", rankType, "列表数量:", #filteredRankingList, "玩家排名:", playerRankInfo.rank)
+
+        -- 收集排行榜类型信息，用于最后的类型同步
+        table.insert(rankingTypesForClient, rankTypeData)
     end
     
     -- 发送排行榜类型列表
     gg.network_channel:fireClient(uin, {
         cmd = RankingEvent.NOTIFY.RANKING_TYPES_SYNC,
-        rankingTypes = rankingTypes,
-        count = #rankingTypes,
+        rankingTypes = rankingTypesForClient,
+        count = #rankingTypesForClient,
         timestamp = os.time()
     })
     
-    --gg.log("排行榜数据同步完成", uin, "排行榜类型数量:", #rankingTypes)
+    --gg.log("所有排行榜数据同步完成", uin, "排行榜类型数量:", #rankingTypesForClient)
 end
 
 --- 推送玩家排名变化通知
