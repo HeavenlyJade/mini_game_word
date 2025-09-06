@@ -486,7 +486,7 @@ function MailMgr.ClaimMailAttachment(uin, mailId)
 
     gg.log("玩家", uin, "领取附件成功", mailId)
     MailMgr.NotifyMailListUpdate(uin)
-
+    MailMgr.SavePlayerMailData(uin)
     return {success = true, code = MailMgr.ERROR_CODE.SUCCESS, message = "领取成功", rewards = rewards}
 end
 

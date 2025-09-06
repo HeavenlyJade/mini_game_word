@@ -7,6 +7,9 @@ local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type Conf
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
+local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
+local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
 
 ---@class PlayerInitMgr
 local PlayerInitMgr = {}
@@ -37,6 +40,9 @@ function PlayerInitMgr.InitializeNewPlayer(player)
 
     -- 5. 【新增】同步初始化数据到客户端
     PlayerInitMgr._SyncInitializedData(player)
+
+    -- 6. 【新增】自动装备宠物、伙伴、翅膀
+    PlayerInitMgr._AutoEquipCompanions(player)
 
     --gg.log("玩家初始化完成:", player.name)
 end
@@ -129,6 +135,62 @@ function PlayerInitMgr._SyncInitializedData(player)
         BagMgr.ForceSyncToClient(player.uin)
         --gg.log("已强制同步新玩家的背包数据")
     end
+end
+
+---【新增】内部函数：自动装备宠物、伙伴、翅膀
+---@param player MPlayer 玩家实例
+function PlayerInitMgr._AutoEquipCompanions(player)
+    if not player or not player.uin then
+        --gg.log("自动装备伴生系统失败：玩家对象无效")
+        return
+    end
+
+    local uin = player.uin
+    --gg.log("开始为新玩家自动装备伴生系统:", player.name)
+
+    -- 1. 自动装备最优宠物
+    local petResults = PetMgr.AutoEquipAllBestEffectPets(uin, false)
+    if petResults and not petResults.error then
+        local petSuccessCount = 0
+        for _, result in pairs(petResults) do
+            if result.success then
+                petSuccessCount = petSuccessCount + 1
+            end
+        end
+        if petSuccessCount > 0 then
+            --gg.log("新玩家自动装备宠物成功，装备了", petSuccessCount, "个宠物")
+        end
+    end
+
+    -- 2. 自动装备最优伙伴
+    local partnerResults = PartnerMgr.AutoEquipAllBestEffectPartners(uin, false)
+    if partnerResults and not partnerResults.error then
+        local partnerSuccessCount = 0
+        for _, result in pairs(partnerResults) do
+            if result.success then
+                partnerSuccessCount = partnerSuccessCount + 1
+            end
+        end
+        if partnerSuccessCount > 0 then
+            --gg.log("新玩家自动装备伙伴成功，装备了", partnerSuccessCount, "个伙伴")
+        end
+    end
+
+    -- 3. 自动装备最优翅膀
+    local wingResults = WingMgr.AutoEquipAllBestEffectWings(uin, false)
+    if wingResults and not wingResults.error then
+        local wingSuccessCount = 0
+        for _, result in pairs(wingResults) do
+            if result.success then
+                wingSuccessCount = wingSuccessCount + 1
+            end
+        end
+        if wingSuccessCount > 0 then
+            --gg.log("新玩家自动装备翅膀成功，装备了", wingSuccessCount, "个翅膀")
+        end
+    end
+
+    --gg.log("新玩家伴生系统自动装备完成:", player.name)
 end
 
 return PlayerInitMgr
