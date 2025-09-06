@@ -22,6 +22,8 @@ local AnimationCommand = require(ServerStorage.CommandSys.Commands.MAnimationCom
 local ActorNodeCommand = require(ServerStorage.CommandSys.Commands.MActorNodeCom) ---@type ActorNodeCommand
 local ShopCommand = require(ServerStorage.CommandSys.Commands.MShopCom) ---@type ShopCommand
 local AchievementCommand = require(ServerStorage.CommandSys.Commands.MAchievementCom) ---@type AchievementCommand
+local CloudDataCommand = require(ServerStorage.CommandSys.Commands.MCloudDataCom) ---@type CloudDataCommand
+local RankingCommand = require(ServerStorage.CommandSys.Commands.MRankingCom) ---@type RankingCommand
 
 
 ---@class CommandManager
@@ -51,8 +53,8 @@ CommandManager.handlers = {
     ["actornode"] = ActorNodeCommand.main,
     ["shop"] = ShopCommand.main,
     ["achievement"] = AchievementCommand.main,
-
-
+    ["clouddata"] = CloudDataCommand.main,
+    ["ranking"] = RankingCommand.main,
 
 
 
