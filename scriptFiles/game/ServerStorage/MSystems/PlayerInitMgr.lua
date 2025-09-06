@@ -7,9 +7,7 @@ local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type Conf
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
-local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
-local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
-local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
+
 
 ---@class PlayerInitMgr
 local PlayerInitMgr = {}
@@ -140,6 +138,9 @@ end
 ---【新增】内部函数：自动装备宠物、伙伴、翅膀
 ---@param player MPlayer 玩家实例
 function PlayerInitMgr._AutoEquipCompanions(player)
+    local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
+    local PartnerMgr = require(ServerStorage.MSystems.Pet.Mgr.PartnerMgr) ---@type PartnerMgr
+    local WingMgr = require(ServerStorage.MSystems.Pet.Mgr.WingMgr) ---@type WingMgr
     if not player or not player.uin then
         --gg.log("自动装备伴生系统失败：玩家对象无效")
         return
