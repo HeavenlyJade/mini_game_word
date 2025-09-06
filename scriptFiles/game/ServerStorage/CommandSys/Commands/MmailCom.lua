@@ -6,6 +6,7 @@ local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 local MailEventConfig = require(MainStorage.Code.Event.EventMail) ---@type MailEventConfig
 local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
+local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
 
 --- 邮件命令参数格式说明：
 --[[
@@ -52,15 +53,31 @@ function MailCommand.sendGlobalMail(params, sender)
     local expireDays = tonumber(params["过期天数"]) or 7
     local attachments = parseAttachments(params)
 
-    local success, mailId = MailEventManager.SendGlobalMail(title, content, attachments, expireDays)
-    if success then
-        sender:SendHoverText("全服邮件发送成功, ID: " .. mailId)
-        --gg.log("全服邮件发送成功", "发件人:", params["发件人"], "标题:", title, "ID:", mailId)
+    -- 直接调用 MailMgr.SendNewMail，设置正确的邮件类型
+    local mailData = {
+        type = "全服",  -- 明确设置为"全服"类型，与 MailMgr.lua 中的判断逻辑匹配
+        title = title,
+        content = content,
+        attachments = attachments,
+        expireDays = expireDays,
+        sender = {
+            name = "系统",
+            id = 0
+        },
+        create_time = os.time(),
+        id = "mail_g_" .. os.time() .. "_" .. math.random(1000, 9999)
+    }
+
+    local result = MailMgr.SendNewMail(mailData)
+    if result.success then
+        sender:SendHoverText("全服邮件发送成功, ID: " .. result.mailId)
+        gg.log("全服邮件发送成功", "发件人:", params["发件人"], "标题:", title, "ID:", result.mailId)
+        return true
     else
-        sender:SendHoverText("全服邮件发送失败: " .. mailId)
-        --gg.log("全服邮件发送失败:", mailId)
+        sender:SendHoverText("全服邮件发送失败: " .. (result.message or "未知错误"))
+        gg.log("全服邮件发送失败:", result.message or "未知错误")
+        return false
     end
-    return success
 end
 
 --- 发送个人邮件
@@ -104,10 +121,10 @@ function MailCommand.sendPersonalMail(params, sender)
     if success then
         local typeText = senderType == "系统" and "系统邮件" or "玩家邮件"
         sender:SendHoverText(typeText .. "已成功发送给 " .. recipientUin .. ", ID: " .. mailId)
-        --gg.log("个人邮件发送成功", "发件人类型:", senderType, "收件人:", recipientUin, "标题:", title, "ID:", mailId)
+        gg.log("个人邮件发送成功", "发件人类型:", senderType, "收件人:", recipientUin, "标题:", title, "ID:", mailId)
     else
         sender:SendHoverText("邮件发送失败: " .. mailId)
-        --gg.log("个人邮件发送失败:", mailId)
+        gg.log("个人邮件发送失败:", mailId)
     end
     return success
 end

@@ -126,8 +126,6 @@ function MailEventManager.RegisterNetworkHandlers()
     ServerEventManager.Subscribe(MailEventConfig.REQUEST.DELETE_READ_MAILS, function(event)
         MailEventManager.HandleDeleteReadMails(event)
     end, 100)
-
-    -- --gg.log("邮件网络事件处理器注册完成")
 end
 
 -- 处理获取邮件列表请求
@@ -141,19 +139,12 @@ function MailEventManager.HandleGetMailList(event)
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local result = MailMgr.GetPlayerMailList(player.uin)
 
-    if result.success then
-        gg.network_channel:fireClient(player.uin, {
-            cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
-            code = MailEventConfig.ERROR_CODES.SUCCESS,
-            mailList = result.mailList
-        })
-    else
-        gg.network_channel:fireClient(player.uin, {
-            cmd = MailEventConfig.RESPONSE.ERROR,
-            code = MailEventConfig.ERROR_CODES.PLAYER_NOT_FOUND,
-            message = result.message or MailEventConfig.GetErrorMessage(MailEventConfig.ERROR_CODES.PLAYER_NOT_FOUND)
-        })
-    end
+    gg.network_channel:fireClient(player.uin, {
+        cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
+        personal_mails = result.personal_mails,
+        global_mails = result.global_mails
+    })
+
 end
 
 -- 处理读取邮件请求
@@ -291,7 +282,7 @@ function MailEventManager.BroadcastNewMail(mailData)
 end
 
 -- 通知邮件列表更新
-function MailEventManager.NotifyMailListUpdate(uin, mailList)
+function MailEventManager.NotifyMailListUpdate(uin, personalMails, globalMails)
     if not uin then
         return
     end
@@ -299,10 +290,11 @@ function MailEventManager.NotifyMailListUpdate(uin, mailList)
     gg.network_channel:fireClient(uin, {
         cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
         code = MailEventConfig.ERROR_CODES.SUCCESS,
-        mailList = mailList or {}
+        personal_mails = personalMails or {},
+        global_mails = globalMails or {}
     })
 
-    --gg.log("发送邮件列表更新通知", uin)
+    gg.log("发送邮件列表更新通知", uin, "个人邮件:", #(personalMails or {}), "全服邮件:", #(globalMails or {}))
 end
 
 return MailEventManager

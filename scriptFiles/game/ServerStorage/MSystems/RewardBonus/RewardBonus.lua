@@ -54,7 +54,7 @@ end
 ---@return table<number, RewardTierClaimed> 已领取等级记录
 function RewardBonus:GetClaimedTiers(configName)
     if not self:HasConfig(configName) then
-        gg.log("错误：配置不存在", self.uin, configName)
+        --gg.log("错误：配置不存在", self.uin, configName)
         return {}
     end
     
@@ -77,7 +77,7 @@ end
 function RewardBonus:GetAvailableTiers(configName)
     local config = ConfigLoader.GetRewardBonus(configName)
     if not config then
-        gg.log("错误：奖励配置不存在", configName)
+        --gg.log("错误：奖励配置不存在", configName)
         return {}
     end
 
@@ -105,64 +105,64 @@ end
 function RewardBonus:CheckTierCondition(conditionFormula, configName)
     local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
 
-    gg.log("=== CheckTierCondition 开始检查 ===")
-    gg.log("玩家ID:", self.uin)
-    gg.log("条件公式:", conditionFormula)
-    gg.log("配置名称:", configName)
+    --gg.log("=== CheckTierCondition 开始检查 ===")
+    --gg.log("玩家ID:", self.uin)
+    --gg.log("条件公式:", conditionFormula)
+    --gg.log("配置名称:", configName)
 
 
     -- 如果提供了配置名称，检查计算方式
 
     local config = ConfigLoader.GetRewardBonus(configName)
-    gg.log("获取到的配置:", config ~= nil)
+    --gg.log("获取到的配置:", config ~= nil)
     if config then
         local calculationMethod = config:GetCalculationMethod()
-        gg.log("计算方式:", calculationMethod)
+        --gg.log("计算方式:", calculationMethod)
         
         if calculationMethod == "迷你币" then
             -- 获取玩家商城数据
             local shopData = ShopMgr.GetPlayerShop(self.uin)
-            gg.log("商城数据:", shopData ~= nil)
+            --gg.log("商城数据:", shopData ~= nil)
             if not shopData then
-                gg.log("错误：无法获取玩家商城数据", self.uin)
+                --gg.log("错误：无法获取玩家商城数据", self.uin)
                 return false
             end
             
             local consumedMiniCoin = shopData.totalPurchaseValue or 0
-            gg.log("玩家已消耗迷你币:", consumedMiniCoin)
+            --gg.log("玩家已消耗迷你币:", consumedMiniCoin)
             
             -- 使用迷你币验证方式
             local isValid = config:ValidateMiniCoinConsumption({}, consumedMiniCoin)
-            gg.log("迷你币验证结果:", isValid)
+            --gg.log("迷你币验证结果:", isValid)
             return isValid
         else
-            gg.log("计算方式不是迷你币，跳过迷你币验证")
+            --gg.log("计算方式不是迷你币，跳过迷你币验证")
         end
     else
-        gg.log("错误：无法获取配置", configName)
+        --gg.log("错误：无法获取配置", configName)
     end
     
     if not conditionFormula or conditionFormula == "" then
-        gg.log("条件公式为空，返回false")
+        --gg.log("条件公式为空，返回false")
         return false -- 
     end
 
     -- 构造伪等级对象用于条件检查
     local tier = { ConditionFormula = conditionFormula }
-    gg.log("构造的等级对象:", tier)
+    --gg.log("构造的等级对象:", tier)
     
     -- 使用RewardBonusType的条件检测方法
     -- 这里需要从缓存中获取任一配置来调用方法（所有配置的检测逻辑相同）
-    gg.log("配置缓存:", self.configCache)
+    --gg.log("配置缓存:", self.configCache)
     for _, config in pairs(self.configCache or {}) do
-        gg.log("使用缓存配置进行条件检查")
+        --gg.log("使用缓存配置进行条件检查")
         local result = config:CheckTierCondition(tier, {}, nil)
-        gg.log("条件检查结果:", result)
+        --gg.log("条件检查结果:", result)
         return result
     end
     
     -- 如果缓存为空，回退到简单检查
-    gg.log("警告：配置缓存为空，使用简化条件检查", conditionFormula)
+    --gg.log("警告：配置缓存为空，使用简化条件检查", conditionFormula)
     return false
 end
 
@@ -177,7 +177,7 @@ function RewardBonus:ClaimTierReward(configName, uniqueId)
     if not configName or not uniqueId then
         return false, "参数无效", nil
     end
-    gg.log("领取奖励等级", configName, uniqueId,self.cloudData.configs)
+    --gg.log("领取奖励等级", configName, uniqueId,self.cloudData.configs)
     -- 检查配置是否存在
     if not self:HasConfig(configName) then
         return false, "配置不存在", nil
@@ -190,7 +190,7 @@ function RewardBonus:ClaimTierReward(configName, uniqueId)
 
     local config = ConfigLoader.GetRewardBonus(configName)
     if not config then
-        gg.log("错误：找不到奖励配置", configName, "所有可用配置:", ConfigLoader.GetAllRewardBonuses())
+        --gg.log("错误：找不到奖励配置", configName, "所有可用配置:", ConfigLoader.GetAllRewardBonuses())
         return false, "奖励配置不存在", nil
     end
 
@@ -237,8 +237,8 @@ function RewardBonus:ClaimTierReward(configName, uniqueId)
         table.insert(convertedRewards, convertedReward)
     end
     
-    gg.log("领取奖励等级成功", self.uin, configName, uniqueId, "奖励数量:", #convertedRewards)
-    gg.log("转换后的奖励格式:", convertedRewards)
+    --gg.log("领取奖励等级成功", self.uin, configName, uniqueId, "奖励数量:", #convertedRewards)
+    --gg.log("转换后的奖励格式:", convertedRewards)
     
     return true, "领取成功", convertedRewards
 end
@@ -296,12 +296,12 @@ end
 ---@param configName string 配置名称
 function RewardBonus:ResetConfig(configName)
     if not self:HasConfig(configName) then
-        gg.log("错误：尝试重置不存在的配置", self.uin, configName)
+        --gg.log("错误：尝试重置不存在的配置", self.uin, configName)
         return
     end
 
     self.cloudData.configs[configName] = RewardBonusCloudDataMgr.CreateDefaultConfigData(configName)
-    gg.log("重置配置数据", self.uin, configName)
+    --gg.log("重置配置数据", self.uin, configName)
 end
 
 
@@ -317,25 +317,25 @@ end
 
 --- 调试信息：打印所有配置状态
 function RewardBonus:DebugPrintStatus()
-    gg.log("=== RewardBonus调试信息 ===", self.uin)
-    gg.log("云端配置数量:", self:GetConfigCount())
-    gg.log("缓存配置数量:", self:GetCachedConfigCount())
+    --gg.log("=== RewardBonus调试信息 ===", self.uin)
+    --gg.log("云端配置数量:", self:GetConfigCount())
+    --gg.log("缓存配置数量:", self:GetCachedConfigCount())
     
     -- 打印缓存的配置名称
     local cachedNames = {}
     for configName in pairs(self.configCache or {}) do
         table.insert(cachedNames, configName)
     end
-    gg.log("缓存的配置:", table.concat(cachedNames, ", "))
+    --gg.log("缓存的配置:", table.concat(cachedNames, ", "))
     
     -- 打印各配置状态
     for configName in pairs(self.cloudData.configs or {}) do
         local status = self:GetConfigStatus(configName)
         if status then
             local configInfo = self:GetConfigInfo(configName)
-            gg.log(string.format("配置[%s]: 已领取%d个, 可领取%d个, 总等级%d个", 
-                configName, status.claimedTierCount, status.availableTierCount, 
-                configInfo and configInfo.tierCount or 0))
+            --gg.log(string.format("配置[%s]: 已领取%d个, 可领取%d个, 总等级%d个", 
+                -- configName, status.claimedTierCount, status.availableTierCount, 
+                -- configInfo and configInfo.tierCount or 0))
         end
     end
 end

@@ -28,7 +28,7 @@ function GlobalMailManager:OnInit()
 
     -- 加载全服邮件到缓存
     self.global_mail_cache = CloudMailDataAccessor:LoadGlobalMail()
-    -- --gg.log("全局邮件管理器初始化完成")
+    -- gg.log("全局邮件管理器初始化完成")
     return self
 end
 
@@ -58,7 +58,7 @@ function GlobalMailManager:AddGlobalMail(mailData)
     self.global_mail_cache.last_update = os.time()
     CloudMailDataAccessor:SaveGlobalMail(self.global_mail_cache)
 
-    --gg.log("成功添加全服邮件", storageData.id)
+    gg.log("成功添加全服邮件", storageData.id)
 
     return storageData.id
 end
@@ -97,7 +97,7 @@ function GlobalMailManager:DeleteAllGlobalMails()
     -- 保存到云端
     CloudMailDataAccessor:SaveGlobalMail(self.global_mail_cache)
 
-    --gg.log("已删除所有全服邮件")
+    gg.log("已删除所有全服邮件")
     return true
 end
 
@@ -117,7 +117,7 @@ function GlobalMailManager:DeleteGlobalMailById(mailId)
     -- 保存到云端
     CloudMailDataAccessor:SaveGlobalMail(self.global_mail_cache)
 
-    --gg.log("已删除全服邮件", mailId)
+    gg.log("已删除全服邮件", mailId)
     return true, "删除成功"
 end
 
@@ -287,24 +287,20 @@ end
 ---@param player MPlayer 玩家对象
 function GlobalMailManager:CheckAndSendGlobalMailsToPlayer(player)
     if not player or not player.uin then
-        --gg.log("CheckAndSendGlobalMailsToPlayer: 玩家对象无效", player and player.uin)
+        gg.log("CheckAndSendGlobalMailsToPlayer: 玩家对象无效", player and player.uin)
         return
     end
 
     -- 使用新的 MailMgr 获取玩家邮件数据
-    if not MServerDataManager.MailMgr then
-        --gg.log("CheckAndSendGlobalMailsToPlayer: MailMgr 未初始化")
-        return
-    end
-
-    local playerMailData = MServerDataManager.MailMgr:GetPlayerMailData(player.uin)
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
+    local playerMailData = MailMgr.GetPlayerMailData(player.uin)
     if not playerMailData or not playerMailData.globalMailStatus then
-        --gg.log("CheckAndSendGlobalMailsToPlayer: 玩家邮件数据未加载", player.uin)
+        gg.log("CheckAndSendGlobalMailsToPlayer: 玩家邮件数据未加载", player.uin)
         return
     end
 
     if not self.global_mail_cache then
-        --gg.log("CheckAndSendGlobalMailsToPlayer: 全服邮件缓存未初始化")
+        gg.log("CheckAndSendGlobalMailsToPlayer: 全服邮件缓存未初始化")
         return
     end
 
@@ -326,7 +322,7 @@ function GlobalMailManager:CheckAndSendGlobalMailsToPlayer(player)
                     is_claimed = false
                 }
                 updated = true
-                --gg.log("为玩家", player.uin, "同步新的全服邮件:", mailId)
+                gg.log("为玩家", player.uin, "同步新的全服邮件:", mailId)
 
                 -- 发送新邮件通知
                 local clientMailData = mailObject:ToClientData()
@@ -340,12 +336,6 @@ function GlobalMailManager:CheckAndSendGlobalMailsToPlayer(player)
                 })
             end
         end
-    end
-
-    if updated then
-        -- 如果有更新，更新时间戳
-        playerGlobalStatus.last_update = os.time()
-        --gg.log("为玩家", player.uin, "同步全服邮件完成")
     end
 end
 

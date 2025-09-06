@@ -165,33 +165,42 @@ function MailGui:RegisterEvents()
         self:HandleDeleteReadResponse(data)
     end)
 
-    -- 监听新邮件通知
-    ClientEventManager.Subscribe(MailEventConfig.NOTIFY.NEW_MAIL, function(data)
-        self:HandleNewMailNotification(data)
-    end)
+
 
     -- --gg.log("MailGui客户端事件注册完成，共注册", 6, "个事件处理器")
 end
 
 -- 处理邮件列表响应
 function MailGui:HandleMailListResponse(data)
-    -- --gg.log("收到邮件列表响应", data)
+    gg.log("=== HandleMailListResponse 开始 ===")
+    gg.log("收到邮件列表响应", data)
 
     if not data then
-        --gg.log("邮件列表响应数据为空")
+        gg.log("邮件列表响应数据为空")
         return
     end
 
     -- 内部辅助函数：处理一批邮件并将其分类到 self.playerMails 或 self.systemMails
     local function processAndCategorizeMails(mailBatch)
-        if not mailBatch then return end
+        if not mailBatch then 
+            gg.log("邮件批次为空，跳过处理")
+            return 
+        end
+        
+        local count = 0
         for mailId, mailInfo in pairs(mailBatch) do
+            count = count + 1
+            gg.log("处理邮件", count, "ID:", mailId, "类型:", mailInfo.mail_type, "标题:", mailInfo.title)
+            
             if mailInfo.mail_type == MAIL_TYPE.PLAYER then
                 self.playerMails[tostring(mailId)] = mailInfo
+                gg.log("添加到玩家邮件列表")
             else
                 self.systemMails[tostring(mailId)] = mailInfo
+                gg.log("添加到系统邮件列表")
             end
         end
+        gg.log("邮件批次处理完成，共处理", count, "封邮件")
     end
 
     -- 内部辅助函数：为分类好的一批邮件创建附件列表
@@ -205,28 +214,34 @@ function MailGui:HandleMailListResponse(data)
     end
 
     -- 步骤1: 清空现有数据
+    gg.log("清空现有数据...")
     self:ClearAllAttachmentLists()
     self.playerMails = {}
     self.systemMails = {}
 
     -- 步骤2: 处理和分类个人邮件和全服邮件
+    gg.log("处理个人邮件...")
     processAndCategorizeMails(data.personal_mails)
+    gg.log("处理全服邮件...")
     processAndCategorizeMails(data.global_mails)
 
     -- 步骤3: 为所有已分类的邮件创建附件列表
+    gg.log("创建附件列表...")
     createAttachmentListsForMails(self.playerMails)
     createAttachmentListsForMails(self.systemMails)
 
     -- 步骤4: 刷新整个UI列表
+    gg.log("调用 InitMailList...")
     self:InitMailList()
 
-    -- --gg.log("邮件列表响应处理完成，玩家邮件:", self:GetMailCount(self.playerMails), "系统邮件:", self:GetMailCount(self.systemMails))
+    gg.log("邮件列表响应处理完成，玩家邮件:", self:GetMailCount(self.playerMails), "系统邮件:", self:GetMailCount(self.systemMails))
+    gg.log("=== HandleMailListResponse 结束 ===")
 end
 
 -- 处理新邮件通知
 ---@param data NewMailNotificationPayload
 function MailGui:HandleNewMailNotification(data)
-    --gg.log("收到新邮件通知", data)
+    gg.log("收到新邮件通知", data)
 
     local mailInfo = data and data.mail_info
 
@@ -276,8 +291,10 @@ end
 
 -- 初始化邮件列表显示
 function MailGui:InitMailList()
+    gg.log("=== InitMailList 开始 ===")
+    
     if not self.mailItemTemplate then
-        --gg.log("❌ 邮件列表模板未找到，无法初始化邮件")
+        gg.log("❌ 邮件列表模板未找到，无法初始化邮件")
         return
     end
 
@@ -286,12 +303,24 @@ function MailGui:InitMailList()
     self:HideMailDetail()
 
     self.mailButtons = {}
+    
+    -- 检查邮件数据
+    gg.log("系统邮件数量:", self:GetMailCount(self.systemMails))
+    gg.log("玩家邮件数量:", self:GetMailCount(self.playerMails))
+    
     -- 排序邮件
     local sortedSystemMails = self:SortMails(self.systemMails)
     local sortedPlayerMails = self:SortMails(self.playerMails)
+    
+    gg.log("排序后系统邮件数量:", #sortedSystemMails)
+    gg.log("排序后玩家邮件数量:", #sortedPlayerMails)
+    
     -- 将服务器的邮件数据安装玩家还是系统分发给给类的uilist
+    gg.log("开始填充系统邮件列表...")
     self:PopulateMailList(self.mailSystemList, sortedSystemMails)
+    gg.log("开始填充玩家邮件列表...")
     self:PopulateMailList(self.mailPlayerList, sortedPlayerMails)
+    
     -- 更新一键领取按钮状态
     if self.batchClaimButton then
         local hasUnclaimedMails = self:HasUnclaimedMails()
@@ -299,7 +328,8 @@ function MailGui:InitMailList()
         self.batchClaimButton:SetTouchEnable(hasUnclaimedMails)
     end
 
-    -- --gg.log("📧 所有邮件列表更新完成")
+    gg.log("📧 所有邮件列表更新完成")
+    gg.log("=== InitMailList 结束 ===")
 end
 
 ---邮件排序的比较函数
@@ -339,11 +369,27 @@ end
 
 -- 填充邮件列表
 function MailGui:PopulateMailList(targetList, mailArray)
+    gg.log("PopulateMailList 开始，目标列表:", targetList and targetList.node and targetList.node.Name or "nil", "邮件数量:", #mailArray)
+    
+    if not targetList then
+        gg.log("❌ 目标列表为空")
+        return
+    end
+    
+    if not mailArray or #mailArray == 0 then
+        gg.log("⚠️ 邮件数组为空或长度为0")
+        return
+    end
+    
     for i, mailItemData in ipairs(mailArray) do
+        gg.log("创建邮件项", i, "ID:", mailItemData.id, "标题:", mailItemData.data and mailItemData.data.title or "nil")
         self:_createMailListItem(targetList, mailItemData, i)
     end
+    
     -- 批量添加后，手动刷新一次UI布局
+    gg.log("刷新UI布局...")
     targetList:_refreshLayout()
+    gg.log("PopulateMailList 完成")
 end
 
 ---创建单个邮件列表项并添加到列表中
@@ -352,46 +398,90 @@ end
 ---@param index number 要插入的位置
 function MailGui:_createMailListItem(targetList, mailItemData, index)
     local mailIdStr = tostring(mailItemData.id)
+    gg.log("_createMailListItem 开始，邮件ID:", mailIdStr, "索引:", index)
 
     -- 检查UI中是否已存在相同ID的邮件项
     if targetList:GetChildByName(mailIdStr) then
-        --gg.log("⚠️ UI中已存在相同ID的邮件项，跳过创建:", mailIdStr)
+        gg.log("⚠️ UI中已存在相同ID的邮件项，跳过创建:", mailIdStr)
         return
     end
 
     -- 检查按钮缓存中是否已存在
     if self.mailButtons[mailIdStr] then
-        --gg.log("⚠️ 按钮缓存中已存在相同ID的邮件，跳过创建:", mailIdStr)
+        gg.log("⚠️ 按钮缓存中已存在相同ID的邮件，跳过创建:", mailIdStr)
+        return
+    end
+
+    if not self.mailItemTemplate or not self.mailItemTemplate.node then
+        gg.log("❌ 邮件项模板为空")
         return
     end
 
     local itemNode = self.mailItemTemplate.node:Clone()
     itemNode.Visible = true
     itemNode.Name = mailIdStr
+    itemNode.Parent = targetList.node
+    gg.log("克隆邮件项模板成功，节点名称:", itemNode.Name)
+    
     -- 注意：这里使用InsertChild并设置shouldRefresh为false，以避免每次添加都刷新UI
     targetList:InsertChild(itemNode, index, false)
-    -- 因为我们是按顺序插入的，所以新组件就是childrens[index]
-    local mailItemComponent = targetList.childrens[index]
+    gg.log("插入子节点到目标列表成功")
+    
+    -- 因为我们是按顺序插入的，所以新组件就是childrensList[index]
+    local mailItemComponent = targetList.childrensList[index]
+    gg.log("获取邮件项组件:", mailItemComponent and "成功" or "失败")
 
     if mailItemComponent then
         self:SetupMailItemDisplay(mailItemComponent.node, mailItemData.data)
         mailItemComponent.extraParams = {mailId = mailItemData.id, mailInfo = mailItemData.data}
         self.mailButtons[mailIdStr] = mailItemComponent
+        gg.log("✅ 邮件项创建成功:", mailIdStr)
+    else
+        gg.log("❌ 无法获取邮件项组件")
     end
 end
 
 -- 设置邮件项显示信息
 function MailGui:SetupMailItemDisplay(itemNode, mailInfo)
+    gg.log("SetupMailItemDisplay 开始，邮件标题:", mailInfo.title, "发件人类型:", type(mailInfo.sender), "发件人值:", mailInfo.sender)
+    
+    -- 检查标题是否为字符串
+    if type(mailInfo.title) ~= "string" then
+        gg.log("⚠️ 邮件标题不是字符串类型:", type(mailInfo.title), "值:", mailInfo.title)
+        mailInfo.title = tostring(mailInfo.title or "无标题")
+    end
     itemNode["主标题"].Title = mailInfo.title
-    itemNode["来自谁"].Title = "来自: " .. (mailInfo.sender or "系统")
-    itemNode["是否有物品"].Visible = mailInfo.has_attachment
+    
+    -- 处理发件人信息，可能是字符串或表
+    local senderName = "系统"
+    if type(mailInfo.sender) == "string" then
+        senderName = mailInfo.sender
+    elseif type(mailInfo.sender) == "table" and mailInfo.sender.name then
+        senderName = mailInfo.sender.name
+    end
+    
+    -- 确保senderName是字符串
+    if type(senderName) ~= "string" then
+        gg.log("⚠️ 发件人名称不是字符串类型:", type(senderName), "值:", senderName)
+        senderName = tostring(senderName or "系统")
+    end
+    
+    itemNode["来自谁"].Title = "来自: " .. senderName
+    
+    -- 安全处理布尔值
+    local hasAttachment = mailInfo.has_attachment == true
+    local isClaimed = mailInfo.is_claimed == true
+    
+    itemNode["是否有物品"].Visible = hasAttachment
     -- new: 邮件是否领取
     local newNode = itemNode["new"]
-    if mailInfo.has_attachment then
-        newNode.Visible = not mailInfo.is_claimed
+    if hasAttachment then
+        newNode.Visible = not isClaimed
     else
         newNode.Visible = false
     end
+    
+    gg.log("SetupMailItemDisplay 完成，标题:", mailInfo.title, "发件人:", senderName, "有附件:", hasAttachment, "已领取:", isClaimed)
 end
 
 -- 邮件项点击事件
@@ -532,7 +622,7 @@ end
 -- 处理奖励数据，转换为统一格式
 function MailGui:ProcessRewardData(rewards)
     local rewardItems = {}
-    local ItemTypeConfig = require(MainStorage.code.common.config.ItemTypeConfig) ---@type ItemTypeConfig
+    local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
 
     if type(rewards) == "table" then
         -- 附件的数据格式是一个 table 数组, e.g., { {type="itemA", amount=1}, {type="itemB", amount=2} }
