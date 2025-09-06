@@ -171,21 +171,26 @@ end
 -- 处理领取邮件附件请求
 function MailEventManager.HandleClaimMail(event)
     local player = event.player
-    local mailId = event.mailId
+    local mailId = event.mail_id or event.mailId  -- 兼容两种参数名
+
+    gg.log("🎁 服务端收到领取请求 - 玩家:", player and player.uin, "邮件ID:", mailId)
 
     if not player or not mailId then
-        --gg.log("领取邮件附件失败：参数无效")
+        gg.log("❌ 领取邮件附件失败：参数无效 - 玩家:", player and player.uin, "邮件ID:", mailId)
         return
     end
 
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
     local result = MailMgr.ClaimMailAttachment(player.uin, mailId)
 
+    gg.log("📤 发送领取响应 - 成功:", result.success, "代码:", result.code, "消息:", result.message)
+
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.CLAIM_RESPONSE,
+        success = result.success,
         code = result.code,
         message = result.message or MailEventConfig.GetErrorMessage(result.code),
-        mailId = mailId,
+        mail_id = mailId,
         rewards = result.rewards
     })
 end
@@ -235,20 +240,64 @@ end
 -- 处理删除已读邮件请求
 function MailEventManager.HandleDeleteReadMails(event)
     local player = event.player
+    local personalMailIds = event.personalMailIds or {}
+    local globalMailIds = event.globalMailIds or {}
+
+    gg.log("🗑️ 服务端收到删除已读邮件请求 - 玩家:", player and player.uin, "个人邮件:", #personalMailIds, "全服邮件:", #globalMailIds)
 
     if not player then
-        --gg.log("删除已读邮件失败：玩家不存在")
+        gg.log("❌ 删除已读邮件失败：玩家不存在")
         return
     end
 
     local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
-    local result = MailMgr.DeleteReadMails(player.uin)
+    local totalDeletedCount = 0
+    local deletedMailIds = {}
+
+    -- 删除个人邮件
+    if #personalMailIds > 0 then
+        for _, mailId in ipairs(personalMailIds) do
+            local result = MailMgr.DeleteMail(player.uin, mailId)
+            if result.success then
+                totalDeletedCount = totalDeletedCount + 1
+                table.insert(deletedMailIds, mailId)
+                gg.log("✅ 删除个人邮件成功:", mailId)
+            else
+                gg.log("❌ 删除个人邮件失败:", mailId, "错误:", result.message)
+            end
+        end
+    end
+
+    -- 删除全服邮件（标记为已删除）
+    if #globalMailIds > 0 then
+        local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
+        local mailData = MailMgr.GetPlayerMailData(player.uin)
+        
+        if mailData and mailData.globalMailStatus then
+            for _, mailId in ipairs(globalMailIds) do
+                local success, message = GlobalMailManager:DeleteGlobalMailForPlayer(player.uin, mailId, mailData.globalMailStatus)
+                if success then
+                    totalDeletedCount = totalDeletedCount + 1
+                    table.insert(deletedMailIds, mailId)
+                    gg.log("✅ 删除全服邮件成功:", mailId)
+                else
+                    gg.log("❌ 删除全服邮件失败:", mailId, "错误:", message)
+                end
+            end
+        end
+    end
+
+    -- 通知邮件列表更新
+    MailMgr.NotifyMailListUpdate(player.uin)
+
+    gg.log("📤 发送删除已读邮件响应 - 成功:", totalDeletedCount, "个邮件")
 
     gg.network_channel:fireClient(player.uin, {
         cmd = MailEventConfig.RESPONSE.DELETE_READ_SUCCESS,
-        code = result.code,
-        message = result.message or MailEventConfig.GetErrorMessage(result.code),
-        deletedCount = result.deletedCount
+        code = MailEventConfig.ERROR_CODES.SUCCESS,
+        message = string.format("成功删除 %d 封已读邮件", totalDeletedCount),
+        deletedCount = totalDeletedCount,
+        deletedMailIds = deletedMailIds
     })
 end
 

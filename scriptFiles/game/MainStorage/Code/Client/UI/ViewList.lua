@@ -145,7 +145,7 @@ function ViewList:SetVisible(visible)
     self.node.Enabled = visible
 end
 
----私有方法：根据childrens数组刷新UI布局
+---私有方法：根据childrensList数组刷新UI布局
 function ViewList:_refreshLayout()
     -- 步骤 1: 完全卸载 (Detach)
     -- 创建一个临时表来持有子节点，避免在迭代时修改集合
@@ -158,7 +158,8 @@ function ViewList:_refreshLayout()
     end
 
     -- 步骤 2: 重新装载 (Re-attach) 并更新元数据
-    for i, comp in ipairs(self.childrens) do
+    -- 修复：使用 childrensList 数组而不是 childrens 字典
+    for i, comp in ipairs(self.childrensList) do
         -- 重新设置父节点，按新顺序装载
         comp.node:SetParent(self.node)
         -- 更新元数据

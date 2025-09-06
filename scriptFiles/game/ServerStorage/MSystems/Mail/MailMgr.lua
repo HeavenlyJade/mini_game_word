@@ -445,14 +445,36 @@ function MailMgr.ClaimMailAttachment(uin, mailId)
         return {success = false, code = MailMgr.ERROR_CODE.MAIL_ALREADY_CLAIMED, message = "附件已被领取", rewards = {}}
     end
 
-    -- 检查背包空间 (调用背包系统接口)
-    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-    if not BagMgr.GetPlayerBag(uin):HasEnoughSpace(mail.attachments) then
-        return {success = false, code = MailMgr.ERROR_CODE.BAG_FULL, message = "背包空间不足", rewards = {}}
+    -- 转换附件格式为 PlayerRewardDispatcher 标准格式
+    local rewardList = {}
+    if mail.attachments then
+        for _, attachment in ipairs(mail.attachments) do
+            if attachment.type and attachment.amount then
+                table.insert(rewardList, {
+                    itemType = "物品",
+                    itemName = attachment.type,
+                    amount = attachment.amount
+                })
+            end
+        end
     end
-
+    
+    -- 使用 PlayerRewardDispatcher 检查空间
+    local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
+    local hasSpace, spaceError = PlayerRewardDispatcher.CheckRewardSpace(player, rewardList)
+    if not hasSpace then
+        gg.log("邮件附件空间检查失败 - 玩家:", player.uin, "错误:", spaceError)
+        return {success = false, code = MailMgr.ERROR_CODE.BAG_FULL, message = spaceError or "背包空间不足", rewards = {}}
+    end
+    
+    -- 转换附件格式为字典格式用于发放
+    local attachmentMap = {}
+    for _, reward in ipairs(rewardList) do
+        attachmentMap[reward.itemName] = reward.amount
+    end
+    
     -- 发放奖励
-    local rewards = MailMgr._AddAttachmentsToPlayer(player, mail.attachments)
+    local rewards = MailMgr._AddAttachmentsToPlayer(player, attachmentMap)
 
     -- 更新邮件状态
     if mailType == MailMgr.MAIL_TYPE.PLAYER then
@@ -504,9 +526,11 @@ function MailMgr.BatchClaimMails(uin, mailIds)
     for _, mail in ipairs(mailsToClaim) do
         if mail.attachments and next(mail.attachments) and not mail.is_claimed then
             table.insert(claimableMails, mail)
-            -- 合并附件到总附件列表
-            for itemName, amount in pairs(mail.attachments) do
-                totalAttachments[itemName] = (totalAttachments[itemName] or 0) + amount
+            -- 合并附件到总附件列表（处理数组格式的附件）
+            for _, attachment in ipairs(mail.attachments) do
+                if attachment.type and attachment.amount then
+                    totalAttachments[attachment.type] = (totalAttachments[attachment.type] or 0) + attachment.amount
+                end
             end
         end
     end
@@ -515,10 +539,24 @@ function MailMgr.BatchClaimMails(uin, mailIds)
         return {success = false, code = MailMgr.ERROR_CODE.MAIL_NO_ATTACHMENT, message = "没有可领取的附件", rewards = {}}
     end
 
-    -- 检查背包空间
-    local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
-    if not BagMgr.GetPlayerBag(uin):HasEnoughSpace(totalAttachments) then
-        return {success = false, code = MailMgr.ERROR_CODE.BAG_FULL, message = "背包空间不足", rewards = {}}
+    -- 转换总附件为 PlayerRewardDispatcher 标准格式
+    local totalRewardList = {}
+    for itemName, amount in pairs(totalAttachments) do
+        if itemName and amount and amount > 0 then
+            table.insert(totalRewardList, {
+                itemType = "物品",
+                itemName = itemName,
+                amount = amount
+            })
+        end
+    end
+    
+    -- 使用 PlayerRewardDispatcher 检查空间
+    local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
+    local hasSpace, spaceError = PlayerRewardDispatcher.CheckRewardSpace(player, totalRewardList)
+    if not hasSpace then
+        gg.log("批量邮件附件空间检查失败 - 玩家:", player.uin, "错误:", spaceError)
+        return {success = false, code = MailMgr.ERROR_CODE.BAG_FULL, message = spaceError or "背包空间不足", rewards = {}}
     end
 
     -- 发放奖励并更新状态
@@ -658,6 +696,8 @@ function MailMgr._AddAttachmentsToPlayer(player, attachments)
     -- 使用统一奖励分发器发放附件
     local success, resultMsg, failedRewards = PlayerRewardDispatcher.DispatchRewards(player, rewardList)
     
+    gg.log("邮件附件发放结果 - 玩家:", player.uin, "成功:", success, "消息:", resultMsg)
+    
     local addedItems = {}
     if success then
         -- 全部成功，记录所有物品
@@ -666,24 +706,27 @@ function MailMgr._AddAttachmentsToPlayer(player, attachments)
                 addedItems[itemName] = amount
             end
         end
+        gg.log("邮件附件全部发放成功 - 玩家:", player.uin, "物品数量:", #rewardList)
     else
         -- 部分成功，只记录成功的物品
-        for itemName, amount in pairs(attachments) do
-            if itemName and amount and amount > 0 then
-                local failed = false
-                if failedRewards then
-                    for _, failedReward in ipairs(failedRewards) do
-                        if failedReward.reward.itemName == itemName then
-                            failed = true
-                            break
-                        end
+        local successItems = {}
+        for _, reward in ipairs(rewardList) do
+            local isFailed = false
+            if failedRewards then
+                for _, failedReward in ipairs(failedRewards) do
+                    if failedReward.reward.itemName == reward.itemName then
+                        isFailed = true
+                        break
                     end
                 end
-                if not failed then
-                    addedItems[itemName] = amount
-                end
+            end
+            if not isFailed then
+                successItems[reward.itemName] = reward.amount
             end
         end
+        
+        addedItems = successItems
+        gg.log("邮件附件部分发放成功 - 玩家:", player.uin, "成功物品:", successItems, "失败数量:", failedRewards and #failedRewards or 0)
     end
     
     return addedItems
