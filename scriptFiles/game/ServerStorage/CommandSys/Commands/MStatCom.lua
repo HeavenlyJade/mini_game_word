@@ -9,6 +9,7 @@ local cloudDataMgr = require(ServerStorage.CloundDataMgr.MCloudDataMgr) ---@type
 local AttributeMapping = require(MainStorage.Code.Common.Icon.AttributeMapping) ---@type AttributeMapping
 local BonusCalculator = require(ServerStorage.ServerUntils.BonusCalculator) ---@type BonusCalculator
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 ---@class StatCommand
 local StatCommand = {}
@@ -16,27 +17,54 @@ local StatCommand = {}
 -- 子命令处理器
 StatCommand.handlers = {}
 
+--- 计算基础值 - 新增核心逻辑
+---@param inputValue number 输入的数值
+---@param player MPlayer 玩家对象
+---@param statName string 属性名称
+---@return number 基础值
+local function _calculateBaseValue(inputValue, player, statName)
+    -- 如果输入值大于0，直接使用输入值作为基础值
+    if inputValue > 0 then
+        return inputValue
+    end
+    
+    -- 输入值为0时，获取玩家当前属性值作为基础值
+    local currentValue = player:GetStat(statName) or 0
+    return currentValue
+end
 
 
 
---- 新增属性值 - 简化版
----@param params table
----@param player MPlayer
+
+--- 新增属性值 - 优化版
+---@param params table 参数表，包含属性名、数值等信息
+---@param player MPlayer 玩家对象
+---@return boolean 是否执行成功
 function StatCommand.handlers.add(params, player)
     local statName = params["属性名"]
-    local value = tonumber(params["数值"])
-    local playerStatBonuses = params["玩家属性加成"]
-    local playerVariableBonuses = params["玩家变量加成"]
-    local otherBonuses = params["其他加成"]
+    local inputValue = tonumber(params["数值"])
+    local playerStatBonuses = params["玩家属性加成"] or {}
+    local playerVariableBonuses = params["玩家变量加成"] or {}
+    local otherBonuses = params["其他加成"] or {}
     local finalMultiplier = tonumber(params["最终倍率"]) or 1.0
 
-    if not (statName and value) then
-        gg.log("错误：缺少 '属性名' 或 '数值' 字段")
+    -- 参数验证
+    if not statName or not inputValue then
+        gg.log("错误：缺少必要参数 '属性名' 或 '数值'")
+        return false
+    end
+    
+    if inputValue < 0 then
+        gg.log("错误：数值不能为负数")
         return false
     end
 
+    -- 计算基础值
+    local baseValue = _calculateBaseValue(inputValue, player, statName)
+    
+    -- 计算所有加成
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
-        player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
     
     local valueToAdd = finalValue * finalMultiplier
     local oldValue = player:GetStat(statName)
@@ -45,63 +73,86 @@ function StatCommand.handlers.add(params, player)
     player:AddStat(statName, valueToAdd, true)
     local newValue = player:GetStat(statName)
 
-    gg.log(string.format("新增玩家 %s 属性 '%s': %s + %s = %s (计算值: %s, 倍率: %s).%s", 
+    gg.log(string.format("新增玩家 %s 属性 '%s': %s + %s = %s (基础: %s, 计算: %s, 倍率: %s) %s", 
         player.name, statName, tostring(oldValue), tostring(valueToAdd), tostring(newValue), 
+        tostring(baseValue), tostring(finalValue), tostring(finalMultiplier), bonusInfo))
+    
+    return true
+end
+
+--- 设置属性值 - 优化版
+---@param params table 参数表，包含属性名、数值等信息
+---@param player MPlayer 玩家对象
+---@return boolean 是否执行成功
+function StatCommand.handlers.set(params, player)
+    local statName = params["属性名"]
+    local inputValue = tonumber(params["数值"])
+    local playerStatBonuses = params["玩家属性加成"] or {}
+    local playerVariableBonuses = params["玩家变量加成"] or {}
+    local otherBonuses = params["其他加成"] or {}
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0
+    
+    -- 参数验证
+    if not statName or not inputValue then
+        gg.log("错误：缺少必要参数 '属性名' 或 '数值'")
+        return false
+    end
+    
+    if inputValue < 0 then
+        gg.log("错误：数值不能为负数")
+        return false
+    end
+    
+    -- 计算基础值 - 核心逻辑改进
+    local baseValue = _calculateBaseValue(inputValue, player, statName)
+    
+    -- 计算所有加成
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
+        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+    
+    local valueToSet = finalValue * finalMultiplier
+    
+    -- 执行设置
+    player:SetStat(statName, valueToSet, true)
+    local actualValue = player:GetStat(statName)
+    
+    -- 记录日志
+    gg.log(string.format("设置玩家 %s 属性 '%s' = %s (基础: %s, 计算: %s, 倍率: %s) %s", 
+        player.name, statName, tostring(actualValue), tostring(baseValue), 
         tostring(finalValue), tostring(finalMultiplier), bonusInfo))
     
     return true
 end
 
---- 设置属性值 - 简化版
----@param params table
----@param player MPlayer
-function StatCommand.handlers.set(params, player)
-    local statName = params["属性名"]
-    local value = tonumber(params["数值"])
-    local playerStatBonuses = params["玩家属性加成"]
-    local playerVariableBonuses = params["玩家变量加成"]
-    local otherBonuses = params["其他加成"]
-    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0
-
-    if not (statName and value) then
-        gg.log("错误：缺少 '属性名' 或 '数值' 字段")
-        return false
-    end
-
-    -- 计算最终值（包含所有加成）
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
-        player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
-
-    local valueToSet = finalValue * finalMultiplier
-
-    -- 直接设置 - 设置什么就是什么
-    player:SetStat(statName, valueToSet, true)
-    local actualValue = player:GetStat(statName)
-
-    gg.log(string.format("设置玩家 %s 属性 '%s' = %s (计算值: %s, 倍率: %s).%s", 
-        player.name, statName, tostring(actualValue), tostring(finalValue), tostring(finalMultiplier), bonusInfo))
-    
-    return true
-end
-
---- 减少属性值 - 简化版
----@param params table
----@param player MPlayer
+--- 减少属性值 - 优化版
+---@param params table 参数表，包含属性名、数值等信息
+---@param player MPlayer 玩家对象
+---@return boolean 是否执行成功
 function StatCommand.handlers.reduce(params, player)
     local statName = params["属性名"]
-    local value = tonumber(params["数值"])
-    local playerStatBonuses = params["玩家属性加成"]
-    local playerVariableBonuses = params["玩家变量加成"]
-    local otherBonuses = params["其他加成"]
+    local inputValue = tonumber(params["数值"])
+    local playerStatBonuses = params["玩家属性加成"] or {}
+    local playerVariableBonuses = params["玩家变量加成"] or {}
+    local otherBonuses = params["其他加成"] or {}
     local finalMultiplier = tonumber(params["最终倍率"]) or 1.0
 
-    if not (statName and value) then
-        gg.log("错误：缺少 '属性名' 或 '数值' 字段")
+    -- 参数验证
+    if not statName or not inputValue then
+        gg.log("错误：缺少必要参数 '属性名' 或 '数值'")
+        return false
+    end
+    
+    if inputValue < 0 then
+        gg.log("错误：数值不能为负数")
         return false
     end
 
+    -- 计算基础值
+    local baseValue = _calculateBaseValue(inputValue, player, statName)
+    
+    -- 计算所有加成
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
-        player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
     
     local valueToReduce = finalValue * finalMultiplier
     local oldValue = player:GetStat(statName)
@@ -110,26 +161,28 @@ function StatCommand.handlers.reduce(params, player)
     player:AddStat(statName, -valueToReduce, true)
     local newValue = player:GetStat(statName)
 
-    gg.log(string.format("减少玩家 %s 属性 '%s': %s - %s = %s (计算值: %s, 倍率: %s).%s", 
+    gg.log(string.format("减少玩家 %s 属性 '%s': %s - %s = %s (基础: %s, 计算: %s, 倍率: %s) %s", 
         player.name, statName, tostring(oldValue), tostring(valueToReduce), tostring(newValue), 
-        tostring(finalValue), tostring(finalMultiplier), bonusInfo))
+        tostring(baseValue), tostring(finalValue), tostring(finalMultiplier), bonusInfo))
     
     return true
 end
 
 
---- 仅应用加成（不包含基础数值）
----@param params table
----@param player MPlayer
+--- 仅应用加成（不包含基础数值）- 优化版
+---@param params table 参数表，包含属性名、加成信息等
+---@param player MPlayer 玩家对象
+---@return boolean 是否执行成功
 function StatCommand.handlers.bonusonly(params, player)
     local statName = params["属性名"]
-    local playerStatBonuses = params["玩家属性加成"]
-    local playerVariableBonuses = params["玩家变量加成"]
-    local otherBonuses = params["其他加成"]
-    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0  -- 新增：最终倍率，默认1.0
+    local playerStatBonuses = params["玩家属性加成"] or {}
+    local playerVariableBonuses = params["玩家变量加成"] or {}
+    local otherBonuses = params["其他加成"] or {}
+    local finalMultiplier = tonumber(params["最终倍率"]) or 1.0
 
+    -- 参数验证
     if not statName then
-        --player:SendHoverText("缺少 '属性名' 字段。")
+        gg.log("错误：缺少必要参数 '属性名'")
         return false
     end
 
@@ -146,15 +199,11 @@ function StatCommand.handlers.bonusonly(params, player)
         player:AddStat(statName, finalBonusValue, true)
         local newValue = player:GetStat(statName)
         
-        local msg = string.format("成功为玩家 %s 的属性 '%s' 应用加成 %s (最终倍率: %s)，新值为: %s.%s", 
-            player.name, statName, tostring(finalBonusValue), tostring(finalMultiplier), tostring(newValue), bonusInfo)
-        -- --player:SendHoverText(msg)
-        gg.log(msg)
+        gg.log(string.format("成功为玩家 %s 的属性 '%s' 应用加成 %s (最终倍率: %s)，新值为: %s %s", 
+            player.name, statName, tostring(finalBonusValue), tostring(finalMultiplier), tostring(newValue), bonusInfo))
     else
-        local msg = string.format("玩家 %s 的属性 '%s' 没有可应用的加成，保持原值。%s", 
-            player.name, statName, bonusInfo)
-        --player:SendHoverText(msg)
-        gg.log(msg)
+        gg.log(string.format("玩家 %s 的属性 '%s' 没有可应用的加成，保持原值 %s", 
+            player.name, statName, bonusInfo))
     end
     
     return true
@@ -205,7 +254,13 @@ function StatCommand.handlers.restore(params, player)
     
     if statName then
         -- 恢复指定属性
-        player:RestoreStatToInitial(statName)
+        local initialValue = player:RestoreStatToInitial(statName)
+        gg.network_channel:fireClient(player.uin, {
+            cmd = EventPlayerConfig.NOTIFY.PLAYER_STAT_SYNC,
+            uin = player.uin,
+            statName = statName,
+            initialValue = initialValue
+        })
     else
         -- 恢复所有属性
         local count = player:RestoreAllStatsToInitial()

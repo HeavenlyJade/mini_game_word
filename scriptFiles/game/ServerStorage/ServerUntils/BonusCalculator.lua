@@ -219,13 +219,16 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
         if bonusStatName and actionType then
             local bonusValue = 0
 
-            -- 原有逻辑：从玩家属性系统读取
+            -- 修改逻辑：如果baseValue大于0，则不从玩家属性系统读取
             local playerStatValue = 0
-            if AttributeMapping.IsAttributeVariable(bonusStatName) then
-                local actualStatName = AttributeMapping.GetCorrespondingStat(bonusStatName)
-                playerStatValue = player:GetStat(actualStatName) or 0
-            else
-                playerStatValue = player:GetStat(bonusStatName) or 0
+            if baseValue <= 0 then
+                -- 原有逻辑：从玩家属性系统读取
+                if AttributeMapping.IsAttributeVariable(bonusStatName) then
+                    local actualStatName = AttributeMapping.GetCorrespondingStat(bonusStatName)
+                    playerStatValue = player:GetStat(actualStatName) or 0
+                else
+                    playerStatValue = player:GetStat(bonusStatName) or 0
+                end
             end
 
             bonusValue = bonusValue + playerStatValue
@@ -284,7 +287,7 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
             end
         end
     end
-    --gg.log("玩家属性加成", totalBonus, bonusDescriptions)
+    -- gg.log("玩家属性加成", totalBonus, bonusDescriptions)
     return totalBonus, bonusDescriptions
 end
 
@@ -339,8 +342,8 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
             table.insert(allDescriptions, desc)
         end
 
-        --gg.log(string.format("玩家属性加成阶段: 基础值 %s → 加成后 %s (增加 %s)",
-            -- tostring(baseValue), tostring(currentValue), tostring(statBonus)))
+        gg.log(string.format("玩家属性加成阶段: 基础值 %s → 加成后 %s (增加 %s)",
+            tostring(baseValue), tostring(currentValue), tostring(statBonus)))
     end
 
     -- 阶段2：计算玩家变量加成（基于属性加成后的值）

@@ -522,6 +522,7 @@ function _M:RestoreStatToInitial(statName)
     local initialValue = self:GetInitialStat(statName)
     self:SetStat(statName, initialValue, true)
     gg.log(string.format("属性 '%s' 已恢复到初始值: %s", statName, tostring(initialValue)))
+    return initialValue
 end
 
 --- 恢复所有属性到初始值

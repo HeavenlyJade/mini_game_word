@@ -87,6 +87,11 @@ function PlayerActionHandler:SubscribeServerEvents()
             self.gameMode = nil
         end
     end)
+
+    -- 新增：监听服务端属性同步事件
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_STAT_SYNC, function(data)
+        self:OnSyncPlayerStat(data)
+    end)
 end
 
 --- 处理来自服务端的通用"发射"或"开始特殊模式"指令
@@ -192,6 +197,24 @@ function PlayerActionHandler:OnStopNavigation(data)
     -- 停止当前导航
     actor:StopNavigate()
     actor:StopMove()
+end
+
+--- 处理服务端属性同步事件
+---@param data table 属性同步数据
+function PlayerActionHandler:OnSyncPlayerStat(data)
+    local actor = gg.getClientLocalPlayer()
+    if not actor then
+        return
+    end
+    
+    local statName = data.statName
+    local statValue = data.initialValue
+    
+    -- 当属性名为"速度"时，恢复客户端的速度属性
+    if statName == "速度" and statValue then
+        actor.Movespeed = statValue
+        gg.log(string.format("PlayerActionHandler: 已同步客户端速度属性为: %s", tostring(statValue)))
+    end
 end
 
 --- 客户端导航方法 - 供其他模块调用

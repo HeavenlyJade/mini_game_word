@@ -62,6 +62,7 @@ EventPlayerConfig.NOTIFY = {
     -- 【新增】玩家切换地图通知
     PLAYER_MAP_CHANGED = "sPlayerMapChanged", -- 玩家地图切换
     LEAVE_IDLE_SUCCESS = "LeaveIdleSuccess", -- 新增：离开挂机成功通知
+    PLAYER_STAT_SYNC = "cmd_sync_player_stat", -- 新增：玩家属性同步
 }
 
 --[[
