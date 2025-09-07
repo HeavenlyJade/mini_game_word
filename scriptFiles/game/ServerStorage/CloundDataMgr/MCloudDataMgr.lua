@@ -56,7 +56,7 @@ end
 function MCloudDataMgr.ReadPlayerData( uin_ )
     local ret_, ret2_ = cloudService:GetTableOrEmpty( MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_ )
 
-    --gg.log( '获取与玩家当前的经验和等级', 'pd' .. uin_, ret_, ret2_ )
+    gg.log( '获取与玩家当前的经验和等级', 'pd' .. uin_, ret_, ret2_ )
     if  ret_ then
         if  ret2_ and ret2_.uin == uin_ then
             return 0, ret2_
@@ -81,7 +81,8 @@ function MCloudDataMgr.SavePlayerData( uin_,  force_ )
             uin   = uin_,
             exp   = player_.exp,
             level = player_.level,
-            vars = player_.variables
+            vars = player_.variables,
+            isNew = true
         }
         cloudService:SetTableAsync( MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_, data_, function ( ret_ )
         end )
@@ -191,9 +192,9 @@ function MCloudDataMgr.ClearCorePlayerData(uin_)
     -- 2. 清理云端数据
     local key = MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_
     -- 设置为空表来清空数据
-    cloudService:SetTableAsync(key, {}, function(success)
+    cloudService:RemoveKeyAsync(key, function(success)
         if success then
-            --gg.log("成功清空玩家核心云端数据:", uin_)
+            gg.log("成功清空玩家核心云端数据:", uin_)
         else
             --gg.log("清空玩家核心云端数据失败:", uin_)
         end

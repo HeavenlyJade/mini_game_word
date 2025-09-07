@@ -155,7 +155,12 @@ function MServerInitPlayer.player_enter_game(player)
     ShopMgr.OnPlayerJoin(player_)
     local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
     RewardBonusMgr.OnPlayerJoin(player_)
-    if cloud_player_data_ == nil or next(cloud_player_data_) == nil then
+    -- 判断是否为新玩家：数据为空、isNew为false、或者vars为空表
+    local isNewPlayer = cloud_player_data_ == nil or 
+                       not cloud_player_data_.vars or 
+                       next(cloud_player_data_.vars) == nil
+    
+    if isNewPlayer then
         PlayerInitMgr.InitializeNewPlayer(player_)
     end
     
@@ -282,7 +287,6 @@ function MServerInitPlayer.player_leave_game(player)
     local uin_ = player.UserId
     local mplayer = serverDataMgr.server_players_list[uin_] ---@type MPlayer
     if mplayer then
-        -- 【新增】清理玩家场景映射
          -- 【新增】清理挂机点数据
          local IdleSpotHandler = require(ServerStorage.SceneInteraction.handlers.IdleSpotHandler) ---@type IdleSpotHandler
          IdleSpotHandler.CleanupPlayerData(mplayer)

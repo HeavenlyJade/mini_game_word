@@ -51,6 +51,8 @@ function MailEventManager.SendPersonalMail(recipientUin, title, content, attachm
         expire_time = now + finalExpireDays * 24 * 3600,
         create_time = now
     }
+    
+    gg.log("MailEventManager.SendPersonalMail - 邮件数据:", mailData)
 
     local result = MailMgr.SendNewMail(mailData, recipientUin)
     return result.success, result.mailId or result.message

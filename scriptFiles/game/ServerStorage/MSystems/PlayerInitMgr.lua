@@ -42,7 +42,7 @@ function PlayerInitMgr.InitializeNewPlayer(player)
     -- 6. 【新增】自动装备宠物、伙伴、翅膀
     PlayerInitMgr._AutoEquipCompanions(player)
 
-    --gg.log("玩家初始化完成:", player.name)
+    gg.log("玩家初始化完成:", player.name)
 end
 
 --- 内部函数：初始化货币
