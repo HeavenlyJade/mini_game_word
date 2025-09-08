@@ -247,6 +247,14 @@ function LotteryGui:SetAllViewListsLayout()
     local successCount = 0
     local failCount = 0
 
+    -- 从模版界面同步 Size 和 Position
+    local templateSize = nil
+    local templatePosition = nil
+    if self.rewardTemplatelist and self.rewardTemplatelist.node then
+        templateSize = self.rewardTemplatelist.node.Size
+        templatePosition = self.rewardTemplatelist.node.Position
+    end
+
     -- 遍历所有ViewList并设置布局属性
     for _, listInfo in ipairs(allViewLists) do
         local viewList = listInfo.viewList
@@ -255,6 +263,13 @@ function LotteryGui:SetAllViewListsLayout()
         if viewList and viewList.node then
             -- 设置布局属性
             pcall(function()
+                -- 同步模版的 Size 和 Position（若模版存在）
+                if templateSize ~= nil then
+                    viewList.node.Size = templateSize
+                end
+                if templatePosition ~= nil then
+                    viewList.node.Position = templatePosition
+                end
                 viewList.node.ScrollType = Enum.ListLayoutType.FLOW_VERTICAL
                 viewList.node.OverflowType = Enum.OverflowType.VERTICAL
                 viewList.node.IsNotifyEventStop = false

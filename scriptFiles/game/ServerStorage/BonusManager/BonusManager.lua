@@ -210,6 +210,7 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
         return {}
     end
 
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
     local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr)
     local playerAchievement = AchievementMgr.server_player_achievement_data[player.uin] ---@type Achievement
     
@@ -222,27 +223,67 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
     local talentVariables = playerAchievement.talentVariableSystem:GetVariablesDictionary()
     
     for varName, value in pairs(talentVariables) do
-        -- 解析天赋变量名，提取物品目标
+        -- 解析天赋变量名，提取基础信息
         local parsed = playerAchievement.talentVariableSystem:ParseVariableName(varName)
-        gg.log("parsed",parsed)
-        if parsed and parsed.targetName then
-            local itemTarget = parsed.targetName
-            if targetItemName and itemTarget ~= targetItemName then
-                -- 指定了过滤物品且不匹配，跳过
-            else
-                if not bonuses[itemTarget] then
-                    bonuses[itemTarget] = { fixed = 0, percentage = 0 }
-                end
+        
+        if parsed and parsed.operation == "天赋" and parsed.name then
+            -- 从解析结果获取天赋ID
+            local talentId = parsed.name
+            
+            -- 获取天赋配置
+            local achievementType = ConfigLoader.GetAchievement(talentId) ---@type AchievementType
+            if achievementType and achievementType:IsTalentAchievement() then
                 
-                if parsed.method == "固定值" then
-                    bonuses[itemTarget].fixed = (bonuses[itemTarget].fixed or 0) + value
-                elseif parsed.method == "百分比" then
-                    bonuses[itemTarget].percentage = (bonuses[itemTarget].percentage or 0) + value
+                -- 获取当前等级
+                local currentLevel = playerAchievement:GetTalentLevel(talentId)
+                if currentLevel > 0 then
+                    
+                    -- 获取等级效果配置
+                    local levelEffect = achievementType:GetLevelEffect(currentLevel)
+                    if levelEffect then
+                        
+                        -- 检查是否匹配效果字段名称
+                        local effectFieldName = levelEffect["效果字段名称"]
+                        if effectFieldName and string.find(varName, effectFieldName) then
+                            
+                            -- 获取加成类型和物品目标
+                            local bonusType = levelEffect["加成类型"]
+                            local itemTarget = levelEffect["物品目标"]
+                            
+                            -- 只处理物品类型的加成
+                            if bonusType == "物品" and itemTarget then
+                                
+                                -- 应用目标物品过滤
+                                if targetItemName and itemTarget ~= targetItemName then
+                                    -- 指定了过滤物品且不匹配，跳过
+                                else
+                                    if not bonuses[itemTarget] then
+                                        bonuses[itemTarget] = { fixed = 0, percentage = 0 }
+                                    end
+                                    
+                                    -- 根据解析的方法类型应用加成
+                                    if parsed.method == "固定值" then
+                                        bonuses[itemTarget].fixed = (bonuses[itemTarget].fixed or 0) + value
+                                    elseif parsed.method == "百分比" then
+                                        local percentValue = value
+                                        if percentValue < 1 then
+                                            percentValue = percentValue * 100
+                                        end
+                                        bonuses[itemTarget].percentage = (bonuses[itemTarget].percentage or 0) + percentValue
+                                    end
+                                    
+                                    -- 保留配置信息用于调试
+                                    bonuses[itemTarget].talentId = talentId
+                                    bonuses[itemTarget].effectFieldName = effectFieldName
+                                end
+                            end
+                        end
+                    end
                 end
             end
         end
     end
-    
+    -- gg.log("返回的加成",bonuses,targetItemName)
     return bonuses
 end
 
@@ -274,8 +315,10 @@ function BonusManager.CalculatePlayerItemBonuses(player, targetItemName)
     BonusManager.MergeBonuses(totalBonuses, trailBonuses)
 
     -- 5. 获取天赋（成就）物品加成（支持可选过滤）
-    local achievementBonuses = BonusManager.GetAchievementItemBonuses(player, targetItemName)
-    BonusManager.MergeBonuses(totalBonuses, achievementBonuses)
+    if targetItemName then
+        local achievementBonuses = BonusManager.GetAchievementItemBonuses(player, targetItemName)
+        BonusManager.MergeBonuses(totalBonuses, achievementBonuses)
+    end
 
     return totalBonuses
 end

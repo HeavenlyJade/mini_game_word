@@ -245,7 +245,6 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
 
     -- 3. 针对当前奖励物品名，追加聚合天赋定向加成（避免无关天赋误入）
     local targetedBonuses = BonusManager.CalculatePlayerItemBonuses(player, itemType)
-    gg.log("targetedBonuses",targetedBonuses)
     BonusManager.MergeBonuses(bonuses, targetedBonuses)
     local finalRewards = BonusManager.ApplyBonusesToRewards(originalRewards, bonuses)
 
@@ -254,8 +253,8 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
 
     -- 记录加成计算日志
     if finalItemCount ~= itemCount then
-        --gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d",
-            -- player.name or player.uin, itemType, itemCount, finalItemCount))
+        gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d",
+            player.name or player.uin, itemType, itemCount, finalItemCount))
     end
 
     -- 使用现有的奖励发放系统，发放加成后的奖励
@@ -698,7 +697,7 @@ function RaceGameMode:_calculateAndDistributeRewards()
 
                 -- 2. 计算玩家所有物品加成
                 local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
-                --gg.log("奖励加成计算 ",bonuses )
+                gg.log("关卡排名加成计算 ",bonuses )
                 -- 3. 应用加成到基础奖励
                 local finalBaseRewards = BonusManager.ApplyBonusesToRewards(baseRewards, bonuses)
                 --gg.log("奖励加成计算 ",finalBaseRewards )
@@ -995,16 +994,18 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
         return false
     end
 
-    -- 【新增】记录实时奖励的加成情况（用于调试）
-    local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
+    -- 计算并应用加成
+    local bonuses = BonusManager.CalculatePlayerItemBonuses(player, itemName)
     local itemBonus = bonuses[itemName]
     if itemBonus and (itemBonus.fixed > 0 or itemBonus.percentage > 0) then
         gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)",
             player.name or player.uin, itemName, amount, itemBonus.fixed or 0, itemBonus.percentage or 0))
     end
+    local finalRewards = BonusManager.ApplyBonusesToRewards({[itemName]=amount}, bonuses)
+    local finalAmount = finalRewards[itemName] or amount
 
-    -- 使用统一奖励分发器发放物品（内部会自动应用加成）
-    local success, errorMsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemName, amount)
+    -- 发放已应用加成后的数量
+    local success, errorMsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemName, finalAmount)
 
     if success then
         --gg.log(string.format("实时奖励发放成功: 玩家 %s 获得 %s x%d", player.name or "未知", itemName, amount))
