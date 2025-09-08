@@ -200,8 +200,8 @@ end
 
 -- 处理邮件列表响应
 function MailGui:HandleMailListResponse(data)
-    ----gg.log("=== HandleMailListResponse 开始 ===")
-    ----gg.log("收到邮件列表响应", data)
+    gg.log("=== HandleMailListResponse 开始 ===")
+    -- gg.log("HandleMailListResponse收到邮件列表响应", data)
 
     if not data then
         ----gg.log("邮件列表响应数据为空")
@@ -269,7 +269,7 @@ end
 -- 处理新邮件通知
 ---@param data NewMailNotificationPayload
 function MailGui:HandleNewMailNotification(data)
-    ----gg.log("收到新邮件通知", data)
+    gg.log("收到新邮件通知", data)
 
     local mailInfo = data and data.mail_info
 

@@ -296,7 +296,10 @@ function MailMgr.GetPlayerMailList(uin)
     if mailData.playerMail and mailData.playerMail.mails then
         for id, mail in pairs(mailData.playerMail.mails) do
             if not mail.expire_time or now < mail.expire_time then
-                personalMails[id] = mail
+                -- 创建邮件副本并确保包含 has_attachment 字段
+                local mailCopy = MailMgr._CopyTable(mail)
+                mailCopy.has_attachment = mailCopy.has_attachment or (mailCopy.attachments and next(mailCopy.attachments) ~= nil)
+                personalMails[id] = mailCopy
             end
         end
     end
@@ -311,6 +314,7 @@ function MailMgr.GetPlayerMailList(uin)
                 local mailCopy = MailMgr._CopyTable(mail)
                 mailCopy.status = status.status
                 mailCopy.is_claimed = status.is_claimed
+                mailCopy.has_attachment = mailCopy.has_attachment or (mailCopy.attachments and next(mailCopy.attachments) ~= nil)
                 globalMails[id] = mailCopy
             end
         end
@@ -333,6 +337,7 @@ function MailMgr.SendNewMail(mailData, targetUin)
     mailData.create_time = mailData.create_time or os.time()
     mailData.status = MailMgr.MAIL_STATUS.UNREAD
     mailData.is_claimed = false
+    mailData.has_attachment = mailData.has_attachment or (mailData.attachments and next(mailData.attachments) ~= nil)
 
     if mailData.type == MailMgr.MAIL_TYPE.PLAYER then
         -- 发送个人邮件
@@ -349,16 +354,23 @@ function MailMgr.SendNewMail(mailData, targetUin)
             -- 通知客户端
             MailMgr.NotifyNewMail(targetUin, mailData)
         else
-            -- 玩家离线，直接写到云存储
-            -- 注意：这里需要先读取再写入，可能会有性能问题，最好是在线操作
-            -- 简化处理：离线邮件发送可能需要一个更鲁棒的队列系统
-            gg.log("警告：尝试向离线玩家发送邮件，此功能简化实现", targetUin)
-            local playerMailKey = MailMgr.CLOUD_KEYS.PLAYER_MAIL .. targetUin
-            local success, data = cloudService:GetTableOrEmpty(playerMailKey)
-            if success then
-                data.mails = data.mails or {}
-                data.mails[mailData.id] = mailData
-                cloudService:SetTableAsync(playerMailKey, data)
+            -- 玩家离线，通过CloudMailDataAccessor处理离线邮件
+            gg.log("向离线玩家发送邮件", targetUin, mailData.id)
+            local CloudMailDataAccessor = require(ServerStorage.MSystems.Mail.MailCloudDataMgr) ---@type CloudMailDataAccessor
+            
+            -- 加载玩家的个人邮件数据
+            local playerMailData = CloudMailDataAccessor.LoadPlayerMail(CloudMailDataAccessor, targetUin)
+            if playerMailData then
+                -- 添加新邮件到个人邮件数据中
+                playerMailData.mails = playerMailData.mails or {}
+                playerMailData.mails[mailData.id] = mailData
+                playerMailData.last_update = os.time()
+                
+                -- 保存更新后的个人邮件数据
+                CloudMailDataAccessor:SavePlayerMail(targetUin, playerMailData)
+                gg.log("离线邮件已保存到云存储", targetUin, mailData.id)
+            else
+                gg.log("离线邮件保存失败：无法加载玩家邮件数据", targetUin)
             end
         end
 
@@ -366,8 +378,8 @@ function MailMgr.SendNewMail(mailData, targetUin)
 
     elseif mailData.type == MailMgr.MAIL_TYPE.GLOBAL then
         -- 发送全服邮件
-        local success, mailId = GlobalMailManager:AddGlobalMail(mailData)
-        if success then
+        local mailId = GlobalMailManager:AddGlobalMail(mailData)
+        if mailId then
             gg.log("新的全服邮件已发布", mailId)
             -- 向所有在线玩家广播
             local MailEventManager = require(ServerStorage.MSystems.Mail.MailEventManager) ---@type MailEventManager
@@ -567,7 +579,7 @@ function MailMgr.BatchClaimMails(uin, mailIds)
         local findResult = MailMgr.FindMail(uin, mail.id)
         local mailType, mailStatus = findResult.mailType, findResult.mailStatus
         if mailType == MailMgr.MAIL_TYPE.PLAYER then
-            local m = mailData.playerMail.mails[mail.id]
+            local m = mailData and mailData.playerMail and mailData.playerMail.mails[mail.id]
             if m then
                 m.is_claimed = true
             end

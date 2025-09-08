@@ -38,7 +38,7 @@ function MailEventManager.SendPersonalMail(recipientUin, title, content, attachm
         return false, "参数无效"
     end
 
-    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
     local now = os.time()
     local finalExpireDays = expireDays or MailEventConfig.DEFAULT_EXPIRE_DAYS
 
@@ -49,12 +49,19 @@ function MailEventManager.SendPersonalMail(recipientUin, title, content, attachm
         attachments = attachments or {},
         sender_info = senderInfo or { name = "系统", id = 0 },
         expire_time = now + finalExpireDays * 24 * 3600,
-        create_time = now
+        create_time = now,
+        has_attachment = attachments and next(attachments) ~= nil -- 判断是否有附件
     }
     
     gg.log("MailEventManager.SendPersonalMail - 邮件数据:", mailData)
 
     local result = MailMgr.SendNewMail(mailData, recipientUin)
+    
+    -- 发送成功后，通知客户端更新邮件列表
+    if result.success then
+        MailEventManager.NotifyMailListUpdate(recipientUin)
+    end
+    
     return result.success, result.mailId or result.message
 end
 
@@ -80,10 +87,17 @@ function MailEventManager.SendGlobalMail(title, content, attachments, expireDays
         attachments = attachments or {},
         sender_info = { name = "系统", id = 0 },
         expire_time = now + finalExpireDays * 24 * 3600,
-        create_time = now
+        create_time = now,
+        has_attachment = attachments and next(attachments) ~= nil -- 判断是否有附件
     }
 
     local result = MailMgr.SendNewMail(mailData)
+    
+    -- 发送成功后，通知所有在线玩家更新邮件列表
+    if result.success then
+        MailEventManager.BroadcastMailListUpdate()
+    end
+    
     return result.success, result.mailId or result.message
 end
 
@@ -334,18 +348,32 @@ end
 
 -- 通知邮件列表更新
 function MailEventManager.NotifyMailListUpdate(uin, personalMails, globalMails)
-    if not uin then
-        return
-    end
-
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    local result = MailMgr.GetPlayerMailList(uin)
     gg.network_channel:fireClient(uin, {
         cmd = MailEventConfig.RESPONSE.LIST_RESPONSE,
-        code = MailEventConfig.ERROR_CODES.SUCCESS,
-        personal_mails = personalMails or {},
-        global_mails = globalMails or {}
+        code = result.code,
+        message = result.message or MailEventConfig.GetErrorMessage(result.code),
+        personal_mails = result.personal_mails,
+        global_mails = result.global_mails
     })
+    gg.log("发送邮件列表更新通知", uin, "个人邮件:", #(result.personal_mails or {}), "全服邮件:", #(result.global_mails or {}))
+end
 
-    gg.log("发送邮件列表更新通知", uin, "个人邮件:", #(personalMails or {}), "全服邮件:", #(globalMails or {}))
+-- 广播邮件列表更新给所有在线玩家
+function MailEventManager.BroadcastMailListUpdate()
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    
+    for _, player in pairs(gg.server_players_list or {}) do
+        if player and player.uin then
+            local result = MailMgr.GetPlayerMailList(player.uin)
+            if result.success then
+                MailEventManager.NotifyMailListUpdate(player.uin, result.personal_mails, result.global_mails)
+            end
+        end
+    end
+
+    gg.log("广播邮件列表更新给所有在线玩家")
 end
 
 return MailEventManager
