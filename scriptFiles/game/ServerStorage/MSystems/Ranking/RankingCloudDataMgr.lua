@@ -431,21 +431,20 @@ function RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, force
             local playerName = updateData[2]
             local newScore = updateData[3]
             
-            if uin and playerName and type(newScore) == "number" then
+            if uin and playerName  then
                 local uinStr = tostring(uin)
-                local intScore = math.floor(newScore)
                 
                 -- 从获取的Top100数据中查找旧分数，如果找不到则默认为0
                 local oldScore = cloudScores[uinStr] or 0
                 
                 -- 判断是否需要更新
-                local needUpdate = forceUpdate or (intScore > oldScore)
+                local needUpdate = forceUpdate or (newScore > oldScore)
                 
                 if needUpdate then
                     table.insert(needUpdateList, {
                         uin = uinStr,
                         playerName = playerName,
-                        score = intScore,
+                        score = newScore,
                         oldScore = oldScore
                     })
                 end
@@ -457,8 +456,8 @@ function RankingCloudDataMgr.BatchSafeUpdatePlayerScore(rankType, updates, force
                     playerName = playerName,
                     success = needUpdate, -- success 在这里表示“将要尝试更新”
                     oldScore = oldScore,
-                    newScore = intScore,
-                    scoreChanged = needUpdate and (oldScore ~= intScore)
+                    newScore = newScore,
+                    scoreChanged = needUpdate and (oldScore ~= newScore)
                 })
             else
                 -- 无效数据
@@ -502,6 +501,85 @@ function RankingCloudDataMgr.GetAllRankingTypes()
 end
 
 
+
+--- 获取排行榜表格数据（如果不存在则返回空表）
+---@param rankType string 排行榜类型
+---@return boolean, table 是否成功，排行榜数据
+function RankingCloudDataMgr.GetTableOrEmpty(rankType)
+    if not RankingCloudDataMgr.ValidateRankingType(rankType) then
+        ----gg.log("获取排行榜表格数据失败：排行榜类型无效", rankType)
+        return false, {}
+    end
+
+    local cloudService = game:GetService("CloudService")
+    local key = "ranking_table_" .. rankType
+    
+    local ret, ret2 = cloudService:GetTableOrEmpty(key)
+    
+    if ret then
+        if ret2 and type(ret2) == "table" then
+            ----gg.log("获取排行榜表格数据成功", rankType, "数据数量:", #ret2)
+            return true, ret2
+        else
+            ----gg.log("排行榜表格数据为空，返回空表", rankType)
+            return true, {}
+        end
+    else
+        ----gg.log("获取排行榜表格数据失败", rankType)
+        return false, {}
+    end
+end
+
+--- 异步保存排行榜表格数据
+---@param rankType string 排行榜类型
+---@param data table 排行榜数据 [{key=uin, value=score, nick=playerName}, ...]
+---@param callback function|nil 回调函数 function(success)
+function RankingCloudDataMgr.SetTableAsync(rankType, data, callback)
+    if not RankingCloudDataMgr.ValidateRankingType(rankType) then
+        gg.log("保存排行榜表格数据失败：排行榜类型无效", rankType)
+        if callback then callback(false) end
+        return
+    end
+
+    if not data or type(data) ~= "table" then
+        ----gg.log("保存排行榜表格数据失败：数据无效", rankType)
+        if callback then callback(false) end
+        return
+    end
+
+    -- 限制数据长度最大为100
+    local limitedData = {}
+    local count = 0
+    for _, item in pairs(data) do
+        if count >= 100 then
+            break
+        end
+        
+        if item and item.key and item.value and item.nick then
+            table.insert(limitedData, {
+                key = tostring(item.key),
+                value = math.floor(item.value), -- 确保value为整数
+                nick = tostring(item.nick)
+            })
+            count = count + 1
+        end
+    end
+
+    local cloudService = game:GetService("CloudService")
+    local key = "ranking_table_" .. rankType
+    
+    cloudService:SetTableAsync(key, limitedData, function(success)
+        if success then
+            ----gg.log("保存排行榜表格数据成功", rankType, "保存数量:", #limitedData)
+        else
+            ----gg.log("保存排行榜表格数据失败", rankType)
+        end
+        
+        if callback then
+            callback(success)
+        end
+    end)
+end
 
 --- 系统初始化 - 预加载所有排行榜类型
 function RankingCloudDataMgr.SystemInit()
