@@ -13,6 +13,8 @@ local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Achi
 ---@field 效果数值 string 效果数值公式（如“T_LVL*0.2”）
 ---@field 效果描述 string 效果描述
 ---@field 等级 number|nil 适用等级，可选
+---@field 加成类型 string|nil 加成类型，可选（如“物品”）
+---@field 物品目标 string|nil 物品目标名，可选（如“金币”）
 
 ---@class UpgradeCondition
 ---@field 消耗名称 string 物品名称
@@ -100,7 +102,7 @@ end
 
 --- 获取等级效果数值
 ---@param level number 天赋等级
----@return table[] 计算后的效果值列表，每个元素是 {["效果类型"]=string, ["效果字段名称"]=string, ["数值"]=any}
+---@return table[] 计算后的效果值列表，每个元素包含 {"效果类型","效果字段名称","数值","加成类型?","物品目标?"}
 function AchievementType:GetLevelEffectValue(level)
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
     
@@ -127,7 +129,9 @@ function AchievementType:GetLevelEffectValue(level)
             table.insert(results, {
                 ["效果类型"] = effectConfig["效果类型"],
                 ["效果字段名称"] = effectConfig["效果字段名称"],
-                ["数值"] = calculatedValue
+                ["数值"] = calculatedValue,
+                ["加成类型"] = effectConfig["加成类型"],
+                ["物品目标"] = effectConfig["物品目标"],
             })
         end
     end
@@ -173,7 +177,7 @@ end
 --- 获取动作消耗（专门用于天赋动作，如重生）
 ---@param targetLevel number 目标动作等级
 ---@param playerData table 玩家数据
----@param bagData table 背包数据
+---@param bagData table|nil 背包数据
 ---@return {item: string, amount: number}[] 消耗列表
 function AchievementType:GetActionCosts(targetLevel, playerData, bagData)
     local costsDict = {}

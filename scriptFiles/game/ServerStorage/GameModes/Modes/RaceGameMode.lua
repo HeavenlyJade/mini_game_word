@@ -243,7 +243,10 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
         [itemType] = itemCount
     }
 
-    -- 3. 应用加成到奖励
+    -- 3. 针对当前奖励物品名，追加聚合天赋定向加成（避免无关天赋误入）
+    local targetedBonuses = BonusManager.CalculatePlayerItemBonuses(player, itemType)
+    gg.log("targetedBonuses",targetedBonuses)
+    BonusManager.MergeBonuses(bonuses, targetedBonuses)
     local finalRewards = BonusManager.ApplyBonusesToRewards(originalRewards, bonuses)
 
     -- 4. 获取应用加成后的最终数量
@@ -996,8 +999,8 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
     local itemBonus = bonuses[itemName]
     if itemBonus and (itemBonus.fixed > 0 or itemBonus.percentage > 0) then
-        --gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)",
-            -- player.name or player.uin, itemName, amount, itemBonus.fixed or 0, itemBonus.percentage or 0))
+        gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)",
+            player.name or player.uin, itemName, amount, itemBonus.fixed or 0, itemBonus.percentage or 0))
     end
 
     -- 使用统一奖励分发器发放物品（内部会自动应用加成）

@@ -201,10 +201,56 @@ function BonusManager.GetTrailItemBonuses(player)
     return bonuses or {}
 end
 
---- 计算玩家所有物品加成
+--- 获取天赋物品加成（可选按物品名过滤）
 ---@param player MPlayer 玩家实例
+---@param targetItemName string|nil 仅聚合该物品名的加成（nil 表示全部）
+---@return table<string, any> 天赋加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
+function BonusManager.GetAchievementItemBonuses(player, targetItemName)
+    if not player or not player.uin then
+        return {}
+    end
+
+    local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr)
+    local playerAchievement = AchievementMgr.server_player_achievement_data[player.uin] ---@type Achievement
+    
+    if not playerAchievement or not playerAchievement.talentVariableSystem then
+        return {}
+    end
+
+    -- 从天赋变量系统获取物品加成
+    local bonuses = {}
+    local talentVariables = playerAchievement.talentVariableSystem:GetVariablesDictionary()
+    
+    for varName, value in pairs(talentVariables) do
+        -- 解析天赋变量名，提取物品目标
+        local parsed = playerAchievement.talentVariableSystem:ParseVariableName(varName)
+        gg.log("parsed",parsed)
+        if parsed and parsed.targetName then
+            local itemTarget = parsed.targetName
+            if targetItemName and itemTarget ~= targetItemName then
+                -- 指定了过滤物品且不匹配，跳过
+            else
+                if not bonuses[itemTarget] then
+                    bonuses[itemTarget] = { fixed = 0, percentage = 0 }
+                end
+                
+                if parsed.method == "固定值" then
+                    bonuses[itemTarget].fixed = (bonuses[itemTarget].fixed or 0) + value
+                elseif parsed.method == "百分比" then
+                    bonuses[itemTarget].percentage = (bonuses[itemTarget].percentage or 0) + value
+                end
+            end
+        end
+    end
+    
+    return bonuses
+end
+
+--- 计算玩家所有物品加成（可选按目标物品名过滤天赋项）
+---@param player MPlayer 玩家实例
+---@param targetItemName string|nil 若提供，则仅聚合该物品名的天赋加成，其它来源照常
 ---@return table<string, { fixed: number, percentage: number, [any]: any }> 按物品目标分组的加成数据
-function BonusManager.CalculatePlayerItemBonuses(player)
+function BonusManager.CalculatePlayerItemBonuses(player, targetItemName)
     if not player then
         return {}
     end
@@ -226,6 +272,10 @@ function BonusManager.CalculatePlayerItemBonuses(player)
     -- 4. 获取尾迹加成
     local trailBonuses = BonusManager.GetTrailItemBonuses(player)
     BonusManager.MergeBonuses(totalBonuses, trailBonuses)
+
+    -- 5. 获取天赋（成就）物品加成（支持可选过滤）
+    local achievementBonuses = BonusManager.GetAchievementItemBonuses(player, targetItemName)
+    BonusManager.MergeBonuses(totalBonuses, achievementBonuses)
 
     return totalBonuses
 end

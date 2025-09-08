@@ -372,7 +372,7 @@ function PlayerRewardDispatcher.DispatchRewards(player, rewards)
         return true, "无奖励需要发放", nil
     end
     
-    gg.log("开始发放奖励", player.name, "奖励数量", rewards)
+    -- gg.log("开始发放奖励", player.name, "奖励数量", rewards)
     
     local failedRewards = {}
     local successCount = 0
