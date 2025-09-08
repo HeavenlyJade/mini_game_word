@@ -102,7 +102,7 @@ function ActionCosteRewardCal:_CalculateValue(expression, playerData, bagData, e
     -- 1. 替换变量，得到一个纯粹的表达式字符串
     --gg.log("[诊断][_CalculateValue] 原始表达式:", expression)
     local processedExpression = self:_ProcessExpression(expression, playerData, bagData, externalContext)
-    --gg.log("[诊断][_CalculateValue] 变量替换后表达式:", processedExpression)
+    -- gg.log("[诊断][_CalculateValue] 变量替换后表达式:", processedExpression)
 
     -- 2. 判断是条件表达式还是数值表达式
     local hasComparison = processedExpression:match("[<>=~]")
@@ -111,7 +111,7 @@ function ActionCosteRewardCal:_CalculateValue(expression, playerData, bagData, e
     if hasComparison then
         -- 条件表达式：使用全局的条件检测器
         result = gg.evaluateCondition(processedExpression)
-        --gg.log("[诊断][_CalculateValue] 条件表达式计算结果:", result)
+        -- gg.log("[诊断][_CalculateValue] 条件表达式计算结果:", result)
     else
         -- 数值表达式：使用 gg.eval
         result = gg.eval(processedExpression)

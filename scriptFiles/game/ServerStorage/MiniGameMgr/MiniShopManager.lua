@@ -43,9 +43,10 @@ end
 
 -- 处理购买回调
 function MiniShopManager:OnPurchaseCallback(uin, goodsid, code, msg, num)
+    gg.log("迷你商品兑回调:", code, "错误信息:", msg, "购买数量:", num,uin,goodsid)
     if code ~= 0 then
         local errorMsg = self.ErrorCodes[code] or "未知错误"
-        gg.log("迷你商品兑换失败！错误码:", code, "错误信息:", errorMsg, "原始消息:", msg)
+        gg.log("迷你商品兑换失败！错误码:", code, "错误信息:", errorMsg, "原始消息:", msg, "购买数量:", num,uin,goodsid)
         gg.log("错误详情 - UIN:", uin, "商品ID:", goodsid, "购买数量:", num)
         return
     end

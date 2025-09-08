@@ -191,10 +191,10 @@ function LevelRewardNodeInitializer.BindTriggerBoxEvent(clonedNode, uniqueId, re
         return
     end
 
-    -- 绑定触发事件
-    triggerBox.Touched:Connect(function(actor)
-        LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName,triggerBox)
-    end)
+    -- -- 绑定触发事件
+    -- triggerBox.Touched:Connect(function(actor)
+    --     LevelRewardNodeInitializer.OnTriggerBoxTouched(actor, uniqueId, rewardNode, configName, mapName,triggerBox)
+    -- end)
 
 end
 

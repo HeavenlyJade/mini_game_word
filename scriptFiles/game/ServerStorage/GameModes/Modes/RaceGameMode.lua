@@ -297,25 +297,32 @@ function RaceGameMode:SendLevelRewardNotification(player, rewardConfig, uniqueId
         return
     end
 
-    local itemType = rewardConfig["物品类型"] or ""
-    local itemCount = rewardConfig["物品数量"] or 0
-    local rewardType = rewardConfig["奖励类型"] or ""
 
-    if gg.network_channel then
-        local eventData = {
-            cmd = "LevelRewardReceived",
-            uniqueId = uniqueId,
-            rewardType = rewardType,
-            itemType = itemType,
-            itemCount = itemCount,
-            message = string.format("获得关卡奖励: %s x%d", tostring(itemType), tonumber(itemCount) or 0),
-            timestamp = os.time()
-        }
-        gg.network_channel:fireClient(player.uin, eventData)
-        -- gg.log(string.format("已向玩家 %s 发送关卡奖励通知", player.name or player.uin))
+    -- 从关卡奖励类型中获取音效资源字段并下发
+    local triggerSound = nil
+    if self.levelType and self.levelType.HasSceneConfig and self.levelType:HasSceneConfig() then
+        local sceneConfigName = self.levelType:GetSceneConfig()
+        if sceneConfigName and sceneConfigName ~= "" then
+            local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+            local levelRewardType = ConfigLoader.GetLevelNodeReward(sceneConfigName)
+            if levelRewardType and levelRewardType.soundNodeField and levelRewardType.soundNodeField ~= "" then
+                triggerSound = levelRewardType.soundNodeField
+            end
+        end
+    end
+
+    if gg.network_channel and triggerSound and triggerSound ~= "" then
+        gg.network_channel:fireClient(player.uin, {
+            cmd = "PlaySound",
+            soundAssetId = triggerSound,
+            volume = 0.8,
+            pitch = 1.0,
+            mindistance = 400,
+            maxdistance = 5000,
+            range = 1000
+        })
     end
 end
-
 --- 【新增】获取玩家的关卡奖励发放记录
 ---@param player MPlayer 玩家
 ---@return table<string, boolean>

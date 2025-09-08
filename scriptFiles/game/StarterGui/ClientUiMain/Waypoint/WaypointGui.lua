@@ -84,17 +84,6 @@ function WaypointGui:OnPlayerVariableSync(data)
     for variableName, variableData in pairs(data.variableData) do
         self.playerVariableData[variableName] = variableData
         
-        -- 【调试】输出科学计数法变量的详细信息
-        if variableName == "数据_固定值_历史最大战力值" and variableData and type(variableData) == "table" and variableData.base then
-            --gg.log("科学计数法变量详情:", variableName)
-            --gg.log("  原始值:", variableData.base, "类型:", type(variableData.base))
-            if type(variableData.base) == "number" then
-                --gg.log("  数字格式化:", string.format("%.0f", variableData.base))
-            elseif type(variableData.base) == "string" then
-                local numValue = tonumber(variableData.base)
-                --gg.log("  字符串转数字:", numValue)
-            end
-        end
     end
     
     -- 刷新传送点列表，因为变量变化可能影响解锁状态
