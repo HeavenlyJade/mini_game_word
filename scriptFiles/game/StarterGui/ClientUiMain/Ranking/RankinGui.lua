@@ -204,6 +204,29 @@ function RankingGui:RegisterButtonEvents()
     --gg.log("RankingGui 按钮事件注册完成")
 end
 
+-- 重写Open方法，添加默认显示第一个排行榜的逻辑
+function RankingGui:Open()
+    -- 调用父类的Open方法
+    ViewBase.Open(self)
+    
+    -- 如果还没有选择排行榜类型，默认选择第一个
+    if not self.currentRankType and self.rankingTypesSorted and #self.rankingTypesSorted > 0 then
+        local firstRankType = self.rankingTypesSorted[1]
+        local firstConfig = nil
+        
+        -- 获取第一个排行榜的配置
+        local RankingConfig = require(MainStorage.Code.Common.Config.RankingConfig) ---@type RankingConfig
+        if RankingConfig.CONFIGS[firstRankType] then
+            firstConfig = RankingConfig.CONFIGS[firstRankType]
+        end
+        
+        -- 自动选择第一个排行榜
+        if firstRankType and firstConfig then
+            self:OnRankingTypeButtonClicked(firstRankType, firstConfig)
+        end
+    end
+end
+
 -- 关闭按钮点击事件
 function RankingGui:OnCloseButtonClicked()
     --gg.log("点击关闭排行榜界面")
@@ -274,19 +297,24 @@ function RankingGui:ShowRanking(rankType)
     local rankingData = self.rankingData[rankType]
     if not rankingData then
         --gg.log("显示排行榜界面失败：排行榜数据不存在", rankType)
+        -- 如果数据不存在，尝试从配置中获取显示名称
+        local RankingConfig = require(MainStorage.Code.Common.Config.RankingConfig) ---@type RankingConfig
+        local config = RankingConfig.CONFIGS[rankType]
+        if config then
+            self.paramLabel.node.Title = config.displayName or config.name or rankType
+        else
+            self.paramLabel.node.Title = rankType
+        end
         return
     end
     
     local config = rankingData.rankingConfig
     local rankingList = rankingData.rankingList    
     -- 更新界面标题
-    self.paramLabel.node.Title = config.displayName
-    
+    self.paramLabel.node.Title = config.displayName or config.name or rankType
     
     -- 显示排行榜数据
     self:DisplayRankingList(rankingList)
-    
-
 end
 
 -- 隐藏排行榜界面

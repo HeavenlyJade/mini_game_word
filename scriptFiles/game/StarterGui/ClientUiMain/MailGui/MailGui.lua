@@ -201,7 +201,7 @@ end
 -- 处理邮件列表响应
 function MailGui:HandleMailListResponse(data)
     gg.log("=== HandleMailListResponse 开始 ===")
-    -- gg.log("HandleMailListResponse收到邮件列表响应", data)
+    gg.log("HandleMailListResponse收到邮件列表响应", data)
 
     if not data then
         ----gg.log("邮件列表响应数据为空")
@@ -220,12 +220,19 @@ function MailGui:HandleMailListResponse(data)
             count = count + 1
             ----gg.log("处理邮件", count, "ID:", mailId, "类型:", mailInfo.mail_type, "标题:", mailInfo.title)
             
-            if mailInfo.mail_type == MAIL_TYPE.PLAYER then
+            -- 兼容字段：优先使用 mail_type，否则回退到 type
+            local mt = mailInfo.mail_type or mailInfo.type
+            if mt == MAIL_TYPE.PLAYER then
                 self.playerMails[tostring(mailId)] = mailInfo
                 ----gg.log("添加到玩家邮件列表")
             else
-                self.systemMails[tostring(mailId)] = mailInfo
-                ----gg.log("添加到系统邮件列表")
+                -- 对于全服/系统邮件：如果服务端标记为已删除(STATUS.DELETED)，则不创建对应节点
+                if mailInfo.status == MailEventConfig.STATUS.DELETED then
+                    ----gg.log("跳过已删除的全服邮件:", mailId)
+                else
+                    self.systemMails[tostring(mailId)] = mailInfo
+                    ----gg.log("添加到系统邮件列表")
+                end
             end
         end
         ----gg.log("邮件批次处理完成，共处理", count, "封邮件")
@@ -854,7 +861,7 @@ function MailGui:OnDeleteMail()
     local mailInfo = self.currentSelectedMail.data
     local isGlobal = mailInfo.is_global_mail or false
 
-    ------gg.log("删除邮件", mailId, "is_global:", isGlobal)
+    gg.log("删除邮件", mailId, "is_global:", isGlobal)
 
     -- 发送删除请求
     self:SendDeleteRequest(mailId, isGlobal)

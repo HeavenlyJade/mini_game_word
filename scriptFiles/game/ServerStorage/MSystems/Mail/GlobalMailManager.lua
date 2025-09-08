@@ -247,7 +247,7 @@ function GlobalMailManager:DeleteGlobalMailForPlayer(uin, mailId, playerGlobalDa
         if not mailStatus then
             playerGlobalData.statuses[mailId] = {
                 status = MailEventConfig.STATUS.DELETED,
-            is_claimed = false -- 如果之前没有记录，那肯定没领取过
+                is_claimed = false -- 如果之前没有记录，那肯定没领取过
             }
         else
             mailStatus.status = MailEventConfig.STATUS.DELETED

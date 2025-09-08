@@ -284,26 +284,46 @@ function MailEventManager.HandleDeleteReadMails(event)
         end
     end
 
-    -- 删除全服邮件（标记为已删除）
+    -- 删除全服邮件（标记为已删除）。若客户端误把个人邮件当成全服邮件，这里做服务端纠正。
     if #globalMailIds > 0 then
         local GlobalMailManager = require(ServerStorage.MSystems.Mail.GlobalMailManager) ---@type GlobalMailManager
         local mailData = MailMgr.GetPlayerMailData(player.uin)
-        
+
         if mailData and mailData.globalMailStatus then
             for _, mailId in ipairs(globalMailIds) do
-                local success, message = GlobalMailManager:DeleteGlobalMailForPlayer(player.uin, mailId, mailData.globalMailStatus)
-                if success then
-                    totalDeletedCount = totalDeletedCount + 1
-                    table.insert(deletedMailIds, mailId)
-                    gg.log("✅ 删除全服邮件成功:", mailId)
+                -- 先识别该ID是否实际上是个人邮件，若是则直接走个人删除路径
+                local findResult = MailMgr.FindMail(player.uin, mailId)
+                if findResult and findResult.mail and findResult.mailType == MailMgr.MAIL_TYPE.PLAYER then
+                    local delRes = MailMgr.DeleteMail(player.uin, mailId)
+                    if delRes.success then
+                        totalDeletedCount = totalDeletedCount + 1
+                        table.insert(deletedMailIds, mailId)
+                        gg.log("✅ 纠正删除个人邮件成功(原请求为全服):", mailId)
+                    else
+                        gg.log("❌ 纠正删除个人邮件失败:", mailId, "错误:", delRes.message)
+                    end
                 else
-                    gg.log("❌ 删除全服邮件失败:", mailId, "错误:", message)
+                    -- 非个人邮件，按全服邮件删除（状态标记为已删除）
+                    local success, message = GlobalMailManager:DeleteGlobalMailForPlayer(player.uin, mailId, mailData.globalMailStatus)
+                    if success then
+                        totalDeletedCount = totalDeletedCount + 1
+                        table.insert(deletedMailIds, mailId)
+                        gg.log("✅ 删除全服邮件成功:", mailId)
+                    else
+                        gg.log("❌ 删除全服邮件失败:", mailId, "错误:", message)
+                    end
                 end
             end
         end
     end
 
-    -- 通知邮件列表更新
+    -- 立即持久化保存玩家邮件数据，避免等待定时存盘
+    -- 保存内容包括：
+    -- 1) 个人邮件的删除结果（已从 playerMail.mails 移除）
+    -- 2) 全服邮件的玩家状态（标记为 DELETED）
+    MailMgr.SavePlayerMailData(player.uin)
+
+    -- 持久化后再通知客户端刷新列表
     MailMgr.NotifyMailListUpdate(player.uin)
 
     gg.log("📤 发送删除已读邮件响应 - 成功:", totalDeletedCount, "个邮件")

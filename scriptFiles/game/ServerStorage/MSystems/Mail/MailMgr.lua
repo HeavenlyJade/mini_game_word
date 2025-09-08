@@ -523,7 +523,20 @@ function MailMgr.BatchClaimMails(uin, mailIds)
     if not listResult.success then
         return {success = false, code = MailMgr.ERROR_CODE.PLAYER_NOT_FOUND, message = "获取邮件列表失败", rewards = {}}
     end
-    local mailList = listResult.mailList
+    -- 兼容：GetPlayerMailList 返回的是 personal_mails/global_mails 的字典，需扁平化为数组
+    local mailList = {}
+    if listResult.personal_mails then
+        for id, mail in pairs(listResult.personal_mails) do
+            if mail then mail.id = mail.id or id end
+            table.insert(mailList, mail)
+        end
+    end
+    if listResult.global_mails then
+        for id, mail in pairs(listResult.global_mails) do
+            if mail then mail.id = mail.id or id end
+            table.insert(mailList, mail)
+        end
+    end
 
     local mailsToClaim = {}
     local totalAttachments = {}
