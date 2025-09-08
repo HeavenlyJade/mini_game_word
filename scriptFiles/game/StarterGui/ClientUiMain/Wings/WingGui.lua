@@ -55,6 +55,7 @@ function WingGui:OnInit(node, config)
     self.wingSlotList = self:Get("翅膀界面/翅膀栏位", ViewList) ---@type ViewList
     -- 翅膀槽位模板
     self.slotTemplate = self:Get("翅膀界面/模板栏位/翅膀1", ViewComponent) ---@type ViewComponent
+
     self.slotTemplate:SetVisible(false)
 
     -- 数据存储
@@ -72,7 +73,8 @@ function WingGui:OnInit(node, config)
 
     -- 3. 按钮点击事件注册
     self:RegisterButtonEvents()
-
+    self.slotTemplateSectionLIST     = self:Get("翅膀界面/模板栏位",ViewList) ---@type ViewList
+    self.slotTemplateSectionLIST:SetVisible(false)
     --gg.log("WingGui 翅膀界面初始化完成")
 end
 
@@ -639,9 +641,10 @@ end
 
 --- 更新激活状态显示
 function WingGui:UpdateActiveState(slotNode, isActive)
-    local activeMark = slotNode["选中"] -- 假设激活标记节点叫"选中"
-    if activeMark then
-        activeMark.Visible = isActive
+    -- 只更新"装备"节点显示，不处理"选中"节点
+    local equipMark = slotNode["装备"]
+    if equipMark then
+        equipMark.Visible = isActive
     end
 end
 

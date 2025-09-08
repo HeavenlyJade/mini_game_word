@@ -17,8 +17,6 @@ local MServerDataManager = require(ServerStorage.Manager.MServerDataManager) ---
 local gg            = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 
-local  CONST_CLOUD_SAVE_TIME = 30    --每60秒存盘一次
-
 ---@class MCloudDataMgr
 local MCloudDataMgr = {
     last_time_player = {},     --最后一次玩家存盘时间
@@ -160,6 +158,14 @@ function MCloudDataMgr.SaveSkillConfig(player)
     end
     cloudService:SetTableAsync( MCloudDataMgr.SKILL_DATA_KEY_PREFIX .. player.uin, skillData, function ( ret_ )
     end )
+end
+
+--- 检查玩家是否在其他房间中
+---@param uin_ number 玩家UIN
+---@param callback function 回调函数，参数为 (data_: table)
+function MCloudDataMgr.CheckPlayerInOtherRoom(uin_, callback)
+    -- 使用 CloudService 的 GetPlayerServer 方法查询玩家所在房间
+
 end
 
 --- 清空玩家核心数据（等级、经验、变量），同时处理在线和云端数据

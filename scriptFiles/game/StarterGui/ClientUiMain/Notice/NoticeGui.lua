@@ -94,7 +94,7 @@ end
 ---@param eventData table 通知数据
 function NoticeGui:OnItemAcquiredNotify(eventData)
     local data = eventData.data
-    gg.log("获得的结果通知",eventData)
+    -- gg.log("获得的结果通知",eventData)
     if not eventData or not data.rewards then
         --gg.log("错误：物品通知数据无效")
         return

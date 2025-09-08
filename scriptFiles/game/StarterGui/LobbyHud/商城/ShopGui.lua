@@ -149,7 +149,7 @@ function ShopGui:HandleMailListResponse(data)
     -- 检查个人邮件
     if data.personal_mails then
         for _, mailInfo in pairs(data.personal_mails) do
-            gg.log("检查个人邮件111", mailInfo.id, mailInfo.is_claimed)
+            -- gg.log("检查个人邮件111", mailInfo.id, mailInfo.is_claimed)
             
             -- 检查是否未领取（不管是否有附件）
             local isClaimed = mailInfo.is_claimed == true
@@ -161,7 +161,7 @@ function ShopGui:HandleMailListResponse(data)
     -- 检查全服邮件
     if data.global_mails then
         for _, mailInfo in pairs(data.global_mails) do
-            gg.log("检查全服邮件", mailInfo.id, mailInfo.is_claimed)
+            -- gg.log("检查全服邮件", mailInfo.id, mailInfo.is_claimed)
             
             -- 检查是否未领取（不管是否有附件）
             local isClaimed = mailInfo.is_claimed == true
@@ -170,7 +170,7 @@ function ShopGui:HandleMailListResponse(data)
             end
         end
     end
-    gg.log("检查邮件状态", hasUnclaimedMails)
+    -- gg.log("检查邮件状态", hasUnclaimedMails)
 
     -- 更新邮件状态
     self.mailStatus.hasUnclaimedMails = hasUnclaimedMails

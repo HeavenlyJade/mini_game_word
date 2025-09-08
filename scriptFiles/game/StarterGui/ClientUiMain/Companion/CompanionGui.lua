@@ -57,6 +57,8 @@ function CompanionGui:OnInit(node, config)
     self.companionSlotList = self:Get("伙伴界面/伙伴栏位", ViewList) ---@type ViewList
     -- 伙伴槽位模板 -- 【修正】根据UI节点图，模板节点是'伙伴_1'
     self.slot1 = self:Get("伙伴界面/模板界面/伙伴_1", ViewComponent) ---@type ViewComponent
+    self.slotTemplateSection = self:Get("伙伴界面/模板界面",ViewList) ---@type ViewList
+    self.slotTemplateSection:SetVisible(false)
 
     -- 数据存储
     self.companionData = {} ---@type table 服务端同步的伙伴数据
@@ -656,10 +658,16 @@ end
 
 --- 更新激活状态显示
 function CompanionGui:UpdateActiveState(slotNode, isActive)
-    -- TODO: 根据UI结构更新激活状态显示
-    if isActive then
-        ----gg.log("伙伴处于激活状态")
-        -- 可以添加特殊的视觉效果
+    -- 更新"选中"节点显示
+    -- local activeMark = slotNode["选中"]
+    -- if activeMark then
+    --     activeMark.Visible = isActive
+    -- end
+    
+    -- 更新"装备"节点显示
+    local equipMark = slotNode["装备"]
+    if equipMark then
+        equipMark.Visible = isActive
     end
 end
 

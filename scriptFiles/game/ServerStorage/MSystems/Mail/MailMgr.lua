@@ -357,7 +357,14 @@ function MailMgr.SendNewMail(mailData, targetUin)
             -- 玩家离线，通过CloudMailDataAccessor处理离线邮件
             gg.log("向离线玩家发送邮件", targetUin, mailData.id)
             local CloudMailDataAccessor = require(ServerStorage.MSystems.Mail.MailCloudDataMgr) ---@type CloudMailDataAccessor
-            
+            cloudService:GetPlayerServer(targetUin, function(data_)
+                gg.log("玩家是否在其它的房间的调用",data_)
+                if data_ and data_.serverId and data_.serverId ~= "" then
+                    gg.log("111isInOtherRoom, serverId",data_)
+                else
+                    gg.log("111isInOtherRoom, serverId",data_)
+                end
+            end)
             -- 加载玩家的个人邮件数据
             local playerMailData = CloudMailDataAccessor.LoadPlayerMail(CloudMailDataAccessor, targetUin)
             if playerMailData then

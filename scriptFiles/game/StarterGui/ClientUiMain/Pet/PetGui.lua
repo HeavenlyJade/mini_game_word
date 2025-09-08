@@ -51,6 +51,8 @@ function PetGui:OnInit(node, config)
 
     -- 宠物栏位列表
     self.petSlotList = self:Get("宠物界面/宠物栏位", ViewList) ---@type ViewList
+    self.slotTemplateSection = self:Get("宠物界面/模版界面",ViewList) ---@type ViewList
+    self.slotTemplateSection:SetVisible(false)
     -- 模板从模版界面取
     self.slotTemplate = self:Get("宠物界面/模版界面/宠物_1", ViewComponent) ---@type ViewComponent
 
@@ -631,7 +633,7 @@ function PetGui:SetupPetSlotDisplay(slotNode, slotIndex, petInfo)
     self:UpdateStarDisplayInSlot(slotNode, petInfo.starLevel or 1)
 
     local isEquipped = self:IsPetEquipped(slotIndex)
-    self:UpdateActiveState(slotNode, isEquipped)
+    self:UpdateActiveState(backgroundNode, isEquipped)
 
     -- 【新增】更新锁定状态显示
     local lockNode = slotNode:FindFirstChild("锁定")
@@ -649,9 +651,16 @@ end
 
 --- 更新激活状态显示
 function PetGui:UpdateActiveState(slotNode, isActive)
-    local activeMark = slotNode["选中"] -- 假设激活标记节点叫“选中”
+    -- 更新"选中"节点显示
+    local activeMark = slotNode["选中"]
     if activeMark then
         activeMark.Visible = isActive
+    end
+    
+    -- 更新"装备"节点显示
+    local equipMark = slotNode["装备"]
+    if equipMark then
+        equipMark.Visible = isActive
     end
 end
 

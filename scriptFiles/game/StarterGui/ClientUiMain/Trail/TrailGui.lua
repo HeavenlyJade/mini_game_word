@@ -50,6 +50,8 @@ function TrailGui:OnInit(node, config)
     self.trailSlotList = self:Get("尾迹界面/尾迹栏位", ViewList) ---@type ViewList
     -- 模板从模版界面取
     self.slotTemplate = self:Get("尾迹界面/模版界面/尾迹_1", ViewComponent) ---@type ViewComponent
+    self.slotTemplateSection = self:Get("尾迹界面/模版界面",ViewList) ---@type ViewList
+    self.slotTemplateSection:SetVisible(false)
 
     -- 数据存储
     self.trailData = {} ---@type table 服务端同步的尾迹数据
@@ -384,9 +386,10 @@ end
 
 --- 更新激活状态显示
 function TrailGui:UpdateActiveState(slotNode, isActive)
-    local activeMark = slotNode["选中"] -- 假设激活标记节点叫"选中"
-    if activeMark then
-        activeMark.Visible = isActive
+    -- 只更新"装备"节点显示，不处理"选中"节点
+    local equipMark = slotNode["装备"]
+    if equipMark then
+        equipMark.Visible = isActive
     end
 end
 
