@@ -25,6 +25,7 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
 ---@field description string 配置描述
 ---@field sceneNodePath string 克隆的场景节点路径
 ---@field sceneName string 所属场景名称
+---@field soundNodeField string 音效节点字段
 ---@field rewardNodes LevelNodeRewardItem[] 奖励节点列表
 ---@field _distanceMap table<number, LevelNodeRewardItem[]> 按距离分组的奖励节点映射
 ---@field _idMap table<string, LevelNodeRewardItem> 按唯一ID分组的奖励节点映射
@@ -37,6 +38,7 @@ function LevelNodeRewardType:OnInit(data)
     self.description = data["配置描述"] or ""
     self.sceneNodePath = data["克隆的场景节点路径"] or ""
     self.sceneName = data["所属场景"] or ""
+    self.soundNodeField = data["音效节点字段"] or ""
     
     -- 奖励节点列表
     self.rewardNodes = data["节点列表"] or {}
@@ -315,7 +317,7 @@ function LevelNodeRewardType:GetIdMapCopy()
 end
 
 --- 【新增】验证唯一ID映射表的完整性
----@return boolean, string 是否完整, 错误信息
+---@return boolean isValid, string message 验证是否通过与提示信息
 function LevelNodeRewardType:ValidateIdMap()
     local idCount = self:GetUniqueIdCount()
     local nodeCount = #self.rewardNodes

@@ -176,36 +176,37 @@ function RaceGameMode:HandleLevelRewardTrigger(triggerPlayer, evt)
         self:SendLevelRewardNotification(triggerPlayer, rewardNode, uniqueId)
     end
 end
---- 【新增】获取关卡奖励配置
+
+
+--- 【修改】获取关卡奖励配置 - 增加缓存支持
 ---@param configName string 配置名称
 ---@param uniqueId string 唯一ID
 ---@return table|nil 奖励配置项
 function RaceGameMode:GetLevelRewardConfig(configName, uniqueId)
-    if not self.levelType or not self.levelType.HasSceneConfig or not self.levelType:HasSceneConfig() then
-        --gg.log("当前关卡没有场景配置")
+    -- 如果没有传入configName，尝试从levelType获取
+    if not configName and self.levelType and self.levelType:HasSceneConfig() then
+        configName = self.levelType:GetSceneConfig()
+    end
+    
+    if not configName then
         return nil
     end
 
-    local sceneConfigName = self.levelType.GetSceneConfig and self.levelType:GetSceneConfig() or nil
-    if sceneConfigName and configName and sceneConfigName ~= configName then
-        --gg.log(string.format("场景配置名称不匹配 - 期望:%s, 实际:%s", tostring(sceneConfigName), tostring(configName)))
-        return nil
+    -- 使用缓存的配置映射表
+    local levelRewardConfigs = self:_getLevelRewardConfigs()
+    if levelRewardConfigs then
+        return levelRewardConfigs[uniqueId]
     end
 
+    -- 回退到原有逻辑
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
-    local levelRewardConfig = ConfigLoader.GetLevelNodeReward and ConfigLoader.GetLevelNodeReward(configName) or nil
+    local levelRewardConfig = ConfigLoader.GetLevelNodeReward(configName)
     if not levelRewardConfig then
-        --gg.log(string.format("找不到关卡奖励配置:%s", tostring(configName)))
         return nil
     end
 
     if levelRewardConfig.GetRewardNodeById then
-        local rewardNode = levelRewardConfig:GetRewardNodeById(uniqueId)
-        if not rewardNode then
-            --gg.log(string.format("在配置 %s 中找不到ID为 %s 的奖励节点", tostring(configName), tostring(uniqueId)))
-            return nil
-        end
-        return rewardNode
+        return levelRewardConfig:GetRewardNodeById(uniqueId)
     end
 
     return nil
@@ -780,7 +781,7 @@ function RaceGameMode:_startFlightDistanceTracking()
         self:RemoveTimer(self.distanceTimer)
     end
 
-    -- 每0.5秒更新一次飞行距离和排名
+    -- 每0.2秒更新一次飞行距离和排名
     self.distanceTimer = self:AddInterval(0.2, function()
         self:_updateFlightDistances()
         self:_updateRankings()
@@ -825,12 +826,81 @@ function RaceGameMode:_updateFlightDistances()
                         -- 【新增】检查并发放实时奖励
                         if flightData.flightDistance > oldDistance then
                             self:_checkAndGiveRealtimeRewards(player, flightData)
+                            self:_checkAndGiveLevelRewards(player, flightData)
+
                         end
                     end
                 end
             end
         end
     end
+end
+
+--- 【新增】检查并发放关卡奖励
+---@param player MPlayer 玩家实例
+---@param flightData FlightPlayerData 玩家飞行数据
+function RaceGameMode:_checkAndGiveLevelRewards(player, flightData)
+    if not player or not flightData then
+        return
+    end
+
+    -- 获取当前关卡的关卡奖励配置
+    local levelRewardConfigs = self:_getLevelRewardConfigs()
+    if not levelRewardConfigs then
+        return
+    end
+
+    local playerDistance = flightData.flightDistance
+    local playerUin = player.uin
+    
+    -- 确保玩家奖励记录存在
+    if not self.levelRewardsGiven[playerUin] then
+        self.levelRewardsGiven[playerUin] = {}
+    end
+    
+    local playerRewards = self.levelRewardsGiven[playerUin]
+
+    -- 遍历所有关卡奖励配置
+    for uniqueId, rewardNode in pairs(levelRewardConfigs) do
+        local triggerDistance = rewardNode["生成的距离配置"] or 0
+        
+        -- 检查触发条件：距离达到 且 未发放过
+        if playerDistance >= triggerDistance and not playerRewards[uniqueId] then
+            -- 发放奖励
+            local success = self:DistributeLevelReward(player, rewardNode, uniqueId)
+            if success then
+                -- 记录已发放
+                playerRewards[uniqueId] = true
+                -- 发送通知
+                self:SendLevelRewardNotification(player, rewardNode, uniqueId)
+                
+                gg.log(string.format("距离奖励发放: 玩家 %s 飞行 %.1f 米，获得奖励 %s", 
+                    player.name or playerUin, playerDistance, uniqueId))
+            end
+        end
+    end
+end
+
+--- 【新增】获取当前关卡的关卡奖励配置
+---@return table<string, LevelNodeRewardItem>|nil 关卡奖励配置映射表
+function RaceGameMode:_getLevelRewardConfigs()
+    if not self.levelType or not self.levelType.HasSceneConfig or not self.levelType:HasSceneConfig() then
+        return nil
+    end
+
+    local sceneConfigName = self.levelType:GetSceneConfig()
+    if not sceneConfigName then
+        return nil
+    end
+
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local levelRewardConfig = ConfigLoader.GetLevelNodeReward(sceneConfigName)
+    if not levelRewardConfig then
+        return nil
+    end
+
+    -- 返回 _idMap，这是按 uniqueId 索引的奖励节点映射表
+    return levelRewardConfig._idMap
 end
 
 --- 【新增】根据飞行距离更新排名
