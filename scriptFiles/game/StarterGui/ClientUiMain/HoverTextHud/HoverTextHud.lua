@@ -32,6 +32,11 @@ function HoverTextHud:OnInit(node, config)
     self.template = self:Get("文本").node ---@type UITextLabel
     self.template.Visible = false
     self.template.Parent.Visible =true
+    self.template.OutlineEnable = true
+    self.template.OutlineSize = 5
+    -- 记录模板默认配置，便于未传值时回退
+    self.defaultFontSize = self.template.FontSize
+    self.defaultFadeDuration = 2
     -- 确保节点始终在最高层级
     self:SetupAlwaysOnTop()
     
@@ -39,9 +44,9 @@ function HoverTextHud:OnInit(node, config)
     self.initialY = self.template.Position.y
     self.textSpacing = 40 -- 文本之间的间距
     
-    -- 监听服务端发送的悬浮文本事件
+    -- 监听服务端发送的悬浮文本事件（支持自定义字体大小与显示时间）
     ClientEventManager.Subscribe("SendHoverText", function(evt)
-        self:ShowText(evt.txt)
+        self:ShowText(evt)
     end)
 end
 
@@ -77,10 +82,13 @@ function HoverTextHud:EnsureOnTop()
     self.node.Visible =true
     -- 确保节点启用
     self.node.Enabled = true
+
     
     -- 为所有活动文本重新设置层级
     for _, textInfo in ipairs(self.activeTexts) do
         if textInfo.node and textInfo.node.RenderIndex then
+            textInfo.node.OutlineEnable = true
+            textInfo.node.OutlineSize = 5
             textInfo.node.RenderIndex = 9999
         end
     end
@@ -89,7 +97,8 @@ function HoverTextHud:EnsureOnTop()
    
 end
 
-function HoverTextHud:GetTextFromPool()
+function HoverTextHud:GetTextFromPool(opts)
+    opts = opts or {}
     -- 尝试从对象池中获取一个文本对象
     local textInfo = table.remove(self.textPool)
     
@@ -106,7 +115,7 @@ function HoverTextHud:GetTextFromPool()
         textInfo = {
             node = newNode,
             fadeTimer = 0,
-            fadeDuration = 2,
+            fadeDuration = self.defaultFadeDuration or 2,
             fadeOutDuration = 0.5,
             targetY = 0,
             updateTaskId = 0
@@ -115,6 +124,13 @@ function HoverTextHud:GetTextFromPool()
     
     -- 重置状态
     textInfo.fadeTimer = 0
+    -- 应用字体大小（优先使用传入，其次使用模板默认）
+    local fontSize = opts.fontSize or self.defaultFontSize or self.template.FontSize
+    if fontSize then
+        textInfo.node.FontSize = fontSize
+    end
+    -- 应用显示时长
+    textInfo.fadeDuration = opts.fadeDuration or self.defaultFadeDuration or textInfo.fadeDuration
     textInfo.node.Visible = true
     textInfo.node.TitleColor = ColorQuad.New(255, 255, 255, 255)
     
@@ -192,11 +208,22 @@ function HoverTextHud:UpdateText(textInfo)
     end
 end
 
-function HoverTextHud:ShowText(text)
-    local textInfo = self:GetTextFromPool()
-    
+function HoverTextHud:ShowText(param)
+    local message = nil
+    local fontSize = nil
+    local duration = nil
+    if type(param) == "table" then
+        message = param.txt or param.text or ""
+        fontSize = param.size or param.fontSize
+        duration = param.duration or param.time
+    else
+        message = param
+    end
+
+    local textInfo = self:GetTextFromPool({ fontSize = fontSize, fadeDuration = duration })
+
     -- 设置文本
-    textInfo.node.Title = text
+    textInfo.node.Title = message
     
     -- 显示UI
     self:Open()

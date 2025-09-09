@@ -369,11 +369,11 @@ function _MPlayer:SendEvent(eventName, data, callback)
     ServerEventManager.SendToClient(self.uin, data, callback)
 end
 
-function _MPlayer:SendHoverText( text, ... )
-    if ... then
+function _MPlayer:SendHoverText( text, size, duration, ... )
+    if select('#', ...) > 0 then
         text = string.format(text, ...)
     end
-    self:SendEvent("SendHoverText", { txt=text })
+    self:SendEvent("SendHoverText", { txt = text, size = size, duration = duration })
 end
 
 

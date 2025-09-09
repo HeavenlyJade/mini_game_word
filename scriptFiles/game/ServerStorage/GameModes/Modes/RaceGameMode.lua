@@ -606,12 +606,12 @@ function RaceGameMode:End()
             local rankText = string.format("第 %d 名: %s (%.1f米)",
                 flightData.rank, flightData.name, flightData.flightDistance)
 
-            for _, player in pairs(self.participants) do
-                if player.uin == uin then
-                    player:SendHoverText(rankText)
-                    break
-                end
-            end
+            -- for _, player in pairs(self.participants) do
+            --     if player.uin == uin then
+            --         player:SendHoverText(rankText)
+            --         break
+            --     end
+            -- end
         end
     end
 
@@ -1327,11 +1327,11 @@ function RaceGameMode:_cancelRaceAndCleanup()
     self:_stopContestUIUpdates()
 
     -- 通知剩余玩家
-    for _, player in pairs(self.participants) do
-        if player and player.SendHoverText then
-            player:SendHoverText("比赛已取消")
-        end
-    end
+    -- for _, player in pairs(self.participants) do
+    --     if player and player.SendHoverText then
+    --         player:SendHoverText("比赛已取消")
+    --     end
+    -- end
 
     -- 清理GameModeManager中的记录
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)

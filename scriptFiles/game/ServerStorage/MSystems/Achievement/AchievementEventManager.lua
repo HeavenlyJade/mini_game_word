@@ -236,9 +236,9 @@ function AchievementEventManager.HandleUpgradeTalent(event)
             end
         end
 
-        -- if player.SendHoverText then
-        --     player:SendHoverText("未满足天赋解锁条件，无法升级")
-        -- end
+        if player.SendHoverText then
+            player:SendHoverText("需要解锁双倍训练特权",52, 3)
+        end
         return
     end
     
