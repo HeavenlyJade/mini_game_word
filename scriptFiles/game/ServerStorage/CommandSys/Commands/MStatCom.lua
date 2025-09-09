@@ -64,7 +64,7 @@ function StatCommand.handlers.add(params, player)
     
     -- 计算所有加成
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
-        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName,"属性计算")
     
     local valueToAdd = finalValue * finalMultiplier
     local oldValue = player:GetStat(statName)
@@ -108,7 +108,7 @@ function StatCommand.handlers.set(params, player)
     
     -- 计算所有加成
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
-        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName,"属性计算")
     
     local valueToSet = finalValue * finalMultiplier
     
@@ -152,7 +152,7 @@ function StatCommand.handlers.reduce(params, player)
     
     -- 计算所有加成
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(
-        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+        player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, statName,"属性计算")
     
     local valueToReduce = finalValue * finalMultiplier
     local oldValue = player:GetStat(statName)
@@ -187,7 +187,7 @@ function StatCommand.handlers.bonusonly(params, player)
     end
 
     -- 使用BonusCalculator计算加成，基础值设为0
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, 0, playerStatBonuses, playerVariableBonuses, otherBonuses, statName)
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, 0, playerStatBonuses, playerVariableBonuses, otherBonuses, statName,"属性计算")
     
     -- 只应用加成部分，不包含基础值
     local bonusValue = finalValue - 0  -- 减去基础值0，得到纯加成值

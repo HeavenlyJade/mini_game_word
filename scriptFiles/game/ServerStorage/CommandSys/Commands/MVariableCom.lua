@@ -75,7 +75,7 @@ function VariableCommand.handlers.add(params, player)
     local variableSystem = player.variableSystem
 
     -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName)
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName,"玩家变量计算")
     local valueToAdd = finalValue
 
     variableSystem:AddVariable(variableName, valueToAdd)
@@ -113,7 +113,7 @@ function VariableCommand.handlers.set(params, player)
     end
 
     -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName)
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName,"玩家变量计算")
 
     local variableSystem = player.variableSystem
     variableSystem:SetVariable(variableName, finalValue)
@@ -153,7 +153,7 @@ function VariableCommand.handlers.reduce(params, player)
     local variableSystem = player.variableSystem
 
     -- 使用BonusCalculator计算加成
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName)
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName,"玩家变量计算")
     local valueToReduce = finalValue
 
     variableSystem:SubtractVariable(variableName, valueToReduce)
@@ -278,7 +278,7 @@ function VariableCommand.handlers.bonusonly(params, player)
     local variableSystem = player.variableSystem
 
     -- 使用BonusCalculator计算加成，基础值设为0
-    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, 0, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName)
+    local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, 0, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName,"玩家变量计算")
     
     -- 只应用加成部分，不包含基础值
     local bonusValue = finalValue - 0  -- 减去基础值0，得到纯加成值

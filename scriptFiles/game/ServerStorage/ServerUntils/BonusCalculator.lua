@@ -126,7 +126,7 @@ function BonusCalculator.CalculateOtherBonuses(player, baseValue, otherBonuses, 
             end
         end
     end
-
+    -- gg.log("其他加成", totalBonus, bonusDescriptions,baseValue, otherBonuses, targetName)
     return totalBonus, bonusDescriptions
 end
 
@@ -285,18 +285,6 @@ function BonusCalculator.CalculatePlayerStatBonuses(player, baseValue, playerSta
                 end
             end
 
-            -- 从其他加成中读取同名属性配置
-            -- local otherStatValue, otherDescriptions = BonusCalculator.GetOtherStatBonuses(player, bonusStatName, otherBonuses, playerStatValue)
-            -- bonusValue = bonusValue + otherStatValue
-
-            ----gg.log(string.format("[BonusCalculator调试] CalculatePlayerStatBonuses: 属性 %s 从其他加成读取到值: %s, 描述: %s",
-                -- bonusStatName, tostring(otherStatValue), tostring(otherDescriptions)))
-
-            -- 合并描述信息
-            -- for _, desc in ipairs(otherDescriptions) do
-            --     table.insert(bonusDescriptions, desc)
-            -- end
-
             -- 应用加成计算
             if actionType == "单独相加" then
                 local finalBonus = bonusValue * (1 + scalingRate)
@@ -353,8 +341,9 @@ end
 ---@param playerVariableBonuses table 玩家变量加成列表
 ---@param otherBonuses table 其他加成类型列表
 ---@param targetName string 目标名称
+---@param calcType string 计算类型（""属性计算或"玩家变量计算"）
 ---@return number, string finalValue, bonusInfo
-function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, targetName)
+function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuses, playerVariableBonuses, otherBonuses, targetName,calcType)
     local allDescriptions = {}
     local originalBaseValue = baseValue
 
@@ -370,8 +359,8 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
             table.insert(allDescriptions, desc)
         end
 
-        --gg.log(string.format("玩家属性加成阶段: 基础值 %s → 加成后 %s (增加 %s)",
-            -- tostring(baseValue), tostring(currentValue), tostring(statBonus)))
+        gg.log(string.format("玩家属性加成阶段: 基础值 %s → 加成后 %s (增加 %s)",
+            tostring(baseValue), tostring(currentValue), tostring(statBonus)))
     end
 
     -- 阶段2：计算玩家变量加成（基于属性加成后的值）
@@ -385,13 +374,21 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
             table.insert(allDescriptions, "变量加成")
         end
 
-        ----gg.log(string.format("玩家变量加成阶段: 输入值 %s → 加成后 %s (增加 %s)",tostring(currentValue - variableBonus), tostring(currentValue), tostring(variableBonus)))
+        -- gg.log(string.format("玩家变量加成阶段: 输入值 %s → 加成后 %s (增加 %s)",tostring(currentValue - variableBonus), tostring(currentValue), tostring(variableBonus)))
     end
 
-    -- 阶段3：计算其他加成（宠物、伙伴等，基于变量加成后的值）
+    -- 阶段3：计算其他加成（宠物、伙伴等，）
     local otherBonus = 0
     if otherBonuses and type(otherBonuses) == "table" and #otherBonuses > 0 then
-        local otherBonusValue, otherDescriptions = BonusCalculator.CalculateOtherBonuses(player, currentValue, otherBonuses, targetName)
+        local calcValue = currentValue
+        if calcType == "属性计算" then
+            calcValue = baseValue
+        elseif calcType == "玩家变量计算" then
+            calcValue = currentValue
+            
+        end
+
+        local otherBonusValue, otherDescriptions = BonusCalculator.CalculateOtherBonuses(player, calcValue, otherBonuses, targetName)
         otherBonus = otherBonusValue
         currentValue = currentValue + otherBonus
 

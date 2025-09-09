@@ -145,21 +145,25 @@ end
 -- 获取某个玩家已购买的商品列表（云服版本）
 function MiniShopManager:GetPlayerPurchasedList(playerid)
     if not playerid then
-        --gg.log("获取玩家购买列表失败：玩家ID无效")
+        gg.log("获取玩家购买列表失败：玩家ID无效")
         return {}
     end
     
     local buyList = store:ServiceGetPlayerDeveloperProducts(playerid)
-    --gg.log(string.format("云服商店购买列表 = %s", tostring(buyList)))
+    gg.log(string.format("云服商店购买列表 = %s", tostring(buyList)))
     
-    if not buyList or #buyList == 0 then
+    if not buyList then
         return {}
     end
     
     -- 处理购买列表数据
     local processedList = {}
+    local count = 0
+    
+    -- 遍历购买列表，处理每个商品信息
     for _, value in pairs(buyList) do
         if type(value) == "table" then
+            count = count + 1
             local buyItem = {}
             for key, info in pairs(value) do
                 buyItem[key] = info
@@ -168,20 +172,24 @@ function MiniShopManager:GetPlayerPurchasedList(playerid)
         end
     end
     
+    gg.log(string.format("处理后的购买列表，商品数量: %d", count))
     return processedList
 end
 
 function MiniShopManager:GetStoreList()
     local storeList = store:GetDeveloperStoreItems()
-    
-    if not storeList or #storeList == 0 then
+
+    if not storeList then
         return {}
     end
     
     -- 处理商店列表数据
     local processedList = {}
+    local count = 0
+    
     for _, value in pairs(storeList) do
         if type(value) == "table" then
+            count = count + 1
             local storeItem = {}
             for key, info in pairs(value) do
                 storeItem[key] = info
@@ -190,6 +198,7 @@ function MiniShopManager:GetStoreList()
         end
     end
     
+    gg.log(string.format("处理后的商店列表，商品数量: %d", count))
     return processedList
 end
 

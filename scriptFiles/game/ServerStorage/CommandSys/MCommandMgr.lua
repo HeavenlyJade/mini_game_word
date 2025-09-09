@@ -24,6 +24,7 @@ local ShopCommand = require(ServerStorage.CommandSys.Commands.MShopCom) ---@type
 local AchievementCommand = require(ServerStorage.CommandSys.Commands.MAchievementCom) ---@type AchievementCommand
 local CloudDataCommand = require(ServerStorage.CommandSys.Commands.MCloudDataCom) ---@type CloudDataCommand
 local RankingCommand = require(ServerStorage.CommandSys.Commands.MRankingCom) ---@type RankingCommand
+local MiniShopCommand = require(ServerStorage.CommandSys.Commands.MMiniShopCom) ---@type MiniShopCommand
 
 
 ---@class CommandManager
@@ -55,6 +56,7 @@ CommandManager.handlers = {
     ["achievement"] = AchievementCommand.main,
     ["clouddata"] = CloudDataCommand.main,
     ["ranking"] = RankingCommand.main,
+    ["minishop"] = MiniShopCommand.main,
 
 
 

@@ -171,9 +171,7 @@ function PlayerActionHandler:OnNavigateToPosition(data)
         return
     end
 
-    local actor = gg.getClientLocalPlayer()
-    self:OnStopNavigation(data)
-    -- 从表中重建 Vector3
+    local actor = gg.getClientLocalPlayer()    -- 从表中重建 Vector3
     local positionData = data.position
     local targetPosition = Vector3.New(positionData.x, positionData.y, positionData.z)
 
