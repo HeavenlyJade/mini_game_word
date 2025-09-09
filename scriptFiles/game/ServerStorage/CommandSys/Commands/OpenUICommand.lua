@@ -75,8 +75,16 @@ function OpenUICommand.handlers.open(params, player)
         --gg.log("向玩家", player.name, "发送打开传送界面事件:", uiName)
         return true
 
+    elseif uiName == "ShopDetailGui" then
+        -- 定向打开商城并定位到指定分类/商品
+        gg.network_channel:fireClient(player.uin, {
+            cmd = "OpenShopDetailUI",
+            uiName = uiName,
+            params = params,
+        })
+        return true
     else
-        -- 
+        -- 通用界面打开
         gg.network_channel:fireClient(player.uin, {
             cmd = "OpenUI",
             uiName = uiName,

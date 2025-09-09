@@ -19,6 +19,7 @@ local CardIcon = require(MainStorage.Code.Common.Icon.card_icon) ---@type CardIc
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local ShopEventConfig = require(MainStorage.Code.Event.EventShop) ---@type ShopEventConfig
 local BagEventConfig = require(MainStorage.Code.Event.event_bag) ---@type BagEventConfig
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 
 -- UI配置
 local uiConfig = {
@@ -115,6 +116,13 @@ function ShopDetailGui:RegisterEvents()
     ClientEventManager.Subscribe(ShopEventConfig.NOTIFY.SHOP_DATA_SYNC, function(data)
         self:OnShopDataSync(data)
     end)
+
+    -- 监听服务端打开商城并定位商品的指令
+    ClientEventManager.Subscribe("OpenShopDetailUI", function(data)
+        local payload = data or {}
+        local params = payload.params or {}
+        self:OpenFromCommand(params)
+    end)
 end
 
 -- 注册按钮事件
@@ -170,6 +178,32 @@ end
 --- UI关闭时调用
 function ShopDetailGui:OnClose()
     ----gg.log("ShopDetailGui 关闭")
+end
+
+--- 从指令参数打开并定位到指定分类与商品
+---@param params table 指令参数（来自 OpenUICommand），支持字段：
+---  - categoryName / 商品类型 / 分类：商品分类名（需在 self.productTypes 内）
+---  - shopItemId / 商品ID / 商品名：商品配置名（与 Type 的 configName 一致）
+function ShopDetailGui:OpenFromCommand(params)
+    -- 确保分类与列表已初始化
+    self:Open()
+    if not self.categoryItemLists or next(self.categoryItemLists) == nil then
+        self:InitShop()
+    end
+
+    params = params or {}
+    local categoryName = params.categoryName or params["商品类型"] or params["分类"]
+    local itemId = params.shopItemId or params["商品ID"] or params["商品名"]
+
+    -- 如果提供了分类且合法，则切换到该分类
+    if categoryName and self.categoryItemLists[categoryName] then
+        self:SelectCategory(categoryName)
+    end
+
+    -- 如果提供了商品ID/名，则选中对应商品
+    if itemId and type(itemId) == "string" and itemId ~= "" then
+        self:SelectItem(itemId)
+    end
 end
 
 -------------------------------------------------------------------

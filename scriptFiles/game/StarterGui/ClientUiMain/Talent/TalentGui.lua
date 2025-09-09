@@ -229,7 +229,8 @@ function TalentGui:RefreshAllUpgradeButtons()
         end
     end
 end
-
+---@param talentType AchievementType
+---@param currentLevel number
 function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
 
     slotNode["说明"].Title = talentType.name or ""
@@ -239,7 +240,10 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     if talentType.icon and slotNode["资源UI"] then
         slotNode["资源UI"].Icon = talentType.icon
     end
-    
+    -- gg.log("talentType.description",talentType.description,slotNode["天赋描述"])
+    if slotNode["天赋描述"] then
+        slotNode["天赋描述"].Title = talentType.description
+    end
     -- 建立天赋节点映射
     self.talentNodeMap[talentType.name] = slotNode
     local costList = ViewList.New(slotNode["消耗栏位"], self,"消耗栏位")
@@ -259,6 +263,8 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
                 end
             end
         end
+     
+
         local oldName = costNode.node.Name
         costNode.node.Name = cost.item
         costList.childrens[cost.item ] = costNode
@@ -272,6 +278,7 @@ function TalentGui:SetupTalentSlot(slotNode, talentType, currentLevel)
     if slotNode["等级"] then
         slotNode["等级"].Title = "Lv." .. currentLevel
     end
+
 
     self.TalentCostsList[talentType.name] = costList  -- 存储costList到self.costs
 

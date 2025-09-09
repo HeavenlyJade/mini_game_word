@@ -1,6 +1,7 @@
 local MainStorage = game:GetService("MainStorage")
 local Players = game:GetService('Players')
 local CoreUI = game:GetService("CoreUI")
+local FriendInviteService = game:GetService("FriendInviteService")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.Code.Client.UI.ViewList) ---@type ViewList
@@ -36,6 +37,11 @@ function HudAvatar:OnInit(node, config)
     local localPlayer = game:GetService("Players").LocalPlayer
     self:Get("名字背景/玩家名").node.Title = localPlayer.Nickname
     self:Get("名字背景/UID").node.Title = tostring(localPlayer.UserId)
+    self.friendsButton = self:Get("名字背景/好友", ViewButton)
+    -- 点击好友按钮：打开邀请列表（客户端调用）
+    self.friendsButton.clickCb = function (ui, viewButton)
+        FriendInviteService:OpenInviterList()
+    end
     self.PowerVariableTitle = self:Get("名字背景/最高战力/历史最高战力", ViewComponent) ---@type ViewComponent
     local headNode = CoreUI:GetHeadNode(tostring(localPlayer.UserId))
     local PlayerHead = self:Get("头像背景/玩家头像").node

@@ -218,6 +218,31 @@ function AchievementEventManager.HandleUpgradeTalent(event)
         return
     end
 
+
+    local playerData = {}
+    if player.variableSystem and player.variableSystem.GetVariablesDictionary then
+        playerData = player.variableSystem:GetVariablesDictionary()
+    end
+    local canUnlock = AchievementTypeIns:EvaluateUnlockConditions(playerData, nil, nil)
+    if not canUnlock then
+        -- 若不满足条件：触发配置的“不满足条件执行指令”
+        local unmetCmds =  AchievementTypeIns:GetUnmetConditionCommands() or {}
+        if unmetCmds and #unmetCmds > 0 then
+            local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+            for _, cmdStr in ipairs(unmetCmds) do
+                if type(cmdStr) == "string" and cmdStr ~= "" then
+                    pcall(CommandManager.ExecuteCommand, cmdStr, player, true)
+                end
+            end
+        end
+
+        -- if player.SendHoverText then
+        --     player:SendHoverText("未满足天赋解锁条件，无法升级")
+        -- end
+        return
+    end
+    
+
     -- 记录升级前等级
     local oldLevel = AchievementMgr.GetTalentLevel(playerId, talentId)
 

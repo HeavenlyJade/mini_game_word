@@ -5,6 +5,7 @@ local MainStorage = game:GetService("MainStorage")
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.AchievementRewardCal) ---@type AchievementRewardCal
+local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal) ---@type any
 
 ---@class LevelEffect
 ---@field 效果类型 string 效果类型（如“玩家变量”）
@@ -34,6 +35,7 @@ local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Achi
 ---@field costConfigName string|nil 消耗配置名称，关联到ActionCostConfig
 ---@field actionCostType ActionCostType|nil 对应的消耗配置实例
 ---@field levelEffects LevelEffect[]|nil 等级效果列表 (天赋成就专用)
+---@field unmetConditionCommands string[]|nil 不满足解锁条件时执行的指令列表
 local AchievementType = ClassMgr.Class("AchievementType")
 
 --- 初始化成就类型
@@ -50,24 +52,72 @@ function AchievementType:OnInit(data)
    -- 解锁相关
    self.unlockConditions = data["解锁条件"] or {}
    self.unlockRewards = data["解锁奖励"] or {}
+   -- 预计算：解锁条件的字符串列表（如果存在配置则生成对应的展示用字符串）
+   self.unlockConditionStrings = {}
+   if self.unlockConditions and #self.unlockConditions > 0 then
+       for _, cond in ipairs(self.unlockConditions) do
+           local s = cond and cond["条件公式"]
+           if s and s ~= "" then
+               table.insert(self.unlockConditionStrings, s)
+           end
+       end
+   end
 
    -- 天赋成就专用字段
    self.maxLevel = data["最大等级"]
    self.upgradeConditions = data["升级条件"]
    self.levelEffects = data["等级效果"]
    self.costConfigName = data["消耗配置"]
+   -- 新增：不满足条件执行指令（字符串数组）
+   self.unmetConditionCommands = data["不满足条件执行指令"] or {}
    if self.costConfigName then
        self.actionCostType = ConfigLoader.GetActionCost(self.costConfigName)
    else
        self.actionCostType = nil
    end
-   self._rewardCalculator = AchievementRewardCal.New() ---@type AchievementRewardCal
+   self._rewardCalculator = AchievementRewardCal.New() ---@type any
 end
 
 --- 是否为天赋成就
 ---@return boolean
 function AchievementType:IsTalentAchievement()
    return self.type == "天赋成就" and self.maxLevel ~= nil
+end
+
+--- 获取解锁条件的字符串列表（用于展示）
+---@return string[]
+function AchievementType:GetUnlockConditionStrings()
+    return self.unlockConditionStrings or {}
+end
+
+--- 获取“不满足条件执行指令”配置
+---@return string[] 指令字符串数组
+function AchievementType:GetUnmetConditionCommands()
+    return self.unmetConditionCommands or {}
+end
+
+--- 评估解锁条件：利用 ActionCosteRewardCal 计算 unlockConditionStrings 中的条件是否全部满足
+---@param playerData table 玩家数据（用于变量替换，如 $变量$ 和 {属性}）
+---@param bagData table|nil 背包数据（用于 [物品] 数量替换）
+---@param externalContext table|nil 外部上下文（例如 { T_LVL = 1 }）
+---@return boolean 全部条件是否通过
+function AchievementType:EvaluateUnlockConditions(playerData, bagData, externalContext)
+    if not self.unlockConditionStrings or #self.unlockConditionStrings == 0 then
+        return true
+    end
+
+    local calc = ActionCosteRewardCal.New() ---@type ActionCosteRewardCal
+    local pData = playerData or {}
+    local bData = bagData or {}
+    local ctx = externalContext or {}
+
+    for _, expr in ipairs(self.unlockConditionStrings) do
+        local ok = calc:_CheckCondition(expr, pData, bData, ctx)
+        if not ok then
+            return false
+        end
+    end
+    return true
 end
 
 --- 是否为普通成就
@@ -185,7 +235,7 @@ function AchievementType:GetActionCosts(targetLevel, playerData, bagData)
     -- 只处理'消耗配置' (actionCostType)
     if self.actionCostType then
         local externalContext = { T_LVL = targetLevel }
-        local actionCosts = self.actionCostType:GetActionCosts(playerData, bagData, externalContext)
+        local actionCosts = self.actionCostType:GetActionCosts(playerData, bagData or {}, externalContext)
  
         for name, amount in pairs(actionCosts) do
             costsDict[name] = (costsDict[name] or 0) + amount
