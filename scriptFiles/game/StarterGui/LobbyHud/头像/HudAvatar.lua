@@ -271,6 +271,7 @@ function HudAvatar:UpdateFriendsBonusUI()
     if self.TitleFriendsNum and self.TitleFriendsNum.node then
         self.TitleFriendsNum.node.Title = tostring(count)
     end
+    gg.network_channel:FireServer({ cmd = EventPlayerConfig.REQUEST.FRIENDS_COUNT_REPORT, count = count })
     if  count > 10 then  
         count =10
     end

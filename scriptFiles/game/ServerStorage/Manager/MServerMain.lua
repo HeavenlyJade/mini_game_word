@@ -140,6 +140,7 @@ function MainServer.initModule()
     local CommonEventManager = require(ServerStorage.MiniGameMgr.CommonEventManager) ---@type CommonEventManager
     local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
     local SceneInteractionEventManager = require(ServerStorage.SceneInteraction.SceneInteractionEventManager) ---@type SceneInteractionEventManager
+    local MServerEventManager = require(ServerStorage.Manager.MServerEventManager) ---@type MServerEventManager
 
     serverDataMgr.CommandManager = CommandManager
     serverDataMgr.GlobalMailManager = GlobalMailManager:OnInit()
@@ -159,6 +160,7 @@ function MainServer.initModule()
     CommonEventManager.Init()
     RankingEventManager.Init()
     SceneInteractionEventManager.Init()
+    MServerEventManager.Init()
 
 
 

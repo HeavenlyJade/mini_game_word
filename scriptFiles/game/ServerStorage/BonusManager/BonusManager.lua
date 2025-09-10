@@ -283,7 +283,41 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
             end
         end
     end
-    -- gg.log("返回的加成",bonuses,targetItemName)
+    -- 追加：好友加成（基于在线好友数量）
+    do
+        local friendAch = ConfigLoader.GetAchievement("好友加成") ---@type AchievementType
+        if friendAch then
+            local count = 0
+            if player and player.onlineFriendsCount then
+                count = tonumber(player.onlineFriendsCount) or 0
+            end
+            if count > 10 then count = 10 end
+            if count > 0 then
+                local effects = friendAch:GetLevelEffectValue(1, { F_NUM = count }) or {}
+                for _, eff in ipairs(effects) do
+                    local fieldName = eff["效果字段名称"]
+                    local value = eff["数值"] or 0
+                    local itemTarget = nil
+                    if fieldName and string.find(fieldName, "金币") then
+                        itemTarget = "金币"
+                    elseif fieldName and string.find(fieldName, "训练") then
+                        itemTarget = "训练"
+                    end
+                    if itemTarget then
+                        if not bonuses[itemTarget] then
+                            bonuses[itemTarget] = { fixed = 0, percentage = 0 }
+                        end
+                        local percentValue = value
+                        if percentValue < 1 then
+                            percentValue = percentValue * 100
+                        end
+                        bonuses[itemTarget].percentage = (bonuses[itemTarget].percentage or 0) + percentValue
+                        bonuses[itemTarget].effectFieldName = fieldName
+                    end
+                end
+            end
+        end
+    end
     return bonuses
 end
 

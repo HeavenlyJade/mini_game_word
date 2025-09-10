@@ -32,6 +32,8 @@ EventPlayerConfig.REQUEST = {
     UNSTUCK_PLAYER = "UnstuckPlayer", -- 脱离卡死
     REQUEST_LEAVE_IDLE = "RequestLeaveIdle", -- 新增：请求离开挂机
     LEVEL_REWARD_NODE_TRIGGERED = "LevelRewardNodeTriggered", -- 关卡奖励节点触发
+    -- 【新增】客户端上报房间内好友数量（供服务端统计/校验）
+    FRIENDS_COUNT_REPORT = "cmd_client_report_friends_count",
 
 }
 
