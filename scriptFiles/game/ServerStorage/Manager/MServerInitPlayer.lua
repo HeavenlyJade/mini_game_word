@@ -15,6 +15,7 @@ local common_const      = require(MainStorage.Code.Common.GameConfig.Mconst)    
 -- local Scene      = require(ServerStorage.Scene.Scene)         ---@type Scene -- [REMOVED]
 local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager) ---@type ServerEventManager
 local serverDataMgr     = require(ServerStorage.Manager.MServerDataManager) ---@type MServerDataManager
+local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
 local BagMgr = require(ServerStorage.MSystems.Bag.BagMgr) ---@type BagMgr
 local PetMgr = require(ServerStorage.MSystems.Pet.Mgr.PetMgr) ---@type PetMgr
@@ -26,6 +27,7 @@ local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type L
 
 local MPlayer       = require(ServerStorage.EntityTypes.MPlayer)          ---@type MPlayer
 local PlayerInitMgr = require(ServerStorage.MSystems.PlayerInitMgr) ---@type PlayerInitMgr
+local MiniApiFriendsService = require(MainStorage.Code.MServer.MiniApiServices.MiniApiFriendsService) ---@type MiniApiFriendsService
 
 local cloudDataMgr  = require(ServerStorage.CloundDataMgr.MCloudDataMgr)    ---@type MCloudDataMgr
 local NodeCloneGenerator = require(ServerStorage.ServerUntils.NodeCloneGenerator) ---@type NodeCloneGenerator
@@ -77,6 +79,7 @@ function MServerInitPlayer.register_player_in_out()
                 break
             end
         end
+        -- 【新增】清理房间好友记录
         MServerInitPlayer.player_leave_game(player)
     end)
 end
@@ -141,6 +144,8 @@ function MServerInitPlayer.player_enter_game(player)
     -- 【新增】初始化玩家场景为init_map
     gg.player_scene_map[uin_] = 'init_map'
 
+
+
     AchievementMgr.OnPlayerJoin(uin_)
     MailMgr.OnPlayerJoin(player_)
     BagMgr.OnPlayerJoin(player_)
@@ -184,6 +189,20 @@ function MServerInitPlayer.player_enter_game(player)
 
     -- 执行指令执行配置中的指令列表
     MServerInitPlayer.ExecuteCommandConfig(player_)
+    -- 【新增】记录房间内好友关系
+    -- 【新增】广播当前房间玩家列表给所有在线玩家（客户端用于刷新UI，如好友加成）
+    do
+        local allPlayers = {}
+        for u, _ in pairs(serverDataMgr.server_players_list) do
+            table.insert(allPlayers, u)
+        end
+        for u, _ in pairs(serverDataMgr.server_players_list) do
+            gg.network_channel:fireClient(u, {
+                cmd = EventPlayerConfig.NOTIFY.ROOM_PLAYERS_BROADCAST,
+                players = allPlayers,
+            })
+        end
+    end
 end
 
 -- 执行指令执行配置中的指令列表
@@ -323,7 +342,22 @@ function MServerInitPlayer.player_leave_game(player)
         AutoRaceManager.CleanupPlayerAutoRaceState(uin_)
         local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
         RewardBonusMgr.OnPlayerLeave(mplayer)
+        local RoomFriendsRecorder = require(ServerStorage.ServerUntils.RoomFriendsRecorder) ---@type RoomFriendsRecorder
+        RoomFriendsRecorder.OnPlayerLeave(player.UserId)
     end
+
+
+    local allPlayers = {}
+    for u, _ in pairs(serverDataMgr.server_players_list) do
+        table.insert(allPlayers, u)
+    end
+    for u, _ in pairs(serverDataMgr.server_players_list) do
+        gg.network_channel:fireClient(u, {
+            cmd = EventPlayerConfig.NOTIFY.ROOM_PLAYERS_BROADCAST,
+            players = allPlayers,
+        })
+    end
+
 end
 
 function MServerInitPlayer.OnPlayerSave(uin_)

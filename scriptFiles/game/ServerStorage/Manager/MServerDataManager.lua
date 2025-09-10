@@ -11,6 +11,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class MServerDataManager
 local MServerDataManager = {
     server_players_list = {}, ---@type table<number, MPlayer>
+    room_friends_map ={}, ---@type table<number, table<number>>
     server_players_name_list = {},
     scene_node_handlers = {}, ---@type table<string, SceneNodeHandlerBase>
     player_scene_node_map = {}, ---@type table<number, SceneNodeHandlerBase> -- 玩家到场景节点处理器ID的映射

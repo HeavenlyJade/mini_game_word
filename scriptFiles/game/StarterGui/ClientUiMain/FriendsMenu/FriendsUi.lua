@@ -66,58 +66,66 @@ function FriendsUi:LoadLocalPlayerAndFriends()
 	-- 获取本地玩家
 	local localPlayer = Players.LocalPlayer
 	if not localPlayer then
-		gg.log("错误：无法获取本地玩家")
+		--gg.log("错误：无法获取本地玩家")
 		return
 	end
 	
 	local playerUin = localPlayer.UserId
-	gg.log("当前本地玩家UIN: " .. tostring(playerUin))
-	
-	-- 获取好友总数
-	local totalFriends = MiniApiFriendsService.GetSize()
-	gg.log("好友总数: " .. tostring(totalFriends))
-	
-	-- 获取在线好友数量
-	local onlineFriends = MiniApiFriendsService.GetOnlineFriendsCount()
-	gg.log("在线好友数量: " .. tostring(onlineFriends))
-	
-	-- 获取所有好友信息
-	local allFriends = MiniApiFriendsService.GetAllFriends()
-	gg.log("获取到的好友列表数量: " .. tostring(#allFriends))
-	
-	-- 使用gg.log打印allFriends的详细信息
-	gg.log("=== allFriends 详细信息 ===")
-	gg.print_table(allFriends, "allFriends")
-	
-	-- 更新内部数据
-	self.friendsData = {
-		friendsList = allFriends,
-		onlineCount = onlineFriends,
-		totalCount = totalFriends
-	}
-	
-	-- 打印所有好友信息
-	self:PrintAllFriendsInfo()
+	--gg.log("当前本地玩家UIN: " .. tostring(playerUin))
+    local friendsService = game:GetService("FriendsService")
+	local friendsNum = friendsService:GetSize() --获取好友数（总序列号）
+    --gg.log("friendsNum",friendsNum)
+	for i = 0,friendsNum-1,1 do --初值,终值，步数
+		local uin,nickName,onLine = friendsService:GetFriendsInfoByIndex(i) --遍历好友
+		local isFriend = false
+		if playerUin == uin then --比对该uin和拉去的好友列表
+			isFriend = true
+		end
+		if isFriend then
+			print("%s: is friend",nickName)
+		else
+			print("%s: is not friend",nickName)
+		end
+	end
+	-- 通过 FriendInviteService 获取好友列表
+	MiniApiFriendsService.GetFriendList(playerUin, function(friends)
+		local list = friends or {}
+		local online = 0
+        --gg.log("friends",friends)
+		for _, it in ipairs(list) do
+            --gg.log("好友",it)
+			if it.onLine then
+				online = online + 1
+			end
+		end
+		self.friendsData = {
+			friendsList = list,
+			onlineCount = online,
+			totalCount = #list
+		}
+		-- 打印所有好友信息
+		self:PrintAllFriendsInfo()
+	end)
 end
 
 -- 打印所有好友信息
 function FriendsUi:PrintAllFriendsInfo()
-	gg.log("=== 好友信息列表 ===")
+	--gg.log("=== 好友信息列表 ===")
 	
 	if not self.friendsData.friendsList or #self.friendsData.friendsList == 0 then
-		gg.log("没有好友")
+		--gg.log("没有好友")
 		return
 	end
 	
 	for i, friend in ipairs(self.friendsData.friendsList) do
 		local status = friend.onLine and "在线" or "离线"
-		gg.log(string.format("好友 %d: UIN=%d, 昵称=%s, 状态=%s", 
-			i, friend.uin, friend.nickName, status))
+		--gg.log(string.format("好友 %d: UIN=%d, 昵称=%s, 状态=%s", 
+			-- i, friend.uin, friend.nickName, status))
 	end
 	
-	gg.log("=== 统计信息 ===")
-	gg.log("总好友数: " .. self.friendsData.totalCount)
-	gg.log("在线好友数: " .. self.friendsData.onlineCount)
+	--gg.log("=== 统计信息 ===")
+	--gg.log("总好友数: " .. self.friendsData.totalCount)
+	--gg.log("在线好友数: " .. self.friendsData.onlineCount)
 end
 
 

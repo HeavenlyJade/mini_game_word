@@ -152,8 +152,12 @@ end
 
 --- 获取等级效果数值
 ---@param level number 天赋等级
+---@param externalContext table|nil 额外上下文（如 { F_NUM = 3 }）
 ---@return table[] 计算后的效果值列表，每个元素包含 {"效果类型","效果字段名称","数值","加成类型?","物品目标?"}
-function AchievementType:GetLevelEffectValue(level)
+function AchievementType:GetLevelEffectValue(level, externalContext)
+    if not externalContext then
+        externalContext = {}
+    end
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
     
     local results = {}
@@ -172,7 +176,7 @@ function AchievementType:GetLevelEffectValue(level)
             
         else
             -- 使用原有的公式计算逻辑
-            calculatedValue = self._rewardCalculator:CalculateEffectValue(formula, level, self)
+            calculatedValue = self._rewardCalculator:CalculateEffectValue(formula, level, self, externalContext)
         end
         
         if calculatedValue then

@@ -28,10 +28,13 @@ function AchievementRewardCal:BuildVariableContext(achievementData, achievementT
     context.CURRENT_LEVEL = achievementData.currentLevel or 0 -- 当前等级（别名）
     context.MAX_LEVEL = achievementData.maxLevel or 1        -- 最大等级
     context.NEXT_LEVEL = (achievementData.currentLevel or 0) + 1 -- 下一级等级
-
+    context.F_NUM = achievementData.F_NUM or 0
     -- 可能用于复杂计算的衍生变量
     context.LEVEL_PROGRESS = context.CURRENT_LEVEL / context.MAX_LEVEL -- 等级进度百分比
     context.REMAINING_LEVELS = context.MAX_LEVEL - context.CURRENT_LEVEL -- 剩余等级数
+
+    -- 新增：F_NUM 房间人数（优先使用调用方传入的 achievementData.F_NUM，其次回退到 Players 服务）
+
 
     return context
 end
@@ -40,8 +43,9 @@ end
 ---@param formula string 效果公式（如"T_LVL*2+1"）
 ---@param currentLevel number 当前天赋等级
 ---@param achievementType AchievementType|nil 成就类型（可选）
+---@param externalData table|nil 额外上下文（如 { F_NUM = 3 }）
 ---@return number|nil 计算结果
-function AchievementRewardCal:CalculateEffectValue(formula, currentLevel, achievementType)
+function AchievementRewardCal:CalculateEffectValue(formula, currentLevel, achievementType, externalData)
     if not formula or formula == "" then
         return nil
     end
@@ -51,6 +55,12 @@ function AchievementRewardCal:CalculateEffectValue(formula, currentLevel, achiev
         currentLevel = currentLevel,
         maxLevel = achievementType and achievementType:GetMaxLevel() or 999
     }
+    -- 合并外部上下文（仅采纳已支持的变量，以免污染）
+    if externalData and type(externalData) == "table" then
+        if type(externalData.F_NUM) == "number" then
+            achievementData.F_NUM = externalData.F_NUM
+        end
+    end
 
     -- 使用父类的公式计算方法
     local result = self:EvaluateFormula(formula, achievementData, achievementType or {})
@@ -159,7 +169,8 @@ function AchievementRewardCal:GetSupportedVariables()
         MAX_LEVEL = "最大等级",
         NEXT_LEVEL = "下一级等级",
         LEVEL_PROGRESS = "等级进度百分比（0-1）",
-        REMAINING_LEVELS = "剩余可升级等级数"
+        REMAINING_LEVELS = "剩余可升级等级数",
+        F_NUM = "房间内玩家人数（优先使用传入值，其次取在线玩家数）",
     }
 end
 

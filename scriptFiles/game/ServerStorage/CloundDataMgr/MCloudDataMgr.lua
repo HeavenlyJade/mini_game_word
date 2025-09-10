@@ -182,6 +182,7 @@ function MCloudDataMgr.ClearCorePlayerData(uin_)
     if player_ then
         player_.level = 1
         player_.exp = 0
+    
         if player_.variableSystem then
             -- 假设 variableSystem 有一个清空方法
             if player_.variableSystem.ClearAllVariables then

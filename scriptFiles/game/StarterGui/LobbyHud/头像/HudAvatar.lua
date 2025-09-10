@@ -7,11 +7,13 @@ local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
 local ViewList = require(MainStorage.Code.Client.UI.ViewList) ---@type ViewList
 local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler)
 local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
 local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
-
+local friendsService = game:GetService("FriendsService")
+local players = game:GetService("Players")
 ---@class HudAvatar:ViewBase
 local HudAvatar = ClassMgr.Class("HudAvatar", ViewBase)
 
@@ -28,6 +30,13 @@ function HudAvatar:RegisterEvents()
     -- 【修改】使用变量同步事件替代等级经验事件
     ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
         self:OnPlayerVariableSync(data)
+
+    end)
+    -- 【新增】服务端广播当前房间玩家列表
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.ROOM_PLAYERS_BROADCAST, function(data)
+        if data and data.players then
+            self:OnRoomFriendsSync({ friends = data.players })
+        end
     end)
 end
 
@@ -38,6 +47,9 @@ function HudAvatar:OnInit(node, config)
     self:Get("名字背景/玩家名").node.Title = localPlayer.Nickname
     self:Get("名字背景/UID").node.Title = tostring(localPlayer.UserId)
     self.friendsButton = self:Get("名字背景/好友", ViewButton)
+    self.TitleFriendsTemp = self:Get("名字背景/好友/加成模版描述", ViewComponent) ---@type ViewComponent
+    self.TitleFriendsNum  =self:Get("名字背景/好友/好友数量", ViewComponent) ---@type ViewComponent
+    self.friendsBonusList = self:Get("名字背景/好友/好友加成", ViewList) ---@type ViewList
     -- 点击好友按钮：打开邀请列表（客户端调用）
     self.friendsButton.clickCb = function (ui, viewButton)
         FriendInviteService:OpenInviterList()
@@ -217,6 +229,82 @@ function HudAvatar:OnPlayerVariableSync(data)
     else
         -- 默认值
         self.PowerVariableTitle.node.Title = "0"
+    end
+end
+
+-- 【新增】处理房间好友数据同步
+function HudAvatar:OnRoomFriendsSync(data)
+    gg.log("收到房间好友数据：", data)
+    friendsService:QueryFriendInfoWithCallback(function(ok)
+        if not ok then
+            gg.log("错误：FriendsService 查询好友信息失败")
+            return
+        end
+        local friendsNum = tonumber(friendsService:GetSize()) or 0
+        gg.log("好友数",friendsNum)
+        local list = {}
+        for i = 0, friendsNum - 1, 1 do
+            local uin,nickName,onLine = friendsService:GetFriendsInfoByIndex(i)
+            local playerlist = players:GetPlayers()
+            for _, v in ipairs(playerlist) do
+                if uin == v.UserId then
+                    list[#list + 1] = uin
+                end
+            end
+            
+        end
+        self.roomFriendsUins = list
+        self:UpdateFriendsBonusUI()
+
+        gg.log("房间好友记录完成：好友数=", #list)
+
+    end)
+
+end
+
+-- 【新增】根据好友数量刷新好友加成展示
+function HudAvatar:UpdateFriendsBonusUI()
+    if not self.friendsBonusList or not self.TitleFriendsTemp then
+        return
+    end
+    local count = (self.roomFriendsUins and #self.roomFriendsUins) or 0
+    if self.TitleFriendsNum and self.TitleFriendsNum.node then
+        self.TitleFriendsNum.node.Title = tostring(count)
+    end
+    if  count > 10 then  
+        count =10
+    end
+    local ach = ConfigLoader.GetAchievement("好友加成")
+    -- 通过 AchievementType 计算效果（使用 F_NUM = 好友数量）
+    local effects = {}
+    if ach and ach.levelEffects then
+        local computed = ach:GetLevelEffectValue(1, { F_NUM = count }) or {}
+        for i, e in ipairs(ach.levelEffects) do
+            local name = e["效果描述"] or e["效果字段名称"] or "加成"
+            local val = 0
+            local c = computed[i]
+            if c and type(c["数值"]) == "number" then
+                val = c["数值"]
+            end
+            effects[#effects+1] = { name = name, value = val }
+        end
+    end
+
+    -- 使用 AppendChild 方式刷新列表：先清空，再基于模板逐条追加
+    self.friendsBonusList:ClearChildren()
+    local templateNode = self.TitleFriendsTemp and self.TitleFriendsTemp.node
+    local template = (templateNode and templateNode.Title) or "%s +%s%%"
+    for i, eff in ipairs(effects) do
+        if templateNode then
+            local node = templateNode:Clone()
+            node.Name = (templateNode.Name or "加成") .. tostring(i)
+            local percent = math.floor((eff.value or 0) * 100)
+            gg.log("好友加成：", eff.name, percent)
+
+            node.Title = "好友" .. eff.name .. " + " .. percent .. "%"
+            node.Visible = true
+            self.friendsBonusList:AppendChild(node)
+        end
     end
 end
 
