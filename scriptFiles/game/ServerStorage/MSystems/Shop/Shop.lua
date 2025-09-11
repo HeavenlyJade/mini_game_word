@@ -280,22 +280,21 @@ function Shop:GrantRewards(shopItem, player)
         -- 调用抽奖系统进行奖励发放
         local LotteryMgr = require(ServerStorage.MSystems.Lottery.LotteryMgr) ---@type LotteryMgr
         local poolName = shopItem:GetPoolName()
-        if not poolName then
-            return false, "抽奖池名称不存在"
+        if poolName then
+            local lotteryResult = LotteryMgr.SingleDraw(player.uin, poolName)
+            if lotteryResult.success then
+                -- 使用抽奖结果作为奖励
+                local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
+                LotteryEventManager.SendItemAcquiredNotification(player.uin, lotteryResult.rewards, poolName)        
+                return true, "抽奖奖励发放成功"
+            else
+                return false, lotteryResult.errorMsg
+            end
         end
-        local lotteryResult = LotteryMgr.SingleDraw(player.uin, poolName)
-        
-        if lotteryResult.success then
-            -- 使用抽奖结果作为奖励
-            local LotteryEventManager = require(ServerStorage.MSystems.Lottery.LotteryEventManager) ---@type LotteryEventManager
-            LotteryEventManager.SendItemAcquiredNotification(player.uin, lotteryResult.rewards, poolName)
-            
-            return true, "抽奖奖励发放成功"
-        else
-            return false, lotteryResult.errorMsg
-        end
+
     end
     -- 使用统一奖励分发器发放奖励
+    gg.log("发放商品奖励", shopItem.rewards)
     if not shopItem.rewards or not next(shopItem.rewards) then
         return false, "无奖励物品"
     end
