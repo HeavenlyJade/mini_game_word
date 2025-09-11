@@ -307,23 +307,53 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
             -- tostring(currentValue - otherBonus), tostring(currentValue), tostring(otherBonus)))
     end
 
+    -- 阶段4：计算好友加成（作为最终固定加成）
+    local friendBonus = 0
+    local friendBonuses = BonusManager.GetFriendItemBonuses(player)
+    gg.log("好友加成匹配调试", "targetName:", targetName, "friendBonuses:", friendBonuses)
+    for itemName, bonusData in pairs(friendBonuses) do
+        -- 转换 bonusData.targetVariable
+        
+        -- 好友加成的匹配逻辑：根据 itemName 和 targetName 匹配
+        local isMatch = itemName == targetName
+        
+        gg.log("好友加成匹配检查", "itemName:", itemName, "targetName:", targetName, 
+               "bonusData.targetVariable:", bonusData.targetVariable, 
+               "bonusData.itemTarget:", bonusData.itemTarget, 
+               "isMatch:", isMatch)
+        
+        if isMatch then
+            if bonusData.fixed and bonusData.fixed > 0 then
+                friendBonus = friendBonus + bonusData.fixed
+                table.insert(allDescriptions, string.format("好友固定加成(%s, +%d)", itemName, bonusData.fixed))
+            end
+            if bonusData.percentage and bonusData.percentage > 0 then
+                local percentageBonus = math.floor(currentValue * bonusData.percentage / 100)
+                friendBonus = friendBonus + percentageBonus
+                table.insert(allDescriptions, string.format("好友百分比加成(%s, +%d%%)", itemName, bonusData.percentage))
+            end
+        end
+    end
+    currentValue = currentValue + friendBonus
+
     local finalValue = currentValue
     local totalBonus = finalValue - originalBaseValue
 
     local bonusInfo = ""
     if #allDescriptions > 0 then
         bonusInfo = string.format(
-            "\n> 加成来源: %s.\n> 原始基础: %s, 最终值: %s, 总加成: %s.\n> 计算阶段: 属性加成(%s) → 变量加成(%s) → 其他加成(%s).",
+            "\n> 加成来源: %s.\n> 原始基础: %s, 最终值: %s, 总加成: %s.\n> 计算阶段: 属性加成(%s) → 变量加成(%s) → 其他加成(%s) → 好友加成(%s).",
             table.concat(allDescriptions, ", "),
             tostring(originalBaseValue),
             tostring(finalValue),
             tostring(totalBonus),
             tostring(statBonus),
             tostring(variableBonus),
-            tostring(otherBonus)
+            tostring(otherBonus),
+            tostring(friendBonus)
         )
     end
-
+    gg.log("好友加成",bonusInfo)
     return finalValue, bonusInfo
 end
 

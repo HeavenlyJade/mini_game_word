@@ -244,7 +244,20 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
                         
                         -- 检查是否匹配效果字段名称
                         local effectFieldName = levelEffect["效果字段名称"]
-                        if effectFieldName and string.find(varName, effectFieldName) then
+                        local effectType = levelEffect["效果类型"]
+                        local itemType = levelEffect["物品类型"]
+                        
+                        -- 根据效果类型决定匹配字段
+                        local shouldMatch = false
+                        if effectType == "物品" and itemType then
+                            -- 物品类型效果：使用物品类型字段匹配
+                            shouldMatch = string.find(varName, itemType)
+                        elseif effectFieldName then
+                            -- 其他类型效果：使用效果字段名称匹配
+                            shouldMatch = string.find(varName, effectFieldName)
+                        end
+                        
+                        if shouldMatch then
                             
                             -- 获取加成类型和物品目标
                             local bonusType = levelEffect["加成类型"]
@@ -283,41 +296,65 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
             end
         end
     end
-    -- 追加：好友加成（基于在线好友数量）
-    do
-        local friendAch = ConfigLoader.GetAchievement("好友加成") ---@type AchievementType
-        if friendAch then
-            local count = 0
-            if player and player.onlineFriendsCount then
-                count = tonumber(player.onlineFriendsCount) or 0
+    return bonuses
+end
+
+--- 获取好友加成（基于在线好友数量）
+---@param player MPlayer 玩家实例
+---@return table<string, { fixed: number, percentage: number, [any]: any }> 好友加成数据
+function BonusManager.GetFriendItemBonuses(player)
+    if not player or not player.uin then
+        return {}
+    end
+
+    local bonuses = {}
+    local friendAch = ConfigLoader.GetAchievement("好友加成") ---@type AchievementType
+    if not friendAch then
+        return bonuses
+    end
+
+    local count = 0
+    if player.onlineFriendsCount then
+        count = tonumber(player.onlineFriendsCount) or 0
+    end
+    if count > 10 then count = 10 end
+    
+    if count > 0 then
+        local effects = friendAch:GetLevelEffectValue(1, { F_NUM = count }) or {}
+        gg.log("好友加成效果列表", effects)
+        for _, eff in ipairs(effects) do
+            local effectType = eff["效果类型"]
+            local fieldName = eff["效果字段名称"]
+            local value = eff["数值"] or 0
+            local itemType = eff["物品类型"]
+            local itemTarget = eff["物品目标"]
+
+            
+            local targetItem = nil
+            
+            if effectType == "物品" and itemType then
+                -- 物品类型效果：使用物品类型作为目标
+                targetItem = itemType
+            elseif effectType == "玩家变量" and fieldName then
+                targetItem = fieldName
             end
-            if count > 10 then count = 10 end
-            if count > 0 then
-                local effects = friendAch:GetLevelEffectValue(1, { F_NUM = count }) or {}
-                for _, eff in ipairs(effects) do
-                    local fieldName = eff["效果字段名称"]
-                    local value = eff["数值"] or 0
-                    local itemTarget = nil
-                    if fieldName and string.find(fieldName, "金币") then
-                        itemTarget = "金币"
-                    elseif fieldName and string.find(fieldName, "训练") then
-                        itemTarget = "训练"
-                    end
-                    if itemTarget then
-                        if not bonuses[itemTarget] then
-                            bonuses[itemTarget] = { fixed = 0, percentage = 0 }
-                        end
-                        local percentValue = value
-                        if percentValue < 1 then
-                            percentValue = percentValue * 100
-                        end
-                        bonuses[itemTarget].percentage = (bonuses[itemTarget].percentage or 0) + percentValue
-                        bonuses[itemTarget].effectFieldName = fieldName
-                    end
+            
+            if targetItem then
+                if not bonuses[targetItem] then
+                    bonuses[targetItem] = { fixed = 0, percentage = 0 }
                 end
+                local percentValue = value
+                if percentValue < 1 then
+                    percentValue = percentValue * 100
+                end
+                bonuses[targetItem].percentage = (bonuses[targetItem].percentage or 0) + percentValue
+                bonuses[targetItem].effectFieldName = fieldName
+                bonuses[targetItem].itemTarget = itemTarget
+                gg.log("添加好友加成", "targetItem:", targetItem, "percentage:", percentValue)
             end
         end
     end
+    gg.log("好友加成",bonuses)
     return bonuses
 end
 
@@ -354,6 +391,10 @@ function BonusManager.CalculatePlayerItemBonuses(player, targetItemName)
         BonusManager.MergeBonuses(totalBonuses, achievementBonuses)
     end
 
+    -- 6. 获取好友加成
+    local friendBonuses = BonusManager.GetFriendItemBonuses(player)
+    BonusManager.MergeBonuses(totalBonuses, friendBonuses)
+    gg.log("玩家所有物品加成",totalBonuses)
     return totalBonuses
 end
 

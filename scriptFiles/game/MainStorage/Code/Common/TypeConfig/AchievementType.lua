@@ -186,6 +186,7 @@ function AchievementType:GetLevelEffectValue(level, externalContext)
                 ["数值"] = calculatedValue,
                 ["加成类型"] = effectConfig["加成类型"],
                 ["物品目标"] = effectConfig["物品目标"],
+                ["物品类型"] = effectConfig["物品类型"],
             })
         end
     end

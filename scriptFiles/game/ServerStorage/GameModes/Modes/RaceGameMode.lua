@@ -236,7 +236,7 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
     -- 【新增】应用玩家加成计算
     local finalItemCount = itemCount
 
-    -- 1. 计算玩家所有物品加成（宠物、伙伴、翅膀、尾迹）
+    -- 1. 计算玩家所有物品加成（包括宠物、伙伴、翅膀、尾迹、天赋、好友）
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
 
     -- 2. 构建原始奖励数据
@@ -244,9 +244,7 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
         [itemType] = itemCount
     }
 
-    -- 3. 针对当前奖励物品名，追加聚合天赋定向加成（避免无关天赋误入）
-    local targetedBonuses = BonusManager.CalculatePlayerItemBonuses(player, itemType)
-    BonusManager.MergeBonuses(bonuses, targetedBonuses)
+    -- 3. 应用加成到奖励
     local finalRewards = BonusManager.ApplyBonusesToRewards(originalRewards, bonuses)
 
     -- 4. 获取应用加成后的最终数量
