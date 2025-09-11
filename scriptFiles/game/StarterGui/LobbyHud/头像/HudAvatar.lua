@@ -235,28 +235,35 @@ end
 -- 【新增】处理房间好友数据同步
 function HudAvatar:OnRoomFriendsSync(data)
     gg.log("收到房间好友数据：", data)
+    
+    -- 【优化】使用服务端广播的实时房间玩家数据，避免players:GetPlayers()的延迟问题
+    local roomPlayerIds = {}
+    if data and data.friends then
+        for _, playerId in ipairs(data.friends) do
+            roomPlayerIds[playerId] = true
+        end
+    end
+    
     friendsService:QueryFriendInfoWithCallback(function(ok)
         if not ok then
             gg.log("错误：FriendsService 查询好友信息失败")
             return
         end
         local friendsNum = tonumber(friendsService:GetSize()) or 0
-        gg.log("好友数",friendsNum)
+        gg.log("玩家总好友数:", friendsNum)
         local list = {}
         for i = 0, friendsNum - 1, 1 do
             local uin,nickName,onLine = friendsService:GetFriendsInfoByIndex(i)
-            local playerlist = players:GetPlayers()
-            for _, v in ipairs(playerlist) do
-                if uin == v.UserId then
-                    list[#list + 1] = uin
-                end
+            -- 【优化】使用服务端实时数据比对，而不是players:GetPlayers()
+            if roomPlayerIds[uin] then
+                gg.log("房间中在线好友:", uin, nickName, "在线状态:", onLine)
+                list[#list + 1] = uin
             end
-            
         end
         self.roomFriendsUins = list
         self:UpdateFriendsBonusUI()
 
-        gg.log("房间好友记录完成：好友数=", #list)
+        gg.log("房间中在线好友数:", #list, "（用于计算加成效果）")
 
     end)
 

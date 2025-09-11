@@ -342,8 +342,6 @@ function MServerInitPlayer.player_leave_game(player)
         AutoRaceManager.CleanupPlayerAutoRaceState(uin_)
         local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
         RewardBonusMgr.OnPlayerLeave(mplayer)
-        local RoomFriendsRecorder = require(ServerStorage.ServerUntils.RoomFriendsRecorder) ---@type RoomFriendsRecorder
-        RoomFriendsRecorder.OnPlayerLeave(player.UserId)
     end
 
 
