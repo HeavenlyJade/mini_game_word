@@ -12,6 +12,7 @@ local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Acti
 ---@field conditionType string|nil 条件类型
 ---@field conditionFormula string|nil 条件公式
 ---@field effectFormula string|nil 效果公式
+---@field effectDesc string|nil 效果描述
 
 ---@class SpecialPetEffectData
 ---@field petId string 宠物ID
@@ -60,7 +61,8 @@ function EffectLevelType:OnInit(data)
                 effectValue = effectData['效果数值'] or 0,
                 conditionType = conditionType,
                 conditionFormula = conditionFormula,
-                effectFormula = effectFormula
+                effectFormula = effectFormula,
+                effectDesc = (effectData['效果描述'] ~= '' and effectData['效果描述']) or nil
             }
             
             -- gg.log("处理后数据:", processedEffect)
@@ -155,6 +157,14 @@ function EffectLevelType:GetLevelEffect(level)
         end
     end
     return nil
+end
+
+--- 获取指定等级的效果描述
+---@param level number 等级
+---@return string|nil 效果描述
+function EffectLevelType:GetEffectDesc(level)
+    local effect = self:GetLevelEffect(level)
+    return effect and effect.effectDesc or nil
 end
 
 --- 获取所有等级效果

@@ -108,7 +108,6 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(LevelConfig, LevelType, ConfigLoader.Levels, "Level")
     ConfigLoader.LoadConfig(LevelNodeRewardConfig, LevelNodeRewardType, ConfigLoader.LevelNodeRewards, "LevelNodeReward")
     ConfigLoader.LoadConfig(PartnerConfig, PetType, ConfigLoader.Partners, "Partner")
-    ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
     ConfigLoader.LoadConfig(WingConfig, PetType, ConfigLoader.Wings, "Wing")
     ConfigLoader.LoadConfig(TrailConfig, TrailType, ConfigLoader.Trails, "Trail")
     ConfigLoader.LoadConfig(PlayerInitConfig, PlayerInitType, ConfigLoader.PlayerInits, "PlayerInit")
@@ -124,6 +123,7 @@ function ConfigLoader.Init()
     ConfigLoader.LoadConfig(EffectLevelConfig, EffectLevelType, ConfigLoader.EffectLevels, "EffectLevel")
     -- 构建迷你币商品映射表
     ConfigLoader.LoadConfig(ShopItemConfig, ShopItemType, ConfigLoader.ShopItems, "ShopItem")
+    ConfigLoader.LoadConfig(PetConfig, PetType, ConfigLoader.Pets, "Pet")
 
     ConfigLoader.BuildMiniShopMapping()
     

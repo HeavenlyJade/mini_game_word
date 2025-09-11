@@ -3,7 +3,6 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
-local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 
 ---@class PetType:Class
 ---@field name string 宠物名称
@@ -81,6 +80,7 @@ function PetType:OnInit(data)
     self.specialEffectConfig = data["效果等级配置"] or nil
     if self.specialEffectConfig and self.specialEffectConfig ~= "" then
         -- 通过配置加载器装载对应的效果等级配置
+        local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
         self.effectLevelType = ConfigLoader.GetEffectLevel(self.specialEffectConfig) ---@type EffectLevelType
     end
 end
@@ -184,6 +184,32 @@ function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
     end
 
     return calculatedEffects
+end
+
+--- 【新增】获取特殊加成倍率
+---@param starLevel number 星级
+---@return number|nil 加成倍率，如果不是最强加成或配置不存在则返回nil
+function PetType:GetSpecialBonusMultiplier(starLevel)
+    -- 如果不是最强加成类型，直接返回nil
+    if self.specialBonus ~= "最强加成" then
+        return nil
+    end
+    
+    -- 如果没有配置效果等级配置，返回nil
+    if not self.effectLevelType then
+        gg.log(string.format("宠物%s没有配置效果等级配置", self.name))
+        return nil
+    end
+    
+    -- 从效果等级配置获取对应星级的倍率
+    local multiplier = self.effectLevelType:GetEffectValue(starLevel)
+    if multiplier then
+        gg.log(string.format("宠物%s星级%d获取到倍率: %.2f", self.name, starLevel, multiplier))
+        return multiplier
+    else
+        gg.log(string.format("宠物%s星级%d在效果等级配置中未找到对应倍率", self.name, starLevel))
+        return nil
+    end
 end
 
 --- 格式化效果描述

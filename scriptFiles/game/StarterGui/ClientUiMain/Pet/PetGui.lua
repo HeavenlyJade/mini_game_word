@@ -748,6 +748,39 @@ function PetGui:UpdateAttributeDisplay(petConfig, starLevel)
     local currentStar = starLevel or 0
     local maxStar = petConfig.maxStarLevel or 5
 
+    -- 如果是“最强加成”宠物，优先显示效果等级配置里的描述
+    if petConfig.specialBonus == "最强加成" and petConfig.effectLevelType then
+        local currentDesc = petConfig.effectLevelType.GetEffectDesc and petConfig.effectLevelType:GetEffectDesc(currentStar) or nil
+        local nextDesc = nil
+        if currentStar < maxStar then
+            nextDesc = petConfig.effectLevelType.GetEffectDesc and petConfig.effectLevelType:GetEffectDesc(currentStar + 1) or nil
+        end
+
+        -- 仅展示一条描述信息
+        self.attributeList:SetElementSize(1)
+        local attributeItem = self.attributeList:GetChild(1)
+        if attributeItem and attributeItem.node then
+            local currentAttrText = attributeItem.node["当前属性"]
+            local nextAttrText = attributeItem.node["升星属性"]
+
+            if currentAttrText then
+                currentAttrText.Title = currentDesc or ""
+            end
+
+            if nextAttrText then
+                if currentStar >= maxStar then
+                    nextAttrText.Title = "升星属性: 已满级"
+                else
+                    nextAttrText.Title = nextDesc or "升星属性: N/A"
+                end
+            end
+        end
+
+        self.attributeList:HideChildrenFrom(1)
+        return
+    end
+
+    -- 否则显示常规携带效果
     local currentEffects = petConfig:CalculateCarryingEffectsByStarLevel(currentStar)
     local nextEffects = {}
     if currentStar < maxStar then

@@ -41,7 +41,7 @@ function ShopGui:OnInit(node, config)
     -- 注册事件
     self:RegisterEvents()
     self:RegisterButtonEvents()
-    self:RequestMailList()
+    -- self:RequestMailList()
 
     --gg.log("ShopGui 商城界面初始化完成")
 end
