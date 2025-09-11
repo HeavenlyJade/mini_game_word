@@ -25,6 +25,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field avatarResource string| nil 头像资源
 ---@field soundResource string| nil 音效资源
 ---@field specialTags table 特殊标签
+---@field specialBonus string|nil 特殊加成
 ---@field New fun(data:table):PetType
 local PetType = ClassMgr.Class("PetType")
 
@@ -69,6 +70,9 @@ function PetType:OnInit(data)
 
     -- 特殊标记
     self.specialTags = data["特殊标签"] or {}
+
+    -- 特殊加成
+    self.specialBonus = data["特殊加成"] or nil
 end
 
 -- 便利函数：获取指定属性的基础值
