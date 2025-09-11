@@ -3,6 +3,7 @@
 local MainStorage = game:GetService('MainStorage')
 local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 
 ---@class PetType:Class
 ---@field name string 宠物名称
@@ -26,6 +27,8 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field soundResource string| nil 音效资源
 ---@field specialTags table 特殊标签
 ---@field specialBonus string|nil 特殊加成
+---@field specialEffectConfig string|nil 特殊宠物的效果配置
+---@field effectLevelType EffectLevelType|any|nil 加载后的效果等级配置
 ---@field New fun(data:table):PetType
 local PetType = ClassMgr.Class("PetType")
 
@@ -73,6 +76,23 @@ function PetType:OnInit(data)
 
     -- 特殊加成
     self.specialBonus = data["特殊加成"] or nil
+
+    -- 特殊宠物的效果配置（来自 ['效果等级配置']）
+    self.specialEffectConfig = data["效果等级配置"] or nil
+    if self.specialEffectConfig and self.specialEffectConfig ~= "" then
+        -- 通过配置加载器装载对应的效果等级配置
+        self.effectLevelType = ConfigLoader.GetEffectLevel(self.specialEffectConfig) ---@type EffectLevelType
+    end
+end
+
+--- 获取特殊宠物效果配置在指定星级下的效果数值
+---@param starLevel number 星级
+---@return number|nil 效果数值（若未配置或不存在则为nil）
+function PetType:GetSpecialEffectValue(starLevel)
+    if not self.effectLevelType or not starLevel then
+        return nil
+    end
+    return self.effectLevelType:GetEffectValue(starLevel)
 end
 
 -- 便利函数：获取指定属性的基础值
