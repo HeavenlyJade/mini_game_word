@@ -154,18 +154,18 @@ function BaseCompanion:GetActiveItemBonuses()
     local BonusManager = require(ServerStorage.BonusManager.BonusManager) ---@type BonusManager -- 懒加载以避免循环依赖
 
     local activeCompanions = self:GetActiveCompanions()
-    --gg.log(string.format("[BaseCompanion调试] GetActiveItemBonuses: 找到 %d 个激活的 %s", #activeCompanions, self.companionType))
+    -- gg.log(string.format("[BaseCompanion调试] GetActiveItemBonuses: 找到 %d 个激活的 %s", #activeCompanions, self.companionType))
     
     for _, companionInstance in ipairs(activeCompanions) do
 
         
         local singleBonus = companionInstance:GetItemBonuses()
-        --gg.log(string.format("[BaseCompanion调试] %s 单个加成数据:", self.companionType), singleBonus)
+        -- gg.log(string.format("[BaseCompanion调试] %s 单个加成数据:", self.companionType), singleBonus)
         
         BonusManager.MergeBonuses(totalBonuses, singleBonus)
     end
 
-    --gg.log(string.format("[BaseCompanion调试] GetActiveItemBonuses: 最终合并的 %s 加成数据:", self.companionType), totalBonuses)
+    -- gg.log(string.format("[BaseCompanion调试] GetActiveItemBonuses: 最终合并的 %s 加成数据:", self.companionType), totalBonuses)
     return totalBonuses
 end
 

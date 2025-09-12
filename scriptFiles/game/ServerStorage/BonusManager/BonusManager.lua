@@ -58,7 +58,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
                 local parsed = variableSystem:ParseVariableName(bonusVarName)
                 if parsed then
                     local bonusValue = 0
-                    
+
                     if effectFieldName and effectFieldName ~= "" then
                         -- 从效果等级配置获取值
                         local effectLevelConfig = ConfigLoader.GetEffectLevel(effectFieldName)
@@ -70,7 +70,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
                             if maxEffectIndex then
                                 local maxEffectValue = effectLevelConfig.levelEffects[maxEffectIndex].effectValue
                                 bonusValue = maxEffectValue
-                                table.insert(bonusDescriptions, string.format("效果等级配置加成(%s, +%s)", 
+                                table.insert(bonusDescriptions, string.format("效果等级配置加成(%s, +%s)",
                                     effectFieldName, tostring(maxEffectValue)))
                             end
                         end
@@ -90,7 +90,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
                             ----gg.log(string.format("从玩家系统获取变量[%s]: %s", bonusVarName, tostring(bonusValue)))
                         end
                     end
-                    
+
                     -- 应用加成计算逻辑
                     if actionType == "单独相加" then
                         if parsed.method == "百分比" then
@@ -126,7 +126,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
     local baseAfterFoundation = baseValue * baseMultiplier + baseFlatAdd
     -- 在改造后的基础值上应用"单独相加"（百分比、固定）
     local finalBonusValue = baseAfterFoundation + (baseAfterFoundation * totalPercentBonus) + totalFlatBonus
-    
+
     -- 应用最终乘法
     for i, multiplier in ipairs(finalMultipliers) do
         finalBonusValue = finalBonusValue * multiplier
@@ -145,7 +145,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
             #finalMultipliers
         )
     end
-    
+
     return finalBonusValue, bonusInfo
 end
 -- ============================= 宠物/伙伴加成计算 =============================
@@ -213,7 +213,7 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
     local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
     local AchievementMgr = require(ServerStorage.MSystems.Achievement.AchievementMgr)
     local playerAchievement = AchievementMgr.server_player_achievement_data[player.uin] ---@type Achievement
-    
+
     if not playerAchievement or not playerAchievement.talentVariableSystem then
         return {}
     end
@@ -221,32 +221,32 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
     -- 从天赋变量系统获取物品加成
     local bonuses = {}
     local talentVariables = playerAchievement.talentVariableSystem:GetVariablesDictionary()
-    
+
     for varName, value in pairs(talentVariables) do
         -- 解析天赋变量名，提取基础信息
         local parsed = playerAchievement.talentVariableSystem:ParseVariableName(varName)
-        
+
         if parsed and parsed.operation == "天赋" and parsed.name then
             -- 从解析结果获取天赋ID
             local talentId = parsed.name
-            
+
             -- 获取天赋配置
             local achievementType = ConfigLoader.GetAchievement(talentId) ---@type AchievementType
             if achievementType and achievementType:IsTalentAchievement() then
-                
+
                 -- 获取当前等级
                 local currentLevel = playerAchievement:GetTalentLevel(talentId)
                 if currentLevel > 0 then
-                    
+
                     -- 获取等级效果配置
                     local levelEffect = achievementType:GetLevelEffect(currentLevel)
                     if levelEffect then
-                        
+
                         -- 检查是否匹配效果字段名称
                         local effectFieldName = levelEffect["效果字段名称"]
                         local effectType = levelEffect["效果类型"]
                         local itemType = levelEffect["物品类型"]
-                        
+
                         -- 根据效果类型决定匹配字段
                         local shouldMatch = false
                         if effectType == "物品" and itemType then
@@ -256,16 +256,16 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
                             -- 其他类型效果：使用效果字段名称匹配
                             shouldMatch = string.find(varName, effectFieldName)
                         end
-                        
+
                         if shouldMatch then
-                            
+
                             -- 获取加成类型和物品目标
                             local bonusType = levelEffect["加成类型"]
                             local itemTarget = levelEffect["物品目标"]
-                            
+
                             -- 只处理物品类型的加成
                             if bonusType == "物品" and itemTarget then
-                                
+
                                 -- 应用目标物品过滤
                                 if targetItemName and itemTarget ~= targetItemName then
                                     -- 指定了过滤物品且不匹配，跳过
@@ -273,7 +273,7 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
                                     if not bonuses[itemTarget] then
                                         bonuses[itemTarget] = { fixed = 0, percentage = 0 }
                                     end
-                                    
+
                                     -- 根据解析的方法类型应用加成
                                     if parsed.method == "固定值" then
                                         bonuses[itemTarget].fixed = (bonuses[itemTarget].fixed or 0) + value
@@ -284,7 +284,7 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
                                         end
                                         bonuses[itemTarget].percentage = (bonuses[itemTarget].percentage or 0) + percentValue
                                     end
-                                    
+
                                     -- 保留配置信息用于调试
                                     bonuses[itemTarget].talentId = talentId
                                     bonuses[itemTarget].effectFieldName = effectFieldName
@@ -318,7 +318,7 @@ function BonusManager.GetFriendItemBonuses(player)
         count = tonumber(player.onlineFriendsCount) or 0
     end
     if count > 10 then count = 10 end
-    
+
     if count > 0 then
         local effects = friendAch:GetLevelEffectValue(1, { F_NUM = count }) or {}
         gg.log("好友加成效果列表", effects)
@@ -329,16 +329,16 @@ function BonusManager.GetFriendItemBonuses(player)
             local itemType = eff["物品类型"]
             local itemTarget = eff["物品目标"]
 
-            
+
             local targetItem = nil
-            
+
             if effectType == "物品" and itemType then
                 -- 物品类型效果：使用物品类型作为目标
                 targetItem = itemType
             elseif effectType == "玩家变量" and fieldName then
                 targetItem = fieldName
             end
-            
+
             if targetItem then
                 if not bonuses[targetItem] then
                     bonuses[targetItem] = { fixed = 0, percentage = 0 }
@@ -445,7 +445,7 @@ function BonusManager.MergeBonuses(target, source)
         if type(bonusData.percentage) == "number" and bonusData.percentage > 0 then
             target[itemName].percentage = (target[itemName].percentage or 0) + bonusData.percentage
         end
-        
+
         -- 【修复】保留匹配所需的字段
         if bonusData.targetVariable then
             target[itemName].targetVariable = bonusData.targetVariable

@@ -428,16 +428,16 @@ function CompanionInstance:SetStarLevel(targetStarLevel)
     if not targetStarLevel or targetStarLevel < 1 then
         return false, "无效的星级"
     end
-    
+
     local currentStarLevel = self:GetStarLevel()
     if targetStarLevel == currentStarLevel then
         return true, nil -- 已经是目标星级
     end
-    
+
     -- 直接设置星级
     self.companionData.starLevel = targetStarLevel
     self:RefreshAttributeCache()
-    
+
     return true, nil
 end
 
@@ -615,7 +615,7 @@ function CompanionInstance:GetItemBonuses()
 
     for variableName, effectData in pairs(allEffects) do
 
-        
+
         -- 筛选出物品加成类型
         if effectData.bonusType == "物品" and effectData.itemTarget then
             local bonusValue = effectData.value or 0
@@ -633,11 +633,11 @@ function CompanionInstance:GetItemBonuses()
                 itemBonuses[itemName].fixed = (itemBonuses[itemName].fixed or 0) + bonusValue
                 --gg.log(string.format("[CompanionInstance调试] 添加物品固定加成: %s +%d", itemName, bonusValue))
             end
-            
+
             -- 保存物品目标信息
             itemBonuses[itemName].itemTarget = itemName
         end
-        
+
         -- 【新增】处理玩家变量加成类型
         if effectData.bonusType == "玩家变量" and effectData.targetVariable then
             local bonusValue = effectData.value or 0
@@ -655,11 +655,11 @@ function CompanionInstance:GetItemBonuses()
                 itemBonuses[targetVar].fixed = (itemBonuses[targetVar].fixed or 0) + bonusValue
                 --gg.log(string.format("[CompanionInstance调试] 添加玩家变量固定加成: %s +%d", targetVar, bonusValue))
             end
-            
+
             -- 保存目标变量信息
             itemBonuses[targetVar].targetVariable = targetVar
         end
-        
+
         -- 【新增】处理玩家属性加成类型（翅膀等使用）
         if effectData.bonusType == "玩家属性" and effectData.targetVariable then
             local bonusValue = effectData.value or 0
@@ -677,7 +677,7 @@ function CompanionInstance:GetItemBonuses()
                 itemBonuses[targetVar].fixed = (itemBonuses[targetVar].fixed or 0) + bonusValue
                 --gg.log(string.format("[CompanionInstance调试] 添加玩家属性固定加成: %s +%d", targetVar, bonusValue))
             end
-            
+
             -- 保存目标变量信息
             itemBonuses[targetVar].targetVariable = targetVar
         end
@@ -695,16 +695,16 @@ end
 function CompanionInstance:CalculateTotalEffectValue()
     local itemBonuses = self:GetItemBonuses() -- 复用现有方法
     local totalValue = 0
-    
+
     for targetName, bonusData in pairs(itemBonuses) do
         -- 将固定加成和百分比加成合并计算
         local fixedValue = bonusData.fixed or 0
         local percentageValue = bonusData.percentage or 0
-        
+
         -- 简单的权重计算：固定加成直接相加，百分比加成作为权重
         totalValue = totalValue + fixedValue + percentageValue
     end
-    
+
     return totalValue
 end
 
