@@ -609,7 +609,7 @@ function PetMgr.GetActiveItemBonuses(uin)
     end
 
     local bonuses = petManager:GetActiveItemBonuses()
-    gg.log("[PetMgr调试] GetActiveItemBonuses: 玩家", uin, "激活宠物的物品加成:", bonuses)
+    -- gg.log("[PetMgr调试] GetActiveItemBonuses: 玩家", uin, "激活宠物的物品加成:", bonuses)
     return bonuses
 end
 

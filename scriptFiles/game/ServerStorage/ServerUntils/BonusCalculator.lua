@@ -310,17 +310,12 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
     -- 阶段4：计算好友加成（作为最终固定加成）
     local friendBonus = 0
     local friendBonuses = BonusManager.GetFriendItemBonuses(player)
-    gg.log("好友加成匹配调试", "targetName:", targetName, "friendBonuses:", friendBonuses)
     for itemName, bonusData in pairs(friendBonuses) do
         -- 转换 bonusData.targetVariable
         
         -- 好友加成的匹配逻辑：根据 itemName 和 targetName 匹配
         local isMatch = itemName == targetName
-        
-        gg.log("好友加成匹配检查", "itemName:", itemName, "targetName:", targetName, 
-               "bonusData.targetVariable:", bonusData.targetVariable, 
-               "bonusData.itemTarget:", bonusData.itemTarget, 
-               "isMatch:", isMatch)
+
         
         if isMatch then
             if bonusData.fixed and bonusData.fixed > 0 then
@@ -353,7 +348,6 @@ function BonusCalculator.CalculateAllBonuses(player, baseValue, playerStatBonuse
             tostring(friendBonus)
         )
     end
-    gg.log("好友加成",bonusInfo)
     return finalValue, bonusInfo
 end
 

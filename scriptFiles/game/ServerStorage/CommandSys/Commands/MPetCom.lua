@@ -279,6 +279,49 @@ function PetCommand.handlers.reduceslots(params, player)
     return true
 end
 
+--- 新增最强宠物（复制背包中加成最高的宠物）
+---@param params table
+---@param player MPlayer
+function PetCommand.handlers.addstrongest(params, player)
+    local uin = player.uin
+    
+    -- 获取玩家的宠物管理器
+    local petManager = PetMgr.GetPlayerPet(uin)
+    if not petManager then
+        gg.log("玩家宠物数据未加载", player.name, uin)
+        return false
+    end
+    
+    -- 获取背包中加成最高的宠物
+    local strongestPet = petManager:CalculateAllPetBonusesAndGetStrongest()
+    if not strongestPet then
+        local msg = "背包中没有找到宠物"
+        gg.log(msg, player.name)
+        return false
+    end
+    
+    local petName = strongestPet.petName
+    local starLevel = 1
+    
+    gg.log(string.format("找到最强宠物: %s (%d设定星级1星, 加成值: %.2f)", 
+        petName, starLevel, strongestPet.totalBonus))
+    
+    -- 添加新的宠物到背包
+    local success, errorMsg, actualSlot = PetMgr.AddPetToSlot(uin, petName, nil)
+    if not success then
+        local msg = string.format("添加最强宠物失败: %s", errorMsg or "未知错误")
+        gg.log(msg, player.name)
+        return false
+    end
+    
+    
+    local msg = string.format("成功复制最强宠物: %s (%d星) 到槽位 %d", petName, starLevel, actualSlot)
+    gg.log(msg, player.name)
+    
+    _syncToClient(player)
+    return true
+end
+
 -- 中文到英文的映射
 local operationMap = {
     ["新增"] = "add",
@@ -286,7 +329,8 @@ local operationMap = {
     ["设置"] = "set",
     ["栏位设置"] = "setslots",
     ["栏位新增"] = "addslots",
-    ["栏位减少"] = "reduceslots"
+    ["栏位减少"] = "reduceslots",
+    ["新增最强"] = "addstrongest"
 }
 
 --- 宠物操作指令入口

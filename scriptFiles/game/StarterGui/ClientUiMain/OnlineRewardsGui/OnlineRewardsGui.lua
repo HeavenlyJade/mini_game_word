@@ -33,6 +33,10 @@ function OnlineRewardsGui:OnInit(node, config)
     -- 奖励档位选择
     self.primarySlot = self:Get("在线奖励界面/奖励界面栏位_初级", ViewList) ---@type ViewList
     self.primarySlot:SetVisible(true)
+    self.primaryViewlist = self:Get("在线奖励界面/奖励档位", ViewList) ---@type ViewList
+    self.primaryViewlist:SetVisible(false)
+    self.rewardDescription = self:Get("在线奖励界面/奖励显示描述", ViewComponent) ---@type ViewComponent
+    self.rewardDescription:SetVisible(false)
 
     -- 奖励容器
     self.rewardTemplate = self:Get("在线奖励界面/模版界面/奖励模版", ViewComponent) ---@type ViewComponent
@@ -54,9 +58,10 @@ function OnlineRewardsGui:OnInit(node, config)
     self.currentConfig = "在线奖励初级" ---@type string 当前选中的配置
     self.rewardData = {} ---@type table 服务端同步的奖励数据
     self.rewardButtons = {} ---@type table<string, ViewComponent> 奖励按钮缓存
-    self.configSlots = {} ---@type table<string, ViewButton> 配置栏位映射
+    self.configSlots = {} ---@type table<string, ViewList> 配置栏位映射
     self.rewardConfig = nil ---@type RewardType 当前奖励配置
     self.rewardNodeMap = {} ---@type table<string, any> 奖励节点映射
+    self.slotClickButtons = {} ---@type table<number, ViewButton> 槽位点击按钮
     
     -- 倒计时相关
     self.onlineTime = 0 ---@type number 当前在线时长（秒）
@@ -128,11 +133,19 @@ function OnlineRewardsGui:InitRewardSlots()
             -- 设置奖励槽位显示
             self:SetupRewardSlot(cloneNode, reward, i)
             
+            
             -- 添加到槽位列表
             self.primarySlot:AppendChild(cloneNode)
             
             -- 建立节点映射
             self.rewardNodeMap[i] = cloneNode
+
+            -- 绑定槽位点击（整体）用于展示描述
+            local slotBtn = ViewButton.New(cloneNode, self)
+            slotBtn.clickCb = function()
+                self:ShowRewardDescription(reward)
+            end
+            self.slotClickButtons[i] = slotBtn
         end
     end
     
@@ -171,7 +184,9 @@ function OnlineRewardsGui:SetupRewardSlot(slotNode, reward, index)
     local backgroundNode = slotNode:FindFirstChild("背景")
     local timeNode = backgroundNode:FindFirstChild("时间节点")
     if timeNode and reward.timeNode then
-        timeNode.Title = self:FormatTime(reward.timeNode)
+        local timedata =  self:FormatTime(reward.timeNode)
+        gg.log("设置奖励时间节点:", timedata)
+        timeNode.Title = timedata
     elseif timeNode then
         timeNode.Title = "00:00"
     end
@@ -181,23 +196,9 @@ function OnlineRewardsGui:SetupRewardSlot(slotNode, reward, index)
     -- 设置奖励图标（如果有的话）
     local iconNode = backgroundNode:FindFirstChild("图标")
     if iconNode and reward.rewardItems then
-        local item = reward.rewardItems
-        if item.type == "物品" then
-            -- 可以根据物品名称获取图标
-            local itemConfig = ConfigLoader.GetItem(item.itemName)
-            if itemConfig and itemConfig.icon then
-                iconNode.Icon = itemConfig.icon
-            end
-        elseif item.type == "宠物" then
-            local petConfig = ConfigLoader.GetPet(item.petConfig)
-            if petConfig and petConfig.avatarResource then
-                iconNode.Icon = petConfig.avatarResource
-            end
-        elseif item.type == "伙伴" then
-            local partnerConfig = ConfigLoader.GetPartner(item.partnerConfig)
-            if partnerConfig and partnerConfig.avatarResource then
-                iconNode.Icon = partnerConfig.avatarResource
-            end
+        local icon = self:GetIconFromRewardItem(reward.rewardItems)
+        if icon then
+            iconNode.Icon = icon
         end
     end
     
@@ -319,12 +320,7 @@ function OnlineRewardsGui:RegisterButtonEvents()
         self:Close()
     end
     
-    -- 配置栏位切换
-    for configName, slot in pairs(self.configSlots) do
-        slot.clickCb = function(ui, btn)
-            self:SwitchConfig(configName)
-        end
-    end
+    -- 配置栏位切换（当前不直接在ViewList上绑定点击，避免类型不匹配）
     
     -- 一键领取按钮（如果存在）
     if self.claimAllButton then
@@ -500,7 +496,7 @@ function OnlineRewardsGui:OnRewardDataResponse(data)
     end
     
     ----gg.log("=== 收到奖励数据响应 ===")
-    -- ----gg.log("响应数据:", data)
+    gg.log("响应数据:", data)
     
     self.rewardData = data.data
     ----gg.log("已设置 rewardData:", self.rewardData)
@@ -806,6 +802,10 @@ function OnlineRewardsGui:GetRewardDescription(reward)
     end
     
     local item = reward.rewardItems
+    -- 如果配置中提供了奖励描述，优先显示该描述
+    if item.description then
+        return item.description
+    end
     local desc = ""
     
     if item.type == "物品" then
@@ -819,6 +819,63 @@ function OnlineRewardsGui:GetRewardDescription(reward)
     end
     
     return desc
+end
+
+--- 显示奖励描述面板
+---@param reward RewardEntry
+function OnlineRewardsGui:ShowRewardDescription(reward)
+    if not self.rewardDescription then return end
+    self.rewardDescription:SetVisible(true)
+    local textNode = self.rewardDescription.node["描述底图"]["描述"]
+    if textNode  then
+        local desc = self:GetRewardDescription(reward)
+        textNode.Title = desc or ""
+    end
+    local showui = self.rewardDescription.node["显示UI"]
+    if showui then
+        if reward and reward.rewardItems then
+            local icon = self:GetIconFromRewardItem(reward.rewardItems)
+            if icon then
+                showui.Icon = icon
+            end
+        end
+    end
+
+end
+
+--- 获取奖励项对应的显示图标，优先使用配置的显示UI
+---@param item RewardItem
+---@return string|nil iconAssetId
+function OnlineRewardsGui:GetIconFromRewardItem(item)
+    if not item then return nil end
+    if item.displayUI then
+        return item.displayUI
+    end
+    if item.type == "物品" then
+        local itemConfig = ConfigLoader.GetItem(item.itemName)
+        if itemConfig and itemConfig.icon then
+            return itemConfig.icon
+        end
+    elseif item.type == "宠物" then
+        local petConfig = ConfigLoader.GetPet(item.petConfig)
+        if petConfig and petConfig.avatarResource then
+            return petConfig.avatarResource
+        end
+    elseif item.type == "伙伴" then
+        local partnerConfig = ConfigLoader.GetPartner(item.partnerConfig)
+        if partnerConfig and partnerConfig.avatarResource then
+            return partnerConfig.avatarResource
+        end
+    elseif item.type == "翅膀" then
+        local getWing = ConfigLoader.GetWing
+        if getWing then
+            local wingConfig = getWing(item.wingConfig)
+            if wingConfig and wingConfig.icon then
+                return wingConfig.icon
+            end
+        end
+    end
+    return nil
 end
 
 -- =================================

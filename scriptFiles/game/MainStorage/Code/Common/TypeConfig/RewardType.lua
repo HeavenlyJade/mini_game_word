@@ -12,6 +12,8 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field petConfig string|nil 宠物配置名称（当type为"宠物"时）
 ---@field partnerConfig string|nil 伙伴配置名称（当type为"伙伴"时）
 ---@field wingConfig string|nil 翅膀配置名称（当type为"翅膀"时）
+---@field displayUI string|nil 显示UI（空字符串将被转换为nil）
+---@field description string|nil 奖励描述（空字符串将被转换为nil）
 
 ---@class RewardEntry
 ---@field index number 奖励索引
@@ -88,10 +90,21 @@ function RewardType:ParseRewardItem(itemData)
         return nil
     end
     
+    -- 将空字符串标准化为nil，避免下游逻辑误判
+    local function normalizeEmptyToNil(v)
+        if v == "" then
+            return nil
+        end
+        return v
+    end
+
     local rewardType = itemData["奖励类型"] or "物品"
     local reward = {
         type = rewardType,
         amount = itemData["数量"] or 1,
+        -- 直接在物品层收集显示UI与描述，并做空串->nil处理
+        displayUI = normalizeEmptyToNil(itemData["显示UI"]),
+        description = normalizeEmptyToNil(itemData["奖励描述"]),
     }
     
     -- 根据奖励类型设置具体内容

@@ -147,7 +147,7 @@ function PetType:CalculateCarryingEffectsByStarLevel(starLevel)
     local calculator = RewardManager.GetCalculator("宠物公式")
 
     if not calculator then
-        --gg.log("错误: 无法获取宠物公式计算器")
+        ----gg.log("错误: 无法获取宠物公式计算器")
         return calculatedEffects
     end
 
@@ -197,17 +197,17 @@ function PetType:GetSpecialBonusMultiplier(starLevel)
     
     -- 如果没有配置效果等级配置，返回nil
     if not self.effectLevelType then
-        gg.log(string.format("宠物%s没有配置效果等级配置", self.name))
+        --gg.log(string.format("宠物%s没有配置效果等级配置", self.name))
         return nil
     end
     
     -- 从效果等级配置获取对应星级的倍率
     local multiplier = self.effectLevelType:GetEffectValue(starLevel)
     if multiplier then
-        gg.log(string.format("宠物%s星级%d获取到倍率: %.2f", self.name, starLevel, multiplier))
+        --gg.log(string.format("宠物%s星级%d获取到倍率: %.2f", self.name, starLevel, multiplier))
         return multiplier
     else
-        gg.log(string.format("宠物%s星级%d在效果等级配置中未找到对应倍率", self.name, starLevel))
+        --gg.log(string.format("宠物%s星级%d在效果等级配置中未找到对应倍率", self.name, starLevel))
         return nil
     end
 end

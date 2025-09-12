@@ -84,17 +84,6 @@ function ClientMain.start_client()
     if game.RunService:IsPC() then
         game.MouseService:SetMode(1)
     end
-    local plugins = MainStorage.Code.plugins
-    if plugins then
-        for _, child in pairs(plugins.Children) do
-            if child and child.PluginMain then
-                local plugin = require(child.PluginMain)
-                if plugin.StartClient then
-                    plugin.StartClient()
-                end
-            end
-        end
-    end
     -- 导入并初始化赛道系统
     local RaceTrack = require(MainStorage.Code.Client.SceneNode.RaceTrack) ---@type RaceTrack
     RaceTrack.InitializeRaceTrack()

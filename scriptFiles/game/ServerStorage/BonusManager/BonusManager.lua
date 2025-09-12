@@ -80,14 +80,14 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
                             -- 从天赋变量系统获取
                             if playerAchievement and playerAchievement.talentVariableSystem then
                                 bonusValue = playerAchievement.talentVariableSystem:GetRawBonusValue(bonusVarName)
-                                ----gg.log(string.format("从天赋系统获取变量[%s]: %s", bonusVarName, tostring(bonusValue)))
+                                ------gg.log(string.format("从天赋系统获取变量[%s]: %s", bonusVarName, tostring(bonusValue)))
                             else
-                                ------gg.log(string.format("警告：玩家[%s]天赋系统不存在，无法获取[%s]", player.uin, bonusVarName))
+                                --------gg.log(string.format("警告：玩家[%s]天赋系统不存在，无法获取[%s]", player.uin, bonusVarName))
                             end
                         else
                             -- 其他所有变量从玩家变量系统获取
                             bonusValue = variableSystem:GetRawBonusValue(bonusVarName)
-                            ----gg.log(string.format("从玩家系统获取变量[%s]: %s", bonusVarName, tostring(bonusValue)))
+                            ------gg.log(string.format("从玩家系统获取变量[%s]: %s", bonusVarName, tostring(bonusValue)))
                         end
                     end
 
@@ -155,12 +155,12 @@ end
 ---@return table<string, any> 宠物加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPetItemBonuses(player)
     if not player or not player.uin then
-        --------gg.log("[BonusManager调试] GetPetItemBonuses: 玩家对象无效")
+        ----------gg.log("[BonusManager调试] GetPetItemBonuses: 玩家对象无效")
         return {}
     end
 
     local bonuses = PetMgr.GetActiveItemBonuses(player.uin)
-    --------gg.log("[BonusManager调试] GetPetItemBonuses: 玩家", player.uin, "宠物加成数据:", bonuses)
+    ----------gg.log("[BonusManager调试] GetPetItemBonuses: 玩家", player.uin, "宠物加成数据:", bonuses)
     return bonuses
 end
 
@@ -169,12 +169,12 @@ end
 ---@return table<string, any> 伙伴加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPartnerItemBonuses(player)
     if not player or not player.uin then
-        --------gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家对象无效")
+        ----------gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家对象无效")
         return {}
     end
 
     local bonuses = PartnerMgr.GetActiveItemBonuses(player.uin)
-    --------gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家", player.uin, "伙伴加成数据:", bonuses)
+    ----------gg.log("[BonusManager调试] GetPartnerItemBonuses: 玩家", player.uin, "伙伴加成数据:", bonuses)
     return bonuses
 end
 
@@ -186,7 +186,7 @@ function BonusManager.GetWingItemBonuses(player)
         return {}
     end
     local bonuses = WingMgr.GetActiveItemBonuses(player.uin)
-    --------gg.log("[BonusManager调试] GetWingItemBonuses: 玩家", player.uin, "翅膀加成数据:", bonuses)
+    ----------gg.log("[BonusManager调试] GetWingItemBonuses: 玩家", player.uin, "翅膀加成数据:", bonuses)
     return bonuses or {}
 end
 
@@ -321,7 +321,7 @@ function BonusManager.GetFriendItemBonuses(player)
 
     if count > 0 then
         local effects = friendAch:GetLevelEffectValue(1, { F_NUM = count }) or {}
-        gg.log("好友加成效果列表", effects)
+        --gg.log("好友加成效果列表", effects)
         for _, eff in ipairs(effects) do
             local effectType = eff["效果类型"]
             local fieldName = eff["效果字段名称"]
@@ -350,11 +350,11 @@ function BonusManager.GetFriendItemBonuses(player)
                 bonuses[targetItem].percentage = (bonuses[targetItem].percentage or 0) + percentValue
                 bonuses[targetItem].effectFieldName = fieldName
                 bonuses[targetItem].itemTarget = itemTarget
-                gg.log("添加好友加成", "targetItem:", targetItem, "percentage:", percentValue)
+                --gg.log("添加好友加成", "targetItem:", targetItem, "percentage:", percentValue)
             end
         end
     end
-    gg.log("好友加成",bonuses)
+    --gg.log("好友加成",bonuses)
     return bonuses
 end
 
@@ -394,7 +394,7 @@ function BonusManager.CalculatePlayerItemBonuses(player, targetItemName)
     -- 6. 获取好友加成
     local friendBonuses = BonusManager.GetFriendItemBonuses(player)
     BonusManager.MergeBonuses(totalBonuses, friendBonuses)
-    gg.log("玩家所有物品加成",totalBonuses)
+    --gg.log("玩家所有物品加成",totalBonuses)
     return totalBonuses
 end
 

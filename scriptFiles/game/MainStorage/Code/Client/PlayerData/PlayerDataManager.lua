@@ -30,10 +30,6 @@ function PlayerDataManager:SubscribeServerEvents()
         self:HandleQuestSync(data)
     end)
 
-    -- 订阅错误响应
-    ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_LOADED, function(data)
-        self:HandleDataLoadResponse(data)
-    end)
 end
 
 --- 初始化，注册事件监听
