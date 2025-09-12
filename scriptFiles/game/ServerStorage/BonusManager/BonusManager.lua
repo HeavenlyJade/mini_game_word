@@ -150,7 +150,7 @@ function BonusManager.CalculatePlayerVariableBonuses(player, baseValue, variable
 end
 -- ============================= 宠物/伙伴加成计算 =============================
 
---- 获取宠物物品加成
+--- 获取宠物加成
 ---@param player MPlayer 玩家实例
 ---@return table<string, any> 宠物加成数据（可能包含 fixed, percentage, targetVariable, itemTarget 等字段）
 function BonusManager.GetPetItemBonuses(player)
