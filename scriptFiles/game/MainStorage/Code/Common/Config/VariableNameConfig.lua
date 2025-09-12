@@ -1,4 +1,4 @@
--- VariableNameConfig.lua
+﻿-- VariableNameConfig.lua
 -- Generated from VariableNames.json. Any custom code will be overwritten.
 
 local VariableNameConfig = {Data = {}}
@@ -25,6 +25,10 @@ VariableNameConfig.VariableNames = {
     '特权_固定值_超级抽蛋运气',
     '天赋_百分比_训练加成',
     '天赋_百分比_奖杯加成',
+    '数据_固定值_宠物背包次数',
+    '数据_固定值_伙伴背包次数',
+    '数据_固定值_翅膀背包次数',
+    '数据_固定值_广告播放次数',
 }
 
 VariableNameConfig.StatNames = {
