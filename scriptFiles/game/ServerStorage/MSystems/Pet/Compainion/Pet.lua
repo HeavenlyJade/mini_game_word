@@ -491,7 +491,7 @@ function Pet:CalculateStrongestBonusValue(companionInstance, petConfig)
     local strongestBonusValue = strongestPet.totalBonus * bonusMultiplier
     
     --gg.log(string.format("[最强加成-计算] strongest.totalBonus=%.4f bonusMultiplier=%.4f 结果=%.4f", 
-        strongestPet.totalBonus, bonusMultiplier, strongestBonusValue))
+        -- strongestPet.totalBonus, bonusMultiplier, strongestBonusValue))
     
     return strongestBonusValue
 end
@@ -545,7 +545,7 @@ function Pet:GetAllPetEffectRankingWithStrongestBonus()
                 isStrongestBonus = isStrongestBonus
             })
             --gg.log(string.format("[最强加成-排名] 槽位=%d 宠物=%s 星级=%d 类型=%s 计算值=%.4f", 
-                slotIndex, petName, companionInstance:GetStarLevel(), isStrongestBonus and "最强加成" or "普通", effectValue))
+                -- slotIndex, petName, companionInstance:GetStarLevel(), isStrongestBonus and "最强加成" or "普通", effectValue))
         end
     end
     
@@ -558,8 +558,8 @@ function Pet:GetAllPetEffectRankingWithStrongestBonus()
     --gg.log("[最强加成-排名] 完整宠物效果排名:")
     for rank, petData in ipairs(ranking) do
         --gg.log(string.format("[最强加成-排名] 第%d名: %s (槽位%d, %d星, 效果值%.4f, %s)", 
-            rank, petData.petName, petData.slotIndex, petData.starLevel, petData.effectValue,
-            petData.isStrongestBonus and "最强加成" or "普通"))
+            -- rank, petData.petName, petData.slotIndex, petData.starLevel, petData.effectValue,
+            -- petData.isStrongestBonus and "最强加成" or "普通"))
     end
     
     return ranking
@@ -659,9 +659,9 @@ function Pet:CalculateStrongestBonusForCompanion(companionInstance, petConfig)
         }
         
         --gg.log(string.format("缩放加成: %s -> 固定: %.2f * %.2f = %.2f, 百分比: %.2f * %.2f = %.2f", 
-            targetName, 
-            bonusData.fixed or 0, bonusMultiplier, scaledBonuses[targetName].fixed,
-            bonusData.percentage or 0, bonusMultiplier, scaledBonuses[targetName].percentage))
+            -- targetName, 
+            -- bonusData.fixed or 0, bonusMultiplier, scaledBonuses[targetName].fixed,
+            -- bonusData.percentage or 0, bonusMultiplier, scaledBonuses[targetName].percentage))
     end
     
     --gg.log(string.format("最强加成宠物%s计算完成，共%d个加成效果", petConfig.name, self:GetTableSize(scaledBonuses)))
@@ -716,14 +716,14 @@ function Pet:AutoEquipBestPet(equipSlotId, excludeEquipped)
                 local success, errorMsg = self:EquipCompanion(slotIndex, equipSlotId)
                 if success then
                     --gg.log(string.format("[最强加成-一键装备] 自动装备成功: %s (第%d名) -> %s", 
-                        petData.petName, rank, equipSlotId))
+                        -- petData.petName, rank, equipSlotId))
                     return true, nil, slotIndex
                 end
                 --gg.log(string.format("[最强加成-一键装备] 装备失败: %s (第%d名) -> %s, 错误=%s", 
-                    petData.petName, rank, equipSlotId, tostring(errorMsg)))
+                    -- petData.petName, rank, equipSlotId, tostring(errorMsg)))
             else
                 --gg.log(string.format("[最强加成-一键装备] 宠物%s排名第%d，超过装备栏%s要求的前%d", 
-                    petData.petName, rank, equipSlotId, requiredRanking))
+                    -- petData.petName, rank, equipSlotId, requiredRanking))
                 break -- 后面的排名更低，不用继续检查
             end
         end
