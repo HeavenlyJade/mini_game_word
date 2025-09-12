@@ -23,7 +23,7 @@ function Pet:OnInit(uin, playerPetData)
     BaseCompanion.OnInit(self, uin, "宠物", equipSlotIds)
 
     self:LoadFromPetData(playerPetData)
-    --gg.log("Pet管理器创建", uin, "宠物数量", self:GetCompanionCount())
+    ----gg.log("Pet管理器创建", uin, "宠物数量", self:GetCompanionCount())
 end
 
 -- =================================
@@ -99,7 +99,7 @@ function Pet:LoadFromPetData(playerPetData)
         end
     end
 
-    --gg.log("从宠物数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "宠物数", self:GetCompanionCount())
+    ----gg.log("从宠物数据加载", self.uin, "激活槽位数量", #(self.activeCompanionSlots or {}), "宠物数", self:GetCompanionCount())
 end
 
 ---获取宠物列表信息（兼容原接口）
@@ -164,7 +164,7 @@ end
 
 ---【废弃】旧的单一激活接口
 function Pet:SetActivePet(slotIndex)
-    --gg.log("警告: SetActivePet 是一个废弃的接口，请使用 EquipPet 或 UnequipPet。")
+    ----gg.log("警告: SetActivePet 是一个废弃的接口，请使用 EquipPet 或 UnequipPet。")
     return false, "接口已废弃"
 end
 
@@ -288,7 +288,7 @@ function Pet:CalculateAllPetBonusesAndGetStrongest()
     local petBonusList = {}
     local ConfigLoader = require(game:GetService('MainStorage').Code.Common.ConfigLoader)
     
-    gg.log("开始计算背包所有宠物的加成数据...")
+    --gg.log("开始计算背包所有宠物的加成数据...")
     
     -- 遍历所有宠物
     for slotIndex, companionInstance in pairs(self.companionInstances) do
@@ -302,22 +302,20 @@ function Pet:CalculateAllPetBonusesAndGetStrongest()
             if petConfig then
                 -- 排除最强加成类型的宠物
                 if petConfig.specialBonus == "最强加成" then
-                    gg.log(string.format("跳过最强加成宠物: %s", petName))
+                    --gg.log(string.format("跳过最强加成宠物: %s", petName))
                 else
-                    -- 计算该宠物的详细加成
-                    local detailedBonuses = self:CalculatePetDetailedBonuses(petConfig, starLevel)
-                    local totalBonus = self:SumAllBonuses(detailedBonuses)
+                    -- 【修改】使用与排名一致的计算方法
+                    local totalBonus = companionInstance:CalculateTotalEffectValue()
                     
                     table.insert(petBonusList, {
                         petName = petName,
                         starLevel = starLevel,
                         slotIndex = slotIndex,
-                        totalBonus = totalBonus,
-                        detailedBonuses = detailedBonuses,
+                        totalBonus = totalBonus,  -- 现在会是5600，不是56
                         companionInstance = companionInstance
                     })
                     
-                    gg.log(string.format("宠物: %s (%d星) -> 总加成: %.2f", petName, starLevel, totalBonus))
+                    --gg.log(string.format("宠物: %s (%d星) -> 总加成: %.2f", petName, starLevel, totalBonus))
                 end
             end
         end
@@ -331,10 +329,10 @@ function Pet:CalculateAllPetBonusesAndGetStrongest()
     -- 返回最强的宠物
     if #petBonusList > 0 then
         local strongest = petBonusList[1]
-        gg.log(string.format("最强宠物: %s (%d星, 总加成: %.2f)", strongest.petName, strongest.starLevel, strongest.totalBonus))
+        --gg.log(string.format("最强宠物: %s (%d星, 总加成: %.2f)", strongest.petName, strongest.starLevel, strongest.totalBonus))
         return strongest
     else
-        gg.log("背包中没有有效的宠物")
+        --gg.log("背包中没有有效的宠物")
         return nil
     end
 end
@@ -350,7 +348,7 @@ function Pet:CalculatePetDetailedBonuses(petConfig, starLevel)
     local RewardManager = require(game.MainStorage.Code.GameReward.RewardManager)
     local calculator = RewardManager.GetCalculator("宠物公式")
     if not calculator then
-        gg.log("错误: 无法获取宠物公式计算器")
+        --gg.log("错误: 无法获取宠物公式计算器")
         return detailedBonuses
     end
     
@@ -418,24 +416,24 @@ function Pet:ValidateStrongestBonusPetEquip(companionSlotId, equipSlotId)
     end
     
     local starLevel = companionInstance:GetStarLevel()
-    gg.log(string.format("[最强加成-验证] 宠物=%s 槽位=%d 目标装备栏=%s 星级=%d", petName, companionSlotId, equipSlotId, starLevel))
-    -- gg.log(string.format("[最强加成-验证] specialBonus=%s specialEffectConfig=%s", tostring(petConfig and petConfig.specialBonus), tostring(petConfig and petConfig.specialEffectConfig)))
+    --gg.log(string.format("[最强加成-验证] 宠物=%s 槽位=%d 目标装备栏=%s 星级=%d", petName, companionSlotId, equipSlotId, starLevel))
+    -- --gg.log(string.format("[最强加成-验证] specialBonus=%s specialEffectConfig=%s", tostring(petConfig and petConfig.specialBonus), tostring(petConfig and petConfig.specialEffectConfig)))
     
     -- 计算该宠物作为最强加成后的效果值
     local strongestBonusValue = self:CalculateStrongestBonusValue(companionInstance, petConfig)
     if not strongestBonusValue then
-        gg.log("[最强加成-验证] 无法计算最强加成效果 strongestBonusValue=nil")
+        --gg.log("[最强加成-验证] 无法计算最强加成效果 strongestBonusValue=nil")
         return false, "无法计算最强加成效果", nil
     end
-    gg.log(string.format("[最强加成-验证] 计算得到的最强加成效果值=%.4f", strongestBonusValue))
+    --gg.log(string.format("[最强加成-验证] 计算得到的最强加成效果值=%.4f", strongestBonusValue))
     
     -- 获取当前装备栏位的排名要求
     -- local requiredRanking = self:GetEquipSlotRankingRequirement(equipSlotId)
     -- if not requiredRanking then
-    --     gg.log("[最强加成-验证] 该装备栏无排名要求，直接允许装备")
+    --     --gg.log("[最强加成-验证] 该装备栏无排名要求，直接允许装备")
     --     return true, nil, nil -- 没有排名要求，直接通过
     -- end
-    -- gg.log(string.format("[最强加成-验证] 装备栏位%s 的排名要求=前%d名", equipSlotId, requiredRanking))
+    -- --gg.log(string.format("[最强加成-验证] 装备栏位%s 的排名要求=前%d名", equipSlotId, requiredRanking))
     
     -- 获取所有宠物的排名（包括计算后的最强加成宠物）
     local allPetRanking = self:GetAllPetEffectRankingWithStrongestBonus()
@@ -449,6 +447,15 @@ function Pet:ValidateStrongestBonusPetEquip(companionSlotId, equipSlotId)
         end
     end
     
+    if not petRanking then
+        --gg.log("[最强加成-验证] 宠物未在排名中找到")
+        return false, "宠物未在排名中找到", nil
+    end
+    
+    --gg.log(string.format("[最强加成-验证] 宠物排名=%d", petRanking))
+    
+    -- 暂时允许装备（后续可以添加排名验证逻辑）
+    return true, nil, petRanking
 end
 
 --- 【新增】计算最强加成宠物的效果值
@@ -461,29 +468,29 @@ function Pet:CalculateStrongestBonusValue(companionInstance, petConfig)
     -- 1. 获取背包最强宠物
     local strongestPet = self:CalculateAllPetBonusesAndGetStrongest()
     if not strongestPet then
-        gg.log("[最强加成-计算] 没有找到背包最强宠物")
+        --gg.log("[最强加成-计算] 没有找到背包最强宠物")
         return nil
     end
     
     -- 2. 获取倍率
     local bonusMultiplier = petConfig:GetSpecialBonusMultiplier(starLevel)
-    gg.log(string.format("[最强加成-计算] 宠物=%s 星级=%d specialEffectConfig=%s", petConfig.name or "", starLevel, tostring(petConfig.specialEffectConfig)))
+    --gg.log(string.format("[最强加成-计算] 宠物=%s 星级=%d specialEffectConfig=%s", petConfig.name or "", starLevel, tostring(petConfig.specialEffectConfig)))
     if petConfig.effectLevelType then
         local rawValue = petConfig.effectLevelType:GetEffectValue(starLevel)
         local rawDesc = petConfig.effectLevelType.GetEffectDesc and petConfig.effectLevelType:GetEffectDesc(starLevel) or nil
-        gg.log(string.format("[最强加成-计算] 从效果等级配置获取: 效果值=%.4f 描述=%s", tonumber(rawValue or 0), tostring(rawDesc)))
+        --gg.log(string.format("[最强加成-计算] 从效果等级配置获取: 效果值=%.4f 描述=%s", tonumber(rawValue or 0), tostring(rawDesc)))
     else
-        gg.log("[最强加成-计算] effectLevelType 未加载，无法从配置读取倍率")
+        --gg.log("[最强加成-计算] effectLevelType 未加载，无法从配置读取倍率")
     end
     if not bonusMultiplier then
-        gg.log(string.format("[最强加成-计算] 无法获取星级%d的倍率 (specialBonus=%s)", starLevel, tostring(petConfig.specialBonus)))
+        --gg.log(string.format("[最强加成-计算] 无法获取星级%d的倍率 (specialBonus=%s)", starLevel, tostring(petConfig.specialBonus)))
         return nil
     end
     
     -- 3. 计算最强加成后的效果值
     local strongestBonusValue = strongestPet.totalBonus * bonusMultiplier
     
-    gg.log(string.format("[最强加成-计算] strongest.totalBonus=%.4f bonusMultiplier=%.4f 结果=%.4f", 
+    --gg.log(string.format("[最强加成-计算] strongest.totalBonus=%.4f bonusMultiplier=%.4f 结果=%.4f", 
         strongestPet.totalBonus, bonusMultiplier, strongestBonusValue))
     
     return strongestBonusValue
@@ -512,7 +519,7 @@ function Pet:GetAllPetEffectRankingWithStrongestBonus()
     local ranking = {}
     local ConfigLoader = require(game:GetService('MainStorage').Code.Common.ConfigLoader)
     
-    gg.log("[最强加成-排名] 开始计算包含最强加成的完整排名...")
+    --gg.log("[最强加成-排名] 开始计算包含最强加成的完整排名...")
     -- 遍历所有宠物
     for slotIndex, companionInstance in pairs(self.companionInstances) do
         if companionInstance and companionInstance.companionData then
@@ -537,7 +544,7 @@ function Pet:GetAllPetEffectRankingWithStrongestBonus()
                 starLevel = companionInstance:GetStarLevel(),
                 isStrongestBonus = isStrongestBonus
             })
-            gg.log(string.format("[最强加成-排名] 槽位=%d 宠物=%s 星级=%d 类型=%s 计算值=%.4f", 
+            --gg.log(string.format("[最强加成-排名] 槽位=%d 宠物=%s 星级=%d 类型=%s 计算值=%.4f", 
                 slotIndex, petName, companionInstance:GetStarLevel(), isStrongestBonus and "最强加成" or "普通", effectValue))
         end
     end
@@ -548,9 +555,9 @@ function Pet:GetAllPetEffectRankingWithStrongestBonus()
     end)
     
     -- 打印排名日志
-    gg.log("[最强加成-排名] 完整宠物效果排名:")
+    --gg.log("[最强加成-排名] 完整宠物效果排名:")
     for rank, petData in ipairs(ranking) do
-        gg.log(string.format("[最强加成-排名] 第%d名: %s (槽位%d, %d星, 效果值%.4f, %s)", 
+        --gg.log(string.format("[最强加成-排名] 第%d名: %s (槽位%d, %d星, 效果值%.4f, %s)", 
             rank, petData.petName, petData.slotIndex, petData.starLevel, petData.effectValue,
             petData.isStrongestBonus and "最强加成" or "普通"))
     end
@@ -580,7 +587,7 @@ function Pet:GetActiveItemBonuses()
     local BonusManager = require(game:GetService('ServerStorage').BonusManager.BonusManager)
 
     local activeCompanions = self:GetActiveCompanions()
-    gg.log(string.format("[Pet调试] GetActiveItemBonuses: 找到 %d 个激活的宠物", #activeCompanions))
+    --gg.log(string.format("[Pet调试] GetActiveItemBonuses: 找到 %d 个激活的宠物", #activeCompanions))
     
     for _, companionInstance in ipairs(activeCompanions) do
         local petName = companionInstance:GetConfigName()
@@ -590,7 +597,7 @@ function Pet:GetActiveItemBonuses()
         
         -- 【核心逻辑】检查是否为最强加成宠物
         if petConfig and petConfig.specialBonus == "最强加成" then
-            gg.log(string.format("[Pet调试] 处理最强加成宠物: %s", petName))
+            --gg.log(string.format("[Pet调试] 处理最强加成宠物: %s", petName))
             
             -- 为最强加成宠物计算特殊加成
             singleBonus = self:CalculateStrongestBonusForCompanion(companionInstance, petConfig)
@@ -599,13 +606,13 @@ function Pet:GetActiveItemBonuses()
             singleBonus = companionInstance:GetItemBonuses()
         end
         
-        gg.log(string.format("[Pet调试] %s 单个加成数据:", petName), singleBonus)
+        --gg.log(string.format("[Pet调试] %s 单个加成数据:", petName), singleBonus)
         
         -- 合并加成到总加成中
         BonusManager.MergeBonuses(totalBonuses, singleBonus)
     end
 
-    gg.log(string.format("[Pet调试] GetActiveItemBonuses: 最终合并的宠物加成数据:"), totalBonuses)
+    --gg.log(string.format("[Pet调试] GetActiveItemBonuses: 最终合并的宠物加成数据:"), totalBonuses)
     return totalBonuses
 end
 
@@ -616,28 +623,28 @@ end
 function Pet:CalculateStrongestBonusForCompanion(companionInstance, petConfig)
     local starLevel = companionInstance:GetStarLevel()
     
-    gg.log(string.format("开始为最强加成宠物%s(%d星)计算效果", petConfig.name, starLevel))
+    --gg.log(string.format("开始为最强加成宠物%s(%d星)计算效果", petConfig.name, starLevel))
     
     -- 1. 获取背包最强宠物
     local strongestPet = self:CalculateAllPetBonusesAndGetStrongest()
     if not strongestPet then
-        gg.log("没有找到背包最强宠物")
+        --gg.log("没有找到背包最强宠物")
         return {}
     end
     
     -- 2. 获取当前宠物的倍率
     local bonusMultiplier = petConfig:GetSpecialBonusMultiplier(starLevel)
     if not bonusMultiplier then
-        gg.log(string.format("无法获取星级%d的倍率", starLevel))
+        --gg.log(string.format("无法获取星级%d的倍率", starLevel))
         return {}
     end
     
-    gg.log(string.format("使用最强宠物: %s (%d星), 倍率: %.2f", strongestPet.petName, strongestPet.starLevel, bonusMultiplier))
+    --gg.log(string.format("使用最强宠物: %s (%d星), 倍率: %.2f", strongestPet.petName, strongestPet.starLevel, bonusMultiplier))
     
     -- 3. 【核心】直接获取最强宠物的加成数据
     local strongestPetBonuses = strongestPet.companionInstance:GetItemBonuses()
     if not strongestPetBonuses or next(strongestPetBonuses) == nil then
-        gg.log(string.format("最强宠物%s没有任何加成", strongestPet.petName))
+        --gg.log(string.format("最强宠物%s没有任何加成", strongestPet.petName))
         return {}
     end
     
@@ -651,13 +658,13 @@ function Pet:CalculateStrongestBonusForCompanion(companionInstance, petConfig)
             targetVariable = bonusData.targetVariable
         }
         
-        gg.log(string.format("缩放加成: %s -> 固定: %.2f * %.2f = %.2f, 百分比: %.2f * %.2f = %.2f", 
+        --gg.log(string.format("缩放加成: %s -> 固定: %.2f * %.2f = %.2f, 百分比: %.2f * %.2f = %.2f", 
             targetName, 
             bonusData.fixed or 0, bonusMultiplier, scaledBonuses[targetName].fixed,
             bonusData.percentage or 0, bonusMultiplier, scaledBonuses[targetName].percentage))
     end
     
-    gg.log(string.format("最强加成宠物%s计算完成，共%d个加成效果", petConfig.name, self:GetTableSize(scaledBonuses)))
+    --gg.log(string.format("最强加成宠物%s计算完成，共%d个加成效果", petConfig.name, self:GetTableSize(scaledBonuses)))
     
     return scaledBonuses
 end
@@ -686,11 +693,11 @@ function Pet:AutoEquipBestPet(equipSlotId, excludeEquipped)
         return false, "无效的装备栏ID: " .. tostring(equipSlotId), nil
     end
     
-    gg.log(string.format("[最强加成-一键装备] 开始执行，equipSlotId=%s excludeEquipped=%s", tostring(equipSlotId), tostring(excludeEquipped)))
+    --gg.log(string.format("[最强加成-一键装备] 开始执行，equipSlotId=%s excludeEquipped=%s", tostring(equipSlotId), tostring(excludeEquipped)))
     -- 获取包含最强加成的完整排名
     local ranking = self:GetAllPetEffectRankingWithStrongestBonus()
     local requiredRanking = self:GetEquipSlotRankingRequirement(equipSlotId)
-    gg.log(string.format("[最强加成-一键装备] 装备栏位%s 的排名要求=%s", tostring(equipSlotId), tostring(requiredRanking)))
+    --gg.log(string.format("[最强加成-一键装备] 装备栏位%s 的排名要求=%s", tostring(equipSlotId), tostring(requiredRanking)))
     
     -- 查找最适合的宠物
     for rank, petData in ipairs(ranking) do
@@ -699,7 +706,7 @@ function Pet:AutoEquipBestPet(equipSlotId, excludeEquipped)
         -- 检查是否应该跳过
         local shouldSkip = (excludeEquipped and self:IsCompanionEquipped(slotIndex))
         if shouldSkip then
-            gg.log(string.format("[最强加成-一键装备] 跳过已装备的宠物: %s (槽位%d, 排名%d)", petData.petName, slotIndex, rank))
+            --gg.log(string.format("[最强加成-一键装备] 跳过已装备的宠物: %s (槽位%d, 排名%d)", petData.petName, slotIndex, rank))
         end
         
         if not shouldSkip then
@@ -708,21 +715,21 @@ function Pet:AutoEquipBestPet(equipSlotId, excludeEquipped)
                 -- 尝试装备
                 local success, errorMsg = self:EquipCompanion(slotIndex, equipSlotId)
                 if success then
-                    gg.log(string.format("[最强加成-一键装备] 自动装备成功: %s (第%d名) -> %s", 
+                    --gg.log(string.format("[最强加成-一键装备] 自动装备成功: %s (第%d名) -> %s", 
                         petData.petName, rank, equipSlotId))
                     return true, nil, slotIndex
                 end
-                gg.log(string.format("[最强加成-一键装备] 装备失败: %s (第%d名) -> %s, 错误=%s", 
+                --gg.log(string.format("[最强加成-一键装备] 装备失败: %s (第%d名) -> %s, 错误=%s", 
                     petData.petName, rank, equipSlotId, tostring(errorMsg)))
             else
-                gg.log(string.format("[最强加成-一键装备] 宠物%s排名第%d，超过装备栏%s要求的前%d", 
+                --gg.log(string.format("[最强加成-一键装备] 宠物%s排名第%d，超过装备栏%s要求的前%d", 
                     petData.petName, rank, equipSlotId, requiredRanking))
                 break -- 后面的排名更低，不用继续检查
             end
         end
     end
     
-    gg.log("[最强加成-一键装备] 未找到符合排名要求的宠物，流程结束")
+    --gg.log("[最强加成-一键装备] 未找到符合排名要求的宠物，流程结束")
     return false, "没有找到符合排名要求的宠物", nil
 end
 
@@ -782,7 +789,7 @@ function Pet:SetUnlockedEquipSlots(count)
     if count and count > 0 then
         local maxEquipped = #self.equipSlotIds
         self.unlockedEquipSlots = math.min(count, maxEquipped)
-        --gg.log("玩家", self.uin, "可携带宠物栏位数量已设置为", self.unlockedEquipSlots)
+        ----gg.log("玩家", self.uin, "可携带宠物栏位数量已设置为", self.unlockedEquipSlots)
     end
 end
 
@@ -791,7 +798,7 @@ end
 function Pet:SetPetBagCapacity(capacity)
     if capacity and capacity > 0 then
         self.maxSlots = capacity
-        --gg.log("玩家", self.uin, "宠物背包容量已设置为", self.maxSlots)
+        ----gg.log("玩家", self.uin, "宠物背包容量已设置为", self.maxSlots)
     end
 end
 
@@ -800,7 +807,7 @@ end
 function Pet:AddUnlockedEquipSlots(count)
     if count and count > 0 then
         self.unlockedEquipSlots = (self.unlockedEquipSlots or 0) + count
-        --gg.log("玩家", self.uin, "宠物可携带栏位增加", count, "个，当前总数:", self.unlockedEquipSlots)
+        ----gg.log("玩家", self.uin, "宠物可携带栏位增加", count, "个，当前总数:", self.unlockedEquipSlots)
     end
 end
 
@@ -814,7 +821,7 @@ end
 function Pet:ReduceUnlockedEquipSlots(count)
     if count and count > 0 then
         self.unlockedEquipSlots = math.max(1, (self.unlockedEquipSlots or 1) - count)
-        --gg.log("玩家", self.uin, "宠物可携带栏位减少", count, "个，当前总数:", self.unlockedEquipSlots)
+        ----gg.log("玩家", self.uin, "宠物可携带栏位减少", count, "个，当前总数:", self.unlockedEquipSlots)
         return true
     end
     return false
@@ -826,7 +833,7 @@ end
 function Pet:AddPetBagCapacity(capacity)
     if capacity and capacity > 0 then
         self.maxSlots = (self.maxSlots or 50) + capacity
-        --gg.log("玩家", self.uin, "宠物背包容量增加", capacity, "个，当前总数:", self.maxSlots)
+        ----gg.log("玩家", self.uin, "宠物背包容量增加", capacity, "个，当前总数:", self.maxSlots)
         return true
     end
     return false
@@ -840,10 +847,10 @@ function Pet:ReducePetBagCapacity(capacity)
         local newCapacity = math.max(1, (self.maxSlots or 50) - capacity)
         if newCapacity >= self:GetPetCount() then
             self.maxSlots = newCapacity
-            --gg.log("玩家", self.uin, "宠物背包容量减少", capacity, "个，当前总数:", self.maxSlots)
+            ----gg.log("玩家", self.uin, "宠物背包容量减少", capacity, "个，当前总数:", self.maxSlots)
             return true
         else
-            --gg.log("玩家", self.uin, "宠物背包容量减少失败，当前宠物数量超过新容量")
+            ----gg.log("玩家", self.uin, "宠物背包容量减少失败，当前宠物数量超过新容量")
             return false
         end
     end
@@ -875,7 +882,7 @@ function Pet:AutoEquipAllBestPets(excludeEquipped)
         local equipSlotId = self.equipSlotIds[i]
         local requiredRanking = self:GetEquipSlotRankingRequirement(equipSlotId)
 
-        gg.log(string.format("[最强加成-一键装备-多栏] 处理栏位=%s 要求=前%s 名", tostring(equipSlotId), tostring(requiredRanking or "无")))
+        --gg.log(string.format("[最强加成-一键装备-多栏] 处理栏位=%s 要求=前%s 名", tostring(equipSlotId), tostring(requiredRanking or "无")))
 
         local equipped = false
         local errorMsg = "没有找到符合排名要求的宠物"
@@ -888,25 +895,25 @@ function Pet:AutoEquipAllBestPets(excludeEquipped)
             local passRanking = (not requiredRanking) or (rank <= requiredRanking)
 
             if skipByEquipped then
-                gg.log(string.format("[最强加成-一键装备-多栏] 跳过已装备: %s 槽位=%d 排名=%d", petData.petName, slotIndex, rank))
+                --gg.log(string.format("[最强加成-一键装备-多栏] 跳过已装备: %s 槽位=%d 排名=%d", petData.petName, slotIndex, rank))
             end
             if skipByUsed then
-                gg.log(string.format("[最强加成-一键装备-多栏] 跳过已使用: %s 槽位=%d 排名=%d", petData.petName, slotIndex, rank))
+                --gg.log(string.format("[最强加成-一键装备-多栏] 跳过已使用: %s 槽位=%d 排名=%d", petData.petName, slotIndex, rank))
             end
             if not passRanking then
-                gg.log(string.format("[最强加成-一键装备-多栏] 排名不满足: %s 排名=%d > 要求前%d", petData.petName, rank, requiredRanking))
+                --gg.log(string.format("[最强加成-一键装备-多栏] 排名不满足: %s 排名=%d > 要求前%d", petData.petName, rank, requiredRanking))
             end
 
             if (not skipByEquipped) and (not skipByUsed) and passRanking then
                 local success, err = self:EquipCompanion(slotIndex, equipSlotId)
                 if success then
-                    gg.log(string.format("[最强加成-一键装备-多栏] 装备成功: %s 槽位=%d 排名=%d -> %s", petData.petName, slotIndex, rank, equipSlotId))
+                    --gg.log(string.format("[最强加成-一键装备-多栏] 装备成功: %s 槽位=%d 排名=%d -> %s", petData.petName, slotIndex, rank, equipSlotId))
                     results[equipSlotId] = { success = true, slotIndex = slotIndex, errorMsg = nil }
                     usedSlots[slotIndex] = true
                     equipped = true
                     break
                 else
-                    gg.log(string.format("[最强加成-一键装备-多栏] 装备失败: %s 槽位=%d 排名=%d -> %s 错误=%s", petData.petName, slotIndex, rank, equipSlotId, tostring(err)))
+                    --gg.log(string.format("[最强加成-一键装备-多栏] 装备失败: %s 槽位=%d 排名=%d -> %s 错误=%s", petData.petName, slotIndex, rank, equipSlotId, tostring(err)))
                     errorMsg = err or errorMsg
                 end
             end
