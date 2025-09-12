@@ -185,7 +185,7 @@ function OnlineRewardsGui:SetupRewardSlot(slotNode, reward, index)
     local timeNode = backgroundNode:FindFirstChild("时间节点")
     if timeNode and reward.timeNode then
         local timedata =  self:FormatTime(reward.timeNode)
-        gg.log("设置奖励时间节点:", timedata)
+        -- gg.log("设置奖励时间节点:", timedata)
         timeNode.Title = timedata
     elseif timeNode then
         timeNode.Title = "00:00"
@@ -496,7 +496,6 @@ function OnlineRewardsGui:OnRewardDataResponse(data)
     end
     
     ----gg.log("=== 收到奖励数据响应 ===")
-    gg.log("响应数据:", data)
     
     self.rewardData = data.data
     ----gg.log("已设置 rewardData:", self.rewardData)
