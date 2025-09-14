@@ -45,6 +45,13 @@ function _MPlayer:OnInit(info_)
     self.auto_attack = 0 -- 自动攻击技能id
     self.auto_attack_tick = 10 -- 攻击间隔
     self.auto_wait_tick = 0 -- 等待tick
+    self.lastLoginDate = info_.lastLoginDate or ""           -- 最后登录日期 (YYYY-MM-DD)
+    self.consecutiveDays = info_.consecutiveDays or 0        -- 连续登录天数
+    self.totalLoginDays = info_.totalLoginDays or 0          -- 累计登录天数
+    self.firstLoginDate = info_.firstLoginDate or ""         -- 首次登录日期    
+    -- 【新增】广告观看次数
+    self.adWatchCount = info_.adWatchCount or 0              -- 看广告次数
+
 
     -- 网络状态（使用枚举数值，若未定义则回退0）
     self.player_net_stat  = tonumber(common_const.PLAYER_NET_STAT and common_const.PLAYER_NET_STAT.INITING) or 0
@@ -459,6 +466,70 @@ function _MPlayer:GetCurrentIdleSpot()
 end
 
 
+--- 检查并更新每日登录状态
+---@return boolean, number 是否今日首次登录、连续登录天数
+function _MPlayer:CheckDailyLogin()
+    local today = os.date("%Y-%m-%d")
+    local yesterday = os.date("%Y-%m-%d", os.time() - 24 * 60 * 60)
+    
+    -- 检查是否今日首次登录
+    local isFirstLoginToday = (self.lastLoginDate ~= today)
+    
+    if isFirstLoginToday then
+        -- 更新连续登录天数
+        if self.lastLoginDate == yesterday then
+            self.consecutiveDays = self.consecutiveDays + 1
+        else
+            self.consecutiveDays = 1  -- 中断后重新开始
+        end
+        
+        -- 更新累计登录天数
+        self.totalLoginDays = self.totalLoginDays + 1
+        
+        -- 设置首次登录日期
+        if self.firstLoginDate == "" then
+            self.firstLoginDate = today
+        end
+        
+        -- 更新最后登录日期
+        self.lastLoginDate = today
+        
+        gg.log("玩家今日首次登录", self.name, "连续", self.consecutiveDays, "天，累计", self.totalLoginDays, "天")
+        
+        return true, self.consecutiveDays
+    end
+    
+    return false, self.consecutiveDays
+end
+
+--- 增加广告观看次数
+---@param count number 增加的次数，默认为1
+function _MPlayer:AddAdWatchCount(count)
+    count = count or 1
+    self.adWatchCount = self.adWatchCount + count
+    gg.log("玩家广告观看次数增加", self.name, "增加", count, "总计", self.adWatchCount)
+end
+
+--- 获取广告观看次数
+---@return number 广告观看次数
+function _MPlayer:GetAdWatchCount()
+    return self.adWatchCount
+end
+
+--- 获取登录统计信息
+---@return table 登录统计数据
+function _MPlayer:GetLoginStats()
+    local today = os.date("%Y-%m-%d")
+    
+    return {
+        consecutiveDays = self.consecutiveDays,
+        totalLoginDays = self.totalLoginDays,
+        lastLoginDate = self.lastLoginDate,
+        firstLoginDate = self.firstLoginDate,
+        isTodayLogin = (self.lastLoginDate == today),
+        adWatchCount = self.adWatchCount
+    }
+end
 
 
 return _MPlayer

@@ -116,6 +116,12 @@ function MServerInitPlayer.player_enter_game(player)
     end
     --gg.log('cloud_player_data_', cloud_player_data_)
     gg.log('isNewPlayer', cloud_player_data_)
+    local dailyLoginData = cloud_player_data_.dailyLogin or {}
+    local lastLoginDate = dailyLoginData.lastLoginDate or ""
+    local consecutiveDays = dailyLoginData.consecutiveDays or 0
+    local totalLoginDays = dailyLoginData.totalLoginDays or 0
+    local firstLoginDate = dailyLoginData.firstLoginDate or ""
+    local adWatchCount = cloud_player_data_.adWatchCount or 0
     -- 玩家信息初始化（MPlayer会自动调用initPlayerData初始化背包和邮件）
     ---@type MPlayer
     local player_ = MPlayer.New({
@@ -125,7 +131,12 @@ function MServerInitPlayer.player_enter_game(player)
         npc_type = common_const.NPC_TYPE.PLAYER,
         level = cloud_player_data_.level,
         exp = cloud_player_data_.exp,
-        variables = cloud_player_data_.vars or {}
+        variables = cloud_player_data_.vars or {},
+        lastLoginDate = lastLoginDate,
+        consecutiveDays = consecutiveDays,
+        totalLoginDays = totalLoginDays,
+        firstLoginDate = firstLoginDate,
+        adWatchCount = adWatchCount
     })
 
     -- 读取任务数据
@@ -202,6 +213,25 @@ function MServerInitPlayer.player_enter_game(player)
                 players = allPlayers,
             })
         end
+    end
+    local isFirstLoginToday, consecutiveDays = player_:CheckDailyLogin()
+
+    if isFirstLoginToday then
+        gg.log("玩家今日首次登录，开始处理每日重置逻辑", player.Nickname, "连续登录", consecutiveDays, "天")
+        
+        -- 处理每日重置逻辑
+        if player_:IsNewPlayer() then
+            gg.log("新手玩家每日登录处理", consecutiveDays)
+            -- 可以在这里添加新手每日任务、奖励等逻辑
+        end
+        
+        -- 触发每日登录事件
+        local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager)
+        ServerEventManager.FireEvent("DailyLoginEvent", {
+            uin = uin_,
+            consecutiveDays = consecutiveDays,
+            isNewPlayer = player_:IsNewPlayer()
+        })
     end
 end
 
