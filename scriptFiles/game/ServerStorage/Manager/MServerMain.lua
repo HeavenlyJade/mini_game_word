@@ -34,32 +34,36 @@ gg.isServer = true
 ---@class MainServer
 local MainServer = {}
 
--- 处理午夜刷新
-function MainServer.handleMidnightRefresh()
-    local now = os.date("*t")
-    local nextMidnight = os.time({
-        year = now.year,
-        month = now.month,
-        day = now.day + 1,
-        hour = 0,
-        min = 0,
-        sec = 0
-    })
-    local secondsUntilMidnight = nextMidnight - os.time()
-
+-- 每秒执行
+function MainServer.EverySecondExecute()
     local timer = SandboxNode.New("Timer", game.WorkSpace)
-    timer.Name = "MidnightRefreshTimer"
-    timer.Delay = secondsUntilMidnight
-    timer.Loop = false
+    timer.Name = "EverySecondTimer"
+    timer.Delay = 1  -- 1秒延迟
+    timer.Loop = true  -- 循环执行
     timer.Callback = function()
         -- 对所有在线玩家执行刷新
         for _, player in pairs(serverDataMgr.getAllPlayers()) do
-            if player and player.inited then
-                player:RefreshNewDay()
+            if player  then                
+                -- 检查并清理过期的临时buff
+                local buffCountBefore = 0
+                for _ in pairs(player.tempBuffs) do
+                    buffCountBefore = buffCountBefore + 1
+                end
+                
+                -- 使用MPlayer的清理方法
+                player:CleanExpiredTempBuffs()
+                
+                local buffCountAfter = 0
+                for _ in pairs(player.tempBuffs) do
+                    buffCountAfter = buffCountAfter + 1
+                end
+                
+                local cleanedCount = buffCountBefore - buffCountAfter
+                if cleanedCount > 0 then
+                    gg.log("每秒执行清理过期buff", player.name, "清理了", cleanedCount, "个过期的临时buff")
+                end
             end
         end
-        -- 重新设置下一个午夜的定时任务
-        MainServer.handleMidnightRefresh()
     end
     timer:Start()
 end
@@ -78,9 +82,10 @@ function MainServer.start_server()
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
     MainServer.bind_update_tick()         --开始tick
     MainServer.bind_save_data_tick()      --开始定时存盘
-    MainServer.handleMidnightRefresh()    --设置午夜刷新定时任务
     MServerInitPlayer.setInitFinished(true)  -- 设置初始化完成
     MainServer.SetCollisionGroup()
+    MainServer.EverySecondExecute()    --设置每秒执行定时任务
+
     gg.log("服务器启动完成")
 
 end

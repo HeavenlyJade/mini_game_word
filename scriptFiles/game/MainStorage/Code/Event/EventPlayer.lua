@@ -34,6 +34,8 @@ EventPlayerConfig.REQUEST = {
     LEVEL_REWARD_NODE_TRIGGERED = "LevelRewardNodeTriggered", -- 关卡奖励节点触发
     -- 【新增】客户端上报房间内好友数量（供服务端统计/校验）
     FRIENDS_COUNT_REPORT = "cmd_client_report_friends_count",
+    -- 【新增】广告相关事件
+    AD_WATCH_COMPLETED = "cmd_ad_watch_completed", -- 广告观看完成
 
 }
 
@@ -67,6 +69,8 @@ EventPlayerConfig.NOTIFY = {
     PLAYER_STAT_SYNC = "cmd_sync_player_stat", -- 新增：玩家属性同步
     -- 【新增】广播：当前房间所有玩家（用于客户端刷新好友/房间加成等）
     ROOM_PLAYERS_BROADCAST = "RoomPlayersBroadcast",
+    -- 【新增】广告相关通知
+    AD_WATCH_COUNT_UPDATE = "cmd_ad_watch_count_update", -- 同步玩家广告观看次数
 }
 
 --[[

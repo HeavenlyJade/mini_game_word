@@ -51,7 +51,9 @@ function _MPlayer:OnInit(info_)
     self.firstLoginDate = info_.firstLoginDate or ""         -- 首次登录日期    
     -- 【新增】广告观看次数
     self.adWatchCount = info_.adWatchCount or 0              -- 看广告次数
-
+    
+    -- 【新增】临时buff系统
+    self.tempBuffs = {}  -- 临时buff表，结构：{变量字段: {startTime, endTime, multiplier}}
 
     -- 网络状态（使用枚举数值，若未定义则回退0）
     self.player_net_stat  = tonumber(common_const.PLAYER_NET_STAT and common_const.PLAYER_NET_STAT.INITING) or 0
@@ -538,6 +540,75 @@ function _MPlayer:GetLoginStats()
         isTodayLogin = (self.lastLoginDate == today),
         adWatchCount = self.adWatchCount
     }
+end
+
+--- 添加临时buff
+---@param variableName string 变量字段名
+---@param duration number 持续时间（秒）
+---@param multiplier number 数据倍率
+function _MPlayer:AddTempBuff(variableName, duration, multiplier)
+    local currentTime = os.time()
+    local endTime = currentTime + duration
+    
+    self.tempBuffs[variableName] = {
+        startTime = currentTime,
+        endTime = endTime,
+        multiplier = multiplier
+    }
+    
+    gg.log("玩家临时buff添加", self.name, "变量:", variableName, "倍率:", multiplier, "持续时间:", duration, "秒")
+end
+
+--- 移除临时buff
+---@param variableName string 变量字段名
+function _MPlayer:RemoveTempBuff(variableName)
+    if self.tempBuffs[variableName] then
+        self.tempBuffs[variableName] = nil
+        gg.log("玩家临时buff移除", self.name, "变量:", variableName)
+    end
+end
+
+--- 获取临时buff倍率
+---@param variableName string 变量字段名
+---@return number 倍率，如果没有有效buff返回1
+function _MPlayer:GetTempBuffMultiplier(variableName)
+    local buff = self.tempBuffs[variableName]
+    if not buff then
+        return 0
+    end
+    
+    local currentTime = os.time()
+    if currentTime > buff.endTime then
+        -- buff已过期，移除
+        self.tempBuffs[variableName] = nil
+        return 0
+    end
+    
+    return buff.multiplier
+end
+
+--- 清理过期的临时buff
+function _MPlayer:CleanExpiredTempBuffs()
+    local currentTime = os.time()
+    local expiredBuffs = {}
+    
+    for variableName, buff in pairs(self.tempBuffs) do
+        if currentTime > buff.endTime then
+            table.insert(expiredBuffs, variableName)
+        end
+    end
+    
+    for _, variableName in ipairs(expiredBuffs) do
+        self.tempBuffs[variableName] = nil
+        gg.log("玩家临时buff过期清理", self.name, "变量:", variableName)
+    end
+end
+
+--- 获取所有有效的临时buff
+---@return table 有效的临时buff表
+function _MPlayer:GetActiveTempBuffs()
+    self:CleanExpiredTempBuffs()
+    return self.tempBuffs
 end
 
 

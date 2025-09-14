@@ -80,7 +80,14 @@ function MCloudDataMgr.SavePlayerData( uin_,  force_ )
             exp   = player_.exp,
             level = player_.level,
             vars = player_.variables,
-            isNew = true
+            isNew = true,
+            adWatchCount = player_.adWatchCount or 0 ,
+            dailyLogin = {
+                lastLoginDate = player_.lastLoginDate or "",         -- 最后登录日期 (YYYY-MM-DD)
+                consecutiveDays = player_.consecutiveDays or 0,      -- 连续登录天数
+                totalLoginDays = player_.totalLoginDays or 0,        -- 累计登录天数
+                firstLoginDate = player_.firstLoginDate or ""        -- 首次登录日期
+            }
         }
         cloudService:SetTableAsync( MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_, data_, function ( ret_ )
         end )

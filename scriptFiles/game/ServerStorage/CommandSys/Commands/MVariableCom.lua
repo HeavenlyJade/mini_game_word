@@ -75,7 +75,18 @@ function VariableCommand.handlers.add(params, player)
     local variableSystem = player.variableSystem
 
     -- 使用BonusCalculator计算加成
+
     local finalValue, bonusInfo = BonusCalculator.CalculateAllBonuses(player, value, playerStatBonuses, playerVariableBonuses, otherBonuses, variableName,"玩家变量计算")
+    
+    -- -- 应用临时buff加成
+    -- gg.log("应用临时buff加成", player.name, "变量:", variableName, player.tempBuffs)
+    local tempBuffMultiplier = player:GetTempBuffMultiplier(variableName)
+    if tempBuffMultiplier > 0 then
+        finalValue = finalValue * tempBuffMultiplier
+        bonusInfo = bonusInfo .. string.format("\n> 临时buff加成: ×%s", tostring(tempBuffMultiplier))
+        -- gg.log("应用临时buff加成", player.name, "变量:", variableName, "倍率:", tempBuffMultiplier, "加成前:", finalValue / tempBuffMultiplier, "加成后:", finalValue)
+    end
+    
     local valueToAdd = finalValue
 
     variableSystem:AddVariable(variableName, valueToAdd)

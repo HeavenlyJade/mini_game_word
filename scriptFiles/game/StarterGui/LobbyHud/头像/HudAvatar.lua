@@ -50,9 +50,16 @@ function HudAvatar:OnInit(node, config)
     self.TitleFriendsTemp = self:Get("名字背景/好友/加成模版描述", ViewComponent) ---@type ViewComponent
     self.TitleFriendsNum  =self:Get("名字背景/好友/好友数量", ViewComponent) ---@type ViewComponent
     self.friendsBonusList = self:Get("名字背景/好友/好友加成", ViewList) ---@type ViewList
+    self.dvertisementButton = self:Get("名字背景/广告", ViewButton)
     -- 点击好友按钮：打开邀请列表（客户端调用）
     self.friendsButton.clickCb = function (ui, viewButton)
         FriendInviteService:OpenInviterList()
+    end
+    
+    -- 点击广告按钮：打开广告界面
+    self.dvertisementButton.clickCb = function (ui, viewButton)
+        ViewBase["Advertisement"]:Open()
+
     end
     self.PowerVariableTitle = self:Get("名字背景/最高战力/历史最高战力", ViewComponent) ---@type ViewComponent
     local headNode = CoreUI:GetHeadNode(tostring(localPlayer.UserId))

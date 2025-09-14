@@ -304,6 +304,10 @@ function MServerInitPlayer.syncPlayerDataToClient(mplayer)
     -- 【新增】同步玩家等级和经验数据
     mplayer:syncLevelExpToClient()
 
+    -- 【新增】同步玩家广告观看次数数据
+    local MServerEventManager = require(ServerStorage.Manager.MServerEventManager) ---@type MServerEventManager
+    MServerEventManager.syncAdWatchCountToClient(mplayer)
+
     -- 获取任务数据
     -- 【重构】调用成就事件管理器来处理所有成就数据的同步
     AchievementEventManager.NotifyAllDataToClient(uin)
