@@ -46,25 +46,6 @@ function RewardMgr.StartUpdateTimer()
     RewardMgr.updateTimer:Start()
 end
 
--- 移除定时存盘功能，现在使用统一的定时存盘机制
--- --- 启动保存定时器
--- function RewardMgr.StartSaveTimer()
---     if RewardMgr.saveTimer then
---         return
---     end
---
---     RewardMgr.saveTimer = SandboxNode.New("Timer", game.WorkSpace) ---@type Timer
---     RewardMgr.saveTimer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
---     RewardMgr.saveTimer.Name = "RewardMgr_SaveTimer"
---     RewardMgr.saveTimer.Delay = 60
---     RewardMgr.saveTimer.Loop = true
---     RewardMgr.saveTimer.Interval = 60  -- 每60秒保存
---     RewardMgr.saveTimer.Callback = function()
---         RewardMgr.SaveAllPlayerData()
---     end
---     RewardMgr.saveTimer:Start()
--- end
-
 -- ==================== 玩家管理 ====================
 
 --- 玩家上线处理
@@ -114,6 +95,12 @@ function RewardMgr.OnPlayerLeave(uin)
     local rewardInstance = RewardMgr.playerRewards[uin]
     if not rewardInstance then
         return
+    end
+
+    -- 清空玩家的在线奖励进度
+    if rewardInstance.onlineData then
+        rewardInstance.onlineData.roundOnlineTime = 0
+        rewardInstance.onlineData.claimedIndices = {}
     end
 
     -- 保存数据到云端
