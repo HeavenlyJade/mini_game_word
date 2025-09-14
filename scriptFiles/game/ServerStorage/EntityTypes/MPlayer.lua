@@ -502,6 +502,15 @@ function _MPlayer:CheckDailyLogin()
     return false, self.consecutiveDays
 end
 
+
+--- 设置广告观看次数
+---@param adWatchCount number 广告观看次数
+function _MPlayer:SetAdWatchCount(adWatchCount)
+    adWatchCount = adWatchCount or 0
+    self.adWatchCount = adWatchCount
+    gg.log("玩家广告观看次数设置", self.name, "设置", adWatchCount)
+end
+
 --- 增加广告观看次数
 ---@param count number 增加的次数，默认为1
 function _MPlayer:AddAdWatchCount(count)

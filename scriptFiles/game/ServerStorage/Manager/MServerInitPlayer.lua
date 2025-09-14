@@ -218,20 +218,7 @@ function MServerInitPlayer.player_enter_game(player)
 
     if isFirstLoginToday then
         gg.log("玩家今日首次登录，开始处理每日重置逻辑", player.Nickname, "连续登录", consecutiveDays, "天")
-        
-        -- 处理每日重置逻辑
-        if player_:IsNewPlayer() then
-            gg.log("新手玩家每日登录处理", consecutiveDays)
-            -- 可以在这里添加新手每日任务、奖励等逻辑
-        end
-        
-        -- 触发每日登录事件
-        local ServerEventManager = require(MainStorage.Code.MServer.Event.ServerEventManager)
-        ServerEventManager.FireEvent("DailyLoginEvent", {
-            uin = uin_,
-            consecutiveDays = consecutiveDays,
-            isNewPlayer = player_:IsNewPlayer()
-        })
+        player_:SetAdWatchCount(0)
     end
 end
 
