@@ -87,6 +87,12 @@ function Advertisement:OnWatchAdButtonClick()
     -- 检查是否为手机端
     if not self:IsMobileDevice() then
         gg.log("广告播放仅支持手机端，当前设备不支持")
+        -- 使用悬浮提示UI进行屏幕提醒
+        ClientEventManager.Publish("SendHoverText", {
+            txt = "广告播放仅支持手机端，当前设备不支持",
+            duration = 2.5,
+            fontSize = 28
+        })
         return
     end
     

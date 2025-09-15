@@ -688,6 +688,6 @@ function RankingMgr.UpdateRanking()
         end
     end
     
-    gg.log("排行榜更新任务完成", "通知玩家数量:", playerCount)
+    -- gg.log("排行榜更新任务完成", "通知玩家数量:", playerCount)
 end
 return RankingMgr

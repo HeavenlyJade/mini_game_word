@@ -255,7 +255,7 @@ function MainServer.bind_save_data_tick()
         for uin, player in pairs(serverDataMgr.getAllPlayers()) do
             MServerInitPlayer.OnPlayerSave(uin)
                 -- 按需等待120秒，避免触发分钟级保存次数上限
-            wait(120)
+            wait(90)
         end
     end
     timer:Start()
