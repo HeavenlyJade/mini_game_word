@@ -31,6 +31,7 @@ local MiniApiFriendsService = require(MainStorage.Code.MServer.MiniApiServices.M
 
 local cloudDataMgr  = require(ServerStorage.CloundDataMgr.MCloudDataMgr)    ---@type MCloudDataMgr
 local NodeCloneGenerator = require(ServerStorage.ServerUntils.NodeCloneGenerator) ---@type NodeCloneGenerator
+-- local MPlayerTraitManager = require(ServerStorage.Manager.MPlayerTraitManager) ---@type MPlayerTraitManager
 
 
 ---@class MServerInitPlayer
@@ -220,6 +221,9 @@ function MServerInitPlayer.player_enter_game(player)
         gg.log("玩家今日首次登录，开始处理每日重置逻辑", player.Nickname, "连续登录", consecutiveDays, "天")
         player_:SetAdWatchCount(0)
     end
+    
+    -- 【新增】检查玩家是否通过邀请进入以及是否为新玩家
+    -- MServerInitPlayer.checkPlayerInviteAndNewPlayerStatus(player_)
 end
 
 -- 执行指令执行配置中的指令列表
@@ -474,6 +478,125 @@ function MServerInitPlayer.playWingSoundIfEquipped(mplayer, isPlaying)
     --     else
     --     end
     -- end
+end
+
+-- 【新增】检查玩家是否通过邀请进入以及是否为新玩家
+---@param player MPlayer 玩家对象
+function MServerInitPlayer.checkPlayerInviteAndNewPlayerStatus(player)
+    if not player or not player:Is("MPlayer") then
+        return
+    end
+    
+    gg.log("开始检查玩家邀请和新玩家状态:", player.name, "UIN:", player.uin)
+    
+    -- 检查是否有邀请者
+    local inviteData = MPlayerTraitManager.GetInvitePlayer(player)
+    if inviteData then
+        gg.log("玩家通过邀请进入:", player.name, "邀请者信息:", inviteData)
+        
+        -- 可以在这里处理邀请相关的逻辑
+        -- 比如给邀请者奖励、记录邀请关系等
+        MServerInitPlayer.handleInvitePlayerLogic(player, inviteData)
+    else
+        gg.log("玩家非邀请进入:", player.name)
+    end
+    
+    -- 检查是否为新玩家
+    local isNewToMap = MPlayerTraitManager.IsNewToThisMap(player)
+    if isNewToMap ~= nil then
+        if isNewToMap then
+            gg.log("玩家是地图新玩家:", player.name, "地图ID:", MPlayerTraitManager.mapId)
+            -- 可以在这里处理新玩家相关的逻辑
+            -- 比如给新玩家奖励、显示引导等
+            MServerInitPlayer.handleNewPlayerLogic(player)
+        else
+            gg.log("玩家不是地图新玩家:", player.name, "地图ID:", MPlayerTraitManager.mapId)
+        end
+    else
+        gg.log("无法判断玩家是否为新玩家:", player.name)
+    end
+    
+    -- 【新增】检查被邀请者列表
+    local invitedList = MPlayerTraitManager.GetInvitedPlayerList(player)
+
+    if invitedList and #invitedList > 0 then
+        gg.log("玩家有被邀请者:", player.name, "被邀请者数量:", #invitedList, "被邀请者列表:", invitedList)
+        
+        -- 可以在这里处理被邀请者相关的逻辑
+        -- 比如统计邀请数量、给邀请者奖励等
+        MServerInitPlayer.handleInvitedPlayerListLogic(player, invitedList)
+    else
+        gg.log("玩家没有被邀请者:", player.name)
+    end
+end
+
+-- 【新增】处理邀请玩家逻辑
+---@param player MPlayer 玩家对象
+---@param inviteData table 邀请者信息
+function MServerInitPlayer.handleInvitePlayerLogic(player, inviteData)
+    -- 这里可以添加邀请相关的业务逻辑
+    -- 例如：
+    -- 1. 给邀请者发送奖励
+    -- 2. 记录邀请关系
+    -- 3. 发送邀请成功通知
+    -- 4. 更新邀请统计等
+    
+    gg.log("处理邀请玩家逻辑:", player.name, "邀请者数据:", inviteData)
+    
+    -- 示例：发送邀请成功通知给客户端
+    gg.network_channel:fireClient(player.uin, {
+        cmd = "INVITE_SUCCESS_NOTIFICATION",
+        message = "欢迎通过邀请进入游戏！",
+        inviteData = inviteData
+    })
+end
+
+-- 【新增】处理新玩家逻辑
+---@param player MPlayer 玩家对象
+function MServerInitPlayer.handleNewPlayerLogic(player)
+    -- 这里可以添加新玩家相关的业务逻辑
+    -- 例如：
+    -- 1. 给新玩家新手奖励
+    -- 2. 显示新手引导
+    -- 3. 发送欢迎消息
+    -- 4. 记录新玩家数据等
+    
+    gg.log("处理新玩家逻辑:", player.name)
+    
+    -- 示例：发送新玩家欢迎通知给客户端
+    gg.network_channel:fireClient(player.uin, {
+        cmd = "NEW_PLAYER_WELCOME",
+        message = "欢迎来到新地图！",
+        isNewPlayer = true
+    })
+end
+
+-- 【新增】处理被邀请者列表逻辑
+---@param player MPlayer 玩家对象
+---@param invitedList table 被邀请者列表
+function MServerInitPlayer.handleInvitedPlayerListLogic(player, invitedList)
+    -- 这里可以添加被邀请者相关的业务逻辑
+    -- 例如：
+    -- 1. 统计邀请数量
+    -- 2. 给邀请者发放奖励
+    -- 3. 更新邀请统计
+    -- 4. 发送邀请成就通知等
+    
+    gg.log("处理被邀请者列表逻辑:", player.name, "被邀请者数量:", #invitedList)
+    
+    -- 示例：发送邀请统计通知给客户端
+    gg.network_channel:fireClient(player.uin, {
+        cmd = "INVITE_STATISTICS_UPDATE",
+        message = string.format("您已成功邀请 %d 名玩家！", #invitedList),
+        invitedCount = #invitedList,
+        invitedList = invitedList
+    })
+    
+    -- 示例：根据邀请数量给邀请者奖励
+    if #invitedList >= 5 then
+        gg.log("邀请者获得邀请成就奖励:", player.name, "邀请数量:", #invitedList)
+        -- 可以在这里添加具体的奖励逻辑
+    end
 end
 
 return MServerInitPlayer

@@ -28,19 +28,6 @@ function MServerEventManager.ValidatePlayer(evt)
 
     return player
 end
--- 私有：向所有在线玩家广播当前房间内玩家列表
-local function broadcastRoomPlayers()
-    local allPlayers = {}
-    for u, _ in pairs(MServerDataManager.server_players_list) do
-        table.insert(allPlayers, u)
-    end
-    for u, _ in pairs(MServerDataManager.server_players_list) do
-        gg.network_channel:fireClient(u, {
-            cmd = EventPlayerConfig.NOTIFY.ROOM_PLAYERS_BROADCAST,
-            players = allPlayers,
-        })
-    end
-end
 
 -- 私有：处理客户端上报好友数量
 ---@param evt table
