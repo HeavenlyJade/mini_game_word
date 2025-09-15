@@ -54,6 +54,7 @@ function HudAvatar:OnInit(node, config)
     -- 点击好友按钮：打开邀请列表（客户端调用）
     self.friendsButton.clickCb = function (ui, viewButton)
         FriendInviteService:OpenInviterList()
+        ViewBase["FriendsInvitationGui"]:Open()
     end
     
     -- 点击广告按钮：打开广告界面
