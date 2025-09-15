@@ -61,21 +61,31 @@ end
 function RaceTriggerHandler:OnEntityLeave(player)
     if not player or not player.isPlayer then return end
     
-    gg.log(string.format("玩家 %s 离开了 '%s' 触发区域。", player.name, self.name))
+    gg.log(string.format("XXXXS玩家 %s 离开了 '%s' 触发区域。", player.name, self.name))
     
-    -- 【新增】检查玩家是否在比赛中，如果在准备阶段离开则将其移除
+    -- 【新增】检查玩家是否在比赛中，如果在准备阶段离开则将其移除（考虑传送保护期）
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local GameModeManager = serverDataMgr.GameModeManager  ---@type GameModeManager
-    gg.log("GameModeManager", GameModeManager:IsPlayerInMode(player.uin))
-    if  GameModeManager:IsPlayerInMode(player.uin) then
+    if GameModeManager:IsPlayerInMode(player.uin) then
         -- 获取玩家当前所在的比赛实例
         local instanceId = GameModeManager.playerModes[player.uin]
         local currentMode = GameModeManager.activeModes[instanceId]
-        gg.log("当前的模式", currentMode)
-        gg.log("当前的游戏状态.state", currentMode.state)
-        gg.log("实例ID",instanceId)
-        -- 如果比赛还在准备阶段，将玩家从比赛中移除
+        -- 如果比赛还在准备阶段，检查保护期并可能将玩家从比赛中移除
         if currentMode and (currentMode.state == "WAITING" or currentMode.state == "PREPARING") then
+            -- 【新增】检查传送保护期
+            local uin = player.uin
+            gg.log("currentMode.teleportProtectionData", currentMode.teleportProtectionData,os.time())
+            if currentMode.teleportProtectionData and currentMode.teleportProtectionData[uin] then
+                local protectionEndTime = currentMode.teleportProtectionData[uin]
+                if os.time() < protectionEndTime then
+                    gg.log(string.format("RaceTriggerHandler:OnEntityLeave玩家 %s 在传送保护期内离开区域，忽略此次离开事件", player.name))
+                    return
+                else
+                    -- 保护期结束，清理数据
+                    currentMode.teleportProtectionData[uin] = nil
+                end
+            end
+
             local participantsCount = currentMode:_getParticipantCount()
             gg.log(string.format("玩家 %s 在准备阶段离开了比赛区域，将其从比赛中移除。当前参赛者数量: %d", player.name, participantsCount))
             
@@ -85,7 +95,6 @@ function RaceTriggerHandler:OnEntityLeave(player)
             
             -- 移除玩家
             GameModeManager:RemovePlayerFromCurrentMode(player)
-    
         end
     end
 end

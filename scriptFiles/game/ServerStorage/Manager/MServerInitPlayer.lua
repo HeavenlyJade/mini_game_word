@@ -31,7 +31,7 @@ local MiniApiFriendsService = require(MainStorage.Code.MServer.MiniApiServices.M
 
 local cloudDataMgr  = require(ServerStorage.CloundDataMgr.MCloudDataMgr)    ---@type MCloudDataMgr
 local NodeCloneGenerator = require(ServerStorage.ServerUntils.NodeCloneGenerator) ---@type NodeCloneGenerator
--- local MPlayerTraitManager = require(ServerStorage.Manager.MPlayerTraitManager) ---@type MPlayerTraitManager
+local MPlayerTraitManager = require(ServerStorage.Manager.MPlayerTraitManager) ---@type MPlayerTraitManager
 
 
 ---@class MServerInitPlayer
@@ -392,21 +392,23 @@ function MServerInitPlayer.OnPlayerSave(uin_)
     end
     
         -- 保存各个系统的数据
-    MailMgr.SavePlayerMailData(uin_)
+    -- MailMgr.SavePlayerMailData(uin_)
+    mplayer:leaveGame()
     BagMgr.SaveAllOnlinePlayerBags(uin_)
     PetMgr.ForceSavePlayerData(uin_)
     PartnerMgr.SavePlayerPartnerData(uin_)
     WingMgr.SavePlayerWingData(uin_)
     TrailMgr.SavePlayerTrailData(uin_)
-    AchievementMgr.SavePlayerAchievementData(uin_)
-    RewardMgr.SavePlayerRewardData(uin_)
-    LotteryMgr.SavePlayerLotteryData(uin_)
+    -- LotteryMgr.SavePlayerLotteryData(uin_)
+
+
+    -- AchievementMgr.SavePlayerAchievementData(uin_)
+    -- RewardMgr.SavePlayerRewardData(uin_)
     local ShopMgr = require(ServerStorage.MSystems.Shop.ShopMgr) ---@type ShopMgr
-    ShopMgr.SavePlayerShopData(uin_)
+    -- ShopMgr.SavePlayerShopData(uin_)
     local RewardBonusMgr = require(ServerStorage.MSystems.RewardBonus.RewardBonusMgr) ---@type RewardBonusMgr
-    RewardBonusMgr.SavePlayerData(uin_)
+    -- RewardBonusMgr.SavePlayerData(uin_)
     -- 保存玩家基础数据
-    mplayer:leaveGame()
     gg.log("统一存盘：玩家", uin_, "数据已保存")
 end
 

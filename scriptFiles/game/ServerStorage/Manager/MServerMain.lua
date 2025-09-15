@@ -80,7 +80,7 @@ function MainServer.start_server()
 
     MainServer.createNetworkChannel()     --建立网络通道
     wait(1)                               --云服务器启动配置文件下载和解析繁忙，稍微等待
-    MainServer.bind_update_tick()         --开始tick
+    -- MainServer.bind_update_tick()         --开始tick
     MainServer.bind_save_data_tick()      --开始定时存盘
     MServerInitPlayer.setInitFinished(true)  -- 设置初始化完成
     MainServer.SetCollisionGroup()
@@ -230,19 +230,19 @@ function MainServer.OnServerNotify(uin_, args)
 end
 
 --开启update
-function MainServer.bind_update_tick()
-    -- 一个定时器, 实现tick update
-    local timer = SandboxNode.New("Timer", game.WorkSpace)
-    timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
+-- function MainServer.bind_update_tick()
+--     -- 一个定时器, 实现tick update
+--     local timer = SandboxNode.New("Timer", game.WorkSpace)
+--     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE
 
-    timer.Name = 'timer_server'
-    timer.Delay = 0.1      -- 延迟多少秒开始
-    timer.Loop = true      -- 是否循环
-    timer.Interval = 0.03   -- 循环间隔多少秒 (1秒=20帧)
-    timer.Callback = MainServer.update
-    timer:Start()     -- 启动定时器
-    gg.timer = timer;
-end
+--     timer.Name = 'timer_server'
+--     timer.Delay = 0.1      -- 延迟多少秒开始
+--     timer.Loop = true      -- 是否循环
+--     timer.Interval = 0.03   -- 循环间隔多少秒 (1秒=20帧)
+--     timer.Callback = MainServer.update
+--     timer:Start()     -- 启动定时器
+--     gg.timer = timer;
+-- end
 
 --开启定时存盘
 function MainServer.bind_save_data_tick()
@@ -250,7 +250,7 @@ function MainServer.bind_save_data_tick()
     timer.Name = 'timer_save_player_data'
     timer.Delay = 30      -- 延迟多少秒开始
     timer.Loop = true      -- 是否循环
-    timer.Interval = 300   -- 循环间隔多少秒
+    timer.Interval = 1200   -- 循环间隔多少秒
     timer.Callback = function()
         for uin, player in pairs(serverDataMgr.getAllPlayers()) do
             MServerInitPlayer.OnPlayerSave(uin)

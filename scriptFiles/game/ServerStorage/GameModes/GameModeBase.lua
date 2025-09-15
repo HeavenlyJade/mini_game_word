@@ -148,7 +148,7 @@ end
 ---@param logPrefix string|nil 日志前缀
 ---@return boolean 是否成功传送
 function GameModeBase:TeleportAllPlayersToHandlerNode(nodeType, logPrefix)
-
+    -- gg.log(string.format("传送所有参赛者到指定的处理器节点: %s", nodeType))
     -- 延迟加载，避免循环依赖
     local serverDataMgr = require(ServerStorage.Manager.MServerDataManager)
     local handler = serverDataMgr.getSceneNodeHandler(self.handlerId)
