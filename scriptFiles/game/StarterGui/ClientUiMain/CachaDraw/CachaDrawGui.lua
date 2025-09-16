@@ -387,13 +387,24 @@ end
 -- =================================
 
 function CachaDrawGui:OnClickSingleDraw()
-    -- 此界面仅做展示与配置读取，如需发请求可复用 LotteryGui 的发送逻辑
-    self:UpdatePriceDisplay()
+    -- 发送单抽请求到服务端（抽奖池固定为：蛋蛋抽奖）
+    self:SendLotteryRequest(LotteryEventConfig.REQUEST.SINGLE_DRAW)
 end
 
 function CachaDrawGui:OnClickTenDraw()
-    -- 此界面仅做展示与配置读取，如需发请求可复用 LotteryGui 的发送逻辑
-    self:UpdatePriceDisplay()
+    -- 发送十连抽请求到服务端（抽奖池固定为：蛋蛋抽奖）
+    self:SendLotteryRequest(LotteryEventConfig.REQUEST.TEN_DRAW)
+end
+
+-- 统一的请求发送方法（与 LotteryGui 一致的调用方式）
+function CachaDrawGui:SendLotteryRequest(cmd)
+    local requestData = {
+        cmd = cmd,
+        args = {
+            poolName = "蛋蛋抽奖"
+        }
+    }
+    gg.network_channel:FireServer(requestData)
 end
 
 return CachaDrawGui.New(script.Parent, uiConfig)

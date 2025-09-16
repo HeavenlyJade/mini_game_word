@@ -374,18 +374,33 @@ function LotteryMgr.CheckAndConsumeCost(uin, poolName, drawType)
         return false, "玩家背包未找到"
     end
 
+    -- 解析货币名称与当前数量
+    local costItemId = cost.costItem
+    local costAmount = cost.costAmount or 0
+    local itemName = tostring(costItemId)
+    do
+        local itemCfg = ConfigLoader.GetItem and ConfigLoader.GetItem(costItemId)
+        if itemCfg and itemCfg.name then
+            itemName = itemCfg.name
+        end
+    end
+    local currentAmount = 0
+    if playerBag.GetItemAmount then
+        currentAmount = playerBag:GetItemAmount(costItemId) or 0
+    end
+
     -- 检查是否有足够的货币
-    local hasEnough = playerBag:HasItems({ [cost.costItem] = cost.costAmount })
+    local hasEnough = playerBag:HasItems({ [costItemId] = costAmount })
     if not hasEnough then
-        gg.log("错误：货币不足，需要:", cost.costAmount, "当前货币:" ,playerBag:GetItemAmount(cost.costItem))
-        return false, "货币不足"
+        gg.log("错误：货币不足 =>", itemName, "需要:", costAmount, "当前:", currentAmount)
+        return false, string.format("%s不足，需要%s，当前%s", itemName, tostring(costAmount), tostring(currentAmount))
     end
 
     -- 扣除货币
-    local success = playerBag:RemoveItems({ [cost.costItem] = cost.costAmount })
+    local success = playerBag:RemoveItems({ [costItemId] = costAmount })
     if not success then
-        gg.log("错误：扣除货币失败")
-        return false, "扣除货币失败"
+        gg.log("错误：扣除货币失败 =>", itemName, "应扣:", costAmount, "当前:", currentAmount)
+        return false, string.format("扣除%s失败", itemName)
     end
 
     gg.log("=== 抽奖消耗检查完成，扣除成功 ===")

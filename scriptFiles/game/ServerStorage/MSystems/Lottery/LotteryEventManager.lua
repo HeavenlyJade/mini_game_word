@@ -218,6 +218,9 @@ function LotteryEventManager.OnTenDraw(event)
         
         -- 发送物品获得通知给NoticeGui
         LotteryEventManager.SendItemAcquiredNotification(uin, result.rewards, poolName)
+    else
+        gg.log("抽奖失败:", result.errorMsg)
+        player:SendHoverText("抽奖失败:"..(result.errorMsg or "未知错误"))
     end
 end
 
