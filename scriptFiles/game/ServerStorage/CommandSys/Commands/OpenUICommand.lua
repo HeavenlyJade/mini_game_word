@@ -64,6 +64,14 @@ function OpenUICommand.handlers.open(params, player)
         --gg.log("向玩家", player.name, "发送打开抽奖界面事件，类型:", lotteryType, "场景:", player.currentScene, "场景适配类型:", sceneBasedLotteryType)
         return true
         
+    elseif uiName == "CachaDrawGui" then
+        -- 打开抽奖卷展示界面（客户端订阅事件名为 CachaDrawGui）
+        gg.network_channel:fireClient(player.uin, {
+            cmd = "CachaDrawGui",
+            operation = "打开界面",
+        })
+        return true
+        
     elseif uiName == "WaypointGui" then
         -- 发送打开传送界面事件到客户端
         gg.network_channel:fireClient(player.uin, {
@@ -123,6 +131,12 @@ function OpenUICommand.handlers.close(params, player)
             operation = "关闭界面",
         })
         --gg.log("向玩家", player.name, "发送关闭抽奖界面事件:", uiName)
+        return true
+    elseif uiName == "CachaDrawGui" then
+        gg.network_channel:fireClient(player.uin, {
+            cmd = "CachaDrawGui",
+            operation = "关闭界面",
+        })
         return true
     else
         gg.network_channel:fireClient(player.uin, {

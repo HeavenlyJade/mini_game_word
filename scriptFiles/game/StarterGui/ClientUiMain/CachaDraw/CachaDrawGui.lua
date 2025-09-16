@@ -48,6 +48,9 @@ function CachaDrawGui:OnInit(node, config)
     self:InitializeLotteryItemLists()
     self:SyncAllViewListsToTemplate()
 
+    -- 6. 刷新价格显示
+    self:UpdatePriceDisplay()
+
     ----gg.log("LotteryGui 抽奖界面初始化完成，事件监听器已注册")
 end
 
@@ -96,11 +99,262 @@ function CachaDrawGui:RegisterButtonEvents()
         self:OnClickSingleDraw()
     end
 
-    -- 五连抽按钮
-    self.fiveDrawButton.clickCb = function()
-        self:OnClickFiveDraw()
+    -- 十连抽按钮
+    if self.TenDrawButton then
+        self.TenDrawButton.clickCb = function()
+            self:OnClickTenDraw()
+        end
     end
 
+end
+
+-- =================================
+-- 界面生命周期
+-- =================================
+
+function CachaDrawGui:OnOpen()
+    self:UpdatePriceDisplay()
+    self:InitializeLotteryItemLists()
+end
+
+-- 兼容事件回调（占位，避免空方法报错）
+function CachaDrawGui:OnLotteryDataResponse(data)
+    -- 本界面主要做展示，不处理服务端数据
+end
+
+function CachaDrawGui:OnDataSyncNotify(data)
+    -- 接收到同步时刷新展示
+    self:UpdatePriceDisplay()
+    self:InitializeLotteryItemLists()
+end
+
+-- 支持事件入参打开
+function CachaDrawGui:OpenWithType(args)
+    -- 保持简单：仅打开并刷新配置展示
+    self:Open()
+    self:UpdatePriceDisplay()
+    self:InitializeLotteryItemLists()
+end
+
+-- =================================
+-- 布局与同步
+-- =================================
+
+function CachaDrawGui:SetAllViewListsLayout()
+    local templateSize = nil
+    local templatePosition = nil
+    if self.rewardTemplatelist and self.rewardTemplatelist.node then
+        templateSize = self.rewardTemplatelist.node.Size
+        templatePosition = self.rewardTemplatelist.node.Position
+    end
+
+    if self.GachawithTicketList and self.GachawithTicketList.node then
+        pcall(function()
+            if templateSize ~= nil then
+                self.GachawithTicketList.node.Size = templateSize
+            end
+            if templatePosition ~= nil then
+                self.GachawithTicketList.node.Position = templatePosition
+            end
+            self.GachawithTicketList.node.ScrollType = Enum.ListLayoutType.FLOW_VERTICAL
+            self.GachawithTicketList.node.OverflowType = Enum.OverflowType.VERTICAL
+            self.GachawithTicketList.node.IsNotifyEventStop = false
+        end)
+    end
+end
+
+function CachaDrawGui:SyncAllViewListsToTemplate()
+    if not self.rewardTemplatelist or not self.rewardTemplatelist.node then
+        return
+    end
+    local templateNode = self.rewardTemplatelist.node
+    local templateSize = templateNode.Size
+    local templateOverflowType = templateNode.OverflowType
+    local templateScrollType = templateNode.ScrollType
+
+    if self.GachawithTicketList and self.GachawithTicketList.node then
+        pcall(function()
+            self.GachawithTicketList.node.Size = templateSize
+            self.GachawithTicketList.node.OverflowType = templateOverflowType
+            self.GachawithTicketList.node.ScrollType = templateScrollType
+            self.GachawithTicketList.node.IsNotifyEventStop = false
+        end)
+    end
+end
+
+-- =================================
+-- 配置与显示
+-- =================================
+
+function CachaDrawGui:GetEggLottery()
+    if not self._eggLottery then
+        self._eggLottery = ConfigLoader.GetLottery("蛋蛋抽奖")
+    end
+    return self._eggLottery
+end
+
+function CachaDrawGui:UpdatePriceDisplay()
+    local lottery = self:GetEggLottery()
+    if not lottery then return end
+
+    local singleCost = lottery:GetCost("single")
+    if singleCost and self.singlePriceComponent and self.singlePriceComponent.node then
+        local v = singleCost.costAmount or 0
+        self.singlePriceComponent.node["价格框"].Title = gg.FormatLargeNumber(v)
+    end
+
+    local tenCost = lottery:GetCost("ten")
+    if tenCost and self.TenPriceComponent and self.TenPriceComponent.node then
+        local v = tenCost.costAmount or 0
+        self.TenPriceComponent.node["价格框"].Title = gg.FormatLargeNumber(v)
+    end
+end
+
+-- =================================
+-- 抽奖物品列表
+-- =================================
+
+function CachaDrawGui:InitializeLotteryItemLists()
+    self:LoadLotteryItemsToList("蛋蛋抽奖", self.GachawithTicketList)
+end
+
+function CachaDrawGui:LoadLotteryItemsToList(poolName, viewList)
+    if not viewList then return end
+    local lotteryConfig = ConfigLoader.GetLottery(poolName)
+    if not lotteryConfig or not lotteryConfig.rewardPool then return end
+
+    viewList:ClearChildren()
+    for i, rewardItem in ipairs(lotteryConfig.rewardPool) do
+        self:CreateLotteryItemNode(viewList, rewardItem, i, poolName)
+    end
+end
+
+function CachaDrawGui:CreateLotteryItemNode(viewList, rewardItem, index, poolName)
+    local rewardInfo = self:GetRewardInfo(rewardItem)
+    if not rewardInfo then return end
+    if not self.rewardTemplate or not self.rewardTemplate.node then return end
+
+    local itemNode = self.rewardTemplate.node:Clone()
+    if not itemNode then return end
+
+    itemNode.Name = "奖励物品_" .. index
+
+    local backgroundNode = itemNode:FindFirstChild("背景")
+    if rewardInfo.rarity and CardIcon.qualityNoticeIcon[rewardInfo.rarity] then
+        backgroundNode.Icon = CardIcon.qualityNoticeIcon[rewardInfo.rarity]
+    end
+
+    local iconNode = backgroundNode:FindFirstChild("图标")
+    if iconNode and rewardInfo.icon then
+        iconNode.Icon = rewardInfo.icon
+    end
+
+    local probabilityNode = backgroundNode:FindFirstChild("概率")
+    if probabilityNode then
+        local lotteryConfig = ConfigLoader.GetLottery(poolName)
+        if lotteryConfig then
+            local probabilityText = lotteryConfig:GetFormattedProbability(rewardItem)
+            probabilityNode.Title = probabilityText
+        end
+    end
+
+    local bonusNode = backgroundNode:FindFirstChild("加成")
+    if bonusNode then
+        local bonusText = self:GetRarityBonusText(rewardInfo.rarity)
+        bonusNode.Title = bonusText
+    end
+
+    viewList:AppendChild(itemNode)
+end
+
+function CachaDrawGui:GetRewardInfo(rewardItem)
+    if not rewardItem then return nil end
+    local rewardType = rewardItem.rewardType
+    local rewardName = nil
+
+    if rewardType == "宠物" then
+        rewardName = rewardItem.petConfig
+    elseif rewardType == "伙伴" then
+        rewardName = rewardItem.partnerConfig
+    elseif rewardType == "翅膀" then
+        rewardName = rewardItem.wingConfig
+    elseif rewardType == "尾迹" then
+        rewardName = rewardItem.trailConfig
+    elseif rewardType == "物品" then
+        rewardName = rewardItem.item
+    end
+
+    if not rewardName then return nil end
+
+    local rewardInfo = {}
+    if rewardType == "宠物" then
+        local petConfig = ConfigLoader.GetPet(rewardName)
+        if petConfig then
+            rewardInfo.name = petConfig.name or rewardName
+            rewardInfo.icon = petConfig.avatarResource
+            rewardInfo.rarity = petConfig.rarity or "N"
+        end
+    elseif rewardType == "伙伴" then
+        local partnerConfig = ConfigLoader.GetPartner(rewardName)
+        if partnerConfig then
+            rewardInfo.name = partnerConfig.name or rewardName
+            rewardInfo.icon = partnerConfig.avatarResource
+            rewardInfo.rarity = partnerConfig.rarity or "N"
+        end
+    elseif rewardType == "翅膀" then
+        local wingConfig = ConfigLoader.GetWing(rewardName)
+        if wingConfig then
+            rewardInfo.name = wingConfig.name or rewardName
+            rewardInfo.icon = wingConfig.avatarResource
+            rewardInfo.rarity = wingConfig.rarity or "N"
+        end
+    elseif rewardType == "尾迹" then
+        local trailConfig = ConfigLoader.GetTrail(rewardName)
+        if trailConfig then
+            rewardInfo.name = trailConfig.name or rewardName
+            rewardInfo.icon = trailConfig.avatarResource
+            rewardInfo.rarity = trailConfig.rarity or "N"
+        end
+    elseif rewardType == "物品" then
+        local itemConfig = ConfigLoader.GetItem(rewardName)
+        if itemConfig then
+            rewardInfo.name = itemConfig.name or rewardName
+            rewardInfo.icon = itemConfig.icon
+            rewardInfo.rarity = itemConfig.rarity or "N"
+        end
+    else
+        rewardInfo.name = rewardName
+        rewardInfo.icon = nil
+        rewardInfo.rarity = "N"
+    end
+
+    return rewardInfo
+end
+
+function CachaDrawGui:GetRarityBonusText(rarity)
+    local bonusMap = {
+        N = "普通",
+        R = "稀有",
+        SR = "超稀有",
+        SSR = "极稀有",
+        UR = "终极稀有",
+        LR = "传说稀有"
+    }
+    return bonusMap[rarity] or "普通"
+end
+
+-- =================================
+-- 按钮操作
+-- =================================
+
+function CachaDrawGui:OnClickSingleDraw()
+    -- 此界面仅做展示与配置读取，如需发请求可复用 LotteryGui 的发送逻辑
+    self:UpdatePriceDisplay()
+end
+
+function CachaDrawGui:OnClickTenDraw()
+    -- 此界面仅做展示与配置读取，如需发请求可复用 LotteryGui 的发送逻辑
+    self:UpdatePriceDisplay()
 end
 
 return CachaDrawGui.New(script.Parent, uiConfig)

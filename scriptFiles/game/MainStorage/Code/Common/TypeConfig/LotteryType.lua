@@ -26,6 +26,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field lotteryType string 抽奖类型
 ---@field level string 级别
 ---@field rewardPool LotteryRewardItem[] 奖励池
+---@field pityList table[] 保底配置列表
 ---@field singleCost LotteryCost 单次消耗
 ---@field fiveCost LotteryCost 五连消耗
 ---@field tenCost LotteryCost 十连消耗
@@ -46,6 +47,10 @@ function LotteryType:OnInit(data)
     -- 解析奖励池
     self.rewardPool = {}
     self:ParseRewardPool(data["奖励池"] or {})
+    
+    -- 解析保底配置列表（可选）
+    self.pityList = {}
+    self:ParsePityList(data["保底配置列表"] or {})
     
     -- 解析消耗配置
     self.singleCost = self:ParseCost(data["单次消耗"] or {})
@@ -75,6 +80,40 @@ function LotteryType:ParseRewardPool(rawPool)
         
         table.insert(self.rewardPool, reward)
     end
+end
+
+--- 解析保底配置列表
+---@param rawList table 原始保底列表数据
+function LotteryType:ParsePityList(rawList)
+    for _, pityData in ipairs(rawList) do
+        local cfg = {
+            rewardType = pityData["奖励类型"] or "物品",
+            requiredDraws = pityData["需要抽奖次数"] or 0,
+            item = pityData["物品"],
+            wingConfig = pityData["翅膀配置"],
+            petConfig = pityData["宠物配置"],
+            partnerConfig = pityData["伙伴配置"],
+            trailConfig = pityData["尾迹配置"],
+            amount = pityData["数量"] or 1,
+        }
+        table.insert(self.pityList, cfg)
+    end
+
+    table.sort(self.pityList, function(a, b)
+        return (a.requiredDraws or 0) < (b.requiredDraws or 0)
+    end)
+end
+
+--- 是否存在保底配置列表
+---@return boolean 有无保底
+function LotteryType:HasPityList()
+    return self.pityList ~= nil and #self.pityList > 0
+end
+
+--- 获取保底配置列表（若无则返回空表）
+---@return table[] 保底配置列表
+function LotteryType:GetPityList()
+    return self.pityList or {}
 end
 
 --- 解析消耗配置
