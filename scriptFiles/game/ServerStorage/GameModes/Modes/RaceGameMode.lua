@@ -617,6 +617,15 @@ function RaceGameMode:End()
     self:_updateRankings()
     self:_calculateAndDistributeRewards()
 
+    -- 比赛结束打印所有玩家的飞行距离（按当前排名）
+    gg.log("比赛飞行距离统计：")
+    for _, uin in ipairs(self.rankings) do
+        local flightData = self.flightData[uin]
+        if flightData then
+            gg.log(string.format("第 %d 名: %s 飞行距离: %.1f 米", flightData.rank, flightData.name, flightData.flightDistance))
+        end
+    end
+
     -- 通知玩家结果
     for _, uin in ipairs(self.rankings) do
         local flightData = self.flightData[uin]
