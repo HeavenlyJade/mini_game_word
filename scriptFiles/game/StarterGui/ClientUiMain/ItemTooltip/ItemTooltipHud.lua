@@ -5,6 +5,7 @@ local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewB
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler) ---@type ClientScheduler
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local CardIcon = require(MainStorage.Code.Common.Icon.card_icon) ---@type CardIcon
 
 ---@class ItemTooltipHud:ViewBase
 local ItemTooltipHud = ClassMgr.Class("ItemTooltipHud", ViewBase)
@@ -12,7 +13,7 @@ local ItemTooltipHud = ClassMgr.Class("ItemTooltipHud", ViewBase)
 
 local uiConfig = {
     uiName = "ItemTooltipHud",
-    layer = 20,
+    layer = 0,
     hideOnInit = true,
     closeHuds = false
 }
@@ -21,7 +22,7 @@ function ItemTooltipHud:OnInit(node, config)
     self.frame = self:Get("框体", ViewButton)
     self.icon = self.frame:Get("物品图标")
     self.title = self.frame:Get("物品名")
-    self.description = self.frame:Get("物品描述列表/物品描述")
+    self.description = self.frame:Get("物品描述")
     self.useButton = self.frame:Get("使用", ViewButton)
     if game.RunService:IsPC() then
         ClientEventManager.Subscribe("MouseMove", function (evt)
@@ -42,6 +43,10 @@ function ItemTooltipHud:OnInit(node, config)
 end
 
 function ItemTooltipHud:DisplayItem(item, x, y)
+    if self.frame and self.frame.node then
+        self.frame.node.RenderIndex = 9999
+    end
+    
     local itemType = item
     if ClassMgr.Is(item, "Item") then
         itemType = item.itemType
@@ -61,6 +66,10 @@ function ItemTooltipHud:DisplayItem(item, x, y)
         if self.icon.node["Frame"] then
             self.icon.node["Frame"].Icon = itemType.rank.normalImgFrame
         end
+    end
+    local quality = itemType.quality or itemType.rarity
+    if quality and CardIcon.qualityNoticeIcon and CardIcon.qualityNoticeIcon[quality] then
+        self.icon.node.Icon = CardIcon.qualityNoticeIcon[quality]
     end
     self.title.node.Title = itemType.name
     self.description.node.Title = itemType.description

@@ -261,27 +261,33 @@ function CachaDrawGui:CreateLotteryItemNode(viewList, rewardItem, index, poolNam
     -- 绑定悬停提示（使用工程通用的 ItemTooltipHud）
     local tooltipTarget = iconNode or backgroundNode
     if tooltipTarget then
+        -- 简化：参考 LotteryGui:GetRewardInfo，先拿统一的展示信息
+        local rewardType = rewardItem.rewardType
         local itemData = nil
-        local rt = rewardItem.rewardType
-        if rt == "物品" then
+        if rewardType == "物品" then
             itemData = ConfigLoader.GetItem(rewardItem.item)
-        elseif rt == "宠物" then
-            itemData = ConfigLoader.GetPet(rewardItem.petConfig)
-        elseif rt == "伙伴" then
-            itemData = ConfigLoader.GetPartner(rewardItem.partnerConfig)
-        elseif rt == "翅膀" then
-            itemData = ConfigLoader.GetWing(rewardItem.wingConfig)
-        elseif rt == "尾迹" then
-            itemData = ConfigLoader.GetTrail(rewardItem.trailConfig)
-        end
-
-        if not itemData then
+        else
+            local info = rewardInfo -- 已由 GetRewardInfo 解析出 name/icon/rarity
+            local desc = ""
+            if rewardType == "宠物" then
+                local cfg = ConfigLoader.GetPet(rewardItem.petConfig); if cfg and cfg.description then desc = cfg.description end
+            elseif rewardType == "伙伴" then
+                local cfg = ConfigLoader.GetPartner(rewardItem.partnerConfig); if cfg and cfg.description then desc = cfg.description end
+            elseif rewardType == "翅膀" then
+                local cfg = ConfigLoader.GetWing(rewardItem.wingConfig); if cfg and cfg.description then desc = cfg.description end
+            elseif rewardType == "尾迹" then
+                local cfg = ConfigLoader.GetTrail(rewardItem.trailConfig); if cfg and cfg.description then desc = cfg.description end
+            end
             itemData = {
-                name = rewardInfo.name,
-                icon = rewardInfo.icon,
-                description = "",
+                name = info.name,
+                icon = info.icon,
+                description = desc,
+                amount = rewardItem.amount or 1,
+                rarity = info.rarity,
+                quality = info.rarity,
             }
         end
+
 
         tooltipTarget.RollOver:Connect(function(node, isOver, vector2)
             local hud = ViewBase.GetUI("ItemTooltipHud")
