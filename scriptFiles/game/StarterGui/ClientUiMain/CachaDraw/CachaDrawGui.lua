@@ -258,10 +258,43 @@ function CachaDrawGui:CreateLotteryItemNode(viewList, rewardItem, index, poolNam
         end
     end
 
-    local bonusNode = backgroundNode:FindFirstChild("加成")
-    if bonusNode then
-        local bonusText = self:GetRarityBonusText(rewardInfo.rarity)
-        bonusNode.Title = bonusText
+    -- 绑定悬停提示（使用工程通用的 ItemTooltipHud）
+    local tooltipTarget = iconNode or backgroundNode
+    if tooltipTarget then
+        local itemData = nil
+        local rt = rewardItem.rewardType
+        if rt == "物品" then
+            itemData = ConfigLoader.GetItem(rewardItem.item)
+        elseif rt == "宠物" then
+            itemData = ConfigLoader.GetPet(rewardItem.petConfig)
+        elseif rt == "伙伴" then
+            itemData = ConfigLoader.GetPartner(rewardItem.partnerConfig)
+        elseif rt == "翅膀" then
+            itemData = ConfigLoader.GetWing(rewardItem.wingConfig)
+        elseif rt == "尾迹" then
+            itemData = ConfigLoader.GetTrail(rewardItem.trailConfig)
+        end
+
+        if not itemData then
+            itemData = {
+                name = rewardInfo.name,
+                icon = rewardInfo.icon,
+                description = "",
+            }
+        end
+
+        tooltipTarget.RollOver:Connect(function(node, isOver, vector2)
+            local hud = ViewBase.GetUI("ItemTooltipHud")
+            if hud then
+                hud:DisplayItem(itemData, vector2.x, vector2.y)
+            end
+        end)
+        tooltipTarget.RollOut:Connect(function(node, isOver, vector2)
+            local hud = ViewBase.GetUI("ItemTooltipHud")
+            if hud then
+                hud:Close()
+            end
+        end)
     end
 
     viewList:AppendChild(itemNode)

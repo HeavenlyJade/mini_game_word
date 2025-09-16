@@ -1,11 +1,10 @@
 local MainStorage = game:GetService("MainStorage")
-local ClassMgr = require(MainStorage.code.common.ClassMgr) ---@type ClassMgr
-local ViewBase = require(MainStorage.code.client.ui.ViewBase) ---@type ViewBase
-local ViewButton = require(MainStorage.code.client.ui.ViewButton) ---@type ViewButton
-local ClientEventManager = require(MainStorage.code.client.event.ClientEventManager) ---@type ClientEventManager
-local ClientScheduler = require(MainStorage.code.client.ClientScheduler) ---@type ClientScheduler
-local gg = require(MainStorage.code.common.MGlobal) ---@type gg
-local Item = require(MainStorage.code.server.bag.Item) ---@type Item
+local ClassMgr = require(MainStorage.Code.Untils.ClassMgr) ---@type ClassMgr
+local ViewBase = require(MainStorage.Code.Client.UI.ViewBase) ---@type ViewBase
+local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewButton
+local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
+local ClientScheduler = require(MainStorage.Code.Client.ClientScheduler) ---@type ClientScheduler
+local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 ---@class ItemTooltipHud:ViewBase
 local ItemTooltipHud = ClassMgr.Class("ItemTooltipHud", ViewBase)
