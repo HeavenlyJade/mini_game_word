@@ -6,6 +6,7 @@ local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewB
 local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local MailEventConfig = require(MainStorage.Code.Event.EventMail) ---@type MailEventConfig
+local PetEventConfig = require(MainStorage.Code.Event.EventPet) ---@type PetEventConfig
 
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
@@ -83,6 +84,9 @@ function ShopGui:RegisterButtonEvents()
 
     -- 在线奖励按钮
     self.onlineRewardsSection.clickCb = function()
+        -- 先请求最强加成宠物名称
+        self:RequestStrongestBonusPetName()
+        
         local onlineRewardsGui = ViewBase["OnlineRewardsGui"]
         if onlineRewardsGui then
             onlineRewardsGui:Open()
@@ -216,6 +220,14 @@ function ShopGui:RequestMailList()
     gg.network_channel:FireServer({
         cmd = MailEventConfig.REQUEST.GET_LIST
     })
+end
+
+-- 请求最强加成宠物名称
+function ShopGui:RequestStrongestBonusPetName()
+    gg.network_channel:FireServer({
+        cmd = PetEventConfig.REQUEST.GET_STRONGEST_BONUS_PET_NAME
+    })
+    --gg.log("ShopGui：已发送获取最强加成宠物名称请求")
 end
 
 -- 更新邮件状态显示

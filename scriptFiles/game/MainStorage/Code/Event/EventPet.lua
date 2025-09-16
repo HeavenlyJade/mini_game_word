@@ -26,7 +26,8 @@ PetEventConfig.REQUEST = {
     UPGRADE_ALL_PETS = "UpgradeAllPets",        -- 【新增】一键升星
     AUTO_EQUIP_BEST_PET = "AutoEquipBestPet",           -- 【新增】自动装备最优宠物
     AUTO_EQUIP_ALL_BEST_PETS = "AutoEquipAllBestPets", -- 【新增】自动装备所有最优宠物
-    GET_PET_EFFECT_RANKING = "GetPetEffectRanking"     -- 【新增】获取宠物效果排行
+    GET_PET_EFFECT_RANKING = "GetPetEffectRanking",     -- 【新增】获取宠物效果排行
+    GET_STRONGEST_BONUS_PET_NAME = "GetStrongestBonusPetName" -- 【新增】获取最强加成宠物名称
 }
 
 -- 服务器响应事件
@@ -42,6 +43,7 @@ PetEventConfig.RESPONSE = {
     PET_STATS = "PetStats",                    -- 宠物统计结果
     PET_BATCH_UPGRADE = "PetBatchUpgrade",     -- 批量升级结果
     PET_EFFECT_RANKING = "PetEffectRanking",   -- 【新增】宠物效果排行响应
+    STRONGEST_BONUS_PET_NAME = "StrongestBonusPetName", -- 【新增】最强加成宠物名称响应
     ERROR = "PetError"                         -- 错误响应
 }
 

@@ -14,6 +14,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field wingConfig string|nil 翅膀配置名称（当type为"翅膀"时）
 ---@field displayUI string|nil 显示UI（空字符串将被转换为nil）
 ---@field description string|nil 奖励描述（空字符串将被转换为nil）
+---@field specialNote string|nil 特殊标注（空字符串将被转换为nil）
 
 ---@class RewardEntry
 ---@field index number 奖励索引
@@ -90,6 +91,7 @@ function RewardType:ParseRewardItem(itemData)
         return nil
     end
     
+    
     -- 将空字符串标准化为nil，避免下游逻辑误判
     local function normalizeEmptyToNil(v)
         if v == "" then
@@ -105,7 +107,10 @@ function RewardType:ParseRewardItem(itemData)
         -- 直接在物品层收集显示UI与描述，并做空串->nil处理
         displayUI = normalizeEmptyToNil(itemData["显示UI"]),
         description = normalizeEmptyToNil(itemData["奖励描述"]),
+        specialNote = normalizeEmptyToNil(itemData["特殊标注"]),
     }
+    
+    -- 调试：打印解析后的数据
     
     -- 根据奖励类型设置具体内容
     if rewardType == "物品" then

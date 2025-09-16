@@ -10,6 +10,7 @@ local ViewButton = require(MainStorage.Code.Client.UI.ViewButton) ---@type ViewB
 local ViewComponent = require(MainStorage.Code.Client.UI.ViewComponent) ---@type ViewComponent
 local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
 local RewardEvent = require(MainStorage.Code.Event.RewardEvent) ---@type RewardEvent
+local PetEventConfig = require(MainStorage.Code.Event.EventPet) ---@type PetEventConfig
 local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
@@ -62,6 +63,9 @@ function OnlineRewardsGui:OnInit(node, config)
     self.rewardConfig = nil ---@type RewardType 当前奖励配置
     self.rewardNodeMap = {} ---@type table<string, any> 奖励节点映射
     self.slotClickButtons = {} ---@type table<number, ViewButton> 槽位点击按钮
+    
+    -- 最强加成宠物数据
+    self.strongestBonusPet = nil ---@type table 最强加成宠物数据 {petName, starLevel, slotIndex, totalBonus}
     
     -- 倒计时相关
     self.onlineTime = 0 ---@type number 当前在线时长（秒）
@@ -305,6 +309,11 @@ function OnlineRewardsGui:RegisterEvents()
     -- 监听每日重置通知
     ClientEventManager.Subscribe(RewardEvent.NOTIFY.DAILY_RESET, function(data)
         self:OnDailyReset(data)
+    end)
+    
+    -- 监听最强加成宠物名称响应
+    ClientEventManager.Subscribe(PetEventConfig.RESPONSE.STRONGEST_BONUS_PET_NAME, function(data)
+        self:OnStrongestBonusPetNameResponse(data)
     end)
     
     ----gg.log("=== 在线奖励系统事件监听注册完成 ===")
@@ -647,6 +656,27 @@ function OnlineRewardsGui:OnDailyReset(data)
     self:RequestRewardData()
 end
 
+--- 处理最强加成宠物名称响应
+---@param data table 响应数据
+function OnlineRewardsGui:OnStrongestBonusPetNameResponse(data)
+    gg.log("OnlineRewardsGui:OnStrongestBonusPetNameResponse", data)
+    if not data then return end
+    
+    -- 保存最强加成宠物数据
+    self.strongestBonusPet = {
+        petName = data.petName,
+        starLevel = data.starLevel,
+        slotIndex = data.slotIndex,
+        totalBonus = data.totalBonus
+    }
+    
+    gg.log(string.format("OnlineRewardsGui：收到最强加成宠物数据 - 名称: %s, 星级: %d, 槽位: %d, 总加成: %.2f", 
+        data.petName, data.starLevel, data.slotIndex, data.totalBonus))
+    
+    -- 可以在这里更新UI显示最强加成宠物信息
+    self:UpdateStrongestBonusPetDisplay()
+end
+
 -- =================================
 -- UI更新
 -- =================================
@@ -801,6 +831,13 @@ function OnlineRewardsGui:GetRewardDescription(reward)
     end
     
     local item = reward.rewardItems
+    
+    -- 检查是否是特殊标注的宠物奖励
+    if item.specialNote == "宠物标注" and self.strongestBonusPet then
+        return string.format("获得你背包宠物最高加成的1星版本 (%s)", 
+            self.strongestBonusPet.petName)
+    end
+    
     -- 如果配置中提供了奖励描述，优先显示该描述
     if item.description then
         return item.description
@@ -833,7 +870,17 @@ function OnlineRewardsGui:ShowRewardDescription(reward)
     local showui = self.rewardDescription.node["显示UI"]
     if showui then
         if reward and reward.rewardItems then
-            local icon = self:GetIconFromRewardItem(reward.rewardItems)
+            local icon = nil
+            
+            -- 检查是否是特殊标注的宠物奖励
+            if reward.rewardItems.specialNote == "宠物标注" and self.strongestBonusPet then
+                -- 使用最强加成宠物的图标
+                icon = self:GetStrongestBonusPetIcon()
+            else
+                -- 使用默认的图标获取逻辑
+                icon = self:GetIconFromRewardItem(reward.rewardItems)
+            end
+            
             if icon then
                 showui.Icon = icon
             end
@@ -1131,6 +1178,114 @@ function OnlineRewardsGui:GetRewardStatus(index)
     end
     
     return 0  -- 未达成
+end
+
+--- 更新最强加成宠物显示
+function OnlineRewardsGui:UpdateStrongestBonusPetDisplay()
+    if not self.strongestBonusPet then
+        ----gg.log("OnlineRewardsGui：没有最强加成宠物数据，跳过UI更新")
+        return
+    end
+    self:UpdateRewardDescriptionsWithStrongestPet()
+end
+
+--- 更新奖励描述中的最强加成宠物信息
+function OnlineRewardsGui:UpdateRewardDescriptionsWithStrongestPet()
+    
+    if not self.strongestBonusPet then
+        return
+    end
+    
+    if not self.rewardConfig then
+        return
+    end
+    
+    
+    -- 遍历所有奖励，检查是否有特殊标注需要更新
+    for index, reward in ipairs(self.rewardConfig.rewardList) do
+        
+        if reward.rewardItems and reward.rewardItems.specialNote == "宠物标注" then
+            
+            -- 更新奖励描述，显示最强加成宠物的信息
+            local updatedDescription = string.format("获得你背包宠物最高加成的1星版本 目前为:(%s)", 
+                self.strongestBonusPet.petName)
+            
+            -- 获取最强加成宠物的图标
+            local petIcon = self:GetStrongestBonusPetIcon()
+            
+            -- 更新UI显示
+            local slotNode = self.rewardNodeMap[index]
+            if slotNode then
+                
+                local backgroundNode = slotNode:FindFirstChild("背景")
+                if backgroundNode then
+                    
+                    -- 更新奖励描述
+                    local descNode = backgroundNode:FindFirstChild("奖励描述")
+                    if descNode then
+                        descNode.Title = updatedDescription
+                    end
+                    
+                    -- 更新奖励图标
+                    local iconNode = backgroundNode:FindFirstChild("图标")
+                    if iconNode then
+                        if petIcon then
+                            iconNode.Icon = petIcon
+                        end
+                    end
+                end
+                
+                -- 通过ViewButton重新装载图标资源
+                local slotButton = self.slotClickButtons[index]
+                if slotButton and petIcon then
+                    -- 先直接设置UI节点的图标
+                    local iconNode = backgroundNode:FindFirstChild("图标")
+                    if iconNode then
+                        iconNode.Icon = petIcon
+                    end
+                    
+                    -- 然后重新装载ViewButton的资源缓存
+                    slotButton:ReloadAllChildResources()
+                end
+            end
+        end
+    end
+    
+end
+
+--- 获取最强加成宠物的图标
+---@return string|nil 宠物图标资源ID
+function OnlineRewardsGui:GetStrongestBonusPetIcon()
+    
+    if not self.strongestBonusPet then
+        return nil
+    end
+    
+    local petName = self.strongestBonusPet.petName
+    if not petName then
+        return nil
+    end
+    
+    
+    -- 获取宠物配置
+    local petConfig = ConfigLoader.GetPet(petName)
+    if not petConfig then
+        return nil
+    end
+    
+    
+    -- 优先使用配置的显示UI，否则使用头像资源
+    if petConfig.avatarResource and petConfig.avatarResource ~= "" then
+        return petConfig.avatarResource
+    end
+    
+    return nil
+end
+
+--- 获取最强加成宠物数据（供外部调用）
+---@return table|nil 最强加成宠物数据
+function OnlineRewardsGui:GetStrongestBonusPet()
+    return self.strongestBonusPet
 end
 
 return OnlineRewardsGui.New(script.Parent, uiConfig) 

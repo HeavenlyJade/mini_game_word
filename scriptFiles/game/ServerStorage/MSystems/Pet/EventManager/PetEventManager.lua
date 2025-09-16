@@ -65,6 +65,9 @@ function PetEventManager.RegisterEventHandlers()
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.AUTO_EQUIP_BEST_PET, function(evt) PetEventManager.HandleAutoEquipBestPet(evt) end)
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.AUTO_EQUIP_ALL_BEST_PETS, function(evt) PetEventManager.HandleAutoEquipAllBestPets(evt) end)
     ServerEventManager.Subscribe(PetEventConfig.REQUEST.GET_PET_EFFECT_RANKING, function(evt) PetEventManager.HandleGetPetEffectRanking(evt) end)
+    
+    -- 【新增】获取最强加成宠物名称
+    ServerEventManager.Subscribe(PetEventConfig.REQUEST.GET_STRONGEST_BONUS_PET_NAME, function(evt) PetEventManager.HandleGetStrongestBonusPetName(evt) end)
 end
 
 --- 验证玩家
@@ -413,31 +416,6 @@ function PetEventManager.HandleRenamePet(evt)
     end
 end
 
---- 处理批量升级请求（新增功能）
----@param evt table 事件数据
-function PetEventManager.HandleUpgradeAllPets(evt)
-    local player = PetEventManager.ValidatePlayer(evt)
-    if not player then return end
-
-    local upgradedCount = PetMgr.UpgradeAllPossiblePets(player.uin)
-
-    if upgradedCount > 0 then
-        --gg.log("批量升级宠物成功", player.uin, "升级次数", upgradedCount)
-        -- 发送响应事件到客户端
-        gg.network_channel:fireClient(player.uin, {
-            cmd = PetEventManager.RESPONSE.PET_BATCH_UPGRADE,
-            success = true,
-            upgradedCount = upgradedCount
-        })
-    else
-        --gg.log("批量升级宠物：没有可升级的宠物", player.uin)
-        gg.network_channel:fireClient(player.uin, {
-            cmd = PetEventManager.RESPONSE.PET_BATCH_UPGRADE,
-            success = false,
-            errorMsg = "没有可升级的宠物"
-        })
-    end
-end
 
 --- 处理宠物统计查询请求（新增功能）
 ---@param evt table 事件数据 {petName, minStar}
@@ -612,6 +590,44 @@ function PetEventManager.HandleGetPetEffectRanking(evt)
         })
     else
         PetEventManager.NotifyError(player.uin, -1, "获取宠物效果排行失败")
+    end
+end
+
+---【新增】处理获取最强加成宠物名称请求
+---@param evt table 事件数据
+function PetEventManager.HandleGetStrongestBonusPetName(evt)
+    local player = PetEventManager.ValidatePlayer(evt)
+    if not player then return end
+    gg.log("PetEventManager.HandleGetStrongestBonusPetName", player.uin)
+    -- 获取玩家宠物管理器
+    local petManager = PetMgr.GetPlayerPet(player.uin)
+    if not petManager then
+        gg.log("PetEventManager.HandleGetStrongestBonusPetName", player.uin, "宠物数据不存在")
+        return
+    end
+
+    -- 计算最强加成宠物
+    local strongestPet = petManager:CalculateAllPetBonusesAndGetStrongest()
+    
+    if strongestPet then
+        -- 发送最强加成宠物名称给客户端
+        gg.network_channel:fireClient(player.uin, {
+            cmd = PetEventManager.RESPONSE.STRONGEST_BONUS_PET_NAME,
+            success = true,
+            petName = strongestPet.petName,
+            starLevel = strongestPet.starLevel,
+            slotIndex = strongestPet.slotIndex,
+            totalBonus = strongestPet.totalBonus
+        })
+        --gg.log("返回最强加成宠物名称", player.uin, "宠物", strongestPet.petName, "星级", strongestPet.starLevel)
+    else
+        -- 没有找到最强加成宠物
+        gg.network_channel:fireClient(player.uin, {
+            cmd = PetEventManager.RESPONSE.STRONGEST_BONUS_PET_NAME,
+            success = false,
+            errorMsg = "背包中没有有效的宠物"
+        })
+        --gg.log("未找到最强加成宠物", player.uin)
     end
 end
 

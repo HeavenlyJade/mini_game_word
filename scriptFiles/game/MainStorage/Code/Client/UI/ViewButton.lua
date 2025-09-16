@@ -509,4 +509,108 @@ function ViewButton:SetAttribute(key, value, childName)
     end
 end
 
+--- 新增：重新装载所有子节点的资源
+--- 从实际的UI节点重新读取所有子节点的当前状态，并更新ViewButton的内部缓存
+--- 用于在外部修改了UI节点属性后，同步ViewButton的状态
+function ViewButton:ReloadAllChildResources()
+    if not self.childClickImgs then
+        return false
+    end
+    
+    local reloadedCount = 0
+    
+    -- 重新装载主按钮的资源
+    if self.img then
+        self.normalImg = self.img.Icon
+        self.normalColor = self.img.FillColor
+        reloadedCount = reloadedCount + 1
+    end
+    
+    -- 重新装载所有子节点的资源
+    for childName, props in pairs(self.childClickImgs) do
+        local childNode = props.node
+        if childNode then
+            -- 从实际节点读取当前状态
+            local currentIcon = childNode.Icon
+            local currentColor = childNode.FillColor
+            
+            -- 更新缓存
+            props.normalImg = currentIcon
+            props.normalColor = currentColor
+            
+            reloadedCount = reloadedCount + 1
+        end
+    end
+    
+    return reloadedCount > 0
+end
+
+--- 新增：重新装载指定子节点的资源
+---@param childName string 子节点名称
+---@return boolean 是否成功重新装载
+function ViewButton:ReloadChildResource(childName)
+    if not self.childClickImgs or not self.childClickImgs[childName] then
+        return false
+    end
+    
+    local props = self.childClickImgs[childName]
+    local childNode = props.node
+    
+    if not childNode then
+        return false
+    end
+    
+    -- 从实际节点读取当前状态
+    local currentIcon = childNode.Icon
+    local currentColor = childNode.FillColor
+    
+    -- 更新缓存
+    props.normalImg = currentIcon
+    props.normalColor = currentColor
+    
+    return true
+end
+
+--- 新增：重新装载指定路径的子节点资源
+---@param childPath string 子节点路径，如"背景/图标"
+---@return boolean 是否成功重新装载
+function ViewButton:ReloadChildResourceByPath(childPath)
+    if not self.node then
+        return false
+    end
+    
+    -- 通过路径查找子节点
+    local childNode = self.node
+    local pathParts = {}
+    
+    -- 分割路径
+    for part in string.gmatch(childPath, "[^/]+") do
+        table.insert(pathParts, part)
+    end
+    
+    -- 逐级查找节点
+    for _, part in ipairs(pathParts) do
+        if childNode and childNode[part] then
+            childNode = childNode[part]
+        else
+            return false
+        end
+    end
+    
+    if not childNode then
+        return false
+    end
+    
+    -- 查找对应的缓存项
+    local childName = pathParts[#pathParts] -- 使用最后一部分作为子节点名称
+    if self.childClickImgs and self.childClickImgs[childName] then
+        local props = self.childClickImgs[childName]
+        props.normalImg = childNode.Icon
+        props.normalColor = childNode.FillColor
+        return true
+    end
+    
+    return false
+end
+
 return ViewButton
