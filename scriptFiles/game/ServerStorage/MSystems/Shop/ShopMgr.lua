@@ -191,6 +191,7 @@ function ShopMgr.ProcessDynamicPricePurchase(player, shopItemId, currencyType, c
     
     -- 计算动态价格
     local dynamicPrice = shopItem:GetCurrentDynamicPrice(playerVariableData)
+    gg.log("dynamicPrice",dynamicPrice,playerVariableData)
     if not dynamicPrice or dynamicPrice <= 0 then
         return false, "动态价格计算失败", nil
     end

@@ -159,11 +159,93 @@ function PartnerCommand.handlers.set(params, player)
     return true
 end
 
+--- 新增伙伴栏位（新增背包容量和可携带数量）
+---@param params table
+---@param player MPlayer
+function PartnerCommand.handlers.addslots(params, player)
+	local carryCount = params["新增可携带"] and tonumber(params["新增可携带"])
+	local bagCapacity = params["新增背包"] and tonumber(params["新增背包"])
+
+	if not carryCount and not bagCapacity then
+		--player:SendHoverText("请至少提供 '可携带' 或 '背包' 字段中的一个")
+		return false
+	end
+
+	local uin = player.uin
+	local anythingChanged = false
+
+	if carryCount then
+		if PartnerMgr.AddUnlockedEquipSlots(uin, carryCount) then
+			--player:SendHoverText("成功新增可携带伙伴栏位: " .. carryCount)
+			anythingChanged = true
+		else
+			--player:SendHoverText("新增可携带栏位失败, 可能是玩家数据未加载")
+		end
+	end
+
+	if bagCapacity then
+		if PartnerMgr.AddPartnerBagCapacity(uin, bagCapacity) then
+			--player:SendHoverText("成功新增伙伴背包容量: " .. bagCapacity)
+			anythingChanged = true
+		else
+			--player:SendHoverText("新增背包容量失败, 可能是玩家数据未加载")
+		end
+	end
+
+	if anythingChanged then
+		PartnerCommand._syncToClient(player)
+	end
+
+	return true
+end
+
+--- 减少伙伴栏位
+---@param params table
+---@param player MPlayer
+function PartnerCommand.handlers.reduceslots(params, player)
+	local carryCount = params["减少可携带"] and tonumber(params["减少可携带"])
+	local bagCapacity = params["减少背包"] and tonumber(params["减少背包"])
+
+	if not carryCount and not bagCapacity then
+		--player:SendHoverText("请至少提供 '可携带' 或 '背包' 字段中的一个")
+		return false
+	end
+
+	local uin = player.uin
+	local anythingChanged = false
+
+	if carryCount then
+		if PartnerMgr.ReduceUnlockedEquipSlots(uin, carryCount) then
+			--player:SendHoverText("成功减少可携带伙伴栏位: " .. carryCount)
+			anythingChanged = true
+		else
+			--player:SendHoverText("减少可携带栏位失败, 可能是玩家数据未加载")
+		end
+	end
+
+	if bagCapacity then
+		if PartnerMgr.ReducePartnerBagCapacity(uin, bagCapacity) then
+			--player:SendHoverText("成功减少伙伴背包容量: " .. bagCapacity)
+			anythingChanged = true
+		else
+			--player:SendHoverText("减少背包容量失败, 可能是玩家数据未加载")
+		end
+	end
+
+	if anythingChanged then
+		PartnerCommand._syncToClient(player)
+	end
+
+	return true
+end
+
 -- 中文到英文的映射
 local operationMap = {
     ["新增"] = "add",
     ["删除"] = "remove",
-    ["设置"] = "set"
+	["设置"] = "set",
+	["栏位新增"] = "addslots",
+	["栏位减少"] = "reduceslots"
 }
 
 --- 伙伴操作指令入口

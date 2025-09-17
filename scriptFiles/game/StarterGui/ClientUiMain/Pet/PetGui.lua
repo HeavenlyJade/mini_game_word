@@ -58,7 +58,9 @@ function PetGui:OnInit(node, config)
 
     -- 宠物携带带
     self.petCarryNumLabel = self:Get("宠物界面/宠物携带/携带数量", ViewComponent) ---@type ViewComponent
+    self.petCarryNum = self:Get("宠物界面/宠物携带", ViewButton) ---@type ViewButton
     self.carryCountLabel = self:Get("宠物界面/宠物数量/携带数量", ViewComponent) ---@type ViewComponent
+    self.petBagNum = self:Get("宠物界面/宠物数量", ViewButton) ---@type ViewButton
 
     -- 删除按钮
     self.deleteButton = self:Get("宠物界面/删除", ViewButton) ---@type ViewButton
@@ -171,6 +173,24 @@ function PetGui:RegisterButtonEvents()
         self:OnClickGetMorePet()
     end
 
+    -- 【新增】携带数量按钮：打开商城并定位飞行币分类下的“宠物背包”
+    if self.petBagNum then
+        self.petBagNum.clickCb = function()
+            --gg.log("点击携带数量，前往商城-飞行币-宠物背包")
+            local shopGui = ViewBase.GetUI("ShopDetailGui")
+            if shopGui then
+                shopGui:OpenFromCommand({
+                    categoryName = "飞行币",
+                    shopItemId = "宠物背包"
+                })
+                -- 进入商城后关闭当前宠物界面
+                self:Close()
+            else
+                ----gg.log("错误：找不到ShopDetailGui界面")
+            end
+        end
+    end
+
     ----gg.log("宠物界面按钮事件注册完成")
 end
 
@@ -208,7 +228,7 @@ function PetGui:OnPetListResponse(data)
         self.petData = data.petList.companionList
         self.activeSlots = data.petList.activeSlots or {}
         self.equipSlotIds = data.petList.equipSlotIds or {}
-        self.petBagCapacity = data.petList.petSlots or 50
+        self.petBagCapacity = data.petList.maxSlots or 50
         self.unlockedEquipSlots = data.petList.unlockedEquipSlots or 3
 
         ----gg.log("宠物数据同步完成, 激活槽位:", self.activeSlots)

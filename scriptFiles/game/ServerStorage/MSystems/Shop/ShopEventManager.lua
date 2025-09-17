@@ -190,12 +190,12 @@ function ShopEventManager.HandleDynamicPricePurchase(evt)
     local categoryName = args.categoryName
     
     if not shopItemId then
-        --player:SendHoverText("商品ID不能为空")
+        player:SendHoverText("商品ID不能为空")
         return
     end
     
     if not currencyType then
-        --player:SendHoverText("货币类型不能为空")
+        player:SendHoverText("货币类型不能为空")
         return
     end
     
@@ -400,8 +400,9 @@ function ShopEventManager.SendShopItemAcquiredNotification(uin, rewards, source)
     local noticeRewards = {}
     for _, reward in ipairs(rewards) do
         -- 商城奖励配置结构：{itemType="物品", itemName="具体名称", amount=1}
+    
         local itemType = reward.itemType or "物品"
-        local itemName = reward.itemName or "未知物品"
+        local itemName = reward.itemName or reward.simpleDescription
         
         -- 确保itemType是中文格式
         if itemType == "pet" then
@@ -419,7 +420,8 @@ function ShopEventManager.SendShopItemAcquiredNotification(uin, rewards, source)
         table.insert(noticeRewards, {
             itemType = itemType,
             itemName = itemName,
-            amount = reward.amount or 1
+            amount = reward.amount or 1,
+            icon = reward.iconResource or nil
         })
     end
     

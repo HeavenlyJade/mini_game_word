@@ -767,4 +767,68 @@ function PartnerMgr.GetPartnerEffectRanking(uin, limit)
     return ranking, nil
 end
 
+---【新增】增加玩家可携带栏位数量
+---@param uin number 玩家ID
+---@param count number 增加的数量
+---@return boolean
+function PartnerMgr.AddUnlockedEquipSlots(uin, count)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if partnerManager then
+        partnerManager:AddUnlockedEquipSlots(count)
+        --gg.log("通过 PartnerMgr 为玩家", uin, "增加可携带栏位数量", count)
+        return true
+    else
+        --gg.log("增加可携带栏位失败，找不到玩家", uin, "的伙伴管理器")
+        return false
+    end
+end
+
+---【新增】减少玩家可携带栏位数量
+---@param uin number 玩家ID
+---@param count number 减少的数量
+---@return boolean
+function PartnerMgr.ReduceUnlockedEquipSlots(uin, count)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if partnerManager then
+        partnerManager:ReduceUnlockedEquipSlots(count)
+        --gg.log("通过 PartnerMgr 为玩家", uin, "减少可携带栏位数量", count)
+        return true
+    else
+        --gg.log("减少可携带栏位失败，找不到玩家", uin, "的伙伴管理器")
+        return false
+    end
+end
+
+---【新增】增加玩家伙伴背包容量
+---@param uin number 玩家ID
+---@param capacity number 增加的容量
+---@return boolean
+function PartnerMgr.AddPartnerBagCapacity(uin, capacity)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if partnerManager then
+        partnerManager:AddPartnerBagCapacity(capacity)
+        --gg.log("通过 PartnerMgr 为玩家", uin, "增加背包容量", capacity)
+        return true
+    else
+        --gg.log("增加背包容量失败，找不到玩家", uin, "的伙伴管理器")
+        return false
+    end
+end
+
+---【新增】减少玩家伙伴背包容量
+---@param uin number 玩家ID
+---@param capacity number 减少的容量
+---@return boolean
+function PartnerMgr.ReducePartnerBagCapacity(uin, capacity)
+    local partnerManager = PartnerMgr.GetPlayerPartner(uin)
+    if partnerManager then
+        partnerManager:ReducePartnerBagCapacity(capacity)
+        --gg.log("通过 PartnerMgr 为玩家", uin, "减少背包容量", capacity)
+        return true
+    else
+        --gg.log("减少背包容量失败，找不到玩家", uin, "的伙伴管理器")
+        return false
+    end
+end
+
 return PartnerMgr

@@ -656,10 +656,8 @@ function ShopItemType:GetCurrentDynamicPrice(playerVariableData)
     if not effectValue then
         return self.price.amount or 0
     end
-    
     -- 计算动态价格
-    local basePrice = self.price.amount or 0
-    return math.floor(basePrice * effectValue)
+    return math.floor(effectValue)
 end
 
 --- 检查是否使用动态价格

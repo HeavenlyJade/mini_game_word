@@ -116,7 +116,6 @@ end
 --- 显示单个通知
 ---@param notice table 通知数据
 function NoticeGui:DisplayNotice(notice)
-    gg.log("DisplayNotice",notice)
     -- 清空现有通知内容
     self:ClearNotices()
     --gg.log("notice",notice)
@@ -136,16 +135,26 @@ function NoticeGui:DisplayNotice(notice)
                 itemNode.Icon = CardIcon.qualityNoticeIcon[itemConfig.rarity]
             end
             
-            -- 设置物品图标
+            -- 设置物品图标（优先使用配置，其次回退到服务端下发的 reward.icon）
             if itemNode["图标"] then
+                local iconSet = false
                 if itemConfig.imageResource then
                     itemNode["图标"].Icon = itemConfig.imageResource
-                elseif  itemConfig.icon or itemConfig.avatarResource then
+                    iconSet = true
+                elseif itemConfig.icon or itemConfig.avatarResource then
                     local iconResource = itemConfig.icon or itemConfig.avatarResource
                     if CardIcon.itemIconResources[iconResource] then
                         itemNode["图标"].Icon = CardIcon.itemIconResources[iconResource]
                     else
                         itemNode["图标"].Icon = iconResource -- 直接使用资源路径
+                    end
+                    iconSet = true
+                end
+                -- 当名称为“未知物品”或未能从配置获取到图标时，回退使用服务端奖励里的 iconResource
+                if (not iconSet) or (reward.itemName == "未知物品") then
+                    if reward.icon then
+                        itemNode["图标"].Icon = reward.icon
+                        iconSet = true
                     end
                 end
             end
@@ -160,6 +169,11 @@ function NoticeGui:DisplayNotice(notice)
                 if itemNode["数量"] then
                     itemNode["数量"].Title = "x" .. gg.FormatLargeNumber(reward.amount)
                 end
+            end
+        else
+            -- 当没有配置数据时，仍然尝试使用服务端下发的 icon 来显示
+            if itemNode["图标"] and reward.icon then
+                itemNode["图标"].Icon = reward.icon
             end
         end
 

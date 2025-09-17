@@ -49,6 +49,7 @@ function Shop:OnInit(shopData)
     self.weeklyResetTime = shopData.weeklyResetTime or 0
     self.monthlyResetTime = shopData.monthlyResetTime or 0
     self.lastUpdateTime = shopData.lastUpdateTime or os.time()
+    self.totalFlightCoinSpent = shopData.totalFlightCoinSpent or 0
 end
 
 -- 购买验证 --------------------------------------------------------
@@ -161,12 +162,7 @@ function Shop:ExecutePurchase(shopItemId, player, currencyType)
     
     -- 发放奖励
     local rewardSuccess, rewardReason = self:GrantRewards(shopItem, player)
-    -- if not rewardSuccess then
-    --     -- 购买失败，需要退款
-    --     self:RefundPayment(shopItem, player, currencyType)
-    --     return false, "发放奖励失败：" .. rewardReason
-    -- end
-    
+
     -- 更新购买记录
     self:UpdatePurchaseRecord(shopItemId, shopItem, currencyType)
     
@@ -240,6 +236,124 @@ function Shop:ProcessPayment(shopItem, player, currencyType)
     -- 更新消费统计
     if currencyType == "迷你币" then
         self.totalPurchaseValue = self.totalPurchaseValue + priceAmount
+    end
+    
+    return true, "支付成功"
+end
+
+
+-- 在Shop.lua中添加ExecuteDynamicPurchase方法
+
+--- 执行动态价格购买
+---@param shopItemId string 商品ID
+---@param player MPlayer 玩家对象
+---@param currencyType string 货币类型
+---@param dynamicPrice number 动态价格
+---@return boolean, string, table|nil 是否成功，结果消息，附加数据
+function Shop:ExecuteDynamicPurchase(shopItemId, player, currencyType, dynamicPrice)
+    local shopItem = ConfigLoader.GetShopItem(shopItemId)
+    if not shopItem then
+        return false, "商品不存在"
+    end
+    
+    -- 验证动态价格参数
+    if not dynamicPrice or dynamicPrice <= 0 then
+        return false, "动态价格无效"
+    end
+    
+    -- 再次验证购买条件
+    local canBuy, reason = self:CanPurchase(shopItemId, player)
+    if not canBuy then
+        return false, reason
+    end
+    
+    -- 执行动态价格扣费
+    local paySuccess, payReason = self:ProcessDynamicPayment(shopItem, player, currencyType, dynamicPrice)
+    if not paySuccess then
+        return false, payReason
+    end
+    
+    -- 发放奖励
+    local rewardSuccess, rewardReason = self:GrantRewards(shopItem, player)
+    -- if not rewardSuccess then
+    --     return false, "发放奖励失败：" .. rewardReason
+    -- end
+    
+    -- 更新购买记录
+    self:UpdatePurchaseRecord(shopItemId, shopItem, currencyType)
+    
+    -- 更新限购计数器
+    self:UpdateLimitCounter(shopItemId, shopItem)
+
+    -- 执行商品配置的额外指令（如果有）
+    if shopItem.executeCommands ~= nil and #shopItem.executeCommands > 0 then
+        for _, commandStr in ipairs(shopItem.executeCommands) do
+            if type(commandStr) == "string" and commandStr ~= "" then
+                self:ExecuteRewardCommand(commandStr, player)
+            end
+        end
+    end
+
+    -- 构建购买结果数据
+    local purchaseData = {
+        shopItemId = shopItemId,
+        shopItemName = shopItem.configName,
+        rewards = shopItem.rewards,
+        currencyType = currencyType,
+        dynamicPrice = dynamicPrice,
+        purchaseTime = os.time()
+    }
+    
+    gg.log("玩家动态价格购买商品成功", player.name, shopItemId, currencyType, "动态价格:", dynamicPrice)
+    return true, "购买成功", purchaseData
+end
+
+--- 处理动态价格支付
+---@param shopItem ShopItemType 商品配置
+---@param player MPlayer 玩家对象
+---@param currencyType string 货币类型
+---@param dynamicPrice number 动态价格
+---@return boolean, string 是否成功，失败原因
+function Shop:ProcessDynamicPayment(shopItem, player, currencyType, dynamicPrice)
+    if currencyType == "迷你币" then
+        return false, "动态价格不支持迷你币购买"
+    elseif currencyType == "金币" then
+        -- 使用BagMgr获取玩家金币数量
+        local currentCoin = BagMgr.GetItemAmount(player, "金币")
+        if currentCoin < dynamicPrice then
+            return false, string.format("金币不足，需要%s，当前拥有%s", gg.FormatLargeNumber(dynamicPrice), gg.FormatLargeNumber(currentCoin))
+        end
+        
+        -- 使用BagMgr扣除玩家金币
+        local removeSuccess = BagMgr.RemoveItem(player, "金币", dynamicPrice)
+        if not removeSuccess then
+            return false, "扣除金币失败"
+        end
+        
+        -- 更新金币消费统计
+        self.totalCoinSpent = self.totalCoinSpent + dynamicPrice
+        
+    elseif currencyType == "飞行币" then
+        -- 使用BagMgr获取玩家飞行币数量
+        local currentFlightCoin = BagMgr.GetItemAmount(player, "飞行币")
+        if currentFlightCoin < dynamicPrice then
+            return false, string.format("飞行币不足，需要%s，当前拥有%s", gg.FormatLargeNumber(dynamicPrice), gg.FormatLargeNumber(currentFlightCoin))
+        end
+        
+        -- 使用BagMgr扣除玩家飞行币
+        local removeSuccess = BagMgr.RemoveItem(player, "飞行币", dynamicPrice)
+        if not removeSuccess then
+            return false, "扣除飞行币失败"
+        end
+        
+        -- 更新飞行币消费统计
+        if not self.totalFlightCoinSpent then
+            self.totalFlightCoinSpent = 0
+        end
+        self.totalFlightCoinSpent = self.totalFlightCoinSpent + dynamicPrice
+        
+    else
+        return false, "不支持的货币类型：" .. tostring(currencyType)
     end
     
     return true, "支付成功"

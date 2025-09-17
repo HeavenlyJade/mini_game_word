@@ -217,6 +217,8 @@ function PetCommand.handlers.addslots(params, player)
     if carryCount then
         if PetMgr.AddUnlockedEquipSlots(uin, carryCount) then
             --player:SendHoverText("成功新增可携带宠物栏位: " .. carryCount)
+            _syncToClient(player)
+            gg.log("成功新增可携带宠物栏位: " .. carryCount)
             anythingChanged = true
         else
             --player:SendHoverText("新增可携带栏位失败, 可能是玩家数据未加载")
@@ -226,15 +228,15 @@ function PetCommand.handlers.addslots(params, player)
     if bagCapacity then
         if PetMgr.AddPetBagCapacity(uin, bagCapacity) then
             --player:SendHoverText("成功新增宠物背包容量: " .. bagCapacity)
-            anythingChanged = true
+            gg.log("成功新增宠物背包容量: " .. bagCapacity)
+            _syncToClient(player)
+
         else
             --player:SendHoverText("新增背包容量失败, 可能是玩家数据未加载")
         end
     end
 
-    if anythingChanged then
-        _syncToClient(player)
-    end
+
 
     return true
 end
