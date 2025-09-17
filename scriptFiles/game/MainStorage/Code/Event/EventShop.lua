@@ -8,6 +8,7 @@ local ShopEventConfig = {}
 ShopEventConfig.REQUEST = {
     GET_SHOP_LIST = "ShopRequest_GetShopList",           -- 获取商城商品列表
     PURCHASE_ITEM = "ShopRequest_PurchaseItem",          -- 购买商品
+    PURCHASE_DYNAMIC_ITEM = "ShopRequest_PurchaseDynamicItem", -- 【新增】动态价格购买事件
     VALIDATE_PURCHASE = "ShopRequest_ValidatePurchase",  -- 验证购买条件
     GET_PURCHASE_RECORDS = "ShopRequest_GetRecords",     -- 获取购买记录
     REFRESH_SHOP = "ShopRequest_RefreshShop",            -- 刷新商城数据

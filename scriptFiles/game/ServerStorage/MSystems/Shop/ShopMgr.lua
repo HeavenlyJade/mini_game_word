@@ -149,6 +149,79 @@ function ShopMgr.ProcessMiniCoinPurchase(player, shopItemId, categoryName)
     return ShopMgr.ProcessMiniPurchase(player, shopItem, "迷你币")
 end
 
+-- 【新增】专门处理动态价格购买的函数
+---@param player MPlayer 玩家对象
+---@param shopItemId string 商品ID
+---@param currencyType string 货币类型
+---@param categoryName string|nil 商品分类
+---@return boolean, string, table|nil 是否成功，结果消息，附加数据
+function ShopMgr.ProcessDynamicPricePurchase(player, shopItemId, currencyType, categoryName)
+    gg.log("处理动态价格购买", player.name, shopItemId, currencyType, categoryName)
+    
+    if not player or not shopItemId or not currencyType then
+        return false, "参数无效", nil
+    end
+    
+    -- 明确拒绝迷你币
+    if currencyType == "迷你币" then
+        return false, "迷你币购买请使用专用接口", nil
+    end
+    
+    -- 获取商城实例
+    local shopInstance = ShopMgr.GetOrCreatePlayerShop(player)
+    if not shopInstance then
+        return false, "商城系统异常", nil
+    end
+    
+    -- 获取商品配置
+    local shopItem = ConfigLoader.GetShopItem(shopItemId)
+    if not shopItem then
+        return false, "商品不存在", nil
+    end
+    
+    -- 验证是否支持动态价格
+    if not shopItem:ShouldUseDynamicPriceDisplay() then
+        return false, "该商品不支持动态价格", nil
+    end
+    
+
+    
+    -- 获取玩家变量数据用于动态价格计算
+    local playerVariableData = player.variableSystem:GetVariablesDictionary()
+    
+    -- 计算动态价格
+    local dynamicPrice = shopItem:GetCurrentDynamicPrice(playerVariableData)
+    if not dynamicPrice or dynamicPrice <= 0 then
+        return false, "动态价格计算失败", nil
+    end
+    
+    gg.log("动态价格计算结果", player.name, shopItemId, "基础价格:", shopItem.price.amount, "动态价格:", dynamicPrice)
+    
+    -- 执行购买（使用动态价格）
+    local success, message, purchaseData = shopInstance:ExecuteDynamicPurchase(shopItemId, player, currencyType, dynamicPrice)
+    
+    if success then
+        -- 保存数据
+        -- ShopMgr.SavePlayerShopData(player.uin)
+        
+        -- 构建购买结果
+        local purchaseResult = {
+            shopItemId = shopItemId,
+            shopItemName = shopItem.configName,
+            rewards = shopItem.rewards,
+            currencyType = currencyType,
+            categoryName = categoryName,
+            purchaseTime = os.time(),
+            dynamicPrice = dynamicPrice,
+            isDynamicPrice = true
+        }
+        
+        return true, message, purchaseResult
+    else
+        return false, message, nil
+    end
+end
+
 -- 【新增】专门处理非迷你币购买的函数
 ---@param player MPlayer 玩家对象
 ---@param shopItemId string 商品ID
@@ -690,5 +763,7 @@ function ShopMgr.PushShopDataToClient(uin)
     gg.log("已向客户端推送商城数据", uin,shopData)
     return true
 end
+
+
 
 return ShopMgr

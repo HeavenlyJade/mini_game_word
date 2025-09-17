@@ -585,4 +585,136 @@ function ShopItemType:RandomSelectFromPool()
     return nil
 end
 
+--- 获取动态价格（基于效果等级配置器）
+---@param playerVariableData table|nil 玩家变量数据
+---@return number|nil 动态价格描述
+function ShopItemType:GetDynamicPriceDescription(playerVariableData)
+    -- 检查是否配置了效果等级配置器
+    if not self.price.effectConfigurator or self.price.effectConfigurator == "" then
+        return nil
+    end
+    
+    -- 检查是否配置了玩家变量
+    if not self.price.playerVariable or self.price.playerVariable == "" then
+        return nil
+    end
+    
+    -- 从ConfigLoader获取效果等级配置
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local effectLevelConfig = ConfigLoader.GetEffectLevel(self.price.effectConfigurator)
+    if not effectLevelConfig then
+        gg.log("警告：找不到效果等级配置器: " .. self.price.effectConfigurator)
+        return nil
+    end
+    
+    -- 获取玩家变量值
+    local playerVariableValue = 0
+    if playerVariableData and playerVariableData[self.price.playerVariable] then
+        playerVariableValue = playerVariableData[self.price.playerVariable]
+    end
+    
+    -- 获取效果等级配置对应的效果数值
+    local effectValue = effectLevelConfig:GetEffectValue(playerVariableValue)
+    if not effectValue then
+        --gg.log("警告：找不到等级 " .. playerVariableValue .. " 对应的效果数值")
+        return nil
+    end
+
+    return effectValue
+    
+end
+
+--- 获取当前玩家的动态价格（基于效果等级配置器）
+---@param playerVariableData table|nil 玩家变量数据
+---@return number 当前玩家的动态价格
+function ShopItemType:GetCurrentDynamicPrice(playerVariableData)
+    -- 检查是否配置了效果等级配置器
+    if not self.price.effectConfigurator or self.price.effectConfigurator == "" then
+        return self.price.amount or 0
+    end
+    
+    -- 检查是否配置了玩家变量
+    if not self.price.playerVariable or self.price.playerVariable == "" then
+        return self.price.amount or 0
+    end
+    
+    -- 从ConfigLoader获取效果等级配置
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local effectLevelConfig = ConfigLoader.GetEffectLevel(self.price.effectConfigurator)
+    if not effectLevelConfig then
+        return self.price.amount or 0
+    end
+    
+    -- 获取玩家变量值
+    local playerVariableValue = 0
+    if playerVariableData and playerVariableData[self.price.playerVariable] then
+        playerVariableValue = playerVariableData[self.price.playerVariable]
+    end
+    
+    -- 获取效果等级配置对应的效果数值
+    local effectValue = effectLevelConfig:GetEffectValue(playerVariableValue)
+    if not effectValue then
+        return self.price.amount or 0
+    end
+    
+    -- 计算动态价格
+    local basePrice = self.price.amount or 0
+    return math.floor(basePrice * effectValue)
+end
+
+--- 检查是否使用动态价格
+---@return boolean 是否使用动态价格
+function ShopItemType:UsesDynamicPrice()
+    return (self.price.effectConfigurator and self.price.effectConfigurator ~= "") and 
+           (self.price.playerVariable and self.price.playerVariable ~= "") or false
+end
+
+--- 检查是否应该使用动态价格显示（配置了效果等级配置器且价格为负数）
+---@return boolean 是否应该使用动态价格显示
+function ShopItemType:ShouldUseDynamicPriceDisplay()
+    return self:UsesDynamicPrice() and (self.price.amount < 0)
+end
+
+--- 获取价格区间描述（显示最低到最高价格）
+---@param playerVariableData table|nil 玩家变量数据
+---@return string 价格区间描述
+function ShopItemType:GetPriceRangeDescription(playerVariableData)
+    if not self:UsesDynamicPrice() then
+        return self:FormatPriceText()
+    end
+    
+    -- 从ConfigLoader获取效果等级配置
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local effectLevelConfig = ConfigLoader.GetEffectLevel(self.price.effectConfigurator)
+    if not effectLevelConfig then
+        return self:FormatPriceText()
+    end
+    
+    local basePrice = self.price.amount or 0
+    local currencyType = self.price.currencyType or "金币"
+    
+    -- 获取所有等级的效果数值
+    local allLevelEffects = effectLevelConfig:GetAllLevelEffects()
+    if not allLevelEffects or #allLevelEffects == 0 then
+        return self:FormatPriceText()
+    end
+    
+    -- 计算最小和最大价格
+    local minPrice = basePrice
+    local maxPrice = basePrice
+    
+    for _, levelEffect in ipairs(allLevelEffects) do
+        local effectValue = levelEffect.effectValue or 1
+        local price = math.floor(basePrice * effectValue)
+        minPrice = math.min(minPrice, price)
+        maxPrice = math.max(maxPrice, price)
+    end
+    
+    if minPrice == maxPrice then
+        return string.format("%d %s", minPrice, currencyType)
+    else
+        return string.format("%d - %d %s", minPrice, maxPrice, currencyType)
+    end
+end
+
 return ShopItemType

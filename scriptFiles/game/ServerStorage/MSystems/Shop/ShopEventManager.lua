@@ -65,6 +65,11 @@ function ShopEventManager.RegisterNetworkHandlers()
         ShopEventManager.HandleRefreshShopData(evt)
     end, 100)
     
+    -- 【新增】动态价格购买事件
+    ServerEventManager.Subscribe(ShopEventConfig.REQUEST.PURCHASE_DYNAMIC_ITEM, function(evt)
+        ShopEventManager.HandleDynamicPricePurchase(evt)
+    end, 100)
+    
     gg.log("商城事件处理器注册完成")
 end
 
@@ -165,6 +170,64 @@ function ShopEventManager.HandlePurchaseMiniItem(evt)
         })
     else
         gg.log("迷你币购买失败", player.name, shopItemId, message)
+        --player:SendHoverText(message)
+    end
+end
+
+--- 【新增】处理动态价格购买请求
+---@param evt table 事件对象
+function ShopEventManager.HandleDynamicPricePurchase(evt)
+    gg.log("处理动态价格购买请求", evt)
+    local player = PartnerEventManager.ValidatePlayer(evt)
+    local args = evt.args or {}
+    
+    if not player then
+        return
+    end
+    
+    local shopItemId = args.shopItemId
+    local currencyType = args.currencyType
+    local categoryName = args.categoryName
+    
+    if not shopItemId then
+        --player:SendHoverText("商品ID不能为空")
+        return
+    end
+    
+    if not currencyType then
+        --player:SendHoverText("货币类型不能为空")
+        return
+    end
+    
+    -- 拒绝迷你币购买请求，引导使用专用接口
+    if currencyType == "迷你币" then
+        gg.log("动态价格购买请求被拒绝，迷你币请使用专用接口", player.name, shopItemId)
+        --player:SendHoverText("请使用迷你币专用购买接口")
+        return
+    end
+    
+    -- 执行动态价格购买
+    local success, message, purchaseResult = ShopMgr.ProcessDynamicPricePurchase(player, shopItemId, currencyType, categoryName)
+    
+    if success then
+        gg.log("动态价格商品购买成功", player.name, shopItemId, currencyType)
+        ShopEventManager.SendShopItemAcquiredNotification(player.uin, purchaseResult.rewards, "商城购买")
+
+        -- 发送成功响应
+        gg.network_channel:fireClient(player.uin, {
+            cmd = ShopEventConfig.RESPONSE.PURCHASE_RESPONSE,
+            success = true,
+            data = {
+                message = message,
+                purchaseResult = purchaseResult,
+                currencyType = currencyType,
+                categoryName = categoryName,
+                isDynamicPrice = true
+            },
+            errorMsg = nil
+        })
+    else
+        gg.log("动态价格商品购买失败", player.name, shopItemId, currencyType, message)
         --player:SendHoverText(message)
     end
 end

@@ -143,7 +143,6 @@ function ShopDetailGui:OnPlayerVariableSync(data)
     for variableName, variableData in pairs(data.variableData) do
         self.playerVariableData[variableName] = variableData.base
     end
-    gg.log("ShopDetailGui玩家变量数据缓存:", self.playerVariableData)
 end
 
 -- 注册按钮事件
@@ -169,7 +168,15 @@ function ShopDetailGui:RegisterButtonEvents()
     -- 为飞行币价格图按钮绑定点击事件
     self.flightCoinPriceButton.clickCb = function()
         if self.selectedItem then
-            self:SendNormalPurchaseRequest(self.selectedItem, self.selectedCategory, "飞行币")
+            -- 检查是否使用动态价格
+            local shopItemTypeData = ConfigLoader.GetShopItem(self.selectedItem)
+            if shopItemTypeData and shopItemTypeData:ShouldUseDynamicPriceDisplay() then
+                -- 使用动态价格购买请求
+                self:SendDynamicPricePurchaseRequest(self.selectedItem, self.selectedCategory, "飞行币")
+            else
+                -- 使用普通价格购买请求
+                self:SendNormalPurchaseRequest(self.selectedItem, self.selectedCategory, "飞行币")
+            end
         end
     end
 end
@@ -400,8 +407,19 @@ function ShopDetailGui:SelectItem(configName)
     local goldAmount = shopItemTypeData.price.amount
     local currencyType = shopItemTypeData.price.currencyType
     
+    -- 添加调试日志
     if iconPath and iconPath ~="" then
         itemDescription["物品显示底图"]["物品图标"].Icon = shopItemTypeData.uiConfig.iconPath
+    end
+    
+    -- 检查是否应该使用动态价格显示
+    local shouldUseDynamicPrice = shopItemTypeData:ShouldUseDynamicPriceDisplay()
+    local dynamicPriceText = nil
+    
+    
+    if shouldUseDynamicPrice then
+        -- 使用动态价格显示
+        dynamicPriceText = shopItemTypeData:GetDynamicPriceDescription(self.playerVariableData)
     end
     
     -- 使用ViewButton节点设置迷你币价格
@@ -415,15 +433,34 @@ function ShopDetailGui:SelectItem(configName)
     -- 根据金币配置决定是否显示金币购买按钮
     if goldAmount and goldAmount > 0 and currencyType == "金币" then
         self.goldPriceButton.node.Visible = true
-        self.goldPriceButton.node["价格框"].Title = gg.FormatLargeNumber(goldAmount)
+        if shouldUseDynamicPrice then
+            -- dynamicPriceText 现在是数字，需要格式化
+            local formattedDynamicPrice = gg.FormatLargeNumber(dynamicPriceText)
+            self.goldPriceButton.node["价格框"].Title = formattedDynamicPrice
+        else
+            self.goldPriceButton.node["价格框"].Title = gg.FormatLargeNumber(goldAmount)
+        end
     else
         self.goldPriceButton.node.Visible = false
     end
     
     -- 根据飞行币配置决定是否显示飞行币购买按钮
-    if goldAmount and goldAmount > 0 and currencyType == "飞行币" then
+    
+    -- 修改条件：如果使用动态价格，则不需要检查 goldAmount > 0
+    local shouldShowFlightCoinButton = (currencyType == "飞行币") and 
+                                     ((goldAmount and goldAmount > 0) or shouldUseDynamicPrice)
+    
+    
+    if shouldShowFlightCoinButton then
         self.flightCoinPriceButton.node.Visible = true
-        self.flightCoinPriceButton.node["价格框"].Title = gg.FormatLargeNumber(goldAmount)
+        if shouldUseDynamicPrice then
+            -- dynamicPriceText 现在是数字，需要格式化
+            local formattedDynamicPrice = gg.FormatLargeNumber(dynamicPriceText)
+            self.flightCoinPriceButton.node["价格框"].Title = formattedDynamicPrice
+        else
+            local formattedPrice = gg.FormatLargeNumber(goldAmount)
+            self.flightCoinPriceButton.node["价格框"].Title = formattedPrice
+        end
     else
         self.flightCoinPriceButton.node.Visible = false
     end
@@ -462,6 +499,20 @@ function ShopDetailGui:SendNormalPurchaseRequest(shopItemId, categoryName, curre
     gg.network_channel:FireServer({
         cmd = ShopEventConfig.REQUEST.PURCHASE_ITEM,
         args = { shopItemId = shopItemId, categoryName = categoryName, currencyType = currencyType }
+    })
+end
+
+-- 【新增】动态价格购买请求
+function ShopDetailGui:SendDynamicPricePurchaseRequest(shopItemId, categoryName, currencyType)
+    gg.log("发送动态价格购买请求, 商品ID: " .. shopItemId .. ", 货币类型: " .. currencyType)
+    
+    gg.network_channel:FireServer({
+        cmd = ShopEventConfig.REQUEST.PURCHASE_DYNAMIC_ITEM,
+        args = { 
+            shopItemId = shopItemId, 
+            categoryName = categoryName, 
+            currencyType = currencyType
+        }
     })
 end
 
