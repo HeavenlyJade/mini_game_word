@@ -40,6 +40,9 @@ function TournamentSc:OnInit(node, config)
 	-- 6. 更新奖杯数量标签
 	self:UpdateTrophyLabels()
 
+	-- 7. 更新飞行币数量标签
+	self:UpdateFlightCoinLabel()
+
 	----gg.log("比赛UI初始化完成")
 end
 
@@ -51,6 +54,7 @@ function TournamentSc:InitNodes()
 	self.GameUserMag1 = self:Get("底图/功能/比赛进度条1/玩家头像模板", ViewComponent)
 	self.GameUserMag2 = self:Get("底图/功能/比赛进度条2/玩家头像模板", ViewComponent)
 	self.GameUserMag3 = self:Get("底图/功能/比赛进度条3/玩家头像模板", ViewComponent)
+	self.FlightCoin =  self:Get("底图/功能/比赛进度条3/飞行币/数量", ViewComponent)
 	self.GmaeDisTop = self:Get("底图/比赛距离实时", ViewComponent)
 	-- 距离节点默认隐藏，只在比赛时显示
 	self.GmaeDisTop:SetVisible(false)
@@ -343,6 +347,9 @@ function TournamentSc:SetMapDistanceConfig(mapName)
     -- 【新增】更新奖杯数量标签
     self:UpdateTrophyLabels()
 
+    -- 【新增】更新飞行币数量标签
+    self:UpdateFlightCoinLabel()
+
     --gg.log("TournamentSc: 切换到地图 " .. mapName .. " 的距离配置")
 end
 
@@ -411,6 +418,22 @@ function TournamentSc:UpdateTrophyLabels()
 		end
 	end
 	--gg.log("奖杯数量标签已根据地图 " .. self.currentMapConfig .. " 更新")
+end
+
+--- 【新增】根据当前地图配置更新飞行币数量标签
+function TournamentSc:UpdateFlightCoinLabel()
+	if not self.FlightCoin or not self.currentMapConfig then return end
+	local flightCoinConfig = NodeConf["节点飞行币配置"][self.currentMapConfig]
+	if not flightCoinConfig then
+		--gg.log("更新飞行币数量失败：找不到地图配置 " .. self.currentMapConfig)
+		return
+	end
+
+	-- 更新飞行币数量显示
+	if self.FlightCoin.node and self.FlightCoin.node.Title ~= nil then
+		self.FlightCoin.node.Title = gg.FormatLargeNumber(flightCoinConfig)
+	end
+	--gg.log("飞行币数量标签已根据地图 " .. self.currentMapConfig .. " 更新为 " .. flightCoinConfig)
 end
 
 --- 接收比赛开始(发射)事件，获取服务端携带的数据（含 variableData）

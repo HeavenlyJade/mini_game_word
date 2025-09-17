@@ -71,6 +71,7 @@ function ShopDetailGui:InitNodes()
     -- 价格图节点 - 获取现有的ViewButton类型节点
     self.miniCoinPriceButton = self:Get("商城底图/右侧物品栏/物品显示/物品显示底图/迷你币价格图", ViewButton) ---@type ViewButton
     self.goldPriceButton = self:Get("商城底图/右侧物品栏/物品显示/物品显示底图/货币价格图", ViewButton) ---@type ViewButton
+    self.flightCoinPriceButton = self:Get("商城底图/右侧物品栏/物品显示/物品显示底图/飞行币价格图", ViewButton) ---@type ViewButton
 end
 
 -- 数据初始化
@@ -84,7 +85,7 @@ function ShopDetailGui:InitData()
     self.shopData = nil -- 商城云端数据缓存
     -- "宠物"， "金币"
     -- 商品类型列表
-    self.productTypes = {"伙伴", "翅膀", "尾迹", "宠物","礼包","特权","金币"}
+    self.productTypes = {"伙伴", "翅膀", "尾迹", "宠物","礼包","特权","金币","飞行币"}
     
     -- 为每个商品类型创建对应的itemList
     self.categoryItemLists = {}
@@ -116,6 +117,10 @@ function ShopDetailGui:RegisterEvents()
     ClientEventManager.Subscribe(ShopEventConfig.NOTIFY.SHOP_DATA_SYNC, function(data)
         self:OnShopDataSync(data)
     end)
+        -- 【新增】订阅玩家变量数据同步事件
+    ClientEventManager.Subscribe(EventPlayerConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
+        self:OnPlayerVariableSync(data)
+    end)
 
     -- 监听服务端打开商城并定位商品的指令
     ClientEventManager.Subscribe("OpenShopDetailUI", function(data)
@@ -123,6 +128,22 @@ function ShopDetailGui:RegisterEvents()
         local params = payload.params or {}
         self:OpenFromCommand(params)
     end)
+end
+
+function ShopDetailGui:OnPlayerVariableSync(data)
+    if not data or not data.variableData then
+        return
+    end
+    -- 更新玩家变量数据缓存
+    if not self.playerVariableData then
+        self.playerVariableData = {}
+    end
+        
+    -- 合并新数据到现有缓存中
+    for variableName, variableData in pairs(data.variableData) do
+        self.playerVariableData[variableName] = variableData.base
+    end
+    gg.log("ShopDetailGui玩家变量数据缓存:", self.playerVariableData)
 end
 
 -- 注册按钮事件
@@ -142,6 +163,13 @@ function ShopDetailGui:RegisterButtonEvents()
     self.goldPriceButton.clickCb = function()
         if self.selectedItem then
             self:SendNormalPurchaseRequest(self.selectedItem, self.selectedCategory, "金币")
+        end
+    end
+    
+    -- 为飞行币价格图按钮绑定点击事件
+    self.flightCoinPriceButton.clickCb = function()
+        if self.selectedItem then
+            self:SendNormalPurchaseRequest(self.selectedItem, self.selectedCategory, "飞行币")
         end
     end
 end
@@ -391,6 +419,14 @@ function ShopDetailGui:SelectItem(configName)
     else
         self.goldPriceButton.node.Visible = false
     end
+    
+    -- 根据飞行币配置决定是否显示飞行币购买按钮
+    if goldAmount and goldAmount > 0 and currencyType == "飞行币" then
+        self.flightCoinPriceButton.node.Visible = true
+        self.flightCoinPriceButton.node["价格框"].Title = gg.FormatLargeNumber(goldAmount)
+    else
+        self.flightCoinPriceButton.node.Visible = false
+    end
 
     -- 选中后基于限购与购买记录控制按钮可见性
     self:UpdateSelectedItemButtonsVisibility()
@@ -557,6 +593,9 @@ function ShopDetailGui:UpdateSelectedItemButtonsVisibility()
         end
         if self.goldPriceButton and self.goldPriceButton.node then
             self.goldPriceButton.node.Visible = false
+        end
+        if self.flightCoinPriceButton and self.flightCoinPriceButton.node then
+            self.flightCoinPriceButton.node.Visible = false
         end
     end
 end

@@ -20,7 +20,8 @@ local ButtonTypeConfig = {
     -- 货币类型按钮
     CURRENCY = {
         "金币",
-        "奖杯"
+        "奖杯",
+        "飞行币"
         -- 可以在这里添加更多货币类型
     },
     

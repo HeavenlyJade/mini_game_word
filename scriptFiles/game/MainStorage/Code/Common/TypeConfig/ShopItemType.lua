@@ -8,6 +8,10 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@class ShopItemPrice
 ---@field currencyType string 货币类型
 ---@field amount number 价格数量
+---@field effectConfigurator string|nil 效果配置器
+---@field effectConfigVariable string|nil 效果配置变量
+---@field variableType string|nil 变量类型
+---@field playerVariable string|nil 玩家变量
 ---@field miniCoinType string|nil 迷你币类型
 ---@field miniCoinAmount number 迷你币数量
 ---@field variableKey string 变量键
@@ -112,9 +116,19 @@ end
 ---@param priceData table 价格数据
 ---@return ShopItemPrice 价格配置对象
 function ShopItemType:ParsePrice(priceData)
+    -- 处理玩家变量为空字符串时设为nil
+    local playerVariable = priceData["玩家变量"]
+    if playerVariable == "" then
+        playerVariable = nil
+    end
+    
     return {
         currencyType = priceData["货币类型"] or nil,
         amount = tonumber(priceData["价格数量"]) or -1,
+        effectConfigurator = priceData["效果配置器"] or nil,
+        effectConfigVariable = priceData["效果配置变量"] or nil,
+        variableType = priceData["变量类型"] or nil,
+        playerVariable = playerVariable,
         miniCoinType = priceData["迷你币类型"],
         miniCoinAmount =priceData["迷你币数量"] or -1,
         variableKey = priceData["变量键"] or "",
