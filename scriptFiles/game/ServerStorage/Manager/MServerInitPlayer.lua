@@ -194,7 +194,7 @@ function MServerInitPlayer.player_enter_game(player)
     MServerInitPlayer.EnsureDecorativeObjectsSync(player_actor_,player_)
     
     -- 【新增】设置玩家Actor事件监听
-    MServerInitPlayer.setupPlayerActorEvents(player_)
+    -- MServerInitPlayer.setupPlayerActorEvents(player_)
     
     gg.log("玩家碰撞组设置验证:", player.name, "CollideGroupID:", player_actor_.CollideGroupID)
     gg.log("玩家进入了游戏", gg.player_scene_map,player)

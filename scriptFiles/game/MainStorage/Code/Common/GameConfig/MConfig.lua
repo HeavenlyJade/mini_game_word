@@ -41,16 +41,32 @@ local CommandExecutionConfig = {
 }
 
 
+-- 变量区间/阈值命令配置
+-- 说明：
+-- - key 为变量名
+-- - comparator 为比较符（支持 ">", ">=", "<", "<=", "==", "~="）
+-- - value 为阈值；支持十进制或科学计数法字符串（如 "1.2e13"），为避免 LuaJIT 浮点精度问题建议使用字符串
+-- - command 为满足条件时需要执行的指令字符串（交由命令系统解析执行）
+local VariableIntervalConfig = {
+    ["数据_固定值_历史最大战力值"] = {
+        { comparator = ">=", value = 6e20, command = 'B指令' },
+        { comparator = ">=", value = 1.2e13, command = 'A指令' },
+    },
+}
+
+
 --所有配置( 其他所有的配置文件将汇总到这里， 游戏逻辑代码只需要require这个文件即可 )
 ---@class common_config
 ---@field EquipmentSlot table<string, table<number, string>> 装备槽位配置
 ---@field ItemTypeEnum table<string, number> 物品类型枚举 (名称 -> 编号)
 ---@field ItemTypeNames table<number, string> 物品类型名称 (编号 -> 名称)
+---@field VariableIntervalConfig table<string, table> 变量区间/阈值命令配置
 local common_config = {
     EquipmentSlot = EquipmentSlot,
     ItemTypeEnum = ItemTypeEnum,
     ItemTypeNames = ItemTypeNames,
     CommandExecutionConfig = CommandExecutionConfig,
+    VariableIntervalConfig = VariableIntervalConfig,
 }
 
 
