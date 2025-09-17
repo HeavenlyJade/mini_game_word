@@ -43,6 +43,7 @@ function WingGui:OnInit(node, config)
     self.nameLabel = self:Get("翅膀界面/翅膀显示栏/名字", ViewComponent) ---@type ViewComponent
     self.WingCarryNumLabel = self:Get("翅膀界面/翅膀携带/携带数量", ViewComponent) ---@type ViewComponent
     self.carryCountLabel = self:Get("翅膀界面/翅膀数量/携带数量", ViewComponent) ---@type ViewComponent
+    self.WingBagNum = self:Get("翅膀界面/翅膀数量", ViewButton) ---@type ViewButton
     -- 属性介绍UI
     self.attributeIntroComp = self:Get("翅膀界面/翅膀显示栏/属性介绍", ViewComponent) ---@type ViewComponent
     self.attributeList = self:Get("翅膀界面/翅膀显示栏/属性介绍/属性栏位", ViewList) ---@type ViewList
@@ -172,6 +173,24 @@ function WingGui:RegisterButtonEvents()
 
     self.getMoreButton.clickCb = function()
         self:OnClickGetMoreWing()
+    end
+    
+    -- 【新增】携带/背包数量按钮：打开商城并定位飞行币分类下的“翅膀背包”
+    if self.WingBagNum then
+        self.WingBagNum.clickCb = function()
+            --gg.log("点击翅膀数量，前往商城-飞行币-翅膀背包")
+            local shopGui = ViewBase.GetUI("ShopDetailGui")
+            if shopGui then
+                shopGui:OpenFromCommand({
+                    categoryName = "飞行币",
+                    shopItemId = "翅膀背包"
+                })
+                -- 进入商城后关闭当前翅膀界面
+                self:Close()
+            else
+                --gg.log("错误：找不到ShopDetailGui界面")
+            end
+        end
     end
     --gg.log("翅膀界面按钮事件注册完成")
 end
