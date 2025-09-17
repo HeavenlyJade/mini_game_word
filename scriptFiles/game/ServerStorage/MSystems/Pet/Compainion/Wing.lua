@@ -287,6 +287,54 @@ function Wing:GetWingCount()
 end
 
 -- =================================
+-- 栏位和容量管理方法（对齐伙伴实现）
+-- =================================
+
+--- 增加可携带栏位数量
+---@param count number 增加的数量
+function Wing:AddUnlockedEquipSlots(count)
+    if count and count > 0 then
+        self.unlockedEquipSlots = (self.unlockedEquipSlots or 0) + count
+        --gg.log("玩家", self.uin, "翅膀可携带栏位增加", count, "个，当前总数:", self.unlockedEquipSlots)
+    end
+end
+
+--- 减少可携带栏位数量
+---@param count number 减少的数量
+---@return boolean
+function Wing:ReduceUnlockedEquipSlots(count)
+    if count and count > 0 then
+        self.unlockedEquipSlots = math.max(1, (self.unlockedEquipSlots or 1) - count)
+        --gg.log("玩家", self.uin, "翅膀可携带栏位减少", count, "个，当前总数:", self.unlockedEquipSlots)
+        return true
+    end
+    return false
+end
+
+--- 增加翅膀背包容量
+---@param capacity number 增加的容量
+function Wing:AddWingBagCapacity(capacity)
+    if capacity and capacity > 0 then
+        self.maxSlots = (self.maxSlots or 1) + capacity
+        --gg.log("玩家", self.uin, "翅膀背包容量增加", capacity, "个，当前总数:", self.maxSlots)
+    end
+end
+
+--- 减少翅膀背包容量
+---@param capacity number 减少的容量
+---@return boolean
+function Wing:ReduceWingBagCapacity(capacity)
+    if capacity and capacity > 0 then
+        local currentCompanionCount = self:GetCompanionCount()
+        local newCapacity = math.max(currentCompanionCount, (self.maxSlots or 1) - capacity)
+        self.maxSlots = newCapacity
+        --gg.log("玩家", self.uin, "翅膀背包容量减少", capacity, "个，当前总数:", self.maxSlots)
+        return true
+    end
+    return false
+end
+
+-- =================================
 -- 翅膀专用扩展方法
 -- =================================
 

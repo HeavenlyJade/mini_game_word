@@ -638,6 +638,66 @@ function WingMgr.SetWingBagCapacity(uin, capacity)
     end
 end
 
+---【新增】增加玩家可携带翅膀栏位数量
+---@param uin number 玩家ID
+---@param count number 增加的数量
+---@return boolean
+function WingMgr.AddUnlockedEquipSlots(uin, count)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if wingManager then
+        wingManager:AddUnlockedEquipSlots(count)
+        --gg.log("通过 WingMgr 为玩家", uin, "增加可携带翅膀栏位", count)
+        return true
+    else
+        --gg.log("增加可携带栏位失败，找不到玩家", uin, "的翅膀管理器")
+        return false
+    end
+end
+
+---【新增】减少玩家可携带翅膀栏位数量
+---@param uin number 玩家ID
+---@param count number 减少的数量
+---@return boolean
+function WingMgr.ReduceUnlockedEquipSlots(uin, count)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if wingManager then
+        return wingManager:ReduceUnlockedEquipSlots(count)
+    else
+        --gg.log("减少可携带栏位失败，找不到玩家", uin, "的翅膀管理器")
+        return false
+    end
+end
+
+---【新增】增加玩家翅膀背包容量
+---@param uin number 玩家ID
+---@param capacity number 增加的容量
+---@return boolean
+function WingMgr.AddWingBagCapacity(uin, capacity)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if wingManager then
+        wingManager:AddWingBagCapacity(capacity)
+        --gg.log("通过 WingMgr 为玩家", uin, "增加翅膀背包容量", capacity)
+        return true
+    else
+        --gg.log("增加背包容量失败，找不到玩家", uin, "的翅膀管理器")
+        return false
+    end
+end
+
+---【新增】减少玩家翅膀背包容量
+---@param uin number 玩家ID
+---@param capacity number 减少的容量
+---@return boolean
+function WingMgr.ReduceWingBagCapacity(uin, capacity)
+    local wingManager = WingMgr.GetPlayerWing(uin)
+    if wingManager then
+        return wingManager:ReduceWingBagCapacity(capacity)
+    else
+        --gg.log("减少背包容量失败，找不到玩家", uin, "的翅膀管理器")
+        return false
+    end
+end
+
 ---【新增】清空玩家所有翅膀数据
 ---@param uin number 玩家ID
 ---@return boolean 是否成功

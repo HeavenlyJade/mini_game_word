@@ -44,6 +44,7 @@ function CompanionGui:OnInit(node, config)
     -- 伙伴携带
     self.ComCarryNumLabel = self:Get("伙伴界面/伙伴携带/携带数量", ViewComponent) ---@type ViewComponent
     self.carryCountLabel = self:Get("伙伴界面/伙伴数量/携带数量", ViewComponent) ---@type ViewComponent
+    self.CompanionBagNum = self:Get("伙伴界面/伙伴数量", ViewButton) ---@type ViewButton
 
     -- 【新增】属性介绍UI
     self.attributeIntroComp = self:Get("伙伴界面/伙伴显示栏/属性介绍", ViewComponent) ---@type ViewComponent
@@ -172,6 +173,24 @@ function CompanionGui:RegisterButtonEvents()
     -- 获取更多按钮
     self.getMoreButton.clickCb = function()
         self:OnClickGetMoreCompanion()
+    end
+
+    -- 【新增】携带/背包数量按钮：打开商城并定位飞行币分类下的“宠物背包”
+    if self.CompanionBagNum then
+        self.CompanionBagNum.clickCb = function()
+            --gg.log("点击伙伴数量，前往商城-飞行币-宠物背包")
+            local shopGui = ViewBase.GetUI("ShopDetailGui")
+            if shopGui then
+                shopGui:OpenFromCommand({
+                    categoryName = "飞行币",
+                    shopItemId = "宠物背包"
+                })
+                -- 进入商城后关闭当前伙伴界面
+                self:Close()
+            else
+                ----gg.log("错误：找不到ShopDetailGui界面")
+            end
+        end
     end
 
     ----gg.log("伙伴界面按钮事件注册完成")
