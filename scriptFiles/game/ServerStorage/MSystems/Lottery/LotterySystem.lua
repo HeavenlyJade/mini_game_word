@@ -105,32 +105,54 @@ function LotterySystem:CanDraw(poolName, drawType)
     return true, ""
 end
 
---- 执行单次随机抽奖
+--- 执行单次随机抽奖（调试版本）
 ---@param lotteryConfig LotteryType 抽奖配置
 ---@return LotteryRewardItem 抽中的奖励
 function LotterySystem:RandomDraw(lotteryConfig)
     local totalWeight = lotteryConfig:GetTotalWeight()
     local randomWeight = gg.rand_int(totalWeight)
     
-    --gg.log("随机抽奖详情:")
-    --gg.log("  - 总权重:", totalWeight)
-    --gg.log("  - 随机权重:", randomWeight)
+    gg.log("=== 随机抽奖调试开始 ===")
+    gg.log("总权重:", totalWeight, "类型:", type(totalWeight))
+    gg.log("随机权重:", randomWeight, "类型:", type(randomWeight))
+    gg.log("奖励池大小:", #lotteryConfig.rewardPool)
     
     local currentWeight = 0
     for i, rewardItem in ipairs(lotteryConfig.rewardPool) do
-        local previousWeight = currentWeight
+        local prevWeight = currentWeight
         currentWeight = currentWeight + rewardItem.weight
-        --gg.log("  - 奖励", i, ":", rewardItem.rewardType, rewardItem.partnerConfig or rewardItem.petConfig or rewardItem.wingConfig or rewardItem.item, "权重:", rewardItem.weight, "累计权重:", currentWeight)
         
-        if randomWeight < currentWeight then
-            --gg.log("  - 命中奖励", i, ":", rewardItem.rewardType, rewardItem.partnerConfig or rewardItem.petConfig or rewardItem.wingConfig or rewardItem.item)
+        local rewardName = rewardItem.partnerConfig or rewardItem.petConfig or 
+                          rewardItem.wingConfig or rewardItem.item or "未知"
+        
+        gg.log(string.format("奖励%d: %s %s 权重:%.1f 区间:[%.1f,%.1f) 累计:%.1f", 
+               i, rewardItem.rewardType, rewardName, 
+               rewardItem.weight, prevWeight, currentWeight, currentWeight))
+        
+        -- 详细判断过程
+        local condition = randomWeight < currentWeight
+        gg.log(string.format("  判断: %d < %.1f = %s", randomWeight, currentWeight, tostring(condition)))
+        
+        if condition then
+            gg.log("*** 命中奖励", i, ":", rewardItem.rewardType, rewardName)
+            gg.log("=== 随机抽奖调试结束 ===")
             return rewardItem
+        else
+            gg.log("  跳过，继续下一个")
         end
     end
     
-    -- 兜底返回最后一个奖励
+    -- 如果到达这里，说明没有命中任何奖励
+    gg.log("⚠️ 警告：没有命中任何奖励，使用兜底逻辑")
+    gg.log("最终currentWeight:", currentWeight)
+    gg.log("randomWeight vs totalWeight:", randomWeight, "vs", totalWeight)
+    
     local lastReward = lotteryConfig.rewardPool[#lotteryConfig.rewardPool]
-    --gg.log("  - 兜底返回最后一个奖励:", lastReward.rewardType, lastReward.partnerConfig or lastReward.petConfig or lastReward.wingConfig or lastReward.item)
+    local lastName = lastReward.partnerConfig or lastReward.petConfig or 
+                    lastReward.wingConfig or lastReward.item or "未知"
+    gg.log("兜底返回:", lastReward.rewardType, lastName)
+    gg.log("=== 随机抽奖调试结束 ===")
+    
     return lastReward
 end
 
@@ -192,7 +214,7 @@ function LotterySystem:PerformDraw(poolName, drawType)
     local rewards = {}
     local currentTime = os.time()
     
-    --gg.log("开始执行", drawCount, "次抽奖...")
+    gg.log("开始执行", drawCount, "次抽奖...")
     
     -- 执行多次抽奖
     for i = 1, drawCount do
@@ -202,21 +224,20 @@ function LotterySystem:PerformDraw(poolName, drawType)
         local pityReward = self:CheckPity(poolName, lotteryConfig)
         if pityReward then
             reward = pityReward
-            --gg.log("第", i, "次抽奖触发保底")
+            gg.log("第", i, "次抽奖触发保底")
         else
             -- 正常随机抽奖
             reward = self:RandomDraw(lotteryConfig)
             poolData.pityCount = poolData.pityCount + 1
-            --gg.log("第", i, "次抽奖正常随机")
+            gg.log("第", i, "次抽奖正常随机")
         end
         
-        -- 打印抽中的奖励详情
-        --gg.log("第", i, "次抽奖结果:")
-        --gg.log("  - 奖励类型:", reward.rewardType)
-        --gg.log("  - 奖励名称:", self:GetRewardName(reward))
-        --gg.log("  - 数量:", reward.amount)
-        --gg.log("  - 权重:", reward.weight)
-        --gg.log("  - 稀有度:", reward.rarity or "N")
+        gg.log("第" .. i .. "次抽奖结果:")
+        gg.log("  - 奖励类型:", reward.rewardType)
+        gg.log("  - 奖励名称:", self:GetRewardName(reward))
+        gg.log("  - 数量: " .. reward.amount)
+        gg.log("  - 权重: " .. reward.weight)
+        gg.log("  - 稀有度: " .. (reward.rarity or "N"))
         
         -- 构建奖励记录
         local record = {
