@@ -116,6 +116,49 @@ function LotteryType:GetPityList()
     return self.pityList or {}
 end
 
+--- 判断指定奖励是否为保底奖励
+---@param reward table 抽中的奖励（需包含 rewardType 及对应配置字段）
+---@return boolean 是否为保底奖励
+function LotteryType:IsPityReward(reward)
+    if not reward or not self.pityList or #self.pityList == 0 then
+        return false
+    end
+
+    local function fieldEquals(a, b)
+        if a == nil and b == nil then return true end
+        return a == b
+    end
+
+    for _, pity in ipairs(self.pityList) do
+        if (pity.rewardType or "") == (reward.rewardType or "") then
+            local sameItem = fieldEquals(pity.item, reward.item)
+            local sameWing = fieldEquals(pity.wingConfig, reward.wingConfig)
+            local samePet = fieldEquals(pity.petConfig, reward.petConfig)
+            local samePartner = fieldEquals(pity.partnerConfig, reward.partnerConfig)
+            local sameTrail = fieldEquals(pity.trailConfig, reward.trailConfig)
+
+            local typeMatched = false
+            if reward.rewardType == "物品" then
+                typeMatched = sameItem
+            elseif reward.rewardType == "翅膀" then
+                typeMatched = sameWing
+            elseif reward.rewardType == "宠物" then
+                typeMatched = samePet
+            elseif reward.rewardType == "伙伴" then
+                typeMatched = samePartner
+            elseif reward.rewardType == "尾迹" then
+                typeMatched = sameTrail
+            end
+
+            if typeMatched then
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
 --- 解析消耗配置
 ---@param costData table 消耗数据
 ---@return LotteryCost 解析后的消耗配置

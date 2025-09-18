@@ -64,6 +64,7 @@ function LotteryGui:OnInit(node, config)
     self.petMidBeginnerLotteryList = self:Get("抽奖界面/抽奖宠物_中级_初级", ViewList) ---@type ViewList
     self.petMidIntermediateLotteryList = self:Get("抽奖界面/抽奖宠物_中级_中级", ViewList) ---@type ViewList
     self.petMidAdvancedLotteryList = self:Get("抽奖界面/抽奖宠物_中级_高级", ViewList) ---@type ViewList
+    self.petMidUltimateLotteryList = self:Get("抽奖界面/抽奖宠物_中级_终极", ViewList) ---@type ViewList
 
     -- 【补充】宠物高级档位ViewList
     self.petHighBeginnerLotteryList = self:Get("抽奖界面/抽奖宠物_高级_初级", ViewList) ---@type ViewList
@@ -224,6 +225,7 @@ function LotteryGui:SetAllViewListsLayout()
         { name = "petMidBeginnerLotteryList", viewList = self.petMidBeginnerLotteryList },
         { name = "petMidIntermediateLotteryList", viewList = self.petMidIntermediateLotteryList },
         { name = "petMidAdvancedLotteryList", viewList = self.petMidAdvancedLotteryList },
+        { name = "petMidUltimateLotteryList", viewList = self.petMidUltimateLotteryList },
         
         -- 宠物高级档位抽奖列表
         { name = "petHighBeginnerLotteryList", viewList = self.petHighBeginnerLotteryList },
@@ -273,6 +275,8 @@ function LotteryGui:SetAllViewListsLayout()
                 viewList.node.ScrollType = Enum.ListLayoutType.FLOW_VERTICAL
                 viewList.node.OverflowType = Enum.OverflowType.VERTICAL
                 viewList.node.IsNotifyEventStop = false
+                viewList.node.LineCount =10
+                viewList.node.ColumnCount =4
                 successCount = successCount + 1
                 --gg.log("✅ 成功设置ViewList布局:", listName)
             end)
@@ -323,6 +327,7 @@ function LotteryGui:SyncAllViewListsToTemplate()
         { name = "petMidBeginnerLotteryList", viewList = self.petMidBeginnerLotteryList },
         { name = "petMidIntermediateLotteryList", viewList = self.petMidIntermediateLotteryList },
         { name = "petMidAdvancedLotteryList", viewList = self.petMidAdvancedLotteryList },
+        { name = "petMidUltimateLotteryList", viewList = self.petMidUltimateLotteryList },
         
         -- 宠物高级档位抽奖列表
         { name = "petHighBeginnerLotteryList", viewList = self.petHighBeginnerLotteryList },
@@ -607,6 +612,8 @@ function LotteryGui:ShowCurrentLotteryList()
             self.petMidIntermediateLotteryList:SetVisible(true)
         elseif currentTier == "高级" and self.petMidAdvancedLotteryList then
             self.petMidAdvancedLotteryList:SetVisible(true)
+        elseif currentTier == "终极" and self.petMidUltimateLotteryList then
+            self.petMidUltimateLotteryList:SetVisible(true)
         end
     elseif currentLotteryType == "高级宠物" then
         if currentTier == "初级" and self.petHighBeginnerLotteryList then
@@ -684,6 +691,9 @@ function LotteryGui:HideAllLotteryLists()
     end
     if self.petMidAdvancedLotteryList then
         self.petMidAdvancedLotteryList:SetVisible(false)
+    end
+    if self.petMidUltimateLotteryList then
+        self.petMidUltimateLotteryList:SetVisible(false)
     end
     
     -- 隐藏宠物高级档位ViewList
@@ -929,6 +939,7 @@ function LotteryGui:InitializeLotteryItemLists()
     self:LoadLotteryItemsToList("中级宠物初级", self.petMidBeginnerLotteryList)
     self:LoadLotteryItemsToList("中级宠物中级", self.petMidIntermediateLotteryList)
     self:LoadLotteryItemsToList("中级宠物高级", self.petMidAdvancedLotteryList)
+    self:LoadLotteryItemsToList("中级宠物终极", self.petMidUltimateLotteryList)
     self:LoadLotteryItemsToList("高级宠物初级", self.petHighBeginnerLotteryList)
     self:LoadLotteryItemsToList("高级宠物中级", self.petHighIntermediateLotteryList)
     self:LoadLotteryItemsToList("高级宠物高级", self.petHighAdvancedLotteryList)
@@ -1186,6 +1197,10 @@ function LotteryGui:RefreshCurrentLotteryItems()
             elseif currentLotteryType == "高级宠物" then
                 targetViewList = self.petHighAdvancedLotteryList
             end
+        elseif currentTier == "终极" then
+            if currentLotteryType == "中级宠物" then
+                targetViewList = self.petMidUltimateLotteryList
+            end
         end
     elseif string.find(currentLotteryType, "伙伴") then
         if currentTier == "初级" then
@@ -1241,6 +1256,10 @@ function LotteryGui:UpdateTierButtonsVisibility(lotteryType)
         self.primaryTierButton:SetVisible(true)
         self.intermediateTierButton:SetVisible(true)
         self.advancedTierButton:SetVisible(true)
+        -- 中级宠物支持终极档位
+        if lotteryType == "中级宠物" then
+            self.superTierButton:SetVisible(true)
+        end
     elseif string.find(lotteryType, "伙伴") then
         -- 伙伴有初级、终极档位
         self.primaryTierButton:SetVisible(true)

@@ -419,7 +419,6 @@ function LotteryEventManager.SendItemAcquiredNotification(uin, rewards, poolName
         -- 从抽奖系统的奖励记录中获取正确的类型和名称
         local itemType = reward.rewardType or "物品" -- 使用抽奖系统返回的rewardType
         local itemName = reward.rewardName or "未知物品" -- 使用抽奖系统返回的rewardName
-        gg.log("奖励类型:", itemType,itemName)
         -- 如果itemType是中文，直接使用；如果是英文，转换为中文
         if itemType == "pet" then
             itemType = "宠物"

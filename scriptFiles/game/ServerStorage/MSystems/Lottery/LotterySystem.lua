@@ -108,104 +108,183 @@ end
 --- 执行单次随机抽奖（调试版本）
 -- ---@param lotteryConfig LotteryType 抽奖配置
 -- ---@return LotteryRewardItem 抽中的奖励
--- function LotterySystem:RandomDraw(lotteryConfig)
---     local totalWeight = lotteryConfig:GetTotalWeight()
---     local randomWeight = gg.rand_int(totalWeight)
+function LotterySystem:RandomDraw(lotteryConfig)
+    local totalWeight = lotteryConfig:GetTotalWeight()
+    local randomWeight = gg.rand_int(totalWeight)
     
---     gg.log("=== 随机抽奖调试开始 ===")
---     gg.log("总权重:", totalWeight, "类型:", type(totalWeight))
---     gg.log("随机权重:", randomWeight, "类型:", type(randomWeight))
---     gg.log("奖励池大小:", #lotteryConfig.rewardPool)
+    gg.log("=== 随机抽奖调试开始 ===")
+    gg.log("总权重:", totalWeight, "类型:", type(totalWeight))
+    gg.log("随机权重:", randomWeight, "类型:", type(randomWeight))
+    gg.log("奖励池大小:", #lotteryConfig.rewardPool)
     
---     local currentWeight = 0
---     for i, rewardItem in ipairs(lotteryConfig.rewardPool) do
---         local prevWeight = currentWeight
---         currentWeight = currentWeight + rewardItem.weight
+    local currentWeight = 0
+    for i, rewardItem in ipairs(lotteryConfig.rewardPool) do
+        local prevWeight = currentWeight
+        currentWeight = currentWeight + rewardItem.weight
         
---         local rewardName = rewardItem.partnerConfig or rewardItem.petConfig or 
---                           rewardItem.wingConfig or rewardItem.item or "未知"
+        local rewardName = rewardItem.partnerConfig or rewardItem.petConfig or 
+                          rewardItem.wingConfig or rewardItem.item or "未知"
         
---         gg.log(string.format("奖励%d: %s %s 权重:%.1f 区间:[%.1f,%.1f) 累计:%.1f", 
---                i, rewardItem.rewardType, rewardName, 
---                rewardItem.weight, prevWeight, currentWeight, currentWeight))
+        gg.log(string.format("奖励%d: %s %s 权重:%.1f 区间:[%.1f,%.1f) 累计:%.1f", 
+               i, rewardItem.rewardType, rewardName, 
+               rewardItem.weight, prevWeight, currentWeight, currentWeight))
         
---         -- 详细判断过程
---         local condition = randomWeight < currentWeight
---         -- gg.log(string.format("  判断: %d < %.1f = %s", randomWeight, currentWeight, tostring(condition)))
+        -- 详细判断过程
+        local condition = randomWeight < currentWeight
+        -- gg.log(string.format("  判断: %d < %.1f = %s", randomWeight, currentWeight, tostring(condition)))
         
---         if condition then
---             gg.log("*** 命中奖励", i, ":", rewardItem.rewardType, rewardName)
---             gg.log("=== 随机抽奖调试结束 ===")
---             return rewardItem
---         else
---             gg.log("  跳过，继续下一个")
---         end
---     end
+        if condition then
+            gg.log("*** 命中奖励", i, ":", rewardItem.rewardType, rewardName)
+            gg.log("=== 随机抽奖调试结束 ===")
+            return rewardItem
+        else
+            gg.log("  跳过，继续下一个")
+        end
+    end
     
---     -- 如果到达这里，说明没有命中任何奖励
---     gg.log("⚠️ 警告：没有命中任何奖励，使用兜底逻辑")
---     gg.log("最终currentWeight:", currentWeight)
---     gg.log("randomWeight vs totalWeight:", randomWeight, "vs", totalWeight)
+    -- 如果到达这里，说明没有命中任何奖励
+    gg.log("⚠️ 警告：没有命中任何奖励，使用兜底逻辑")
+    gg.log("最终currentWeight:", currentWeight)
+    gg.log("randomWeight vs totalWeight:", randomWeight, "vs", totalWeight)
     
---     local lastReward = lotteryConfig.rewardPool[#lotteryConfig.rewardPool]
---     local lastName = lastReward.partnerConfig or lastReward.petConfig or 
---                     lastReward.wingConfig or lastReward.item or "未知"
---     gg.log("兜底返回:", lastReward.rewardType, lastName)
---     gg.log("=== 随机抽奖调试结束 ===")
+    local lastReward = lotteryConfig.rewardPool[#lotteryConfig.rewardPool]
+    local lastName = lastReward.partnerConfig or lastReward.petConfig or 
+                    lastReward.wingConfig or lastReward.item or "未知"
+    gg.log("兜底返回:", lastReward.rewardType, lastName)
+    gg.log("=== 随机抽奖调试结束 ===")
     
---     return lastReward
--- end
+    return lastReward
+end
 
-
---- 独立概率算法的保底优化版本
+--- 独立概率算法的保底优化版本（候选列表 + 二次随机）
+--- 独立概率算法的保底优化版本（候选列表 + 二次随机）
 ---@param lotteryConfig LotteryType 抽奖配置
 ---@return LotteryRewardItem 抽中的奖励
 function LotterySystem:RandomDraw_IndependentSingleSafe(lotteryConfig)
     local totalWeight = lotteryConfig:GetTotalWeight()
     
-    gg.log("=== 独立概率算法 ===")
-    gg.log("总权重:", totalWeight)
+    -- gg.log("=== 独立概率算法（候选列表版）===")
+    -- gg.log("总权重:", totalWeight)
     
-    -- 每个奖励独立判定
+    local randomValue = math.random(1000)
+    -- gg.log("主随机值:", randomValue)
+    
+    -- 收集所有满足条件的候选奖励
+    local candidates = {}
+    
+    -- 第一阶段：收集候选
     for i, rewardItem in ipairs(lotteryConfig.rewardPool) do
         local probability = rewardItem.weight / totalWeight
         local probabilityScaled = probability * 1000
-        local randomValue = math.random(1000)
-        
         local rewardName = rewardItem.partnerConfig or rewardItem.petConfig or 
                           rewardItem.wingConfig or rewardItem.item or "未知奖励"
         
-        gg.log(string.format("奖励%d: %s 权重:%.1f 概率阈值:%d 随机值:%d", 
-               i, rewardName, rewardItem.weight, math.floor(probabilityScaled), randomValue))
+        -- gg.log(string.format("奖励%d: %s 权重:%.1f 概率阈值:%d 随机值:%d", 
+        --        i, rewardName, rewardItem.weight, math.floor(probabilityScaled), randomValue))
         
-        -- 真正的概率判定
+        -- 判断是否满足概率条件
         if randomValue <= probabilityScaled then
-            gg.log("★ 命中奖励:", rewardName)
-            return rewardItem
+            table.insert(candidates, {
+                reward = rewardItem,
+                name = rewardName,
+                index = i
+            })
+            -- gg.log("  ✓ 加入候选列表")
         else
-            gg.log("✗ 未命中")
+            -- gg.log("  ✗ 未满足条件")
         end
     end
     
-    -- 没有任何奖励命中，返回权重最高的作为保底
-    gg.log("没有奖励命中，使用保底")
-    local maxWeight = 0
-    local fallbackReward = lotteryConfig.rewardPool[1]
-    for _, reward in ipairs(lotteryConfig.rewardPool) do
-        if reward.weight > maxWeight then
-            maxWeight = reward.weight
-            fallbackReward = reward
+    -- 第二阶段：从候选中选择
+    -- gg.log("候选奖励数量:", #candidates)
+    
+    if #candidates == 0 then
+        -- 没有候选者，使用保底逻辑：从权重最高的3个奖励中随机选择
+        -- gg.log("没有候选奖励，使用保底")
+        
+        -- 创建权重排序列表
+        local sortedRewards = {}
+        for i, reward in ipairs(lotteryConfig.rewardPool) do
+            local rewardName = reward.partnerConfig or reward.petConfig or 
+                              reward.wingConfig or reward.item or "未知奖励"
+            table.insert(sortedRewards, {
+                reward = reward,
+                name = rewardName,
+                weight = reward.weight
+            })
         end
+        
+        -- 按权重降序排序
+        table.sort(sortedRewards, function(a, b)
+            return a.weight > b.weight
+        end)
+        
+        -- 获取前3个最高权重奖励（如果不足3个则全部获取）
+        local topCount = math.min(3, #sortedRewards)
+        local topRewards = {}
+        for i = 1, topCount do
+            table.insert(topRewards, sortedRewards[i])
+        end
+        
+        
+        -- 从最高权重奖励中按权重随机选择
+        local fallbackTotalWeight = 0
+        for _, topReward in ipairs(topRewards) do
+            fallbackTotalWeight = fallbackTotalWeight + topReward.weight
+        end
+        
+        local fallbackRandomValue = math.random() * fallbackTotalWeight
+        local fallbackCurrentWeight = 0
+        
+        for i, topReward in ipairs(topRewards) do
+            fallbackCurrentWeight = fallbackCurrentWeight + topReward.weight
+            if fallbackRandomValue <= fallbackCurrentWeight then
+                -- gg.log("★ 保底选中:", topReward.name, "（权重:" .. topReward.weight .. "）")
+                return topReward.reward
+            end
+        end
+        
+        -- 最终保底：返回权重最高的奖励
+        return topRewards[1].reward
+        
+    elseif #candidates == 1 then
+        -- 只有一个候选者，直接返回
+        -- gg.log("★ 唯一候选奖励:", candidates[1].name)
+        return candidates[1].reward
+        
+    else
+        -- 多个候选者，按权重进行二次随机
+        -- gg.log("多个候选奖励，按权重进行二次随机选择:")
+        
+        -- 计算候选奖励的总权重
+        local candidatesTotalWeight = 0
+        for i, candidate in ipairs(candidates) do
+            candidatesTotalWeight = candidatesTotalWeight + candidate.reward.weight
+            -- gg.log(string.format("  候选%d: %s 权重:%.1f", i, candidate.name, candidate.reward.weight))
+        end
+        
+        -- gg.log("候选奖励总权重:", candidatesTotalWeight)
+        
+        -- 在候选总权重范围内生成随机值
+        local candidateRandomValue = math.random() * candidatesTotalWeight
+        -- gg.log("候选随机值:", candidateRandomValue)
+        
+        -- 轮盘选择候选奖励
+        local currentWeight = 0
+        for i, candidate in ipairs(candidates) do
+            currentWeight = currentWeight + candidate.reward.weight
+            -- gg.log(string.format("  候选%d累积权重: %.1f", i, currentWeight))
+            
+            if candidateRandomValue <= currentWeight then
+                -- gg.log("★ 权重随机选中:", candidate.name, "（权重:" .. candidate.reward.weight .. "）")
+                return candidate.reward
+            end
+        end
+        
+        -- 保底返回最后一个候选（理论上不应该到达这里）
+        -- gg.log("异常：候选权重随机未命中，返回最后候选")
+        return candidates[#candidates].reward
     end
-    return fallbackReward
-end
-
---- 完整的独立概率抽奖实现（推荐使用）
----@param lotteryConfig LotteryType 抽奖配置
----@return LotteryRewardItem 抽中的奖励
-function LotterySystem:RandomDraw(lotteryConfig)
-    -- 使用安全版本的独立概率算法
-    return self:RandomDraw_IndependentSingleSafe(lotteryConfig)
 end
 
 
@@ -215,16 +294,36 @@ end
 ---@return LotteryRewardItem|nil 保底奖励
 function LotterySystem:CheckPity(poolName, lotteryConfig)
     local poolData = self:GetPoolData(poolName)
-    
-    -- 检查配置中是否有保底设置
-    for _, rewardItem in ipairs(lotteryConfig.rewardPool) do
-        if rewardItem.isPity and poolData.pityCount >= (rewardItem.pityLimit or 50) then
-            -- 触发保底
-            poolData.pityCount = 0  -- 重置保底计数
-            return rewardItem
+
+    -- 使用 LotteryType 的保底配置列表
+    local pityList = lotteryConfig.GetPityList and lotteryConfig:GetPityList() or {}
+    if not pityList or #pityList == 0 then
+        return nil
+    end
+
+    -- 遍历保底规则，满足条件则触发
+    for _, pityCfg in ipairs(pityList) do
+        local required = pityCfg.requiredDraws or 0
+        if required > 0 and (poolData.pityCount or 0) >= required then
+            -- 触发保底后重置计数
+            poolData.pityCount = 0
+
+            -- 将保底配置转换为奖励项结构
+            local reward = {
+                rewardType = pityCfg.rewardType or "物品",
+                item = pityCfg.item,
+                wingConfig = pityCfg.wingConfig,
+                petConfig = pityCfg.petConfig,
+                partnerConfig = pityCfg.partnerConfig,
+                trailConfig = pityCfg.trailConfig,
+                amount = pityCfg.amount or 1,
+                weight = 0,
+                rarity = "UR",
+            }
+            return reward
         end
     end
-    
+
     return nil
 end
 
@@ -250,7 +349,8 @@ function LotterySystem:PerformDraw(poolName, drawType)
     
     -- 获取抽奖配置
     --gg.log("开始获取抽奖配置...")
-    local lotteryConfig = ConfigLoader.GetLottery(poolName)
+    local lotteryConfig = ConfigLoader.GetLottery(poolName) ---@type LotteryType
+
     if not lotteryConfig then
         --gg.log("错误：抽奖配置不存在，poolName:", poolName)
         return {
@@ -268,7 +368,7 @@ function LotterySystem:PerformDraw(poolName, drawType)
     local currentTime = os.time()
     
     gg.log("开始执行", drawCount, "次抽奖...")
-    
+    local lottery_type = lotteryConfig.lotteryType
     -- 执行多次抽奖
     for i = 1, drawCount do
         local reward
@@ -280,13 +380,22 @@ function LotterySystem:PerformDraw(poolName, drawType)
             gg.log("第", i, "次抽奖触发保底")
         else
             -- 正常随机抽奖
-            reward = self:RandomDraw(lotteryConfig)
+            if lottery_type == "蛋蛋抽奖" then
+                reward = self:RandomDraw_IndependentSingleSafe(lotteryConfig)
+            else
+                reward = self:RandomDraw(lotteryConfig)
+            end
             poolData.pityCount = poolData.pityCount + 1
-            gg.log("第", i, "次抽奖正常随机")
+        end
+
+        -- 若抽中的奖励本身就是保底奖励，也应重置保底计数
+        if lotteryConfig:IsPityReward(reward) then
+            poolData.pityCount = 0
+            gg.log("命中保底奖励，重置保底计数")
         end
         
         gg.log("第" .. i .. "次抽奖结果:")
-        gg.log("  - 奖励类型:", reward.rewardType,"  - 奖励名称:", self:GetRewardName(reward),"  - 数量: " .. reward.amount,"  - 权重: " .. reward.weight,"  - 稀有度: " .. (reward.rarity or "N"))
+        gg.log("   - 奖励名称:", self:GetRewardName(reward),"  - 数量: " .. reward.amount,"  - 权重: " .. reward.weight,"  - 稀有度: " .. (reward.rarity or "N"))
 
         -- 构建奖励记录
         local record = {

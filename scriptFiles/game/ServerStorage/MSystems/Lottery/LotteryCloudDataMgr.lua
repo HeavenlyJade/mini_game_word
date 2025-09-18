@@ -138,4 +138,6 @@ function LotteryCloudDataMgr.UpdatePoolStats(uin, poolName, cost, rewards)
     LotteryCloudDataMgr.SavePlayerLotteryData(uin, data)
 end
 
+
+
 return LotteryCloudDataMgr
