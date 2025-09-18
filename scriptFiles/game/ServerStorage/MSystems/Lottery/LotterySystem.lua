@@ -106,55 +106,108 @@ function LotterySystem:CanDraw(poolName, drawType)
 end
 
 --- 执行单次随机抽奖（调试版本）
+-- ---@param lotteryConfig LotteryType 抽奖配置
+-- ---@return LotteryRewardItem 抽中的奖励
+-- function LotterySystem:RandomDraw(lotteryConfig)
+--     local totalWeight = lotteryConfig:GetTotalWeight()
+--     local randomWeight = gg.rand_int(totalWeight)
+    
+--     gg.log("=== 随机抽奖调试开始 ===")
+--     gg.log("总权重:", totalWeight, "类型:", type(totalWeight))
+--     gg.log("随机权重:", randomWeight, "类型:", type(randomWeight))
+--     gg.log("奖励池大小:", #lotteryConfig.rewardPool)
+    
+--     local currentWeight = 0
+--     for i, rewardItem in ipairs(lotteryConfig.rewardPool) do
+--         local prevWeight = currentWeight
+--         currentWeight = currentWeight + rewardItem.weight
+        
+--         local rewardName = rewardItem.partnerConfig or rewardItem.petConfig or 
+--                           rewardItem.wingConfig or rewardItem.item or "未知"
+        
+--         gg.log(string.format("奖励%d: %s %s 权重:%.1f 区间:[%.1f,%.1f) 累计:%.1f", 
+--                i, rewardItem.rewardType, rewardName, 
+--                rewardItem.weight, prevWeight, currentWeight, currentWeight))
+        
+--         -- 详细判断过程
+--         local condition = randomWeight < currentWeight
+--         -- gg.log(string.format("  判断: %d < %.1f = %s", randomWeight, currentWeight, tostring(condition)))
+        
+--         if condition then
+--             gg.log("*** 命中奖励", i, ":", rewardItem.rewardType, rewardName)
+--             gg.log("=== 随机抽奖调试结束 ===")
+--             return rewardItem
+--         else
+--             gg.log("  跳过，继续下一个")
+--         end
+--     end
+    
+--     -- 如果到达这里，说明没有命中任何奖励
+--     gg.log("⚠️ 警告：没有命中任何奖励，使用兜底逻辑")
+--     gg.log("最终currentWeight:", currentWeight)
+--     gg.log("randomWeight vs totalWeight:", randomWeight, "vs", totalWeight)
+    
+--     local lastReward = lotteryConfig.rewardPool[#lotteryConfig.rewardPool]
+--     local lastName = lastReward.partnerConfig or lastReward.petConfig or 
+--                     lastReward.wingConfig or lastReward.item or "未知"
+--     gg.log("兜底返回:", lastReward.rewardType, lastName)
+--     gg.log("=== 随机抽奖调试结束 ===")
+    
+--     return lastReward
+-- end
+
+
+--- 独立概率算法的保底优化版本
 ---@param lotteryConfig LotteryType 抽奖配置
 ---@return LotteryRewardItem 抽中的奖励
-function LotterySystem:RandomDraw(lotteryConfig)
+function LotterySystem:RandomDraw_IndependentSingleSafe(lotteryConfig)
     local totalWeight = lotteryConfig:GetTotalWeight()
-    local randomWeight = gg.rand_int(totalWeight)
     
-    gg.log("=== 随机抽奖调试开始 ===")
-    gg.log("总权重:", totalWeight, "类型:", type(totalWeight))
-    gg.log("随机权重:", randomWeight, "类型:", type(randomWeight))
-    gg.log("奖励池大小:", #lotteryConfig.rewardPool)
+    gg.log("=== 独立概率算法 ===")
+    gg.log("总权重:", totalWeight)
     
-    local currentWeight = 0
+    -- 每个奖励独立判定
     for i, rewardItem in ipairs(lotteryConfig.rewardPool) do
-        local prevWeight = currentWeight
-        currentWeight = currentWeight + rewardItem.weight
+        local probability = rewardItem.weight / totalWeight
+        local probabilityScaled = probability * 1000
+        local randomValue = math.random(1000)
         
         local rewardName = rewardItem.partnerConfig or rewardItem.petConfig or 
-                          rewardItem.wingConfig or rewardItem.item or "未知"
+                          rewardItem.wingConfig or rewardItem.item or "未知奖励"
         
-        gg.log(string.format("奖励%d: %s %s 权重:%.1f 区间:[%.1f,%.1f) 累计:%.1f", 
-               i, rewardItem.rewardType, rewardName, 
-               rewardItem.weight, prevWeight, currentWeight, currentWeight))
+        gg.log(string.format("奖励%d: %s 权重:%.1f 概率阈值:%d 随机值:%d", 
+               i, rewardName, rewardItem.weight, math.floor(probabilityScaled), randomValue))
         
-        -- 详细判断过程
-        local condition = randomWeight < currentWeight
-        gg.log(string.format("  判断: %d < %.1f = %s", randomWeight, currentWeight, tostring(condition)))
-        
-        if condition then
-            gg.log("*** 命中奖励", i, ":", rewardItem.rewardType, rewardName)
-            gg.log("=== 随机抽奖调试结束 ===")
+        -- 真正的概率判定
+        if randomValue <= probabilityScaled then
+            gg.log("★ 命中奖励:", rewardName)
             return rewardItem
         else
-            gg.log("  跳过，继续下一个")
+            gg.log("✗ 未命中")
         end
     end
     
-    -- 如果到达这里，说明没有命中任何奖励
-    gg.log("⚠️ 警告：没有命中任何奖励，使用兜底逻辑")
-    gg.log("最终currentWeight:", currentWeight)
-    gg.log("randomWeight vs totalWeight:", randomWeight, "vs", totalWeight)
-    
-    local lastReward = lotteryConfig.rewardPool[#lotteryConfig.rewardPool]
-    local lastName = lastReward.partnerConfig or lastReward.petConfig or 
-                    lastReward.wingConfig or lastReward.item or "未知"
-    gg.log("兜底返回:", lastReward.rewardType, lastName)
-    gg.log("=== 随机抽奖调试结束 ===")
-    
-    return lastReward
+    -- 没有任何奖励命中，返回权重最高的作为保底
+    gg.log("没有奖励命中，使用保底")
+    local maxWeight = 0
+    local fallbackReward = lotteryConfig.rewardPool[1]
+    for _, reward in ipairs(lotteryConfig.rewardPool) do
+        if reward.weight > maxWeight then
+            maxWeight = reward.weight
+            fallbackReward = reward
+        end
+    end
+    return fallbackReward
 end
+
+--- 完整的独立概率抽奖实现（推荐使用）
+---@param lotteryConfig LotteryType 抽奖配置
+---@return LotteryRewardItem 抽中的奖励
+function LotterySystem:RandomDraw(lotteryConfig)
+    -- 使用安全版本的独立概率算法
+    return self:RandomDraw_IndependentSingleSafe(lotteryConfig)
+end
+
 
 --- 检查保底机制
 ---@param poolName string 抽奖池名称
@@ -233,12 +286,8 @@ function LotterySystem:PerformDraw(poolName, drawType)
         end
         
         gg.log("第" .. i .. "次抽奖结果:")
-        gg.log("  - 奖励类型:", reward.rewardType)
-        gg.log("  - 奖励名称:", self:GetRewardName(reward))
-        gg.log("  - 数量: " .. reward.amount)
-        gg.log("  - 权重: " .. reward.weight)
-        gg.log("  - 稀有度: " .. (reward.rarity or "N"))
-        
+        gg.log("  - 奖励类型:", reward.rewardType,"  - 奖励名称:", self:GetRewardName(reward),"  - 数量: " .. reward.amount,"  - 权重: " .. reward.weight,"  - 稀有度: " .. (reward.rarity or "N"))
+
         -- 构建奖励记录
         local record = {
             poolName = poolName,
