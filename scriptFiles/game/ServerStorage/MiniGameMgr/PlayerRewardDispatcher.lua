@@ -527,4 +527,83 @@ function PlayerRewardDispatcher.DispatchCommand(player, commandStr)
     return PlayerRewardDispatcher.DispatchSingleReward(player, RewardType.COMMAND, nil, nil, commandStr)
 end
 
+--- 基于玩家变量值判断今日获取限制并发放奖励
+---@param player MPlayer 玩家对象
+---@param itemName string 物品名称（对应VariabItemConfig中的key）
+---@param value number 要增加的数量
+---@return boolean 是否成功
+---@return string|nil 错误信息
+function PlayerRewardDispatcher.DispatchWithVariableLimit(player, itemName, value)
+    -- 参数验证
+    if not validatePlayer(player) then
+        return false, "玩家对象无效"
+    end
+    
+    if not itemName or itemName == "" then
+        return false, "物品名称不能为空"
+    end
+    
+    if not value or value <= 0 then
+        return false, "奖励数量必须大于0"
+    end
+    
+    -- 获取配置
+    local MConfig = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
+    local config = MConfig.VariabItemConfig[itemName]
+    
+    if not config then
+        return true, string.format("未找到物品 %s 的变量限制配置", itemName)
+    end
+    
+    local keyVarName = config.KEY
+    local targetVarName = config.Target
+    local action = config.Action
+    
+    if not keyVarName or not targetVarName or not action then
+        return false, string.format("物品 %s 的变量配置不完整", itemName)
+    end
+    
+    -- 检查玩家变量系统
+    if not player.variableSystem then
+        return false, "玩家变量系统未初始化"
+    end
+    
+    -- 获取当前变量值
+    local keyValue = player.variableSystem:GetVariable(keyVarName) or 0
+    local targetValue = player.variableSystem:GetVariable(targetVarName) or 0
+    
+    -- 检查是否满足条件
+    local conditionMet = false
+    if action == "<=" then
+        conditionMet = (targetValue + value) <= keyValue
+    elseif action == "<" then
+        conditionMet = (targetValue + value) < keyValue
+    elseif action == ">=" then
+        conditionMet = (targetValue + value) >= keyValue
+    elseif action == ">" then
+        conditionMet = (targetValue + value) > keyValue
+    elseif action == "==" then
+        conditionMet = (targetValue + value) == keyValue
+    elseif action == "~=" then
+        conditionMet = (targetValue + value) ~= keyValue
+    else
+        return false, string.format("不支持的操作符: %s", action)
+    end
+    
+    -- 如果不满足条件，返回错误
+    if not conditionMet then
+        return false, string.format("今日获取限制：%s 当前值 %d，尝试增加 %d，上限 %d，不满足条件 %s", 
+            itemName, targetValue, value, keyValue, action)
+    end
+    
+    -- 满足条件，增加目标变量值
+    player.variableSystem:AddVariable(targetVarName, value)
+    
+    -- 记录日志
+    gg.log(string.format("变量限制奖励发放成功: 玩家 %s, 物品 %s, 增加数量 %d, 当前值 %d, 上限 %d", 
+        player.name or player.uin, itemName, value, targetValue + value, keyValue))
+    
+    return true, nil
+end
+
 return PlayerRewardDispatcher

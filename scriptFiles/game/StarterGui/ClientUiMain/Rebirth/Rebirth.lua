@@ -150,7 +150,7 @@ end
 
 ---@param level number
 function RebirthGui:OnClickRebirthLevel(level)
-    gg.log(string.format("点击重生等级 %d 按钮", level))
+    -- gg.log(string.format("点击重生等级 %d 按钮", level))
 
     -- 发送执行单次重生的请求
     gg.network_channel:FireServer({

@@ -38,7 +38,16 @@ local ItemTypeNames = {
 local CommandExecutionConfig = {
     'variable { "操作类型": "清空来源", "变量名": "加成_百分比_训练加成", "其他加成": [  ] }',
     'variable { "操作类型": "设置", "变量名": "加成_百分比_训练加成", "数值": 0, "其他加成": [  ] }', 
+    'variable { "操作类型": "设置", "变量名": "数据_固定值_飞行币当日获取上限", "数值": 15000, "其他加成": [  ] }'
 }
+
+local EverDayConfig = {
+    'variable { "操作类型": "设置", "变量名": "数据_固定值_飞行币当日获取值", "数值": 0, "其他加成": [  ] }'
+}
+local VariabItemConfig = {
+    ["飞行币"] = {["KEY"]="数据_固定值_飞行币当日获取上限",["Target"]="数据_固定值_飞行币当日获取值",["Action"]="<=",["操作类型"]="内容新增",},
+}
+
 
 
 -- 变量区间/阈值命令配置
@@ -49,8 +58,8 @@ local CommandExecutionConfig = {
 -- - command 为满足条件时需要执行的指令字符串（交由命令系统解析执行）
 local VariableIntervalConfig = {
     ["数据_固定值_历史最大战力值"] = {
-        { comparator = ">=", value = 6e20, command = 'B指令' },
-        { comparator = ">=", value = 1.2e13, command = 'A指令' },
+        { comparator = ">=", value = 6e20, command = 'variable { "操作类型": "设置", "变量名": "数据_固定值_飞行币当日获取上限", "数值": 15000, "其他加成": [  ] }' },
+        { comparator = ">=", value = 1.2e13, command = 'variable { "操作类型": "设置", "变量名": "数据_固定值_飞行币当日获取上限", "数值": 15000, "其他加成": [  ] }' },
     },
 }
 
@@ -67,6 +76,8 @@ local common_config = {
     ItemTypeNames = ItemTypeNames,
     CommandExecutionConfig = CommandExecutionConfig,
     VariableIntervalConfig = VariableIntervalConfig,
+    VariabItemConfig = VariabItemConfig,
+    EverDayConfig =EverDayConfig
 }
 
 

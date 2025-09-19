@@ -222,7 +222,11 @@ function MServerInitPlayer.player_enter_game(player)
     if isFirstLoginToday then
         gg.log("玩家今日首次登录，开始处理每日重置逻辑", player.Nickname, "连续登录", consecutiveDays, "天")
         player_:SetAdWatchCount(0)
+        
+        -- 【新增】执行每日重置指令
+        MServerInitPlayer.ExecuteDailyResetCommands(player_)
     end
+    -- MServerInitPlayer.ExecuteDailyResetCommands(player_)
     
     -- 【新增】检查玩家是否通过邀请进入以及是否为新玩家
     -- MServerInitPlayer.checkPlayerInviteAndNewPlayerStatus(player_)
@@ -243,6 +247,35 @@ function MServerInitPlayer.ExecuteCommandConfig(player)
         gg.log("执行指令:", command)
         CommandManager.ExecuteCommand(command, player, true)
     end
+end
+
+-- 【新增】执行每日重置指令
+---@param player MPlayer 玩家对象
+function MServerInitPlayer.ExecuteDailyResetCommands(player)
+
+    
+    local common_config = require(MainStorage.Code.Common.GameConfig.MConfig) ---@type common_config
+    local CommandManager = require(ServerStorage.CommandSys.MCommandMgr) ---@type CommandManager
+    
+    local dailyCommands = common_config.EverDayConfig
+    if not dailyCommands or #dailyCommands == 0 then
+        gg.log("信息: 没有配置每日重置指令")
+        return
+    end
+    
+    gg.log("开始执行每日重置指令，共", #dailyCommands, "条指令，玩家:", player.name or player.uin)
+    
+    for i, command in ipairs(dailyCommands) do
+        if command and command ~= "" then
+            gg.log("执行每日重置指令", i, ":", command)
+            local success = CommandManager.ExecuteCommand(command, player, true) -- silent = true 避免重复日志
+            if not success then
+                gg.log("每日重置指令执行失败:", success,command)
+            end
+        end
+    end
+    
+    gg.log("每日重置指令执行完成，玩家:", player.Name)
 end
 
 -- 【新增】确保装饰性对象的同步设置正确

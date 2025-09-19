@@ -1098,6 +1098,8 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
         return false
     end
 
+
+
     -- 计算并应用加成
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player, itemName)
     local itemBonus = bonuses[itemName]
@@ -1107,7 +1109,13 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
     end
     local finalRewards = BonusManager.ApplyBonusesToRewards({[itemName]=amount}, bonuses)
     local finalAmount = finalRewards[itemName] or amount
-
+    -- 【新增】检查飞行币获取上限
+    local flightCoinSuccess, flightCoinError = PlayerRewardDispatcher.DispatchWithVariableLimit(player, itemName, finalAmount)
+    if not flightCoinSuccess then
+        gg.log(string.format("实时奖励被限制: 玩家 %s, 物品 %s x%d, 飞行币限制: %s", 
+            player.name or "未知", itemName, amount, flightCoinError or "未知错误"))
+        return false
+    end
     -- 发放已应用加成后的数量
     local success, errorMsg = PlayerRewardDispatcher.DispatchSingleReward(player, "物品", itemName, finalAmount)
 

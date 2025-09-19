@@ -31,6 +31,7 @@ VariableNameConfig.VariableNames = {
     '数据_固定值_广告播放次数',
     '数据_固定值_邀请数量',
     '数据_固定值_飞行币当日获取上限',
+    '数据_固定值_飞行币当日获取值',
 }
 
 VariableNameConfig.StatNames = {

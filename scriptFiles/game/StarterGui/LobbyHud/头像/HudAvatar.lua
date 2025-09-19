@@ -49,6 +49,7 @@ function HudAvatar:OnInit(node, config)
     self.friendsButton = self:Get("名字背景/好友", ViewButton)
     self.TitleFriendsTemp = self:Get("名字背景/好友/加成模版描述", ViewComponent) ---@type ViewComponent
     self.TitleFriendsNum  =self:Get("名字背景/好友/好友数量", ViewComponent) ---@type ViewComponent
+    self.TitleFlightCoin = self:Get("名字背景/飞行币", ViewComponent) ---@type ViewComponent
     self.friendsBonusList = self:Get("名字背景/好友/好友加成", ViewList) ---@type ViewList
     self.dvertisementButton = self:Get("名字背景/广告", ViewButton)
     -- 点击好友按钮：打开邀请列表（客户端调用）
@@ -238,6 +239,9 @@ function HudAvatar:OnPlayerVariableSync(data)
         -- 默认值
         self.PowerVariableTitle.node.Title = "0"
     end
+    
+    -- 【新增】更新飞行币显示
+    self:UpdateFlightCoinDisplay()
 end
 
 -- 【新增】处理房间好友数据同步
@@ -322,6 +326,44 @@ function HudAvatar:UpdateFriendsBonusUI()
             self.friendsBonusList:AppendChild(node)
         end
     end
+end
+
+-- 【新增】更新飞行币显示
+function HudAvatar:UpdateFlightCoinDisplay()
+    if not self.TitleFlightCoin or not self.TitleFlightCoin.node then
+        return
+    end
+    
+    -- 获取飞行币相关变量数据
+    local currentValue = 0
+    local maxValue = 0
+    
+    -- 获取当日获取值
+    local currentData = self.playerVariableData["数据_固定值_飞行币当日获取值"]
+    if currentData then
+        if type(currentData) == "table" and currentData.base then
+            currentValue = gg.convertScientificNotation(currentData.base)
+        elseif type(currentData) == "number" then
+            currentValue = currentData
+        end
+    end
+    
+    -- 获取当日获取上限
+    local maxData = self.playerVariableData["数据_固定值_飞行币当日获取上限"]
+    if maxData then
+        if type(maxData) == "table" and maxData.base then
+            maxValue = gg.convertScientificNotation(maxData.base)
+        elseif type(maxData) == "number" then
+            maxValue = maxData
+        end
+    end
+    
+    -- 格式化显示：今日飞行币:10000/1万5
+    local currentFormatted = gg.FormatLargeNumber(currentValue)
+    local maxFormatted = gg.FormatLargeNumber(maxValue)
+    
+    local displayText = string.format("今日飞行币:%s/%s", currentFormatted, maxFormatted)
+    self.TitleFlightCoin.node.Title = displayText
 end
 
 return HudAvatar.New(script.Parent, uiConfig)

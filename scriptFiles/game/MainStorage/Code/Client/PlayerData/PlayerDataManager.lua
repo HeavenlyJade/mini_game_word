@@ -59,7 +59,7 @@ function PlayerDataManager:HandlePlayerDataLoaded(data)
 
 	local actor = localPlayer.Character
 	local skinId = actor.SkinId 
-	gg.log("本地玩家皮肤ID:", skinId)
+	-- gg.log("本地玩家皮肤ID:", skinId)
 
 	-- 【新增】上报皮肤ID给服务器
 	local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
