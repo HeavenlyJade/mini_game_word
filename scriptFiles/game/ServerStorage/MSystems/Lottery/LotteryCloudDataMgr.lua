@@ -14,6 +14,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal)    ---@type gg
 ---@field totalDraws number 总抽奖次数
 ---@field pityCounters table<number, number> -- 各保底节点计数器 {所需次数: 当前计数}
 ---@field lastDrawTime number 最后抽奖时间戳
+---@field dailyDrawCount number|nil 每日抽奖次数
 
 ---@class LotteryRecord
 ---@field poolName string 抽奖池名称

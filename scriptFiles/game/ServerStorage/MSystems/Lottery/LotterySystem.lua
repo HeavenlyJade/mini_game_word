@@ -37,29 +37,69 @@ end
 ---@param poolName string 抽奖池名称
 ---@return LotteryPoolData 抽奖池数据
 function LotterySystem:GetPoolData(poolName)
-        -- 获取抽奖配置，初始化保底计数器
-    local lotteryConfig = ConfigLoader.GetLottery(poolName) ---@type LotteryType
-    local pityCounters = {}
-    
-    if lotteryConfig and lotteryConfig:HasPityList() then
-        local pityList = lotteryConfig:GetPityList() ---@type table[]
-        for _, pityCfg in ipairs(pityList) do
-            local requiredDraws = pityCfg.requiredDraws or 0
-            if requiredDraws > 0 then
-                pityCounters[requiredDraws] = 0
+    if not self.lotteryPools[poolName] then
+        -- 1. 获取抽奖配置
+        local lotteryConfig = ConfigLoader.GetLottery(poolName)
+        local pityCounters = {}
+        
+        -- 2. 根据配置初始化保底计数器
+        if lotteryConfig and lotteryConfig:HasPityList() then
+            local pityList = lotteryConfig:GetPityList()
+            for _, pityCfg in ipairs(pityList) do
+                local requiredDraws = pityCfg.requiredDraws or 0
+                if requiredDraws > 0 then
+                    pityCounters[requiredDraws] = 0
+                end
+            end
+            gg.log("初始化抽奖池保底计数器:", poolName, "节点数量:", #pityList)
+        end
+        
+        -- 3. 创建新的抽奖池数据
+        self.lotteryPools[poolName] = {
+            poolName = poolName,
+            totalDraws = 0,
+            pityCounters = pityCounters,
+            lastDrawTime = 0,
+            dailyDrawCount = 0,
+        }
+    else
+        -- 4. 已存在的抽奖池数据，检查并补充保底计数器
+        local poolData = self.lotteryPools[poolName]
+        
+        -- 如果没有保底计数器，需要初始化（兼容从云端加载的数据）
+        if not poolData.pityCounters then
+            local lotteryConfig = ConfigLoader.GetLottery(poolName)
+            poolData.pityCounters = {}
+            
+            if lotteryConfig and lotteryConfig:HasPityList() then
+                local pityList = lotteryConfig:GetPityList()
+                for _, pityCfg in ipairs(pityList) do
+                    local requiredDraws = pityCfg.requiredDraws or 0
+                    if requiredDraws > 0 then
+                        poolData.pityCounters[requiredDraws] = 0
+                    end
+                end
+                gg.log("为已有抽奖池补充保底计数器:", poolName)
+            end
+        else
+            -- 检查配置变化，补充新增的保底节点
+            local lotteryConfig = ConfigLoader.GetLottery(poolName)
+            if lotteryConfig and lotteryConfig:HasPityList() then
+                local pityList = lotteryConfig:GetPityList()
+                for _, pityCfg in ipairs(pityList) do
+                    local requiredDraws = pityCfg.requiredDraws or 0
+                    if requiredDraws > 0 and poolData.pityCounters[requiredDraws] == nil then
+                        -- 新增的保底节点，初始化为0
+                        poolData.pityCounters[requiredDraws] = 0
+                        gg.log("补充新保底节点:", poolName, "次数:", requiredDraws)
+                    end
+                end
             end
         end
     end
-    self.lotteryPools[poolName] = {
-        poolName = poolName,
-        totalDraws = 0,
-        pityCounters = pityCounters,  -- 新的多保底计数器
-        lastDrawTime = 0,
-    }
-
+    
     return self.lotteryPools[poolName]
 end
-
 --- 检查是否可以进行抽奖
 ---@param poolName string 抽奖池名称
 ---@param drawType string 抽奖类型（single/five/ten）
