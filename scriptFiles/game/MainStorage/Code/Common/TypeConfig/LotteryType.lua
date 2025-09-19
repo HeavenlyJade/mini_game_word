@@ -27,6 +27,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 ---@field level string 级别
 ---@field rewardPool LotteryRewardItem[] 奖励池
 ---@field pityList table[] 保底配置列表
+---@field pityDict table<number, table> 保底配置字典（key: 需要抽奖次数, value: 保底配置）
 ---@field singleCost LotteryCost 单次消耗
 ---@field fiveCost LotteryCost 五连消耗
 ---@field tenCost LotteryCost 十连消耗
@@ -50,6 +51,7 @@ function LotteryType:OnInit(data)
     
     -- 解析保底配置列表（可选）
     self.pityList = {}
+    self.pityDict = {}
     self:ParsePityList(data["保底配置列表"] or {})
     
     -- 解析消耗配置
@@ -97,6 +99,8 @@ function LotteryType:ParsePityList(rawList)
             amount = pityData["数量"] or 1,
         }
         table.insert(self.pityList, cfg)
+        -- 按“需要抽奖次数”建立字典索引
+        self.pityDict[cfg.requiredDraws] = cfg
     end
 
     table.sort(self.pityList, function(a, b)
@@ -114,6 +118,12 @@ end
 ---@return table[] 保底配置列表
 function LotteryType:GetPityList()
     return self.pityList or {}
+end
+
+--- 获取保底配置字典（若无则返回空表）
+---@return table<number, table> 保底配置字典
+function LotteryType:GetPityDict()
+    return self.pityDict or {}
 end
 
 --- 判断指定奖励是否为保底奖励

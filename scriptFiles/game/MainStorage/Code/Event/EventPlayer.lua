@@ -36,6 +36,8 @@ EventPlayerConfig.REQUEST = {
     FRIENDS_COUNT_REPORT = "cmd_client_report_friends_count",
     -- 【新增】广告相关事件
     AD_WATCH_COMPLETED = "cmd_ad_watch_completed", -- 广告观看完成
+    -- 【新增】客户端上报皮肤ID
+    SKIN_ID_REPORT = "cmd_client_report_skin_id",
 
 }
 

@@ -137,7 +137,9 @@ function MServerInitPlayer.player_enter_game(player)
         consecutiveDays = consecutiveDays,
         totalLoginDays = totalLoginDays,
         firstLoginDate = firstLoginDate,
-        adWatchCount = adWatchCount
+        adWatchCount = adWatchCount,
+        -- 记录当前玩家外观皮肤ID
+        skinId =cloud_player_data_.skinId or 0
     })
 
     -- 读取任务数据
@@ -224,6 +226,12 @@ function MServerInitPlayer.player_enter_game(player)
     
     -- 【新增】检查玩家是否通过邀请进入以及是否为新玩家
     -- MServerInitPlayer.checkPlayerInviteAndNewPlayerStatus(player_)
+    
+    -- 【新增】通知客户端：玩家数据已完全加载
+    gg.network_channel:fireClient(uin_, {
+        cmd = EventPlayerConfig.NOTIFY.PLAYER_DATA_LOADED,
+        uin = uin_,
+    })
 end
 
 -- 执行指令执行配置中的指令列表

@@ -23,6 +23,7 @@ local VariableSystem = require(MainStorage.Code.MServer.Systems.VariableSystem) 
 ---@field currentGameModeInstanceId string|nil 当前所在游戏模式实例ID
 ---@field currentGameModeName string|nil 当前所在游戏模式名称
 ---@field onlineFriendsCount number 在线好友数量（客户端上报，用于加成等逻辑）
+---@field skinId number 玩家皮肤ID
 local _MPlayer = ClassMgr.Class('MPlayer', Entity)
 
 function _MPlayer:OnInit(info_)
@@ -39,6 +40,7 @@ function _MPlayer:OnInit(info_)
     self.currentGameModeInstanceId = nil --- 当前所在的游戏模式实例ID
     self.currentGameModeName = nil --- 当前所在的游戏模式名称
     self.onlineFriendsCount = 0 --- 在线好友数量
+    self.skinId = info_.skinId or 0 --- 玩家皮肤ID
 
     -- 技能相关
     self.dict_btn_skill = nil -- 技能按钮映射

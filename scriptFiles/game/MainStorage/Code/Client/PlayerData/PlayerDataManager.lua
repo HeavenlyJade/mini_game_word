@@ -22,13 +22,18 @@ function PlayerDataManager:SubscribeServerEvents()
 
 
     -- 订阅新的变量和任务数据同步事件
-    ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
-        self:HandleVariableSync(data)
-    end)
+	ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_LOADED, function(data)
+		--gg.log("收到玩家数据加载完成通知")
+		self:HandlePlayerDataLoaded(data)
+	end)
 
-    ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_SYNC_QUEST, function(data)
-        self:HandleQuestSync(data)
-    end)
+    -- ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_SYNC_VARIABLE, function(data)
+    --     self:HandleVariableSync(data)
+    -- end)
+
+    -- ClientEventManager.Subscribe(PlayerDataEventConfig.NOTIFY.PLAYER_DATA_SYNC_QUEST, function(data)
+    --     self:HandleQuestSync(data)
+    -- end)
 
 end
 
@@ -41,6 +46,29 @@ function PlayerDataManager:Init()
     self:SubscribeServerEvents()
     self.isInitialized = true
     --gg.log("PlayerDataManager 初始化完成。")
+end
+
+function PlayerDataManager:HandlePlayerDataLoaded(data)
+	-- 获取本地玩家的Actor对象并打印皮肤ID
+	local players = game:GetService("Players")
+	local localPlayer = players.LocalPlayer
+	if not localPlayer or not localPlayer.Character then
+		gg.log("错误：未找到本地玩家或其角色，无法读取皮肤ID")
+		return
+	end
+
+	local actor = localPlayer.Character
+	local skinId = actor.SkinId 
+	gg.log("本地玩家皮肤ID:", skinId)
+
+	-- 【新增】上报皮肤ID给服务器
+	local ClientEventManager = require(MainStorage.Code.Client.Event.ClientEventManager) ---@type ClientEventManager
+	local EventPlayerConfig = require(MainStorage.Code.Event.EventPlayer) ---@type EventPlayerConfig
+    local msgData = {
+        cmd = EventPlayerConfig.REQUEST.SKIN_ID_REPORT,
+        skinId = skinId,
+    }
+	ClientEventManager.SendToServer(EventPlayerConfig.REQUEST.SKIN_ID_REPORT, msgData)
 end
 
 --- 【新增】处理来自背包系统的数据同步

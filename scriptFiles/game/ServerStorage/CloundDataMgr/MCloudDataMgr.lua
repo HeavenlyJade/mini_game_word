@@ -54,9 +54,12 @@ end
 function MCloudDataMgr.ReadPlayerData( uin_ )
     local ret_, ret2_ = cloudService:GetTableOrEmpty( MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_ )
 
-    gg.log( '获取与玩家当前的经验和等级', 'pd' .. uin_, ret_, ret2_ )
     if  ret_ then
         if  ret2_ and ret2_.uin == uin_ then
+            -- 兼容旧数
+            if ret2_.skinId == nil then
+                ret2_.skinId = 0
+            end
             return 0, ret2_
         end
         return 0, {}
@@ -82,6 +85,7 @@ function MCloudDataMgr.SavePlayerData( uin_,  force_ )
             vars = player_.variables,
             isNew = true,
             adWatchCount = player_.adWatchCount or 0 ,
+            skinId = player_.skinId or 0,
             dailyLogin = {
                 lastLoginDate = player_.lastLoginDate or "",         -- 最后登录日期 (YYYY-MM-DD)
                 consecutiveDays = player_.consecutiveDays or 0,      -- 连续登录天数
@@ -186,7 +190,9 @@ function MCloudDataMgr.ClearCorePlayerData(uin_)
 
     -- 1. 如果玩家在线，重置内存数据
     local player_ = MServerDataManager.server_players_list[uin_]
+    local preservedSkinId = 0
     if player_ then
+        preservedSkinId = tonumber(player_.skinId or 0)
         player_.level = 1
         player_.exp = 0
     
@@ -205,10 +211,34 @@ function MCloudDataMgr.ClearCorePlayerData(uin_)
 
     -- 2. 清理云端数据
     local key = MCloudDataMgr.PLAYER_DATA_KEY_PREFIX .. uin_
+    -- 如果玩家不在线，尝试从云端读取现有的 skinId
+    if preservedSkinId == 0 then
+        local ok, data = cloudService:GetTableOrEmpty(key)
+        if ok and data and data.skinId then
+            preservedSkinId = tonumber(data.skinId) or 0
+        end
+    end
     -- 设置为空表来清空数据
     cloudService:RemoveKeyAsync(key, function(success)
         if success then
             gg.log("成功清空玩家核心云端数据:", uin_)
+            -- 回写仅包含 skinId 的最小数据，避免外观丢失
+            local minimal = {
+                uin = uin_,
+                level = 1,
+                exp = 0,
+                vars = {},
+                isNew = true,
+                adWatchCount = 0,
+                skinId = preservedSkinId,
+                dailyLogin = {
+                    lastLoginDate = "",
+                    consecutiveDays = 0,
+                    totalLoginDays = 0,
+                    firstLoginDate = ""
+                }
+            }
+            cloudService:SetTableAsync(key, minimal, function(_) end)
         else
             --gg.log("清空玩家核心云端数据失败:", uin_)
         end

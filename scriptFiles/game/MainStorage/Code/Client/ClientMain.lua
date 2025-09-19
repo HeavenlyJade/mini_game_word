@@ -42,6 +42,11 @@ function ClientMain.start_client()
     Controller.init()
     ClientMain.InitActionHandlers() -- 初始化所有动作处理器
     ClientMain.InitDataSystems() -- 初始化数据系统
+    do
+        -- 显式注册玩家数据相关的服务端事件（防御性调用）
+        local PlayerDataManager = require(MainStorage.Code.Client.PlayerData.PlayerDataManager)
+        PlayerDataManager:SubscribeServerEvents()
+    end
 
     local timer = SandboxNode.New("Timer", game.StarterGui)
     timer.LocalSyncFlag = Enum.NodeSyncLocalFlag.DISABLE

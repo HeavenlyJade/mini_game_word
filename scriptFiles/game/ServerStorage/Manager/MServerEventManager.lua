@@ -107,6 +107,19 @@ function MServerEventManager.syncAdWatchCountToClient(player)
     })
 end
 
+-- 私有：处理客户端上报皮肤ID
+---@param evt table
+function MServerEventManager.handleSkinIdReport(evt)
+    -- 校验玩家
+    local player = MServerEventManager.ValidatePlayer(evt) ---@type MPlayer|nil
+    if not player then
+        return
+    end
+    local newSkinId = evt.skinId
+    player.skinId = newSkinId
+    gg.log("更新玩家皮肤ID", player.name, "UIN:", player.uin, "SkinId:", newSkinId)
+end
+
 --- 初始化事件订阅
 function MServerEventManager.Init()
     -- 订阅客户端上报好友数量
@@ -117,6 +130,11 @@ function MServerEventManager.Init()
     -- 订阅广告观看完成事件
     ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.AD_WATCH_COMPLETED, function(evt)
         MServerEventManager.handleAdWatchCompleted(evt)
+    end)
+
+    -- 【新增】订阅客户端上报皮肤ID事件
+    ServerEventManager.Subscribe(EventPlayerConfig.REQUEST.SKIN_ID_REPORT, function(evt)
+        MServerEventManager.handleSkinIdReport(evt)
     end)
 
     -- 可按需增加更多与 EventPlayerConfig 相关的服务端事件

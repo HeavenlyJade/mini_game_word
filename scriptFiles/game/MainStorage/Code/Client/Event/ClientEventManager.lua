@@ -122,7 +122,7 @@ function ClientEventManager.Publish(eventType, eventData)
 end
 
 --- 发送事件到服务器
----@param eventType string 事件类型
+---@param eventType string 事件名称
 ---@param eventData table 事件数据
 ---@param callback? fun(data: table) 回调函数
 function ClientEventManager.SendToServer(eventType, eventData, callback)
