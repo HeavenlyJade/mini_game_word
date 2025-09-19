@@ -106,6 +106,22 @@ function CachaDrawGui:RegisterButtonEvents()
         end
     end
 
+    if self.AddGachaTicketButton then
+        self.AddGachaTicketButton.clickCb = function ()
+            local shopGui = ViewBase.GetUI("ShopDetailGui")
+            if shopGui then
+                shopGui:OpenFromCommand({
+                    categoryName = "飞行币",
+                    shopItemId = "飞行币1.5万"
+                })
+                -- 进入商城后关闭当前抽奖界面
+                self:Close()
+            else
+                --gg.log("错误：找不到ShopDetailGui界面")
+            end
+        end
+    end
+
 end
 
 -- =================================

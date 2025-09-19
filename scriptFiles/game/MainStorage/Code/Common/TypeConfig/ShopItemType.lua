@@ -20,9 +20,7 @@ local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
 
 
 ---@class ShopItemPurchaseCondition
----@field conditionType string 条件类型
----@field conditionValue any 条件值
----@field comparisonOperator string 比较操作符
+---@field conditionDescription string 条件描述
 
 ---@class ShopItemLimitConfig
 ---@field limitType string 限购类型
@@ -147,9 +145,7 @@ function ShopItemType:ParseLimitConfig(limitData)
         limitCount = limitData["限购次数"] or -1,
         resetTime = limitData["重置时间"] or "",
         purchaseCondition = {
-            conditionType = purchaseCondition["条件类型"] or "无",
-            conditionValue = purchaseCondition["条件值"] or 0,
-            comparisonOperator = purchaseCondition["比较操作符"] or "大于等于"
+            conditionDescription = purchaseCondition["条件描述"] or ""
         }
     }
 end
@@ -160,9 +156,25 @@ end
 function ShopItemType:ParseRewards(rewardsData)
     local rewards = {}
     for _, rewardData in ipairs(rewardsData) do
+        local itemType = rewardData["商品类型"] or "物品"
+        local itemName = nil
+
+        -- 根据商品类型，从对应的特定配置字段中获取名称
+        if itemType == "物品" then
+            itemName = rewardData["物品配置"]
+        elseif itemType == "宠物" then
+            itemName = rewardData["宠物配置"]
+        elseif itemType == "伙伴" then
+            itemName = rewardData["伙伴配置"]
+        elseif itemType == "翅膀" then
+            itemName = rewardData["翅膀配置"]
+        elseif itemType == "尾迹" then
+            itemName = rewardData["尾迹配置"]
+        end
+
         table.insert(rewards, {
-            itemType = rewardData["商品类型"] or "物品",
-            itemName = rewardData["商品名称"],
+            itemType = itemType,
+            itemName = itemName,
             variableName = rewardData["变量名称"],
             amount = rewardData["数量"] or 1,
             gainDescription = rewardData["获得商品描述"],
@@ -229,46 +241,16 @@ end
 ---@return boolean, string 是否满足条件，失败原因
 function ShopItemType:CheckPurchaseCondition(playerLevel)
     local condition = self.limitConfig.purchaseCondition
-    if condition.conditionType == "无" or not condition.conditionType then
-        return true, "无等级要求"
+    local conditionDescription = condition.conditionDescription or ""
+    
+    -- 如果条件描述为空，表示无购买条件
+    if conditionDescription == "" then
+        return true, "无购买条件"
     end
     
-    if condition.conditionType == "玩家等级" then
-        local targetLevel = condition.conditionValue or 0
-        if condition.comparisonOperator == "大于等于" then
-            if playerLevel >= targetLevel then
-                return true, "等级满足要求"
-            else
-                return false, string.format("等级不足，需要%d级", targetLevel)
-            end
-        elseif condition.comparisonOperator == "大于" then
-            if playerLevel > targetLevel then
-                return true, "等级满足要求"
-            else
-                return false, string.format("等级不足，需要%d级以上", targetLevel)
-            end
-        elseif condition.comparisonOperator == "等于" then
-            if playerLevel == targetLevel then
-                return true, "等级满足要求"
-            else
-                return false, string.format("等级必须为%d级", targetLevel)
-            end
-        elseif condition.comparisonOperator == "小于等于" then
-            if playerLevel <= targetLevel then
-                return true, "等级满足要求"
-            else
-                return false, string.format("等级过高，需要%d级以下", targetLevel)
-            end
-        elseif condition.comparisonOperator == "小于" then
-            if playerLevel < targetLevel then
-                return true, "等级满足要求"
-            else
-                return false, string.format("等级过高，需要%d级以下", targetLevel)
-            end
-        end
-    end
-    
-    return true, "条件满足" -- 默认满足条件
+    -- 这里可以根据实际需求解析条件描述
+    -- 目前简单返回条件描述作为提示信息
+    return true, "条件描述: " .. conditionDescription
 end
 
 --- 检查是否可购买（基于限购配置和玩家条件）
