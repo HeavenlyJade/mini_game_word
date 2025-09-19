@@ -127,11 +127,11 @@ function LotteryType:GetPityDict()
 end
 
 --- 判断指定奖励是否为保底奖励
----@param reward table 抽中的奖励（需包含 rewardType 及对应配置字段）
----@return boolean 是否为保底奖励
+---@param reward table 抽中的奖励
+---@return boolean, number|nil 是否为保底奖励，对应的保底次数
 function LotteryType:IsPityReward(reward)
     if not reward or not self.pityList or #self.pityList == 0 then
-        return false
+        return false, nil
     end
 
     local function fieldEquals(a, b)
@@ -139,6 +139,7 @@ function LotteryType:IsPityReward(reward)
         return a == b
     end
 
+    -- 遍历所有保底配置，找到匹配的保底次数
     for _, pity in ipairs(self.pityList) do
         if (pity.rewardType or "") == (reward.rewardType or "") then
             local sameItem = fieldEquals(pity.item, reward.item)
@@ -161,12 +162,13 @@ function LotteryType:IsPityReward(reward)
             end
 
             if typeMatched then
-                return true
+                -- 返回匹配的保底次数
+                return true, pity.requiredDraws or 0
             end
         end
     end
 
-    return false
+    return false, nil
 end
 
 --- 解析消耗配置

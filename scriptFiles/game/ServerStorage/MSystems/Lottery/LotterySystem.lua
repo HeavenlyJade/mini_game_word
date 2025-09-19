@@ -19,7 +19,7 @@ local LotterySystem = ClassMgr.Class("LotterySystem")
 
 function LotterySystem:OnInit(playerUin, data)
     self.playerUin = playerUin
-    
+    ---@type PlayerLotteryData
     if data then
         self.lotteryPools = data.lotteryPools or {}
         self.drawHistory = data.drawHistory or {}
@@ -37,14 +37,26 @@ end
 ---@param poolName string 抽奖池名称
 ---@return LotteryPoolData 抽奖池数据
 function LotterySystem:GetPoolData(poolName)
-    if not self.lotteryPools[poolName] then
-        self.lotteryPools[poolName] = {
-            poolName = poolName,
-            totalDraws = 0,
-            pityCount = 0,
-            lastDrawTime = 0,
-        }
+        -- 获取抽奖配置，初始化保底计数器
+    local lotteryConfig = ConfigLoader.GetLottery(poolName) ---@type LotteryType
+    local pityCounters = {}
+    
+    if lotteryConfig and lotteryConfig:HasPityList() then
+        local pityList = lotteryConfig:GetPityList() ---@type table[]
+        for _, pityCfg in ipairs(pityList) do
+            local requiredDraws = pityCfg.requiredDraws or 0
+            if requiredDraws > 0 then
+                pityCounters[requiredDraws] = 0
+            end
+        end
     end
+    self.lotteryPools[poolName] = {
+        poolName = poolName,
+        totalDraws = 0,
+        pityCounters = pityCounters,  -- 新的多保底计数器
+        lastDrawTime = 0,
+    }
+
     return self.lotteryPools[poolName]
 end
 
@@ -291,42 +303,52 @@ end
 --- 检查保底机制
 ---@param poolName string 抽奖池名称
 ---@param lotteryConfig LotteryType 抽奖配置
----@return LotteryRewardItem|nil 保底奖励
+---@return LotteryRewardItem|nil, number|nil 保底奖励，触发的保底次数
 function LotterySystem:CheckPity(poolName, lotteryConfig)
     local poolData = self:GetPoolData(poolName)
 
-    -- 使用 LotteryType 的保底配置列表
     local pityList = lotteryConfig.GetPityList and lotteryConfig:GetPityList() or {}
     if not pityList or #pityList == 0 then
-        return nil
+        return nil, nil
     end
 
-    -- 遍历保底规则，满足条件则触发
+    -- 遍历保底规则，检查是否触发（按次数升序检查）
     for _, pityCfg in ipairs(pityList) do
-        local required = pityCfg.requiredDraws or 0
-        if required > 0 and (poolData.pityCount or 0) >= required then
-            -- 触发保底后重置计数
-            poolData.pityCount = 0
+        local requiredDraws = pityCfg.requiredDraws or 0
+        if requiredDraws > 0 then
+            local currentCount = poolData.pityCounters[requiredDraws] or 0
+            if currentCount >= requiredDraws then
+                -- 触发保底后，只重置该保底节点的计数器
+                poolData.pityCounters[requiredDraws] = 0
+                
+                gg.log("触发保底:", poolName, "保底次数:", requiredDraws, "当前计数:", currentCount)
 
-            -- 将保底配置转换为奖励项结构
-            local reward = {
-                rewardType = pityCfg.rewardType or "物品",
-                item = pityCfg.item,
-                wingConfig = pityCfg.wingConfig,
-                petConfig = pityCfg.petConfig,
-                partnerConfig = pityCfg.partnerConfig,
-                trailConfig = pityCfg.trailConfig,
-                amount = pityCfg.amount or 1,
-                weight = 0,
-                rarity = "UR",
-            }
-            return reward
+                local reward = {
+                    rewardType = pityCfg.rewardType or "物品",
+                    item = pityCfg.item,
+                    wingConfig = pityCfg.wingConfig,
+                    petConfig = pityCfg.petConfig,
+                    partnerConfig = pityCfg.partnerConfig,
+                    trailConfig = pityCfg.trailConfig,
+                    amount = pityCfg.amount or 1,
+                    weight = 0,
+                    rarity = "UR",
+                }
+                return reward, requiredDraws
+            end
         end
     end
 
-    return nil
+    return nil, nil
 end
 
+function LotterySystem:UpdatePityCounters(poolData, drawCount)
+    if poolData.pityCounters then
+        for requiredDraws, currentCount in pairs(poolData.pityCounters) do
+            poolData.pityCounters[requiredDraws] = currentCount + drawCount
+        end
+    end
+end
 --- 执行抽奖
 ---@param poolName string 抽奖池名称
 ---@param drawType string 抽奖类型（single/five/ten）
@@ -385,13 +407,17 @@ function LotterySystem:PerformDraw(poolName, drawType)
             else
                 reward = self:RandomDraw(lotteryConfig)
             end
-            poolData.pityCount = poolData.pityCount + 1
+            self:UpdatePityCounters(poolData, 1)
         end
 
         -- 若抽中的奖励本身就是保底奖励，也应重置保底计数
-        if lotteryConfig:IsPityReward(reward) then
-            poolData.pityCount = 0
-            gg.log("命中保底奖励，重置保底计数")
+        local isPityReward, matchedPityDraws = lotteryConfig:IsPityReward(reward)
+        if isPityReward and matchedPityDraws and matchedPityDraws > 0 then
+            -- 只重置匹配的保底节点计数器
+            if poolData.pityCounters and poolData.pityCounters[matchedPityDraws] then
+                poolData.pityCounters[matchedPityDraws] = 0
+                gg.log("正常抽奖命中保底奖励，重置", matchedPityDraws, "次保底计数器")
+            end
         end
         
         gg.log("第" .. i .. "次抽奖结果:")
@@ -415,7 +441,6 @@ function LotterySystem:PerformDraw(poolName, drawType)
     -- 更新抽奖数据
     poolData.totalDraws = poolData.totalDraws + drawCount
     poolData.lastDrawTime = currentTime
-    poolData.dailyDrawCount = (poolData.dailyDrawCount or 0) + drawCount
     self.totalDrawCount = self.totalDrawCount + drawCount
     
     -- 获取消耗配置
@@ -433,7 +458,6 @@ function LotterySystem:PerformDraw(poolName, drawType)
         rewards = rewards,
         totalCost = totalCost,
         costType = cost and cost.costItem or "",
-        pityProgress = poolData.pityCount
     }
 end
 
@@ -457,10 +481,41 @@ end
 
 --- 获取抽奖池保底进度
 ---@param poolName string 抽奖池名称
----@return number 保底进度
-function LotterySystem:GetPityProgress(poolName)
+---@param requiredDraws number|nil 指定保底次数（nil返回所有进度）
+---@return number|table 保底进度
+function LotterySystem:GetPityProgress(poolName, requiredDraws)
     local poolData = self:GetPoolData(poolName)
-    return poolData.pityCount
+    
+    if not poolData.pityCounters then
+        return 0
+    end
+    
+    -- 如果指定了保底次数，返回该保底的进度
+    if requiredDraws then
+        return poolData.pityCounters[requiredDraws] or 0
+    end
+    
+    -- 返回所有保底进度
+    local allProgress = {}
+    for required, current in pairs(poolData.pityCounters) do
+        allProgress[required] = current
+    end
+    
+    -- 如果只有一个保底节点，返回数字；否则返回表
+    local count = 0
+    local singleProgress = 0
+    for required, current in pairs(allProgress) do
+        count = count + 1
+        singleProgress = current
+    end
+    
+    if count == 1 then
+        return singleProgress
+    elseif count == 0 then
+        return 0
+    else
+        return allProgress
+    end
 end
 
 --- 获取抽奖历史记录
