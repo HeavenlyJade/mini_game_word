@@ -66,7 +66,7 @@ end
 ---@return boolean 是否成功
 ---@return string|nil 错误信息
 local function dispatchSingleReward(player, reward)
-    -- gg.log("开始发放奖励", player.name, "奖励数据", reward)
+    gg.log("开始发放奖励", player.name, "奖励数据", reward)
     local itemType = reward.itemType
     local itemName = reward.itemName
     local amount = reward.amount or 1

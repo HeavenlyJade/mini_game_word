@@ -468,21 +468,22 @@ function MailMgr.ClaimMailAttachment(uin, mailId)
     local rewardList = {}
     if mail.attachments then
         for _, attachment in ipairs(mail.attachments) do
-            -- 支持新格式：itemType + itemName/variableName + amount/value
+            -- 支持新格式：itemType + itemName/variableName + amount/value + stars
             if attachment.itemType and (attachment.itemName or attachment.variableName) and (attachment.amount or attachment.value) then
                 table.insert(rewardList, {
                     itemType = attachment.itemType,
                     itemName = attachment.itemName,
                     variableName = attachment.variableName,
                     amount = attachment.amount or attachment.value,
-                    stars = attachment.stars or 1
+                    stars = attachment.stars or attachment.starLevel or 1  -- 修复：使用stars字段，兼容starLevel
                 })
             -- 兼容旧格式：type + amount
             elseif attachment.type and attachment.amount then
                 table.insert(rewardList, {
                     itemType = "物品",
                     itemName = attachment.type,
-                    amount = attachment.amount
+                    amount = attachment.amount,
+                    stars = 1  -- 旧格式默认星级为1
                 })
             end
         end
@@ -564,14 +565,37 @@ function MailMgr.BatchClaimMails(uin, mailIds)
             table.insert(claimableMails, mail)
             -- 合并附件到总附件列表（处理数组格式的附件）
             for _, attachment in ipairs(mail.attachments) do
-                -- 支持新格式：itemType + itemName/variableName + amount/value
-                if attachment.itemType and (attachment.itemName or attachment.variableName) and (attachment.amount or attachment.value) then
-                    local itemKey = attachment.itemName or attachment.variableName
-                    local amount = attachment.amount or attachment.value
-                    totalAttachments[itemKey] = (totalAttachments[itemKey] or 0) + amount
-                -- 兼容旧格式：type + amount
-                elseif attachment.type and attachment.amount then
-                    totalAttachments[attachment.type] = (totalAttachments[attachment.type] or 0) + attachment.amount
+            -- 支持新格式：itemType + itemName/variableName + amount/value + stars
+            if attachment.itemType and (attachment.itemName or attachment.variableName) and (attachment.amount or attachment.value) then
+                local itemKey = attachment.itemName or attachment.variableName
+                local amount = attachment.amount or attachment.value
+                local stars = attachment.stars or attachment.starLevel or 1
+                
+                -- 使用更完整的key来区分不同星级的同名物品
+                local fullKey = itemKey .. "_star" .. stars
+                if not totalAttachments[fullKey] then
+                    totalAttachments[fullKey] = {
+                        itemType = attachment.itemType,
+                        itemName = attachment.itemName,
+                        variableName = attachment.variableName,
+                        amount = 0,
+                        stars = stars
+                    }
+                end
+                totalAttachments[fullKey].amount = totalAttachments[fullKey].amount + amount
+                
+            -- 兼容旧格式：type + amount
+            elseif attachment.type and attachment.amount then
+                local fullKey = attachment.type .. "_star1"
+                if not totalAttachments[fullKey] then
+                    totalAttachments[fullKey] = {
+                        itemType = "物品",
+                        itemName = attachment.type,
+                        amount = 0,
+                        stars = 1
+                    }
+                end
+                totalAttachments[fullKey].amount = totalAttachments[fullKey].amount + attachment.amount
                 end
             end
         end
@@ -583,12 +607,14 @@ function MailMgr.BatchClaimMails(uin, mailIds)
 
     -- 转换总附件为 PlayerRewardDispatcher 标准格式
     local totalRewardList = {}
-    for itemName, amount in pairs(totalAttachments) do
-        if itemName and amount and amount > 0 then
+    for _, attachmentData in pairs(totalAttachments) do
+        if attachmentData.itemName and attachmentData.amount and attachmentData.amount > 0 then
             table.insert(totalRewardList, {
-                itemType = "物品",
-                itemName = itemName,
-                amount = amount
+                itemType = attachmentData.itemType,
+                itemName = attachmentData.itemName,
+                variableName = attachmentData.variableName,
+                amount = attachmentData.amount,
+                stars = attachmentData.stars or 1  -- 确保星级字段传递
             })
         end
     end
@@ -602,7 +628,7 @@ function MailMgr.BatchClaimMails(uin, mailIds)
     end
 
     -- 发放奖励并更新状态
-    local totalRewards = MailMgr._AddAttachmentsToPlayer(player, totalAttachments)
+    local totalRewards = MailMgr._AddAttachmentsToPlayer(player, totalRewardList)
     local mailData = MailMgr.GetPlayerMailData(uin)
 
     for _, mail in ipairs(claimableMails) do

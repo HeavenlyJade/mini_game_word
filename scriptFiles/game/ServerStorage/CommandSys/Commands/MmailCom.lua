@@ -36,16 +36,32 @@ local MailCommand = {}
 local function parseAttachments(params)
     local attachments = {}
     if params["附件"] and type(params["附件"]) == "table" then
-        for itemType, amount in pairs(params["附件"]) do
-            table.insert(attachments, {
-                type = itemType,
-                amount = tonumber(amount) or 1
-            })
+        -- 使用ipairs遍历数组格式的附件列表
+        for _, attachmentInfo in ipairs(params["附件"]) do
+            if type(attachmentInfo) == "table" then
+                -- 从附件信息中提取字段
+                local itemType = attachmentInfo["类型"] or "物品"
+                local itemName = attachmentInfo["名称"] or ""
+                local amount = tonumber(attachmentInfo["数量"]) or 1
+                local starLevel = tonumber(attachmentInfo["星级"]) or 0
+                
+                -- 验证必要字段
+                if itemName ~= "" then
+                    table.insert(attachments, {
+                        itemType = itemType,
+                        itemName = itemName,
+                        amount = amount,
+                        starLevel = starLevel
+                    })
+                    gg.log("解析附件:", itemType, itemName, "数量:", amount, "星级:", starLevel)
+                else
+                    gg.log("跳过无效附件:", attachmentInfo)
+                end
+            end
         end
     end
     return attachments
 end
-
 --- 发送全服邮件
 function MailCommand.sendGlobalMail(params, sender)
     local title = params["标题"] or "系统通知"
