@@ -1088,7 +1088,7 @@ function RaceGameMode:_calculateRealtimeRewardAmount(rewardFormula, playerData)
     return nil
 end
 
---- 【新增】发放实时奖励物品
+--- 【新增】发放实时奖励物品关卡的配置奖励
 ---@param player MPlayer 玩家实例
 ---@param itemName string 物品名称
 ---@param amount number 物品数量（这里是已经通过公式计算的数量，PlayerRewardDispatcher内部还会再次应用加成）

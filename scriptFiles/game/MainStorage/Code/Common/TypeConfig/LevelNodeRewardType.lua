@@ -12,6 +12,13 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
 ---@field 生成的距离配置 number 触发奖励的距离阈值
 ---@field 唯一ID string 奖励节点的唯一标识符
 
+---@class BonusVariableItem
+---@field 变量名称 string 加成变量的名称
+---@field 变量属性 string 变量属性（如：玩家变量、全局变量等）
+---@field 作用目标 string 作用目标（如：金币、经验等）
+---@field 加成方式 string 加成方式（如：最终乘法、固定加成等）
+---@field 加成数值 number 加成数值
+
 ---@class LevelNodeRewardConfigItem
 ---@field 配置名称 string 配置的名称标识
 ---@field 配置描述 string 配置的详细描述
@@ -27,8 +34,10 @@ local ClassMgr = require(MainStorage.Code.Untils.ClassMgr)
 ---@field sceneName string 所属场景名称
 ---@field soundNodeField string 音效节点字段
 ---@field rewardNodes LevelNodeRewardItem[] 奖励节点列表
+---@field bonusVariables table[] 加成变量列表
 ---@field _distanceMap table<number, LevelNodeRewardItem[]> 按距离分组的奖励节点映射
 ---@field _idMap table<string, LevelNodeRewardItem> 按唯一ID分组的奖励节点映射
+---@field _bonusVariableMap table<string, table> 按变量名称分组的加成变量映射
 local LevelNodeRewardType = ClassMgr.Class("LevelNodeRewardType")
 
 function LevelNodeRewardType:OnInit(data)
@@ -42,6 +51,9 @@ function LevelNodeRewardType:OnInit(data)
     
     -- 奖励节点列表
     self.rewardNodes = data["节点列表"] or {}
+    
+    -- 加成变量列表
+    self.bonusVariables = data["加成变量列表"] or {}
     
     -- 构建距离映射表，用于快速查找特定距离的奖励
     self._distanceMap = {}
@@ -61,6 +73,15 @@ function LevelNodeRewardType:OnInit(data)
         local uniqueId = node["唯一ID"]
         if uniqueId and uniqueId ~= "" then
             self._idMap[uniqueId] = node
+        end
+    end
+    
+    -- 【新增】构建加成变量映射表，用于快速查找特定变量名称的加成配置
+    self._bonusVariableMap = {}
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        local varName = bonusVar["变量名称"]
+        if varName and varName ~= "" then
+            self._bonusVariableMap[varName] = bonusVar
         end
     end
     
@@ -348,9 +369,266 @@ function LevelNodeRewardType:GetSummary()
         nodeCount = #self.rewardNodes,
         distanceCount = #self:GetAllDistances(),
         uniqueIdCount = self:GetUniqueIdCount(),
+        bonusVariableCount = self:GetBonusVariableCount(),
         minDistance = #self:GetAllDistances() > 0 and self:GetAllDistances()[1] or 0,
         maxDistance = #self:GetAllDistances() > 0 and self:GetAllDistances()[#self:GetAllDistances()] or 0
     }
+end
+
+--- 【新增】获取所有加成变量
+---@return table[] 加成变量列表
+function LevelNodeRewardType:GetAllBonusVariables()
+    return self.bonusVariables
+end
+
+--- 【新增】获取加成变量数量
+---@return number 加成变量数量
+function LevelNodeRewardType:GetBonusVariableCount()
+    return #self.bonusVariables
+end
+
+--- 【新增】根据变量名称获取加成变量
+---@param varName string 变量名称
+---@return table|nil 加成变量配置，如果不存在则返回nil
+function LevelNodeRewardType:GetBonusVariableByName(varName)
+    if not varName or varName == "" then
+        return nil
+    end
+    
+    return self._bonusVariableMap[varName]
+end
+
+--- 【新增】检查指定变量名称是否存在
+---@param varName string 变量名称
+---@return boolean 是否存在
+function LevelNodeRewardType:HasBonusVariable(varName)
+    return self:GetBonusVariableByName(varName) ~= nil
+end
+
+--- 【新增】根据作用目标筛选加成变量
+---@param target string 作用目标（如：金币、经验等）
+---@return table[] 匹配的加成变量列表
+function LevelNodeRewardType:GetBonusVariablesByTarget(target)
+    local result = {}
+    
+    if not target or target == "" then
+        return result
+    end
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        if bonusVar["作用目标"] == target then
+            table.insert(result, bonusVar)
+        end
+    end
+    
+    return result
+end
+
+--- 【新增】根据加成方式筛选加成变量
+---@param bonusType string 加成方式（如：最终乘法、固定加成等）
+---@return table[] 匹配的加成变量列表
+function LevelNodeRewardType:GetBonusVariablesByType(bonusType)
+    local result = {}
+    
+    if not bonusType or bonusType == "" then
+        return result
+    end
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        if bonusVar["加成方式"] == bonusType then
+            table.insert(result, bonusVar)
+        end
+    end
+    
+    return result
+end
+
+--- 【新增】根据变量属性筛选加成变量
+---@param varProperty string 变量属性（如：玩家变量、全局变量等）
+---@return table[] 匹配的加成变量列表
+function LevelNodeRewardType:GetBonusVariablesByProperty(varProperty)
+    local result = {}
+    
+    if not varProperty or varProperty == "" then
+        return result
+    end
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        if bonusVar["变量属性"] == varProperty then
+            table.insert(result, bonusVar)
+        end
+    end
+    
+    return result
+end
+
+--- 【新增】获取所有作用目标列表
+---@return string[] 所有作用目标的数组
+function LevelNodeRewardType:GetAllTargets()
+    local targets = {}
+    local seen = {}
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        local target = bonusVar["作用目标"]
+        if target and target ~= "" and not seen[target] then
+            table.insert(targets, target)
+            seen[target] = true
+        end
+    end
+    
+    table.sort(targets)
+    return targets
+end
+
+--- 【新增】获取所有加成方式列表
+---@return string[] 所有加成方式的数组
+function LevelNodeRewardType:GetAllBonusTypes()
+    local types = {}
+    local seen = {}
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        local bonusType = bonusVar["加成方式"]
+        if bonusType and bonusType ~= "" and not seen[bonusType] then
+            table.insert(types, bonusType)
+            seen[bonusType] = true
+        end
+    end
+    
+    table.sort(types)
+    return types
+end
+
+--- 【新增】获取所有变量属性列表
+---@return string[] 所有变量属性的数组
+function LevelNodeRewardType:GetAllVariableProperties()
+    local properties = {}
+    local seen = {}
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        local property = bonusVar["变量属性"]
+        if property and property ~= "" and not seen[property] then
+            table.insert(properties, property)
+            seen[property] = true
+        end
+    end
+    
+    table.sort(properties)
+    return properties
+end
+
+--- 【新增】验证加成变量配置的完整性
+---@return boolean isValid, string message 验证是否通过与提示信息
+function LevelNodeRewardType:ValidateBonusVariables()
+    local varCount = self:GetBonusVariableCount()
+    local mapCount = 0
+    
+    -- 统计映射表中的数量
+    for _ in pairs(self._bonusVariableMap) do
+        mapCount = mapCount + 1
+    end
+    
+    if varCount ~= mapCount then
+        return false, string.format("加成变量映射表不完整: 变量总数=%d, 映射数量=%d", varCount, mapCount)
+    end
+    
+    -- 检查是否有重复的变量名称
+    local seenNames = {}
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        local varName = bonusVar["变量名称"]
+        if varName and varName ~= "" then
+            if seenNames[varName] then
+                return false, string.format("发现重复的变量名称: %s", varName)
+            end
+            seenNames[varName] = true
+        end
+    end
+    
+    return true, "加成变量配置验证通过"
+end
+
+--- 【新增】获取加成变量映射表的完整副本
+---@return table<string, table> 加成变量映射表的副本
+function LevelNodeRewardType:GetBonusVariableMapCopy()
+    local copy = {}
+    for varName, bonusVar in pairs(self._bonusVariableMap) do
+        copy[varName] = bonusVar
+    end
+    return copy
+end
+
+--- 【新增】根据目标物品获取对应的加成变量名称列表
+---@param targetItem string 目标物品名称（如：金币、经验等）
+---@return string[] 匹配的加成变量名称列表
+function LevelNodeRewardType:GetBonusVariableNamesByTarget(targetItem)
+    local result = {}
+    
+    if not targetItem or targetItem == "" then
+        return result
+    end
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        local target = bonusVar["作用目标"]
+        local varName = bonusVar["变量名称"]
+        
+        if target == targetItem and varName and varName ~= "" then
+            table.insert(result, varName)
+        end
+    end
+    
+    return result
+end
+
+--- 【新增】根据目标物品获取对应的加成变量配置列表
+---@param targetItem string 目标物品名称（如：金币、经验等）
+---@return table[] 匹配的加成变量配置列表
+function LevelNodeRewardType:GetBonusVariablesByTargetItem(targetItem)
+    local result = {}
+    
+    if not targetItem or targetItem == "" then
+        return result
+    end
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        local target = bonusVar["作用目标"]
+        
+        if target == targetItem then
+            table.insert(result, bonusVar)
+        end
+    end
+    
+    return result
+end
+
+--- 【新增】检查指定目标物品是否有对应的加成变量
+---@param targetItem string 目标物品名称
+---@return boolean 是否存在对应的加成变量
+function LevelNodeRewardType:HasBonusVariableForTarget(targetItem)
+    if not targetItem or targetItem == "" then
+        return false
+    end
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        if bonusVar["作用目标"] == targetItem then
+            return true
+        end
+    end
+    
+    return false
+end
+
+--- 【新增】获取所有目标物品及其对应的加成变量数量
+---@return table<string, number> 目标物品到加成变量数量的映射
+function LevelNodeRewardType:GetTargetItemBonusCounts()
+    local counts = {}
+    
+    for _, bonusVar in ipairs(self.bonusVariables) do
+        local target = bonusVar["作用目标"]
+        if target and target ~= "" then
+            counts[target] = (counts[target] or 0) + 1
+        end
+    end
+    
+    return counts
 end
 
 return LevelNodeRewardType
