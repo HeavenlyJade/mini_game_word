@@ -239,7 +239,7 @@ function RaceGameMode:GetLevelRewardConfig(configName, uniqueId)
     return nil
 end
 
---- 【新增】分发关卡奖励
+--- 【新增】LevelNodeRewardType的关卡奖励
 ---@param player MPlayer 目标玩家
 ---@param rewardConfig LevelNodeRewardItem 奖励配置
 ---@param uniqueId string 唯一ID
@@ -928,7 +928,7 @@ function RaceGameMode:_checkAndGiveLevelRewards(player, flightData)
     local playerRewards = self.levelRewardsGiven[playerUin]
 
     -- 遍历所有关卡奖励配置
-    for uniqueId, rewardNode in pairs(levelRewardConfigs) do
+    for uniqueId, rewardNode in pairs(levelRewardConfigs) do ---@type LevelNodeRewardItem
         local triggerDistance = rewardNode["生成的距离配置"] or 0
         
         -- 检查触发条件：距离达到 且 未发放过
