@@ -261,21 +261,21 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
     end
 
     -- 【新增】应用玩家加成计算
-    local finalItemCount = itemCount
-    local levelRewardType = self:GetLevelNodeRewardType(nil) ---@type LevelNodeRewardType|nil
+    local variableBonusAmount = itemCount
     
-    -- 【新增】先应用关卡奖励配置中的玩家变量加成
-    if levelRewardType then
-        local variableBonusAmount, variableBonusInfo = BonusManager.CalculateLevelRewardVariableBonuses(
-            player, itemType, itemCount, levelRewardType
+    -- 【新增】先应用关卡配置(LevelType)中的玩家变量加成
+    if self.levelType and self.levelType:HasBonusVariableForTarget(itemType) then
+        local bonusVariables = self.levelType:GetBonusVariablesByTargetItem(itemType)
+        local bonusInfo
+        variableBonusAmount, bonusInfo = BonusManager.CalculateLevelRewardVariableBonuses(
+            player, itemType, itemCount, bonusVariables
         )
         
         if variableBonusAmount ~= itemCount then
-            finalItemCount = variableBonusAmount
-            gg.log(string.format("关卡奖励变量加成: 玩家 %s, 物品 %s, 原始数量: %d, 变量加成后数量: %d", 
-                player.name or player.uin, itemType, itemCount, finalItemCount))
-            if variableBonusInfo and variableBonusInfo ~= "" then
-                gg.log(variableBonusInfo)
+            gg.log(string.format("关卡奖励变量加成(LevelType): 玩家 %s, 物品 %s, 原始数量: %d, 变量加成后数量: %d", 
+                player.name or player.uin, itemType, itemCount, variableBonusAmount))
+            if bonusInfo and bonusInfo ~= "" then
+                gg.log(bonusInfo)
             end
         end
     end
@@ -285,20 +285,19 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
 
     -- 2. 构建原始奖励数据（使用变量加成后的数量）
     local originalRewards = {
-        [itemType] = finalItemCount
+        [itemType] = variableBonusAmount
     }
 
     -- 3. 应用加成到奖励
     local finalRewards = BonusManager.ApplyBonusesToRewards(originalRewards, bonuses)
 
     -- 4. 获取应用加成后的最终数量
-    finalItemCount = finalRewards[itemType] or finalItemCount
+    local finalItemCount = finalRewards[itemType] or variableBonusAmount
 
     -- 记录加成计算日志
-    if finalItemCount ~= itemCount then
-        gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d",
-            player.name or player.uin, itemType, itemCount, finalItemCount))
-    end
+    gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d",
+        player.name or player.uin, itemType, itemCount, finalItemCount))
+    
 
     -- 使用现有的奖励发放系统，发放加成后的奖励
     if not PlayerRewardDispatcher then
@@ -1134,20 +1133,19 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
 
 
     -- 【新增】先应用关卡奖励配置中的玩家变量加成
-    local levelRewardType = self:GetLevelNodeRewardType(nil) ---@type LevelNodeRewardType|nil
     local variableBonusAmount = amount
-    local variableBonusInfo = ""
-    
-    if levelRewardType then
-        variableBonusAmount, variableBonusInfo = BonusManager.CalculateLevelRewardVariableBonuses(
-            player, itemName, amount, levelRewardType
+    if self.levelType and self.levelType:HasBonusVariableForTarget(itemName) then
+        local bonusVariables = self.levelType:GetBonusVariablesByTargetItem(itemName)
+        local bonusInfo
+        variableBonusAmount, bonusInfo = BonusManager.CalculateLevelRewardVariableBonuses(
+            player, itemName, amount, bonusVariables
         )
         
         if variableBonusAmount ~= amount then
             gg.log(string.format("实时奖励变量加成: 玩家 %s, 物品 %s, 原始数量: %d, 变量加成后数量: %d", 
                 player.name or player.uin, itemName, amount, variableBonusAmount))
-            if variableBonusInfo and variableBonusInfo ~= "" then
-                gg.log(variableBonusInfo)
+            if bonusInfo and bonusInfo ~= "" then
+                gg.log(bonusInfo)
             end
         end
     end

@@ -430,22 +430,16 @@ end
 ---@param player MPlayer 玩家实例
 ---@param itemType string 物品类型
 ---@param baseAmount number 基础数量
----@param levelRewardType LevelNodeRewardType 关卡奖励类型配置
+---@param bonusVariables LevelBonusVariableItem[] 关卡奖励变量配置列表
 ---@return number finalAmount, string bonusInfo 最终数量和加成信息
-function BonusManager.CalculateLevelRewardVariableBonuses(player, itemType, baseAmount, levelRewardType)
-    if not player or not itemType or not levelRewardType then
+function BonusManager.CalculateLevelRewardVariableBonuses(player, itemType, baseAmount, bonusVariables)
+    if not player or not itemType or not bonusVariables or #bonusVariables == 0 then
         return baseAmount, ""
     end
 
     local finalAmount = baseAmount
     local bonusDescriptions = {}
     
-    -- 获取目标物品的加成变量
-    local bonusVariables = levelRewardType:GetBonusVariablesByTargetItem(itemType)
-    if not bonusVariables or #bonusVariables == 0 then
-        return finalAmount, ""
-    end
-
     gg.log(string.format("关卡奖励变量加成检查: 玩家 %s, 物品 %s, 找到 %d 个加成变量", 
         player.name or player.uin, itemType, #bonusVariables))
 
@@ -476,24 +470,21 @@ function BonusManager.CalculateLevelRewardVariableBonuses(player, itemType, base
         
         -- 根据加成方式计算加成
         if playerVarValue > 0 then
-            local bonusAmount = 0
             local oldAmount = finalAmount
             
             if bonusType == "最终乘法" then
-                bonusAmount = finalAmount * (1 + playerVarValue)
-                finalAmount = bonusAmount
+                finalAmount = finalAmount * (1 + playerVarValue)
                 table.insert(bonusDescriptions, string.format("最终乘法加成: %s x (1+%s) = %s", 
-                    tostring(oldAmount), tostring(playerVarValue), tostring(bonusAmount)))
+                    tostring(oldAmount), tostring(playerVarValue), tostring(finalAmount)))
             elseif bonusType == "固定加成" then
-                bonusAmount = playerVarValue
-                finalAmount = finalAmount + bonusAmount
+                finalAmount = finalAmount + playerVarValue
                 table.insert(bonusDescriptions, string.format("固定加成: %s + %s = %s", 
-                    tostring(oldAmount), tostring(bonusAmount), tostring(finalAmount)))
+                    tostring(oldAmount), tostring(playerVarValue), tostring(finalAmount)))
             elseif bonusType == "百分比加成" then
-                bonusAmount = finalAmount * (playerVarValue / 100)
+                local bonusAmount = finalAmount * (playerVarValue / 100)
                 finalAmount = finalAmount + bonusAmount
-                table.insert(bonusDescriptions, string.format("百分比加成: %s + (%s x %s%%) = %s", 
-                    tostring(oldAmount), tostring(oldAmount), tostring(playerVarValue), tostring(finalAmount)))
+                table.insert(bonusDescriptions, string.format("百分比加成: %s + %.2f (%s%%) = %s", 
+                    tostring(oldAmount), bonusAmount, tostring(playerVarValue), tostring(finalAmount)))
             end
         end
     end
