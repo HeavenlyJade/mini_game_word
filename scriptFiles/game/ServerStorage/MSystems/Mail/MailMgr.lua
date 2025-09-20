@@ -468,7 +468,17 @@ function MailMgr.ClaimMailAttachment(uin, mailId)
     local rewardList = {}
     if mail.attachments then
         for _, attachment in ipairs(mail.attachments) do
-            if attachment.type and attachment.amount then
+            -- 支持新格式：itemType + itemName/variableName + amount/value
+            if attachment.itemType and (attachment.itemName or attachment.variableName) and (attachment.amount or attachment.value) then
+                table.insert(rewardList, {
+                    itemType = attachment.itemType,
+                    itemName = attachment.itemName,
+                    variableName = attachment.variableName,
+                    amount = attachment.amount or attachment.value,
+                    stars = attachment.stars or 1
+                })
+            -- 兼容旧格式：type + amount
+            elseif attachment.type and attachment.amount then
                 table.insert(rewardList, {
                     itemType = "物品",
                     itemName = attachment.type,
@@ -486,14 +496,8 @@ function MailMgr.ClaimMailAttachment(uin, mailId)
         return {success = false, code = MailMgr.ERROR_CODE.BAG_FULL, message = spaceError or "背包空间不足", rewards = {}}
     end
     
-    -- 转换附件格式为字典格式用于发放
-    local attachmentMap = {}
-    for _, reward in ipairs(rewardList) do
-        attachmentMap[reward.itemName] = reward.amount
-    end
-    
-    -- 发放奖励
-    local rewards = MailMgr._AddAttachmentsToPlayer(player, attachmentMap)
+    -- 直接使用 PlayerRewardDispatcher 标准格式发放奖励
+    local rewards = MailMgr._AddAttachmentsToPlayer(player, rewardList)
 
     -- 更新邮件状态
     if mailType == MailMgr.MAIL_TYPE.PLAYER then
@@ -560,7 +564,13 @@ function MailMgr.BatchClaimMails(uin, mailIds)
             table.insert(claimableMails, mail)
             -- 合并附件到总附件列表（处理数组格式的附件）
             for _, attachment in ipairs(mail.attachments) do
-                if attachment.type and attachment.amount then
+                -- 支持新格式：itemType + itemName/variableName + amount/value
+                if attachment.itemType and (attachment.itemName or attachment.variableName) and (attachment.amount or attachment.value) then
+                    local itemKey = attachment.itemName or attachment.variableName
+                    local amount = attachment.amount or attachment.value
+                    totalAttachments[itemKey] = (totalAttachments[itemKey] or 0) + amount
+                -- 兼容旧格式：type + amount
+                elseif attachment.type and attachment.amount then
                     totalAttachments[attachment.type] = (totalAttachments[attachment.type] or 0) + attachment.amount
                 end
             end
@@ -705,65 +715,69 @@ function MailMgr.NotifyNewMail(uin, mailData)
     MailEventManager.NotifyNewMail(uin, mailData)
 end
 
---- 内部函数：添加附件到玩家背包
+--- 为玩家添加邮件附件（使用统一奖励分发器）
 ---@param player MPlayer 玩家对象
----@param attachments table 附件列表，格式: {"物品名": 数量}
----@return table 成功添加的物品列表
+---@param attachments table 附件列表（PlayerRewardDispatcher标准格式）
+---@return table 成功添加的奖励列表
 function MailMgr._AddAttachmentsToPlayer(player, attachments)
     local PlayerRewardDispatcher = require(ServerStorage.MiniGameMgr.PlayerRewardDispatcher) ---@type PlayerRewardDispatcher
-    if not player or not attachments then return {} end
+    if not player or not attachments then 
+        return {} 
+    end
 
-    -- 转换附件格式为 PlayerRewardDispatcher 标准格式
-    local rewardList = {}
-    for itemName, amount in pairs(attachments) do
-        if itemName and amount and amount > 0 then
+    -- 如果是数组格式，直接使用 PlayerRewardDispatcher 发放奖励
+    if type(attachments) == "table" and #attachments > 0 then
+        local success, resultMsg, failedRewards = PlayerRewardDispatcher.DispatchRewards(player, attachments)
+        
+        gg.log("邮件附件发放结果 - 玩家:", player.uin, "成功:", success, "消息:", resultMsg)
+        
+        local addedItems = {}
+        if success then
+            -- 全部成功，记录所有奖励
+            for _, reward in ipairs(attachments) do
+                local key = reward.itemName or reward.variableName or reward.itemType
+                addedItems[key] = reward.amount or reward.value or 1
+            end
+            gg.log("邮件附件全部发放成功 - 玩家:", player.uin, "奖励数量:", #attachments)
+        else
+            -- 部分成功，只记录成功的奖励
+            local successItems = {}
+            for _, reward in ipairs(attachments) do
+                local isFailed = false
+                if failedRewards then
+                    for _, failedReward in ipairs(failedRewards) do
+                        if failedReward.reward == reward then
+                            isFailed = true
+                            break
+                        end
+                    end
+                end
+                if not isFailed then
+                    local key = reward.itemName or reward.variableName or reward.itemType
+                    successItems[key] = reward.amount or reward.value or 1
+                end
+            end
+            
+            addedItems = successItems
+            gg.log("邮件附件部分发放成功 - 玩家:", player.uin, "成功奖励:", successItems, "失败数量:", failedRewards and #failedRewards or 0)
+        end
+        
+        return addedItems
+    -- 如果是字典格式（兼容旧代码），转换为数组格式
+    elseif type(attachments) == "table" then
+        local rewardList = {}
+        for itemName, amount in pairs(attachments) do
             table.insert(rewardList, {
                 itemType = "物品",
                 itemName = itemName,
                 amount = amount
             })
         end
-    end
-
-    -- 使用统一奖励分发器发放附件
-    local success, resultMsg, failedRewards = PlayerRewardDispatcher.DispatchRewards(player, rewardList)
-    
-    gg.log("邮件附件发放结果 - 玩家:", player.uin, "成功:", success, "消息:", resultMsg)
-    
-    local addedItems = {}
-    if success then
-        -- 全部成功，记录所有物品
-        for itemName, amount in pairs(attachments) do
-            if itemName and amount and amount > 0 then
-                addedItems[itemName] = amount
-            end
-        end
-        gg.log("邮件附件全部发放成功 - 玩家:", player.uin, "物品数量:", #rewardList)
-    else
-        -- 部分成功，只记录成功的物品
-        local successItems = {}
-        for _, reward in ipairs(rewardList) do
-            local isFailed = false
-            if failedRewards then
-                for _, failedReward in ipairs(failedRewards) do
-                    if failedReward.reward.itemName == reward.itemName then
-                        isFailed = true
-                        break
-                    end
-                end
-            end
-            if not isFailed then
-                successItems[reward.itemName] = reward.amount
-            end
-        end
-        
-        addedItems = successItems
-        gg.log("邮件附件部分发放成功 - 玩家:", player.uin, "成功物品:", successItems, "失败数量:", failedRewards and #failedRewards or 0)
+        return MailMgr._AddAttachmentsToPlayer(player, rewardList)
     end
     
-    return addedItems
+    return {}
 end
-
 --- 内部函数：浅拷贝一个表
 ---@param orig table 原始表
 ---@return table 新表

@@ -201,7 +201,7 @@ end
 -- 处理邮件列表响应
 function MailGui:HandleMailListResponse(data)
     gg.log("=== HandleMailListResponse 开始 ===")
-    -- gg.log("HandleMailListResponse收到邮件列表响应", data)
+    gg.log("HandleMailListResponse收到邮件列表响应", data)
 
     if not data then
         ----gg.log("邮件列表响应数据为空")
@@ -710,49 +710,66 @@ end
 -- 处理奖励数据，转换为统一格式
 function MailGui:ProcessRewardData(rewards)
     local rewardItems = {}
-    local ItemTypeConfig = require(MainStorage.Code.Common.Config.ItemTypeConfig) ---@type ItemTypeConfig
 
     if type(rewards) == "table" then
-        -- 附件的数据格式是一个 table 数组, e.g., { {type="itemA", amount=1}, {type="itemB", amount=2} }
-        -- 因此需要用 ipairs 遍历
         for _, rewardData in ipairs(rewards) do
-            -- rewardData 的格式是 { type = "物品名", amount = 数量 }
-            local itemName = rewardData.type
-            local amount = rewardData.amount
-            if itemName and amount and amount > 0 then
-                ---@type ItemType
-                local itemConfig = ConfigLoader.GetItem(itemName)
-
-                if itemConfig then
-                    table.insert(rewardItems, {
-                        itemName = itemName,
-                        amount = amount,
-                        icon = itemConfig.icon,
-
-                    })
-                else
-                    ------gg.log("⚠️ 找不到物品配置:", itemName)
-                    -- 即使找不到配置，也添加一个默认项，以防显示不全
-                    table.insert(rewardItems, {
-                        itemName = itemName,
-                        amount = amount,
-                        icon = nil, -- 使用默认图标
-
-                    })
-                end
+            gg.log("rewardData",rewardData)
+            local displayName, displayIcon, displayAmount
+            
+            if rewardData.itemType == "物品" or rewardData.itemType == "宠物" or 
+               rewardData.itemType == "伙伴" or rewardData.itemType == "翅膀" or rewardData.itemType == "尾迹" then
+                -- 实体物品类奖励
+                displayName = rewardData.itemName
+                displayAmount = rewardData.amount or 1
+                displayIcon = self:GetIconFromRewardItem(rewardData)
+                
+            elseif rewardData.itemType == "玩家变量" then
+                -- 玩家变量（金币、经验等）
+                displayName = rewardData.variableName
+                displayAmount = rewardData.value or 1
+                displayIcon = self:GetIconFromRewardItem({
+                    itemType = "玩家变量",
+                    itemName = rewardData.variableName
+                })
+                
+            elseif rewardData.itemType == "指令执行" then
+                -- 指令执行类型
+                displayName = "系统奖励"
+                displayAmount = 1
+                displayIcon = self:GetIconFromRewardItem({itemType = "指令执行"})
+                
+            else
+                -- 兼容旧格式：{type="物品名", amount=数量}
+                displayName = rewardData.type
+                displayAmount = rewardData.amount or 1
+                displayIcon = self:GetIconFromRewardItem({
+                    itemType = "物品",
+                    itemName = rewardData.type
+                })
+            end
+            
+            if displayName and displayAmount and displayAmount > 0 then
+                table.insert(rewardItems, {
+                    itemName = displayName,
+                    amount = displayAmount,
+                    icon = displayIcon,
+                    itemType = rewardData.itemType or "物品",
+                    stars = rewardData.stars or 1 -- 保存星级信息
+                })
             end
         end
     end
 
-    -- 按物品名称排序
+    -- 按物品类型和名称排序
     table.sort(rewardItems, function(a, b)
+        if a.itemType ~= b.itemType then
+            return a.itemType < b.itemType
+        end
         return a.itemName < b.itemName
     end)
 
-    ------gg.log("🎁 处理奖励数据完成，共", #rewardItems, "个物品")
     return rewardItems
 end
-
 -- 为单个奖励物品设置UI显示
 function MailGui:SetupRewardItemDisplay(itemNode, rewardItem)
     if not itemNode then return end
@@ -1227,4 +1244,48 @@ function MailGui:OnOpen()
     })
 end
 
+---@param rewardItem table 奖励数据
+---@return string|nil iconAssetId
+function MailGui:GetIconFromRewardItem(rewardItem)
+    gg.log("GetIconFromRewardItem", rewardItem)
+    if not rewardItem then return nil end
+    
+    
+    local itemType = rewardItem.itemType
+    local itemName = rewardItem.itemName or rewardItem.variableName
+    
+    if itemType == "物品" then
+        local itemConfig = ConfigLoader.GetItem(itemName)
+        if itemConfig and itemConfig.icon then
+            return itemConfig.icon
+        end
+    elseif itemType == "宠物" then
+        local petConfig = ConfigLoader.GetPet(itemName)
+        if petConfig and petConfig.avatarResource then
+            return petConfig.avatarResource
+        end
+    elseif itemType == "伙伴" then
+        local partnerConfig = ConfigLoader.GetPartner(itemName)
+        if partnerConfig and partnerConfig.avatarResource then
+            return partnerConfig.avatarResource
+        end
+    elseif itemType == "翅膀" then
+        local getWing = ConfigLoader.GetWing
+        if getWing then
+            local wingConfig = getWing(itemName)
+            if wingConfig and wingConfig.icon then
+                return wingConfig.icon
+            end
+        end
+    elseif itemType == "尾迹" then
+        -- 尾迹图标获取逻辑（如果有配置系统）
+        local trailConfig = ConfigLoader.GetTrail and ConfigLoader.GetTrail(itemName)
+        if trailConfig and trailConfig.icon then
+            return trailConfig.icon
+        end
+
+    end
+    
+    return nil
+end
 return MailGui.New(script.Parent, uiConfig)
