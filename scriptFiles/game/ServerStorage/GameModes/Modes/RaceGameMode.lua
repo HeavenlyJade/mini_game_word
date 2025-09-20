@@ -188,6 +188,22 @@ function RaceGameMode:HandleLevelRewardTrigger(triggerPlayer, evt)
     end
 end
 
+--- 【新增】获取关卡奖励类型配置
+---@param configName string|nil 配置名称，为nil时从levelType获取
+---@return LevelNodeRewardType|nil 关卡奖励类型配置
+function RaceGameMode:GetLevelNodeRewardType(configName)
+    -- 如果没有传入configName，尝试从levelType获取
+    if not configName and self.levelType and self.levelType:HasSceneConfig() then
+        configName = self.levelType:GetSceneConfig()
+    end
+    
+    if not configName then
+        return nil
+    end
+    
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    return ConfigLoader.GetLevelNodeReward(configName)
+end
 
 --- 【修改】获取关卡奖励配置 - 增加缓存支持
 ---@param configName string 配置名称
@@ -246,20 +262,37 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
 
     -- 【新增】应用玩家加成计算
     local finalItemCount = itemCount
+    local levelRewardType = self:GetLevelNodeRewardType(nil) ---@type LevelNodeRewardType|nil
+    
+    -- 【新增】先应用关卡奖励配置中的玩家变量加成
+    if levelRewardType then
+        local variableBonusAmount, variableBonusInfo = BonusManager.CalculateLevelRewardVariableBonuses(
+            player, itemType, itemCount, levelRewardType
+        )
+        
+        if variableBonusAmount ~= itemCount then
+            finalItemCount = variableBonusAmount
+            gg.log(string.format("关卡奖励变量加成: 玩家 %s, 物品 %s, 原始数量: %d, 变量加成后数量: %d", 
+                player.name or player.uin, itemType, itemCount, finalItemCount))
+            if variableBonusInfo and variableBonusInfo ~= "" then
+                gg.log(variableBonusInfo)
+            end
+        end
+    end
 
     -- 1. 计算玩家所有物品加成（包括宠物、伙伴、翅膀、尾迹、天赋、好友）
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
 
-    -- 2. 构建原始奖励数据
+    -- 2. 构建原始奖励数据（使用变量加成后的数量）
     local originalRewards = {
-        [itemType] = itemCount
+        [itemType] = finalItemCount
     }
 
     -- 3. 应用加成到奖励
     local finalRewards = BonusManager.ApplyBonusesToRewards(originalRewards, bonuses)
 
     -- 4. 获取应用加成后的最终数量
-    finalItemCount = finalRewards[itemType] or itemCount
+    finalItemCount = finalRewards[itemType] or finalItemCount
 
     -- 记录加成计算日志
     if finalItemCount ~= itemCount then
@@ -1100,15 +1133,34 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
 
 
 
-    -- 计算并应用加成
+    -- 【新增】先应用关卡奖励配置中的玩家变量加成
+    local levelRewardType = self:GetLevelNodeRewardType(nil) ---@type LevelNodeRewardType|nil
+    local variableBonusAmount = amount
+    local variableBonusInfo = ""
+    
+    if levelRewardType then
+        variableBonusAmount, variableBonusInfo = BonusManager.CalculateLevelRewardVariableBonuses(
+            player, itemName, amount, levelRewardType
+        )
+        
+        if variableBonusAmount ~= amount then
+            gg.log(string.format("实时奖励变量加成: 玩家 %s, 物品 %s, 原始数量: %d, 变量加成后数量: %d", 
+                player.name or player.uin, itemName, amount, variableBonusAmount))
+            if variableBonusInfo and variableBonusInfo ~= "" then
+                gg.log(variableBonusInfo)
+            end
+        end
+    end
+
+    -- 计算并应用其他加成（宠物、伙伴、翅膀、尾迹、天赋、好友等）
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player, itemName)
     local itemBonus = bonuses[itemName]
     if itemBonus and (itemBonus.fixed > 0 or itemBonus.percentage > 0) then
         gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)",
-            player.name or player.uin, itemName, amount, itemBonus.fixed or 0, itemBonus.percentage or 0))
+            player.name or player.uin, itemName, variableBonusAmount, itemBonus.fixed or 0, itemBonus.percentage or 0))
     end
-    local finalRewards = BonusManager.ApplyBonusesToRewards({[itemName]=amount}, bonuses)
-    local finalAmount = finalRewards[itemName] or amount
+    local finalRewards = BonusManager.ApplyBonusesToRewards({[itemName]=variableBonusAmount}, bonuses)
+    local finalAmount = finalRewards[itemName] or variableBonusAmount
     -- 【新增】检查飞行币获取上限
     local flightCoinSuccess, flightCoinError = PlayerRewardDispatcher.DispatchWithVariableLimit(player, itemName, finalAmount)
     if not flightCoinSuccess then

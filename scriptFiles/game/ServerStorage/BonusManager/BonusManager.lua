@@ -251,10 +251,10 @@ function BonusManager.GetAchievementItemBonuses(player, targetItemName)
                         local shouldMatch = false
                         if effectType == "物品" and itemType then
                             -- 物品类型效果：使用物品类型字段匹配
-                            shouldMatch = string.find(varName, itemType)
+                            shouldMatch = string.find(varName, itemType) ~= nil
                         elseif effectFieldName then
                             -- 其他类型效果：使用效果字段名称匹配
-                            shouldMatch = string.find(varName, effectFieldName)
+                            shouldMatch = string.find(varName, effectFieldName) ~= nil
                         end
 
                         if shouldMatch then
@@ -422,6 +422,88 @@ function BonusManager.ApplyBonusesToRewards(rewards, bonuses)
     end
 
     return finalRewards
+end
+
+-- ============================= 关卡奖励加成计算 =============================
+
+--- 计算关卡奖励的玩家变量加成
+---@param player MPlayer 玩家实例
+---@param itemType string 物品类型
+---@param baseAmount number 基础数量
+---@param levelRewardType LevelNodeRewardType 关卡奖励类型配置
+---@return number finalAmount, string bonusInfo 最终数量和加成信息
+function BonusManager.CalculateLevelRewardVariableBonuses(player, itemType, baseAmount, levelRewardType)
+    if not player or not itemType or not levelRewardType then
+        return baseAmount, ""
+    end
+
+    local finalAmount = baseAmount
+    local bonusDescriptions = {}
+    
+    -- 获取目标物品的加成变量
+    local bonusVariables = levelRewardType:GetBonusVariablesByTargetItem(itemType)
+    if not bonusVariables or #bonusVariables == 0 then
+        return finalAmount, ""
+    end
+
+    gg.log(string.format("关卡奖励变量加成检查: 玩家 %s, 物品 %s, 找到 %d 个加成变量", 
+        player.name or player.uin, itemType, #bonusVariables))
+
+    -- 遍历每个加成变量，获取玩家变量数据
+    for _, bonusVar in ipairs(bonusVariables) do
+        local varName = bonusVar["变量名称"]
+        local varProperty = bonusVar["变量属性"]
+        local target = bonusVar["作用目标"]
+        local bonusType = bonusVar["加成方式"]
+        local bonusValue = bonusVar["加成数值"]
+        
+        gg.log(string.format("加成变量详情: 名称=%s, 属性=%s, 目标=%s, 方式=%s, 数值=%s", 
+            varName, varProperty, target, bonusType, tostring(bonusValue)))
+        
+        -- 根据变量属性获取玩家变量数据
+        local playerVarValue = 0
+        if varProperty == "玩家变量" then
+            -- 从玩家变量系统获取
+            if player.variableSystem then
+                playerVarValue = player.variableSystem:GetVariable(varName, 0)
+                gg.log(string.format("玩家变量 %s 的值: %s", varName, tostring(playerVarValue)))
+            end
+        elseif varProperty == "全局变量" then
+            -- 从全局变量系统获取（如果有的话）
+            -- 这里可以根据实际需求实现全局变量获取逻辑
+            gg.log(string.format("全局变量 %s 暂未实现", varName))
+        end
+        
+        -- 根据加成方式计算加成
+        if playerVarValue > 0 then
+            local bonusAmount = 0
+            local oldAmount = finalAmount
+            
+            if bonusType == "最终乘法" then
+                bonusAmount = finalAmount * (1 + playerVarValue)
+                finalAmount = bonusAmount
+                table.insert(bonusDescriptions, string.format("最终乘法加成: %s x (1+%s) = %s", 
+                    tostring(oldAmount), tostring(playerVarValue), tostring(bonusAmount)))
+            elseif bonusType == "固定加成" then
+                bonusAmount = playerVarValue
+                finalAmount = finalAmount + bonusAmount
+                table.insert(bonusDescriptions, string.format("固定加成: %s + %s = %s", 
+                    tostring(oldAmount), tostring(bonusAmount), tostring(finalAmount)))
+            elseif bonusType == "百分比加成" then
+                bonusAmount = finalAmount * (playerVarValue / 100)
+                finalAmount = finalAmount + bonusAmount
+                table.insert(bonusDescriptions, string.format("百分比加成: %s + (%s x %s%%) = %s", 
+                    tostring(oldAmount), tostring(oldAmount), tostring(playerVarValue), tostring(finalAmount)))
+            end
+        end
+    end
+
+    local bonusInfo = ""
+    if #bonusDescriptions > 0 then
+        bonusInfo = string.format("关卡奖励变量加成: %s", table.concat(bonusDescriptions, ", "))
+    end
+
+    return finalAmount, bonusInfo
 end
 
 -- ============================= 工具方法 =============================
