@@ -196,7 +196,7 @@ function MailEventManager.HandleClaimMail(event)
         return
     end
 
-    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr)
+    local MailMgr = require(ServerStorage.MSystems.Mail.MailMgr) ---@type MailMgr
     local result = MailMgr.ClaimMailAttachment(player.uin, mailId)
 
     gg.log("📤 发送领取响应 - 成功:", result.success, "代码:", result.code, "消息:", result.message)
