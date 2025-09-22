@@ -1,6 +1,8 @@
 local MainStorage = game:GetService("MainStorage")
 local ServerStorage = game:GetService("ServerStorage")
 local gg = require(MainStorage.Code.Untils.MGlobal) ---@type gg
+local VectorUtils = require(MainStorage.Code.Untils.VectorUtils) ---@type VectorUtils
+local Vec = VectorUtils.Vec
 local GameModeManager = require(ServerStorage.GameModes.GameModeManager) ---@type GameModeManager
 local ScheduledTask = require(MainStorage.Code.Untils.scheduled_task) ---@type ScheduledTask
 
@@ -9,6 +11,8 @@ local AutoRaceManager = {}
 
 -- 存储玩家自动比赛状态
 local playerAutoRaceState = {}
+-- 【新增】存储玩家位置历史（用于检测卡顿）
+local playerPositionHistory = {}
 -- 自动比赛检查定时器
 local autoRaceCheckTimer = nil
 
@@ -16,6 +20,103 @@ local autoRaceCheckTimer = nil
 function AutoRaceManager.Init()
     -- 启动定时检查
     AutoRaceManager.StartAutoRaceCheck()
+end
+
+-- 【新增】检测玩家是否卡住（最近3次位置变化均小于阈值）
+---@param player MPlayer 玩家对象
+---@return boolean 是否卡住
+function AutoRaceManager.CheckPlayerStuck(player)
+    if not player or not player.actor then return false end
+
+    local uin = player.uin
+    local currentPos = player.actor.Position
+
+    if not playerPositionHistory[uin] then
+        playerPositionHistory[uin] = {}
+    end
+
+    local history = playerPositionHistory[uin]
+    table.insert(history, currentPos)
+
+    -- 只保留最近3次位置记录
+    if #history > 3 then
+        table.remove(history, 1)
+    end
+
+    if #history < 3 then
+        return false
+    end
+
+    local threshold = 2.0
+    local pos1, pos2, pos3 = history[1], history[2], history[3]
+    local thrSq = threshold * threshold
+    local dist12Sq = Vec.DistanceSq3(pos1, pos2)
+    local dist23Sq = Vec.DistanceSq3(pos2, pos3)
+    local dist13Sq = Vec.DistanceSq3(pos1, pos3)
+
+    if dist12Sq < thrSq and dist23Sq < thrSq and dist13Sq < thrSq then
+        return true
+    end
+
+    return false
+end
+
+-- 【新增】获取比赛目标位置
+---@param player MPlayer 玩家对象
+---@return Vector3|nil 目标位置
+function AutoRaceManager.GetRaceTargetPosition(player)
+    if not player then return nil end
+
+    local currentScene = player.currentScene
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader) ---@type ConfigLoader
+    local raceNodes = ConfigLoader.GetSceneNodesBy(currentScene, "飞行比赛")
+
+    if #raceNodes == 0 then
+        return nil
+    end
+
+    local raceNode = raceNodes[1]
+    local sceneNode = gg.GetChild(game.WorkSpace, raceNode.nodePath)
+    if not sceneNode then
+        return nil
+    end
+
+    local navNodeName = raceNode.areaConfig["导航节点"]
+    if not navNodeName or navNodeName == "" then
+        return nil
+    end
+
+    local navNode = sceneNode[navNodeName]
+    if not navNode then
+        return nil
+    end
+
+    return navNode.Position
+end
+
+-- 【新增】传送玩家到目标比赛点
+---@param player MPlayer 玩家对象
+---@param targetPosition Vector3 目标位置
+function AutoRaceManager.TeleportPlayerToRaceTarget(player, targetPosition)
+    if not player or not targetPosition then return end
+
+    local actor = player.actor
+    if not actor then
+        gg.log("玩家无actor对象，传送失败")
+        return
+    end
+
+    local TeleportService = game:GetService('TeleportService')
+    local success, err = pcall(function()
+        TeleportService:Teleport(actor, targetPosition)
+    end)
+
+    if success then
+        gg.log("玩家", player.uin, "被传送到目标位置（解除卡顿）")
+        playerPositionHistory[player.uin] = nil
+    else
+        gg.log("传送失败:", tostring(err))
+    end
 end
 
 -- 启动自动比赛检查定时器
@@ -61,13 +162,26 @@ function AutoRaceManager.CheckAllPlayersAutoRace()
                     -- 检查玩家是否在比赛中（直接检查playerModes）
                     local isInRace = GameModeManager.playerModes[uin] ~= nil
                     if not isInRace then
-                        -- 玩家不在比赛中，重新启动自动比赛
-                        AutoRaceManager.StartAutoRace(player)
+                        -- 【新增】优先检测卡顿并尝试传送
+                        if AutoRaceManager.CheckPlayerStuck(player) then
+                            gg.log("检测到玩家", uin, "卡住，尝试传送到目标位置")
+                            local targetPosition = AutoRaceManager.GetRaceTargetPosition(player)
+                            if targetPosition then
+                                AutoRaceManager.TeleportPlayerToRaceTarget(player, targetPosition)
+                            else
+                                gg.log("无法获取比赛目标位置，跳过传送")
+                            end
+                        else
+                            -- 玩家不在比赛中且未卡住，重新启动自动比赛
+                            AutoRaceManager.StartAutoRace(player)
+                        end
                     end
                 end
             else
                 -- 玩家不存在，清除状态
                 playerAutoRaceState[uin] = nil
+                -- 【新增】清理位置历史
+                playerPositionHistory[uin] = nil
             end
         end
     end
@@ -138,6 +252,8 @@ function AutoRaceManager.StopAutoRace(mPlayer)
     local uin = mPlayer.uin
     -- 确保完全清理状态
     playerAutoRaceState[uin] = nil
+    -- 【新增】清理位置历史
+    playerPositionHistory[uin] = nil
     
     -- 向客户端发送停止导航指令
     local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
@@ -160,6 +276,8 @@ function AutoRaceManager.SetPlayerAutoRaceState(mPlayer, enabled)
     else
         -- 确保完全清理状态
         playerAutoRaceState[uin] = nil
+        -- 【新增】清理位置历史
+        playerPositionHistory[uin] = nil
         
         -- 停止导航
         local AutoRaceEventManager = require(ServerStorage.AutoRaceSystem.AutoRaceEvent) ---@type AutoRaceEventManager
@@ -202,6 +320,8 @@ function AutoRaceManager.CleanupPlayerAutoRaceState(uin)
         playerAutoRaceState[uin] = nil
         gg.log("清理玩家自动比赛状态:", uin)
     end
+    -- 【新增】同时清理位置历史
+    playerPositionHistory[uin] = nil
 end
 
 
