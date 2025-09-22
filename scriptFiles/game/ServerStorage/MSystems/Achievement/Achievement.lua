@@ -447,6 +447,64 @@ function Achievement:GetUnlockedNormalAchievementCount()
     return count
 end
 
+--- 计算指定变量的天赋加成
+---@param targetVariable string 目标变量名
+---@param baseValue number 基础值
+---@param externalContext table|nil 外部上下文
+---@return number, string finalValue, bonusInfo
+function Achievement:CalculateVariableTalentBonus(targetVariable, baseValue, externalContext)
+    if not targetVariable or not self.talentData then
+        return baseValue, ""
+    end
+
+    local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+    local currentValue = baseValue
+    local bonusDescriptions = {}
+
+    -- 遍历玩家所有激活的天赋
+    for talentId, talentInfo in pairs(self.talentData) do
+        if talentInfo.currentLevel > 0 then
+            local achievementType = ConfigLoader.GetAchievement(talentId)
+            if achievementType and achievementType:IsTalentAchievement() then
+                
+                -- 获取天赋对目标变量的加成配置
+                local bonusConfig = achievementType:GetVariableBonusConfig(
+                    talentInfo.currentLevel, 
+                    targetVariable, 
+                    externalContext
+                )
+                
+                if bonusConfig then
+                    local effectValue = bonusConfig.effectValue
+                    local effectFieldName = bonusConfig.effectFieldName
+                    
+                    -- 判断是百分比还是固定值加成
+                    if effectFieldName and string.find(effectFieldName, "百分比") then
+                        -- 百分比加成
+                        local bonusAmount = currentValue * effectValue
+                        currentValue = currentValue + bonusAmount
+                        table.insert(bonusDescriptions, string.format("天赋[%s]: +%s%% (+%s)", 
+                            talentId, effectValue * 100, bonusAmount))
+                    else
+                        -- 固定值加成
+                        currentValue = currentValue + effectValue
+                        table.insert(bonusDescriptions, string.format("天赋[%s]: +%s", 
+                            talentId, effectValue))
+                    end
+                end
+            end
+        end
+    end
+
+    -- 构建加成信息描述
+    local bonusInfo = ""
+    if #bonusDescriptions > 0 then
+        bonusInfo = string.format("\n> 天赋加成: %s", table.concat(bonusDescriptions, ", "))
+    end
+
+    return currentValue, bonusInfo
+end
+
 -- 数据持久化 --------------------------------------------------------
 
 --- 获取保存数据格式
@@ -477,29 +535,5 @@ function Achievement:GetSaveData()
     return saveData
 end
 
---- 从保存数据恢复（保持兼容性，但主要逻辑已移到OnInit）
----@param saveData AchievementDataTable 保存的数据
-function Achievement:RestoreFromSaveData(saveData)
-    self:_RestoreFromAchievementData(saveData)
-    --gg.log(string.format("玩家[%s]成就数据补充恢复完成", self.playerId))
-end
-
--- 调试和工具方法 --------------------------------------------------------
-
---- 获取调试信息
----@return string 调试信息字符串
-function Achievement:GetDebugInfo()
-    local info = string.format("玩家[%s]成就数据:\n", self.playerId)
-    info = info .. string.format("  天赋数量: %d\n", self:GetTalentCount())
-    info = info .. string.format("  普通成就数量: %d\n", self:GetUnlockedNormalAchievementCount())
-    info = info .. "  天赋详情:\n"
-
-    for talentId, talentInfo in pairs(self.talentData) do
-        info = info .. string.format("    %s: L%d (解锁时间:%s)\n",
-            talentId, talentInfo.currentLevel, os.date("%Y-%m-%d %H:%M:%S", talentInfo.unlockTime))
-    end
-
-    return info
-end
 
 return Achievement

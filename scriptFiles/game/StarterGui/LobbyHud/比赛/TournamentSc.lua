@@ -194,7 +194,7 @@ function TournamentSc:OnClickDoubleTraining()
 end
 
 function TournamentSc:OnClickLeaveRace()
-	----gg.log("点击离开比赛按钮")
+	gg.log("点击离开比赛按钮")
 	-- 发送“玩家落地/结束比赛”事件到服务端，由 RaceGameEventManager 转发给 RaceGameMode
 	if gg and gg.network_channel then
 		gg.network_channel:FireServer({

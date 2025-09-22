@@ -295,8 +295,8 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
     local finalItemCount = finalRewards[itemType] or variableBonusAmount
 
     -- 记录加成计算日志
-    gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d",
-        player.name or player.uin, itemType, itemCount, finalItemCount))
+    -- gg.log(string.format("关卡奖励加成计算: 玩家 %s, 物品 %s, 原始数量: %d, 加成后数量: %d",
+    --     player.name or player.uin, itemType, itemCount, finalItemCount))
     
 
     -- 使用现有的奖励发放系统，发放加成后的奖励
@@ -940,8 +940,8 @@ function RaceGameMode:_checkAndGiveLevelRewards(player, flightData)
                 -- 发送通知
                 self:SendLevelRewardNotification(player, rewardNode, uniqueId)
                 
-                gg.log(string.format("距离奖励发放: 玩家 %s 飞行 %.1f 米，获得奖励 %s", 
-                    player.name or playerUin, playerDistance, uniqueId))
+                -- gg.log(string.format("距离奖励发放: 玩家 %s 飞行 %.1f 米，获得奖励 %s", 
+                --     player.name or playerUin, playerDistance, uniqueId))
             end
         end
     end

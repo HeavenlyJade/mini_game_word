@@ -112,17 +112,6 @@ function RaceGameAction:OnEnd()
         end
     end
 
-    -- 发送结束通知到服务端
-    if gg.network_channel then
-        local eventName = EventPlayerConfig.REQUEST.PLAYER_LANDED
-        local currentState = actor and actor:GetCurMoveState() or "Unknown"
-        gg.network_channel:FireServer({
-            cmd = eventName,
-            isLanded = (currentState ~= Enum.BehaviorState.Fly), -- 是否真的落地
-            finalState = tostring(currentState) -- 最终状态
-        })
-    end
-
 
     -- 清理所有定时器
     if self.pushTimer then ScheduledTask.Remove(self.pushTimer) self.pushTimer = nil end

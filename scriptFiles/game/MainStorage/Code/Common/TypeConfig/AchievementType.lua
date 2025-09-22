@@ -366,6 +366,56 @@ function AchievementType:CalculateMaxActionExecutions(variableData, bagData, cur
 end
 
 
+--- 获取影响指定变量的天赋加成配置
+---@param level number 天赋等级
+---@param targetVariable string 目标变量名
+---@param externalContext table|nil 外部上下文
+---@return table|nil 加成配置信息 {bonusType, effectFieldName, effectValue}
+function AchievementType:GetVariableBonusConfig(level, targetVariable, externalContext)
+    if not self:IsTalentAchievement() or level <= 0 or not targetVariable then
+        return nil
+    end
+    
+    local effectConfig = self:GetLevelEffect(level)
+    if not effectConfig or effectConfig["目标变量"] ~= targetVariable then
+        return nil
+    end
+    
+    local effectValue = self:_CalculateEffectValueForBonus(effectConfig, level, externalContext)
+    if not effectValue then
+        return nil
+    end
+    
+    return {
+        bonusType = effectConfig["加成类型"] or "单独相加",
+        effectFieldName = effectConfig["效果字段名称"],
+        effectValue = effectValue
+    }
+end
+
+---@param effectConfig table 效果配置
+---@param level number 天赋等级
+---@param externalContext table|nil 外部上下文
+---@return number|nil 计算后的效果值
+---@private
+function AchievementType:_CalculateEffectValueForBonus(effectConfig, level, externalContext)
+    local formula = effectConfig["效果数值"]
+    local effectLevelConfigName = effectConfig["效果等级配置"]
+    
+    if (not formula or formula == "") and effectLevelConfigName then
+        local ConfigLoader = require(MainStorage.Code.Common.ConfigLoader)
+        local effectLevelConfig = ConfigLoader.GetEffectLevel(effectLevelConfigName)
+        if effectLevelConfig then
+            return effectLevelConfig:GetEffectValue(level)
+        end
+    end
+    
+    if formula and formula ~= "" then
+        return self._rewardCalculator:CalculateEffectValue(formula, level, self, externalContext)
+    end
+    
+    return effectConfig["基础数值"] or 0
+end
 
 return AchievementType
 
