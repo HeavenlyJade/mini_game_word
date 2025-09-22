@@ -675,6 +675,30 @@ function RankingMgr.UpdateRanking()
     all_rankings_data_cache = RankingMgr.GetOrLoadAllRankingsData()
     --gg.log("所有排行榜数据预加载完成，缓存已刷新")
 
+    -- 2.1 计算并更新各排行榜前1~3名玩家UIN到服务端数据管理器
+    do
+        local topMap = {}
+        for rankType, data in pairs(all_rankings_data_cache) do
+            local list = data and data.list or {}
+            if list and #list > 0 then
+                local top = {}
+                for i = 1, 3 do
+                    local item = list[i]
+                    if item and item.uin then
+                        top[i] = item.uin
+                    else
+                        break
+                    end
+                end
+                topMap[rankType] = top
+            else
+                topMap[rankType] = {}
+            end
+        end
+        -- 写入全局存储
+        serverDataMgr.RankingTopPlayers = topMap
+    end
+
     -- 3. 遍历所有在线玩家，使用缓存数据进行通知
     local RankingEventManager = require(ServerStorage.MSystems.Ranking.RankingEventManager) ---@type RankingEventManager
     local players = serverDataMgr.getAllPlayers()

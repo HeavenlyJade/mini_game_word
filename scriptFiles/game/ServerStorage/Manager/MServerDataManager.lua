@@ -29,7 +29,9 @@ local MServerDataManager = {
     RewardMgr=nil, ---@type RewardMgr | nil 
     LotteryMgr=nil, ---@type LotteryMgr | nil
     MiniShopManager= nil, ---@type MiniShopManager | nil
-    RankingMgr=nil,
+	RankingMgr=nil,
+	--- 各排行榜前1~3名玩家UIN映射：rankType -> { [1]=uin, [2]=uin, [3]=uin }
+	RankingTopPlayers = {}, ---@type table<string, table<number, number>>
     uuid_start = 0,
     tick = 0
 }
