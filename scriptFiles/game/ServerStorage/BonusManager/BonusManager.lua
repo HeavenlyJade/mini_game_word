@@ -440,8 +440,8 @@ function BonusManager.CalculateLevelRewardVariableBonuses(player, itemType, base
     local finalAmount = baseAmount
     local bonusDescriptions = {}
     
-    gg.log(string.format("关卡奖励变量加成检查: 玩家 %s, 物品 %s, 找到 %d 个加成变量", 
-        player.name or player.uin, itemType, #bonusVariables))
+    -- gg.log(string.format("关卡奖励变量加成检查: 玩家 %s, 物品 %s, 找到 %d 个加成变量", 
+    --     player.name or player.uin, itemType, #bonusVariables))
 
     -- 遍历每个加成变量，获取玩家变量数据
     for _, bonusVar in ipairs(bonusVariables) do
@@ -451,8 +451,8 @@ function BonusManager.CalculateLevelRewardVariableBonuses(player, itemType, base
         local bonusType = bonusVar["加成方式"]
         local bonusValue = bonusVar["加成数值"]
         
-        gg.log(string.format("加成变量详情: 名称=%s, 属性=%s, 目标=%s, 方式=%s, 数值=%s", 
-            varName, varProperty, target, bonusType, tostring(bonusValue)))
+        -- gg.log(string.format("加成变量详情: 名称=%s, 属性=%s, 目标=%s, 方式=%s, 数值=%s", 
+        --     varName, varProperty, target, bonusType, tostring(bonusValue)))
         
         -- 根据变量属性获取玩家变量数据
         local playerVarValue = 0
@@ -460,7 +460,7 @@ function BonusManager.CalculateLevelRewardVariableBonuses(player, itemType, base
             -- 从玩家变量系统获取
             if player.variableSystem then
                 playerVarValue = player.variableSystem:GetVariable(varName, 0)
-                gg.log(string.format("玩家变量 %s 的值: %s", varName, tostring(playerVarValue)))
+                -- gg.log(string.format("玩家变量 %s 的值: %s", varName, tostring(playerVarValue)))
             end
         elseif varProperty == "全局变量" then
             -- 从全局变量系统获取（如果有的话）

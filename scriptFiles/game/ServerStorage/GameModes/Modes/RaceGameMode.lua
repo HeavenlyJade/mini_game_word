@@ -281,7 +281,7 @@ function RaceGameMode:DistributeLevelReward(player, rewardConfig, uniqueId)
     end
 
     -- 1. 计算玩家所有物品加成（包括宠物、伙伴、翅膀、尾迹、天赋、好友）
-    local bonuses = BonusManager.CalculatePlayerItemBonuses(player)
+    local bonuses = BonusManager.CalculatePlayerItemBonuses(player,itemType)
 
     -- 2. 构建原始奖励数据（使用变量加成后的数量）
     local originalRewards = {
@@ -325,7 +325,7 @@ function RaceGameMode:CheckRewardCondition(player, condition)
     if not condition or condition == "" then
         return true
     end
-    gg.log(string.format("检查玩家 %s 的奖励条件:%s (暂时跳过检查)", player.name or player.uin, tostring(condition)))
+    -- gg.log(string.format("检查玩家 %s 的奖励条件:%s (暂时跳过检查)", player.name or player.uin, tostring(condition)))
     return true
 end
 
@@ -1142,8 +1142,8 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
         )
         
         if variableBonusAmount ~= amount then
-            gg.log(string.format("实时奖励变量加成: 玩家 %s, 物品 %s, 原始数量: %d, 变量加成后数量: %d", 
-                player.name or player.uin, itemName, amount, variableBonusAmount))
+            -- gg.log(string.format("实时奖励变量加成: 玩家 %s, 物品 %s, 原始数量: %d, 变量加成后数量: %d", 
+            --     player.name or player.uin, itemName, amount, variableBonusAmount))
             if bonusInfo and bonusInfo ~= "" then
                 gg.log(bonusInfo)
             end
@@ -1154,16 +1154,18 @@ function RaceGameMode:_giveRealtimeReward(player, itemName, amount)
     local bonuses = BonusManager.CalculatePlayerItemBonuses(player, itemName)
     local itemBonus = bonuses[itemName]
     if itemBonus and (itemBonus.fixed > 0 or itemBonus.percentage > 0) then
-        gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)",
-            player.name or player.uin, itemName, variableBonusAmount, itemBonus.fixed or 0, itemBonus.percentage or 0))
+        -- gg.log(string.format("实时奖励将应用加成: 玩家 %s, 物品 %s, 基础数量 %d, 加成情况(固定:+%d, 百分比:+%d%%)",
+        --     player.name or player.uin, itemName, variableBonusAmount, itemBonus.fixed or 0, itemBonus.percentage or 0))
     end
     local finalRewards = BonusManager.ApplyBonusesToRewards({[itemName]=variableBonusAmount}, bonuses)
     local finalAmount = finalRewards[itemName] or variableBonusAmount
     -- 【新增】检查飞行币获取上限
     local flightCoinSuccess, flightCoinError = PlayerRewardDispatcher.DispatchWithVariableLimit(player, itemName, finalAmount)
     if not flightCoinSuccess then
-        gg.log(string.format("实时奖励被限制: 玩家 %s, 物品 %s x%d, 飞行币限制: %s", 
-            player.name or "未知", itemName, amount, flightCoinError or "未知错误"))
+        gg.log(flightCoinError)
+        
+        -- gg.log(string.format("实时奖励被限制: 玩家 %s, 物品 %s x%d, 飞行币限制: %s", 
+        --     player.name or "未知", itemName, amount, flightCoinError or "未知错误"))
         return false
     end
     -- 发放已应用加成后的数量
