@@ -15,7 +15,7 @@ local SkillCommands = {}
 
 
 ---@param params table
----@param player Player
+---@param player MPlayer
 function SkillCommands.unlock(params, player)
     local skillName = params["skillName"]
     local level = params["level"] or 1
@@ -49,7 +49,7 @@ function SkillCommands.unlock(params, player)
 end
 
 ---@param params table
----@param player Player
+---@param player MPlayer
 function SkillCommands.destroy(params, player)
     local skillName = params["skillName"]
 
@@ -94,7 +94,7 @@ function SkillCommands.destroy(params, player)
 end
 
 ---@param params table
----@param player Player
+---@param player MPlayer
 function SkillCommands.setLevel(params, player)
     local skillName = params["skillName"]
     local level = params["level"] or -1
@@ -134,7 +134,7 @@ function SkillCommands.setLevel(params, player)
 end
 
 ---@param params table
----@param player Player
+---@param player MPlayer
 function SkillCommands.destroyAll(params, player)
     --gg.log("开始销毁所有技能，玩家:" .. player.name)
 

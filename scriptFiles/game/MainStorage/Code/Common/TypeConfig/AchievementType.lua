@@ -8,14 +8,17 @@ local AchievementRewardCal = require(MainStorage.Code.GameReward.RewardCalc.Achi
 local ActionCosteRewardCal = require(MainStorage.Code.GameReward.RewardCalc.ActionCosteRewardCal) ---@type any
 
 ---@class LevelEffect
----@field 效果类型 string 效果类型（如“玩家变量”）
----@field 效果字段名称 string 效果字段名称（如“加成_百分比_双倍训练”）
+---@field 效果类型 string 效果类型（如"玩家变量"、"物品"等）
+---@field 效果字段名称 string 效果字段名称（如"加成_百分比_双倍训练"）
 ---@field 基础数值 number 基础数值
----@field 效果数值 string 效果数值公式（如“T_LVL*0.2”）
+---@field 效果数值 string 效果数值公式（如"T_LVL*0.2"）
+---@field 效果等级配置 string|nil 效果等级配置名称，可选
 ---@field 效果描述 string 效果描述
 ---@field 等级 number|nil 适用等级，可选
----@field 加成类型 string|nil 加成类型，可选（如“物品”）
----@field 物品目标 string|nil 物品目标名，可选（如“金币”）
+---@field 加成类型 string|nil 加成类型，可选（如"物品"、"玩家变量"）
+---@field 物品目标 string|nil 物品目标名，可选（如"金币"、"飞行币"）
+---@field 目标变量 string|nil 目标变量名，可选（如"数据_固定值_战力值"）
+---@field 物品类型 string|nil 物品类型，可选（如"金币"）
 
 ---@class UpgradeCondition
 ---@field 消耗名称 string 物品名称
@@ -153,7 +156,7 @@ end
 --- 获取等级效果数值
 ---@param level number 天赋等级
 ---@param externalContext table|nil 额外上下文（如 { F_NUM = 3 }）
----@return table[] 计算后的效果值列表，每个元素包含 {"效果类型","效果字段名称","数值","加成类型?","物品目标?"}
+---@return table[] 计算后的效果值列表，每个元素包含 {"效果类型","效果字段名称","基础数值","数值","效果等级配置?","效果描述","加成类型?","物品目标?","目标变量?","物品类型?"}
 function AchievementType:GetLevelEffectValue(level, externalContext)
     if not externalContext then
         externalContext = {}
@@ -183,9 +186,13 @@ function AchievementType:GetLevelEffectValue(level, externalContext)
             table.insert(results, {
                 ["效果类型"] = effectConfig["效果类型"],
                 ["效果字段名称"] = effectConfig["效果字段名称"],
+                ["基础数值"] = effectConfig["基础数值"],
                 ["数值"] = calculatedValue,
+                ["效果等级配置"] = effectConfig["效果等级配置"],
+                ["效果描述"] = effectConfig["效果描述"],
                 ["加成类型"] = effectConfig["加成类型"],
                 ["物品目标"] = effectConfig["物品目标"],
+                ["目标变量"] = effectConfig["目标变量"],
                 ["物品类型"] = effectConfig["物品类型"],
             })
         end
